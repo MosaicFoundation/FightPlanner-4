@@ -1,5 +1,5 @@
-const path = require('path');
-const { app } = require('electron');
+import * as path from 'path';
+import { app } from 'electron';
 
 const CONFLICT_WHITELIST_PATTERNS = [
   'ui_chara_db.prcxml',

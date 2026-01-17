@@ -1,4 +1,4 @@
-class SocialManager {
+export class SocialManager {
   constructor() {
     this.API_URL =
       'https://fightplannersocialapi.nathancarlos19100.workers.dev';

@@ -1,7 +1,7 @@
-const { autoUpdater } = require('electron-updater');
-const { app } = require('electron');
-const semver = require('semver');
-const Store = require('electron-store');
+import { autoUpdater } from 'electron-updater';
+import { app } from 'electron';
+import * as semver from 'semver';
+import Store from 'electron-store';
 const store = new Store();
 
 class AutoUpdater {

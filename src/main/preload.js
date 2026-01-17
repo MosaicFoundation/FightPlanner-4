@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer, webUtils } = require('electron');
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 const electronAPI = {
     getPathForFile: (file) => webUtils.getPathForFile(file),
     minimize: () => ipcRenderer.send('minimize-window'),
@@ -94,5 +94,4 @@ const electronAPI = {
     onUpdateError: (callback) => ipcRenderer.on('update-error', (event, data) => callback(data)),
 };
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);
-export {};
 //# sourceMappingURL=preload.js.map

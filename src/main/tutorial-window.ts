@@ -1,5 +1,5 @@
-const { BrowserWindow } = require('electron');
-const path = require('path');
+import { BrowserWindow } from 'electron';
+import * as path from 'path';
 
 let tutorialWindow = null;
 

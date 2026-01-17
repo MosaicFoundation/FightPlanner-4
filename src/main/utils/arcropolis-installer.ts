@@ -1,8 +1,8 @@
-const https = require('https');
-const fs = require('fs');
-const path = require('path');
-const AdmZip = require('adm-zip');
-const PluginUpdateInstaller = require('../plugin-update-installer');
+import * as https from 'https';
+import * as fs from 'fs';
+import * as path from 'path';
+import AdmZip from 'adm-zip';
+import PluginUpdateInstaller from '../plugin-update-installer';
 
 /**
  * Get the latest release from a GitHub repository

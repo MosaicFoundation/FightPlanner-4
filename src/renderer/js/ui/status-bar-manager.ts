@@ -1,5 +1,5 @@
 export class StatusBarManager {
-  updateInterval: number | null;
+  updateInterval: ReturnType<typeof setTimeout> | null;
   currentTab: string | null;
   preservedStatus: string | null;
 

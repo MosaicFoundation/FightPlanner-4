@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer, webUtils } = require('electron');
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 
 export type ElectronAPI = typeof electronAPI;
 

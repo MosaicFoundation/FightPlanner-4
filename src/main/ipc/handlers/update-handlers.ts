@@ -1,4 +1,4 @@
-const autoUpdater = require('../../auto-updater');
+import autoUpdater from '../../auto-updater';
 
 export function registerUpdateHandlers(ipcMain) {
   ipcMain.handle('check-for-updates', async () => {

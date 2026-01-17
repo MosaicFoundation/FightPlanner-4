@@ -1,11 +1,11 @@
-const { ipcMain } = require('electron');
-const https = require('https');
-const { getProtocolHandler } = require('../../main-protocol-setup');
-const {
+import { ipcMain } from 'electron';
+import * as https from 'https';
+import { getProtocolHandler } from '../../main-protocol-setup';
+import {
   handleError,
   createErrorResponse,
   ErrorCodes,
-} = require('../../utils/error-handler');
+} from '../../utils/error-handler';
 
 export function registerProtocolHandlers(ipcMain) {
   ipcMain.handle('confirm-protocol-install', async (event, url, downloadId) => {

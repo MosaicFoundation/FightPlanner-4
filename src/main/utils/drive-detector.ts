@@ -1,8 +1,8 @@
-const { exec } = require('child_process');
-const { promisify } = require('util');
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 const execAsync = promisify(exec);
 
 /**
@@ -311,7 +311,7 @@ export async function detectDrives() {
  * @param {string} drivePath - Path to check (e.g., "E:\\" on Windows, "/media/user/disk" on Linux)
  * @returns {boolean}
  */
-export function isDriveAccessible(drivePath) {
+export function isDriveAccessible(drivePath: string) {
   try {
     return fs.existsSync(drivePath);
   } catch (error) {
@@ -324,7 +324,7 @@ export function isDriveAccessible(drivePath) {
  * @param {string} basePath - Base path to check
  * @returns {boolean}
  */
-export function isSwitchSdCard(basePath) {
+export function isSwitchSdCard(basePath: string) {
   try {
     const atmospherePath = path.join(basePath, 'atmosphere');
     const exists = fs.existsSync(atmospherePath);

@@ -1,10 +1,10 @@
-const { BrowserWindow, dialog, shell, ipcMain } = require('electron');
-const fs = require('fs');
-const {
+import { BrowserWindow, dialog, shell, ipcMain } from 'electron';
+import * as fs from 'fs';
+import {
   handleError,
   createErrorResponse,
   ErrorCodes,
-} = require('../../utils/error-handler');
+} from '../../utils/error-handler';
 
 export function registerFileHandlers(ipcMain) {
   ipcMain.handle('select-folder', async (event) => {

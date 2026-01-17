@@ -1,6 +1,6 @@
-const fs = require('fs');
-const path = require('path');
-const store = require('./store');
+import * as fs from 'fs';
+import * as path from 'path';
+import store from './store';
 async function migrateFromV3() {
   try {
     const storePath = store.path;

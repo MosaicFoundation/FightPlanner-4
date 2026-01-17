@@ -1,14 +1,14 @@
-const { BrowserWindow, dialog, ipcMain } = require('electron');
-const path = require('path');
-const PluginUtils = require('../../plugin-utils');
-const PluginUpdateChecker = require('../../plugin-update-checker');
-const PluginUpdateInstaller = require('../../plugin-update-installer');
-const store = require('../../store');
-const {
+import { BrowserWindow, dialog, ipcMain } from 'electron';
+import * as path from 'path';
+import PluginUtils from '../../plugin-utils';
+import PluginUpdateChecker from '../../plugin-update-checker';
+import PluginUpdateInstaller from '../../plugin-update-installer';
+import store from '../../store';
+import {
   handleError,
   createErrorResponse,
   ErrorCodes,
-} = require('../../utils/error-handler');
+} from '../../utils/error-handler';
 
 /**
  * Register all IPC handlers related to plugin operations

@@ -1,9 +1,21 @@
+interface Character {
+  id: string;
+  info: { name: string; number: string };
+  mods: { name: string; path: string; status: string }[];
+}
+
 export class CharactersManager {
+  characters: Map<string, Character>;
+  allCharacters: any[];
+  searchQuery: string;
+  initialized: boolean;
+
   constructor() {
     this.characters = new Map();
     this.allCharacters = [];
     this.searchQuery = '';
     this.initialized = false;
+
     console.log('Characters Manager created');
   }
 
@@ -21,10 +33,12 @@ export class CharactersManager {
   }
 
   setupEventListeners() {
-    const searchInput = document.getElementById('characters-search');
+    const searchInput =
+      document.querySelector<HTMLInputElement>('#characters-search');
+
     if (searchInput) {
-      searchInput.addEventListener('input', (e) => {
-        this.searchQuery = e.target.value.toLowerCase();
+      searchInput.addEventListener('input', () => {
+        this.searchQuery = searchInput.value.toLowerCase();
         this.filterCharacters();
       });
     }
@@ -129,6 +143,7 @@ export class CharactersManager {
 
           if (!this.characters.has(fighterId)) {
             const charInfo = window.SSBU_CHARACTERS[fighterId];
+
             if (charInfo) {
               this.characters.set(fighterId, {
                 id: fighterId,

@@ -1,14 +1,14 @@
-const { app, shell, ipcMain } = require('electron');
-const path = require('path');
-const fs = require('fs');
-const { spawn } = require('child_process');
-const { getProtocolHandler } = require('../../main-protocol-setup');
-const {
+import { app, shell, ipcMain } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs';
+import { spawn } from 'child_process';
+import { getProtocolHandler } from '../../main-protocol-setup';
+import {
   handleError,
   createErrorResponse,
   ErrorCodes,
-} = require('../../utils/error-handler');
-const { PATHS, TEMP_FOLDERS } = require('../../config');
+} from '../../utils/error-handler';
+import { PATHS, TEMP_FOLDERS } from '../../config';
 
 export function registerSystemHandlers(ipcMain) {
   ipcMain.handle('open-url', async (event, url) => {

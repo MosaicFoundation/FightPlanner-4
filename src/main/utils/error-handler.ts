@@ -26,7 +26,7 @@ export const ErrorCodes = {
   UNKNOWN_ERROR: 'UNKNOWN_ERROR',
 };
 
-export function handleError(error, context) {
+export function handleError(error: Error, context: string) {
   const errorMessage = error?.message || String(error);
   const errorStack = error?.stack;
 
@@ -41,7 +41,11 @@ export function handleError(error, context) {
   };
 }
 
-export function createErrorResponse(code, message, details = {}) {
+export function createErrorResponse(
+  code: string,
+  message: string,
+  details = {},
+) {
   return {
     success: false,
     error: message,

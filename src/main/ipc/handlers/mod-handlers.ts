@@ -1,13 +1,13 @@
-const { ipcMain } = require('electron');
-const path = require('path');
-const fs = require('fs');
-const ModUtils = require('../../mod-utils');
-const store = require('../../store');
-const {
+import { ipcMain } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs';
+import ModUtils from '../../mod-utils';
+import store from '../../store';
+import {
   handleError,
   createErrorResponse,
   ErrorCodes,
-} = require('../../utils/error-handler');
+} from '../../utils/error-handler';
 
 /**
  * Register all IPC handlers related to mod operations

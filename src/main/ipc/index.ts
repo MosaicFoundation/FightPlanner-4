@@ -1,16 +1,16 @@
-const { registerWindowHandlers } = require('./handlers/window-handlers');
-const { registerFileHandlers } = require('./handlers/file-handlers');
-const { registerModHandlers } = require('./handlers/mod-handlers');
-const { registerPluginHandlers } = require('./handlers/plugin-handlers');
-const { registerStoreHandlers } = require('./handlers/store-handlers');
-const { registerSystemHandlers } = require('./handlers/system-handlers');
-const { registerProtocolHandlers } = require('./handlers/protocol-handlers');
-const { registerTutorialHandlers } = require('./handlers/tutorial-handlers');
-const { registerMigrationHandlers } = require('./handlers/migration-handlers');
-const { registerFtpHandlers } = require('./handlers/ftp-handlers');
-const { registerDiscordHandlers } = require('./handlers/discord-handlers');
-const { registerAppHandlers } = require('./handlers/app-handlers');
-const { registerUpdateHandlers } = require('./handlers/update-handlers');
+import { registerWindowHandlers } from './handlers/window-handlers';
+import { registerFileHandlers } from './handlers/file-handlers';
+import { registerModHandlers } from './handlers/mod-handlers';
+import { registerPluginHandlers } from './handlers/plugin-handlers';
+import { registerStoreHandlers } from './handlers/store-handlers';
+import { registerSystemHandlers } from './handlers/system-handlers';
+import { registerProtocolHandlers } from './handlers/protocol-handlers';
+import { registerTutorialHandlers } from './handlers/tutorial-handlers';
+import { registerMigrationHandlers } from './handlers/migration-handlers';
+import { registerFtpHandlers } from './handlers/ftp-handlers';
+import { registerDiscordHandlers } from './handlers/discord-handlers';
+import { registerAppHandlers } from './handlers/app-handlers';
+import { registerUpdateHandlers } from './handlers/update-handlers';
 
 /**
  * Register all IPC handlers for the application

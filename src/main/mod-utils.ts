@@ -1,11 +1,11 @@
-const path = require('path');
-const fs = require('fs');
-const { app } = require('electron');
-const AdmZip = require('adm-zip');
-const { exec } = require('child_process');
-const { promisify } = require('util');
+import * as path from 'path';
+import * as fs from 'fs';
+import { app } from 'electron';
+import AdmZip from 'adm-zip';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 const execAsync = promisify(exec);
-const { CONFLICT_WHITELIST_PATTERNS } = require('./config');
+import { CONFLICT_WHITELIST_PATTERNS } from './config';
 
 class ModUtils {
   /**

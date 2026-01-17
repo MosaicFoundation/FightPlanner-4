@@ -1,4 +1,4 @@
-const RPC = require('discord-rpc');
+import RPC from 'discord-rpc';
 
 class DiscordRPCManager {
   constructor() {

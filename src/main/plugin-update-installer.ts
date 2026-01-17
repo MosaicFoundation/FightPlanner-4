@@ -1,13 +1,14 @@
-const https = require('https');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const AdmZip = require('adm-zip');
-const { exec } = require('child_process');
-const { promisify } = require('util');
+import * as https from 'https';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import AdmZip from 'adm-zip';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
 const execAsync = promisify(exec);
 
-class PluginUpdateInstaller {
+export default class PluginUpdateInstaller {
   static async downloadFile(url, targetPath) {
     return new Promise((resolve, reject) => {
       const file = fs.createWriteStream(targetPath);
@@ -263,5 +264,3 @@ class PluginUpdateInstaller {
     }
   }
 }
-
-module.exports = PluginUpdateInstaller;

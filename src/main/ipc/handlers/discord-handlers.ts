@@ -1,4 +1,4 @@
-const { ipcMain } = require('electron');
+import { ipcMain } from 'electron';
 
 export function registerDiscordHandlers(ipcMain, discordRPC) {
   ipcMain.on('discord-rpc-update', (event, data) => {

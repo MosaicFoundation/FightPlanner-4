@@ -1,10 +1,10 @@
-const { ipcMain } = require('electron');
-const { getMigrationStatus } = require('../../migration');
-const {
+import { ipcMain } from 'electron';
+import { getMigrationStatus } from '../../migration';
+import {
   handleError,
   createErrorResponse,
   ErrorCodes,
-} = require('../../utils/error-handler');
+} from '../../utils/error-handler';
 
 export function registerMigrationHandlers(ipcMain) {
   ipcMain.handle('get-migration-status', async () => {

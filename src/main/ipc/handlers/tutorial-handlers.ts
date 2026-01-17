@@ -1,21 +1,21 @@
-const { BrowserWindow, ipcMain, dialog } = require('electron');
-const {
+import { BrowserWindow, ipcMain, dialog } from 'electron';
+import {
   createTutorialWindow,
   closeTutorialWindow,
-} = require('../../tutorial-window');
-const {
+} from '../../tutorial-window';
+import {
   handleError,
   createErrorResponse,
   ErrorCodes,
-} = require('../../utils/error-handler');
-const path = require('path');
-const os = require('os');
-const fs = require('fs');
-const {
+} from '../../utils/error-handler';
+import * as path from 'path';
+import * as os from 'os';
+import * as fs from 'fs';
+import {
   detectWindowsDrives,
   isSwitchSdCard,
-} = require('../../utils/drive-detector');
-const {
+} from '../../utils/drive-detector';
+import {
   getLatestArcropolisRelease,
   getLatestSkylineRelease,
   downloadArcropolis,
@@ -24,7 +24,7 @@ const {
   checkArcropolisInstalled,
   checkArcropolisFolder,
   createDirectory,
-} = require('../../utils/arcropolis-installer');
+} from '../../utils/arcropolis-installer';
 
 export function registerTutorialHandlers(ipcMain) {
   ipcMain.handle('open-tutorial-window', async () => {

@@ -1,12 +1,12 @@
-const { ipcMain } = require('electron');
-const path = require('path');
-const fs = require('fs');
-const FTPClient = require('../../ftp-client');
-const {
+import { ipcMain } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs';
+import FTPClient from '../../ftp-client';
+import {
   handleError,
   createErrorResponse,
   ErrorCodes,
-} = require('../../utils/error-handler');
+} from '../../utils/error-handler';
 
 /**
  * Copy directory recursively

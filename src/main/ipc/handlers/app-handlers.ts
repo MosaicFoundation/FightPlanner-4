@@ -1,4 +1,4 @@
-const { app, ipcMain } = require('electron');
+import { app, ipcMain } from 'electron';
 
 export function registerAppHandlers(ipcMain) {
   ipcMain.handle('get-app-version', () => {

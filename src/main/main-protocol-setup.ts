@@ -1,5 +1,5 @@
-const { app } = require('electron');
-const ProtocolHandler = require('./protocol-handler');
+import { app } from 'electron';
+import ProtocolHandler from './protocol-handler';
 
 let protocolHandler = null;
 let mainWindow = null;

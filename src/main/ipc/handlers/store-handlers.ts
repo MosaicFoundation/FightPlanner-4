@@ -1,9 +1,6 @@
-const { ipcMain } = require('electron');
-const store = require('../../store');
-const {
-  createErrorResponse,
-  ErrorCodes,
-} = require('../../utils/error-handler');
+import { ipcMain } from 'electron';
+import store from '../../store';
+import { createErrorResponse, ErrorCodes } from '../../utils/error-handler';
 
 export function registerStoreHandlers(ipcMain) {
   ipcMain.handle('store-get', (event, key) => {

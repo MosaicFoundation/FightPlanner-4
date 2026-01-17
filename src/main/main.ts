@@ -1,16 +1,16 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
-const path = require('path');
-const fs = require('fs');
-const store = require('./store');
-const { initializeProtocol } = require('./main-protocol-setup');
-const { createTutorialWindow } = require('./tutorial-window');
-const { migrateFromV3 } = require('./migration');
-const DiscordRPCManager = require('./discord-rpc');
-const { registerAllHandlers } = require('./ipc');
-const { PATHS, TEMP_FOLDERS } = require('./config');
-const autoUpdater = require('./auto-updater');
+import { app, BrowserWindow, ipcMain } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs';
+import store from './store';
+import { initializeProtocol } from './main-protocol-setup';
+import { createTutorialWindow } from './tutorial-window';
+import { migrateFromV3 } from './migration';
+import DiscordRPCManager from './discord-rpc';
+import { registerAllHandlers } from './ipc';
+import { PATHS, TEMP_FOLDERS } from './config';
+import autoUpdater from './auto-updater';
 
-const AnimationHandler = require('./animations/animation-handler');
+import AnimationHandler from './animations/animation-handler';
 
 const logsDir = PATHS.logsDir();
 if (!fs.existsSync(logsDir)) {

@@ -1,7 +1,7 @@
-const ftp = require('basic-ftp');
-const { enterPassiveModeIPv4 } = require('basic-ftp');
-const fs = require('fs');
-const path = require('path');
+import * as ftp from 'basic-ftp';
+import { enterPassiveModeIPv4 } from 'basic-ftp';
+import * as fs from 'fs';
+import * as path from 'path';
 
 class FTPClient {
   constructor() {

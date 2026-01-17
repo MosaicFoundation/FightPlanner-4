@@ -251,9 +251,9 @@ export class UpdateManager {
         'update-downloaded-content',
       );
 
-      availableContent.style.display = 'none';
-      downloadingContent.style.display = 'none';
-      downloadedContent.style.display = 'none';
+      availableContent!.style.display = 'none';
+      downloadingContent!.style.display = 'none';
+      downloadedContent!.style.display = 'none';
     }, 300);
 
     if (window.modalManager) {

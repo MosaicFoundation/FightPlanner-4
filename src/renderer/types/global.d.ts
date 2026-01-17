@@ -9,6 +9,7 @@ import type { DownloadManager } from '../js/downloads/download-manager';
 import type { SettingsManager } from '../js/settings/settings-manager';
 import type { ConflictModalManager } from '../js/ui/conflict-modal-manager';
 import type { CharactersManager } from '../js/characters/characters-manager';
+import type { SocialManager } from '../js/social/social-manager';
 
 declare global {
   interface Window {
@@ -23,6 +24,7 @@ declare global {
     settingsManager: SettingsManager;
     conflictModalManager: ConflictModalManager;
     charactersManager: CharactersManager;
+    socialManager: SocialManager;
   }
 }
 

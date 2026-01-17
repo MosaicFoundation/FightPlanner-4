@@ -1,15 +1,16 @@
-const { app, dialog } = require('electron');
-const path = require('path');
-const fs = require('fs');
-const https = require('https');
-const http = require('http');
-const { exec, execSync } = require('child_process');
-const { promisify } = require('util');
+import { app, dialog } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs';
+import * as https from 'https';
+import * as http from 'http';
+import { exec, execSync } from 'child_process';
+import { promisify } from 'util';
 const execAsync = promisify(exec);
-const crypto = require('crypto');
-const AdmZip = require('adm-zip');
-const packageJson = require('../../package.json');
-const sharedStore = require('./store');
+import * as crypto from 'crypto';
+import AdmZip from 'adm-zip';
+import packageJson from '../../package.json';
+import sharedStore from './store';
+import ModUtils from './mod-utils';
 
 const USER_AGENT = `FightPlanner/${packageJson.version} (Electron ${process.versions.electron}; Node ${process.versions.node}; ${process.platform})`;
 
@@ -24,7 +25,6 @@ class ProtocolHandler {
   static async registerProtocol() {
     // On Linux, wait for app to be ready before registering
     if (process.platform === 'linux') {
-      const { app } = require('electron');
       if (!app.isReady()) {
         await app.whenReady();
       }
@@ -207,8 +207,6 @@ class ProtocolHandler {
     if (process.platform !== 'win32') return;
 
     try {
-      const { exec } = require('child_process');
-
       let commandString;
       if (process.defaultApp) {
         const exePath = process.execPath.replace(/\\/g, '\\\\');
@@ -713,7 +711,6 @@ class ProtocolHandler {
     }
 
     this.sendToRenderer('mod-extract-start', { downloadId });
-    const ModUtils = require('./mod-utils');
     await ModUtils.extractArchive(zipPath, tempExtractDir);
     this.sendToRenderer('mod-extract-complete', { downloadId });
 
@@ -768,7 +765,6 @@ class ProtocolHandler {
       }
 
       if (!newName) {
-        const ModUtils = require('./mod-utils');
         const modInfo = ModUtils.readModInfo(installedModPath);
         if (modInfo) {
           newName = modInfo.s_name || modInfo.display_name;
