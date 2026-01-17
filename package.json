@@ -10,6 +10,8 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
+    "watch:ts": "npm run build:ts -- --watch",
+    "build:ts": "tsc --build",
     "build:test": "electron-builder --win portable --config",
     "build:win": "electron-builder --win --config",
     "build:all": "electron-builder -wml --config",
@@ -30,7 +32,8 @@
   "devDependencies": {
     "electron": "^39.0.0",
     "electron-builder": "^24.13.3",
-    "prettier": "^3.8.0"
+    "prettier": "^3.8.0",
+    "typescript": "^5.9.3"
   },
   "build": {
     "appId": "com.shatteredchaos.fightplanner",

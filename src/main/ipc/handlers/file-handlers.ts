@@ -6,7 +6,7 @@ const {
   ErrorCodes,
 } = require('../../utils/error-handler');
 
-function registerFileHandlers(ipcMain) {
+export function registerFileHandlers(ipcMain) {
   ipcMain.handle('select-folder', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     const result = await dialog.showOpenDialog(win, {
