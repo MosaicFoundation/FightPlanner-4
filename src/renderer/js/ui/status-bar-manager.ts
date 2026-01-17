@@ -1,4 +1,8 @@
-class StatusBarManager {
+export class StatusBarManager {
+  updateInterval: number | null;
+  currentTab: string | null;
+  preservedStatus: string | null;
+
   constructor() {
     this.updateInterval = null;
     this.currentTab = null;
@@ -163,9 +167,10 @@ class StatusBarManager {
       return true;
     }
 
-    const allModals = document.querySelectorAll(
+    const allModals = document.querySelectorAll<HTMLElement>(
       '.modal, .character-modal-overlay',
     );
+
     for (const modal of allModals) {
       if (modal.style.display === 'block' || modal.style.display === 'flex') {
         return true;
@@ -838,9 +843,11 @@ class StatusBarManager {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
+
         if (window.statusBarManager) {
           window.statusBarManager.preserveCurrentStatus();
         }
+
         if (window.conflictModalManager) {
           window.conflictModalManager.showConflictModal();
         }

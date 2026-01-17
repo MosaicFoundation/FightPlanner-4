@@ -1,4 +1,36 @@
-class DownloadManager {
+interface Download {
+  id: string;
+  url: string;
+  fileName: string;
+  status: 'downloading' | 'completed' | 'failed';
+  progress: number;
+  receivedBytes: number;
+  totalBytes: number;
+  startTime: number;
+  endTime?: number;
+  modName?: string;
+  folderPath?: string;
+  error?: string;
+}
+
+export class DownloadManager {
+  activeDownloads: Map<string, Download>;
+  completedDownloads: any[];
+  activeDownloadsList: HTMLElement | null;
+  completedDownloadsList: HTMLElement | null;
+  downloadsEmpty: HTMLElement | null;
+  downloadsCount: HTMLElement | null;
+  clearCompletedBtn: HTMLElement | null;
+  sendToSwitchBtn: HTMLElement | null;
+  initialized: boolean;
+
+  ftpTransfer: {
+    status: string;
+    currentMod: number;
+    totalMods: number;
+    transferredCount: number;
+  } | null;
+
   constructor() {
     this.activeDownloads = new Map();
     this.completedDownloads = [];
@@ -77,9 +109,10 @@ class DownloadManager {
   /**
    * Start a new download
    */
-  startDownload(url, forcedId) {
+  startDownload(url: string, forcedId: string) {
     const downloadId = forcedId || Date.now().toString();
-    const download = {
+
+    const download: Download = {
       id: downloadId,
       url: url,
       fileName: this.extractFileName(url),
@@ -122,9 +155,14 @@ class DownloadManager {
     const element = document.querySelector(
       `[data-download-id="${downloadId}"]`,
     );
+
     if (element) {
-      const progressBar = element.querySelector('.download-progress-fill');
-      const progressText = element.querySelector('.download-progress-text');
+      const progressBar = element.querySelector<HTMLElement>(
+        '.download-progress-fill',
+      );
+      const progressText = element.querySelector<HTMLElement>(
+        '.download-progress-text',
+      );
 
       if (progressBar) {
         progressBar.style.width = `${progress}%`;
@@ -220,7 +258,11 @@ class DownloadManager {
     );
     if (element) {
       element.classList.add('download-failed');
-      const statusText = element.querySelector('.download-status-text');
+
+      const statusText = element.querySelector<HTMLElement>(
+        '.download-status-text',
+      );
+
       if (statusText) {
         statusText.innerHTML = `<i class="bi bi-x-circle"></i> Failed: ${error}`;
         statusText.style.color = '#ff4444';
@@ -359,7 +401,8 @@ class DownloadManager {
     if (this.downloadsCount) {
       const totalCount =
         this.activeDownloads.size + this.completedDownloads.length;
-      this.downloadsCount.textContent = totalCount;
+
+      this.downloadsCount.textContent = `${totalCount}`;
     }
 
     if (this.clearCompletedBtn) {
@@ -373,10 +416,12 @@ class DownloadManager {
    * Update notification badge
    */
   updateBadge() {
-    const downloadsBtn = document.querySelector('[data-tab="downloads"]');
+    const downloadsBtn = document.querySelector<HTMLElement>(
+      '[data-tab="downloads"]',
+    );
     if (!downloadsBtn) return;
 
-    let badge = downloadsBtn.querySelector('.notification-badge');
+    let badge = downloadsBtn.querySelector<HTMLElement>('.notification-badge');
 
     if (this.activeDownloads.size > 0) {
       if (!badge) {
@@ -385,7 +430,8 @@ class DownloadManager {
         downloadsBtn.style.position = 'relative';
         downloadsBtn.appendChild(badge);
       }
-      badge.textContent = this.activeDownloads.size;
+
+      badge.textContent = `${this.activeDownloads.size}`;
       badge.style.display = 'flex';
     } else {
       if (badge) {
@@ -398,7 +444,10 @@ class DownloadManager {
    * Switch to downloads tab
    */
   switchToDownloadsTab() {
-    const downloadsBtn = document.querySelector('[data-tab="downloads"]');
+    const downloadsBtn = document.querySelector<HTMLElement>(
+      '[data-tab="downloads"]',
+    );
+
     if (downloadsBtn) {
       downloadsBtn.click();
     }

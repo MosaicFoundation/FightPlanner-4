@@ -1,4 +1,18 @@
 export class ModManager {
+  mods: any[];
+  selectedMod: any | null;
+  modListContainer: HTMLElement | null;
+  modsPath: string | null;
+  searchQuery: string;
+  categoryFilter: string;
+  renderedModIds: Set<any>;
+  conflicts: any[];
+  isCheckingConflicts: boolean;
+  listRenderer: any | null;
+  contextMenuHandler: any | null;
+  operations: any | null;
+  keybindsHandler: any | null;
+
   constructor() {
     this.mods = [];
     this.selectedMod = null;

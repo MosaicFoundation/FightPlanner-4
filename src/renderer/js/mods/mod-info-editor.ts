@@ -1,4 +1,7 @@
 class ModInfoEditor {
+  currentModPath: string | null;
+  currentInfo: any | null;
+
   constructor() {
     this.currentModPath = null;
     this.currentInfo = null;

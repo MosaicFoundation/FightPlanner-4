@@ -1,5 +1,8 @@
 {
   "files": [],
+  "compilerOptions": {
+    "strict": true
+  },
   "references": [
     { "path": "./tsconfig.main.json" },
     { "path": "./tsconfig.renderer.json" }

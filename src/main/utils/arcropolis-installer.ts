@@ -69,7 +69,7 @@ async function getLatestGitHubRelease(repo) {
  * Get the latest ARCropolis release from GitHub
  * @returns {Promise<{tag: string, downloadUrl: string, version: string}>}
  */
-async function getLatestArcropolisRelease() {
+export async function getLatestArcropolisRelease() {
   return getLatestGitHubRelease('Raytwo/ARCropolis');
 }
 
@@ -77,7 +77,7 @@ async function getLatestArcropolisRelease() {
  * Get the latest Skyline release from GitHub
  * @returns {Promise<{tag: string, downloadUrl: string, version: string}>}
  */
-async function getLatestSkylineRelease() {
+export async function getLatestSkylineRelease() {
   return getLatestGitHubRelease('skyline-dev/skyline');
 }
 
@@ -88,7 +88,7 @@ async function getLatestSkylineRelease() {
  * @param {Function} progressCallback - Optional progress callback (bytesReceived, totalBytes)
  * @returns {Promise<string>} Path to downloaded file
  */
-async function downloadArcropolis(
+export function downloadArcropolis(
   downloadUrl,
   targetPath,
   progressCallback = null,
@@ -159,7 +159,7 @@ async function downloadArcropolis(
  * @param {string} targetDir - Target directory (e.g., atmosphere/contents/01006A800016E000/)
  * @returns {Promise<{success: boolean, exefsPath: string}>}
  */
-async function extractAndInstallSkyline(zipPath, targetDir) {
+export async function extractAndInstallSkyline(zipPath, targetDir) {
   try {
     if (!fs.existsSync(zipPath)) {
       throw new Error(`ZIP file does not exist: ${zipPath}`);
@@ -317,7 +317,7 @@ async function extractAndInstallSkyline(zipPath, targetDir) {
  * @param {string} targetDir - Target directory (e.g., atmosphere/contents/01006A800016E000/)
  * @returns {Promise<{success: boolean, romfsPath: string}>}
  */
-async function extractAndInstallArcropolis(zipPath, targetDir) {
+export async function extractAndInstallArcropolis(zipPath, targetDir) {
   try {
     if (!fs.existsSync(zipPath)) {
       throw new Error(`ZIP file does not exist: ${zipPath}`);
@@ -505,7 +505,7 @@ async function extractAndInstallArcropolis(zipPath, targetDir) {
  * @param {string} targetDir - Directory to check (e.g., atmosphere/contents/01006A800016E000/)
  * @returns {boolean}
  */
-function checkArcropolisInstalled(targetDir) {
+export function checkArcropolisInstalled(targetDir) {
   try {
     const exefsPath = path.join(targetDir, 'exefs');
     const romfsPath = path.join(targetDir, 'romfs');
@@ -527,7 +527,7 @@ function checkArcropolisInstalled(targetDir) {
  * @param {string} ultimatePath - Path to ultimate folder (e.g., sd:/ultimate/ or yuzu/sdmc/ultimate/)
  * @returns {boolean}
  */
-function checkArcropolisFolder(ultimatePath) {
+export function checkArcropolisFolder(ultimatePath) {
   try {
     const arcropolisPath = path.join(ultimatePath, 'arcropolis');
     return (
@@ -543,7 +543,7 @@ function checkArcropolisFolder(ultimatePath) {
  * @param {string} dirPath - Directory path to create
  * @returns {Promise<boolean>}
  */
-async function createDirectory(dirPath) {
+export async function createDirectory(dirPath) {
   try {
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true });
@@ -553,14 +553,3 @@ async function createDirectory(dirPath) {
     throw new Error(`Failed to create directory: ${error.message}`);
   }
 }
-
-module.exports = {
-  getLatestArcropolisRelease,
-  getLatestSkylineRelease,
-  downloadArcropolis,
-  extractAndInstallArcropolis,
-  extractAndInstallSkyline,
-  checkArcropolisInstalled,
-  checkArcropolisFolder,
-  createDirectory,
-};

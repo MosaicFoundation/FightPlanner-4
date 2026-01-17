@@ -3,7 +3,7 @@ const path = require('path');
 
 let tutorialWindow = null;
 
-function createTutorialWindow(parentWindow) {
+export function createTutorialWindow(parentWindow) {
   if (tutorialWindow) {
     tutorialWindow.focus();
     return tutorialWindow;
@@ -48,7 +48,7 @@ function createTutorialWindow(parentWindow) {
   return tutorialWindow;
 }
 
-function closeTutorialWindow() {
+export function closeTutorialWindow() {
   console.log('closeTutorialWindow called');
   if (tutorialWindow && !tutorialWindow.isDestroyed()) {
     console.log('Tutorial window exists, destroying...');
@@ -64,12 +64,6 @@ function closeTutorialWindow() {
   }
 }
 
-function getTutorialWindow() {
+export function getTutorialWindow() {
   return tutorialWindow;
 }
-
-module.exports = {
-  createTutorialWindow,
-  closeTutorialWindow,
-  getTutorialWindow,
-};

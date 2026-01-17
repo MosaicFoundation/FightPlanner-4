@@ -1,4 +1,7 @@
 export class UpdateManager {
+  updateInfo: any | null;
+  isDownloading: boolean;
+
   constructor() {
     this.updateInfo = null;
     this.isDownloading = false;

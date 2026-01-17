@@ -1,4 +1,4 @@
-class CharactersManager {
+export class CharactersManager {
   constructor() {
     this.characters = new Map();
     this.allCharacters = [];

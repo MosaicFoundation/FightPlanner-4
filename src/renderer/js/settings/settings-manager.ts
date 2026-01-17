@@ -1,4 +1,10 @@
-class SettingsManager {
+export class SettingsManager {
+  settings: any;
+  initialized: boolean;
+  tabSwitchingAttached: boolean;
+  drivesLoaded: boolean;
+  switchTabTimeout: any;
+
   constructor() {
     this.settings = {
       modsPath: null,

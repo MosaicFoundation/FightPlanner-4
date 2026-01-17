@@ -1,4 +1,13 @@
-class ConflictModalManager {
+export class ConflictModalManager {
+  currentConflictFile: string | null;
+  currentConflictingMods: Array<{ name: string; path: string }>;
+  autoSlotChangeMods: Array<{
+    name: string;
+    path: string;
+    folderPath: string;
+    category: string | null;
+  }>;
+
   constructor() {
     this.currentConflictFile = null;
     this.currentConflictingMods = [];
@@ -14,6 +23,7 @@ class ConflictModalManager {
       if (window.toastManager) {
         window.toastManager.error('toasts.noConflictsDetected');
       }
+
       return;
     }
 

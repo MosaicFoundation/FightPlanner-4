@@ -1,4 +1,11 @@
 export class ToastManager {
+  container: HTMLElement | null;
+  toasts: HTMLElement[];
+  toastHistory: Map<string, number>;
+  toastCooldown: number;
+  groupedToasts: Map<string, any>;
+  groupTimeout: number | null;
+
   constructor() {
     this.container = null;
     this.toasts = [];
@@ -66,7 +73,13 @@ export class ToastManager {
    * @param {object} params - Parameters for translation (e.g., {name: "MyMod", error: "Error message"})
    * @param {object} options - Additional options (e.g., {actionButton: {text: "View Logs", onClick: () => {}}})
    */
-  show(type, message, duration = 3000, params = {}, options = {}) {
+  show(
+    type,
+    message,
+    duration = 3000,
+    params = {},
+    options: { actionButton?: { text: string; onClick?: () => void } } = {},
+  ) {
     if (!this.container) {
       this.setupContainer();
       if (!this.container) {

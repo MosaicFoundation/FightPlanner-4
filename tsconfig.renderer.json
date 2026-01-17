@@ -18,6 +18,6 @@
     "composite": true,
     "types": []
   },
-  "include": ["src/renderer/**/*"],
+  "include": ["src/renderer/**/*", "src/locales/**/*"],
   "exclude": ["node_modules", "out", "dist"]
 }
