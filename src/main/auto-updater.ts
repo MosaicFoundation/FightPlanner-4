@@ -274,4 +274,4 @@ class AutoUpdater {
 
 const autoUpdaterInstance = new AutoUpdater();
 
-module.exports = autoUpdaterInstance;
+export default autoUpdaterInstance;

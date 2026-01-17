@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { app } from 'electron';
 
-const CONFLICT_WHITELIST_PATTERNS = [
+export const CONFLICT_WHITELIST_PATTERNS = [
   'ui_chara_db.prcxml',
   'info.toml',
   'preview.webp',
@@ -16,20 +16,20 @@ const CONFLICT_WHITELIST_PATTERNS = [
   'Preview.webp',
 ];
 
-const TEMP_FOLDERS = ['fightplanner-downloads', 'fightplanner-extract'];
+export const TEMP_FOLDERS = ['fightplanner-downloads', 'fightplanner-extract'];
 
-const PATHS = {
+export const PATHS = {
   logsDir: () => path.join(app.getPath('userData'), 'logs'),
   tempDir: () => app.getPath('temp'),
   localesDir: () => path.join(__dirname, '..', '..', 'locales'),
 };
 
-const ENV = {
+export const ENV = {
   isDevelopment: process.env.NODE_ENV === 'development',
   isProduction: process.env.NODE_ENV === 'production' || !process.env.NODE_ENV,
 };
 
-function validateConfig() {
+export function validateConfig() {
   try {
     if (!app.isReady()) {
       throw new Error('App is not ready');
@@ -40,11 +40,3 @@ function validateConfig() {
     return false;
   }
 }
-
-module.exports = {
-  CONFLICT_WHITELIST_PATTERNS,
-  TEMP_FOLDERS,
-  PATHS,
-  ENV,
-  validateConfig,
-};

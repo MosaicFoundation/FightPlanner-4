@@ -1,6 +1,6 @@
 import RPC from 'discord-rpc';
 
-class DiscordRPCManager {
+export default class DiscordRPCManager {
   constructor() {
     this.client = null;
     this.clientId = '1304806839115972628';
@@ -124,5 +124,3 @@ class DiscordRPCManager {
     this.setActivity('Idle', 'In menus', null, null);
   }
 }
-
-module.exports = DiscordRPCManager;

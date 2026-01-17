@@ -1,6 +1,6 @@
 import * as https from 'https';
 
-class PluginUpdateChecker {
+export default class PluginUpdateChecker {
   static normalizeRepoUrl(repoInput) {
     if (!repoInput) return null;
 
@@ -253,5 +253,3 @@ class PluginUpdateChecker {
     return results;
   }
 }
-
-module.exports = PluginUpdateChecker;

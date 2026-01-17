@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron';
 import * as path from 'path';
 
-let tutorialWindow = null;
+let tutorialWindow: BrowserWindow | null = null;
 
 export function createTutorialWindow(parentWindow) {
   if (tutorialWindow) {

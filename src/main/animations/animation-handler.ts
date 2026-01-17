@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 
-class AnimationHandler {
+export default class AnimationHandler {
   constructor() {
     this.mainWindow = null;
   }
@@ -29,5 +29,3 @@ class AnimationHandler {
     }
   }
 }
-
-module.exports = new AnimationHandler();

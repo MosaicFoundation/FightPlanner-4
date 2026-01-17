@@ -8,13 +8,14 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 import * as crypto from 'crypto';
 import AdmZip from 'adm-zip';
+
 import packageJson from '../../package.json';
 import sharedStore from './store';
 import ModUtils from './mod-utils';
 
 const USER_AGENT = `FightPlanner/${packageJson.version} (Electron ${process.versions.electron}; Node ${process.versions.node}; ${process.platform})`;
 
-class ProtocolHandler {
+export default class ProtocolHandler {
   constructor(mainWindow) {
     this.mainWindow = mainWindow;
     this.downloadInProgress = false;
@@ -1612,5 +1613,3 @@ class ProtocolHandler {
     return { success: true };
   }
 }
-
-module.exports = ProtocolHandler;

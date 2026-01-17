@@ -99,7 +99,7 @@ export class ToastManager {
 
     if (this.toastHistory.has(toastKey)) {
       const lastShown = this.toastHistory.get(toastKey);
-      const timeSince = now - lastShown;
+      const timeSince = now - lastShown!;
 
       if (timeSince < this.toastCooldown) {
         console.log(
@@ -158,13 +158,16 @@ ${actionButtonHtml}
     this.toasts.push(toast);
 
     const closeBtn = toast.querySelector('.toast-close');
-    closeBtn.addEventListener('click', () => this.hide(toast));
+    closeBtn!.addEventListener('click', () => this.hide(toast));
 
-    if (options.actionButton && options.actionButton.onClick) {
+    const onClick = options.actionButton?.onClick;
+
+    if (onClick) {
       const actionBtn = toast.querySelector('.toast-action-btn');
+
       if (actionBtn) {
         actionBtn.addEventListener('click', () => {
-          options.actionButton.onClick();
+          onClick();
           this.hide(toast);
         });
       }

@@ -1,7 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import store from './store';
-async function migrateFromV3() {
+
+export async function migrateFromV3() {
   try {
     const storePath = store.path;
     const storeDir = path.dirname(storePath);
@@ -106,7 +107,7 @@ async function migrateFromV3() {
   }
 }
 
-async function getMigrationStatus() {
+export async function getMigrationStatus() {
   const migrationCompleted = store.get('migrationCompleted');
   const migratedFrom = store.get('migratedFrom');
   const migrationDate = store.get('migrationDate');
@@ -117,8 +118,3 @@ async function getMigrationStatus() {
     date: migrationDate || null,
   };
 }
-
-module.exports = {
-  migrateFromV3,
-  getMigrationStatus,
-};

@@ -5,6 +5,13 @@ import * as os from 'os';
 import * as path from 'path';
 const execAsync = promisify(exec);
 
+interface Drive {
+  letter: string;
+  label: string;
+  type: string;
+  path: string;
+}
+
 /**
  * Detect available drives on Windows
  * @returns {Promise<Array<{letter: string, label: string, type: string, path: string}>>}
@@ -38,7 +45,8 @@ export async function detectWindowsDrives() {
 
     console.log('Filtered lines:', lines);
 
-    const drives = [];
+    const drives: Drive[] = [];
+
     for (const line of lines) {
       if (!line) continue;
 
@@ -107,7 +115,7 @@ export async function detectWindowsDrives() {
  */
 async function fallbackWindowsDetection() {
   console.log('Using fallback drive detection...');
-  const fallbackDrives = [];
+  const fallbackDrives: Drive[] = [];
   const driveLetters = 'CDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
   for (const letter of driveLetters) {
@@ -165,7 +173,8 @@ export async function detectLinuxDrives() {
     const { stdout } = await execAsync('lsblk -n -o MOUNTPOINT,LABEL,TYPE');
     const lines = stdout.split('\n').filter((line) => line.trim());
 
-    const drives = [];
+    const drives: Drive[] = [];
+
     for (const line of lines) {
       const parts = line.trim().split(/\s+/);
       if (parts.length >= 2 && parts[0] && parts[0] !== '') {
@@ -244,7 +253,8 @@ export async function detectMacOSDrives() {
     );
     const lines = dfOutput.split('\n').filter((line) => line.trim());
 
-    const drives = [];
+    const drives: Drive[] = [];
+
     for (const line of lines) {
       const parts = line.trim().split(/\s+/);
       if (parts.length >= 6) {

@@ -7,7 +7,7 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 import { CONFLICT_WHITELIST_PATTERNS } from './config';
 
-class ModUtils {
+export default class ModUtils {
   /**
    * Get the path to the disabled mods folder
    * @param {string} activeModsPath - Path to the active mods folder
@@ -998,5 +998,3 @@ class ModUtils {
     }
   }
 }
-
-module.exports = ModUtils;

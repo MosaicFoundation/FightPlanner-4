@@ -89,9 +89,11 @@ export async function getLatestSkylineRelease() {
  * @returns {Promise<string>} Path to downloaded file
  */
 export function downloadArcropolis(
-  downloadUrl,
-  targetPath,
-  progressCallback = null,
+  downloadUrl: string,
+  targetPath: string,
+  progressCallback:
+    | ((receivedBytes: number, totalBytes: number) => void)
+    | null = null,
 ) {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(targetPath);
@@ -109,8 +111,9 @@ export function downloadArcropolis(
           if (res.statusCode === 302 || res.statusCode === 301) {
             file.close();
             fs.unlinkSync(targetPath);
+
             return downloadArcropolis(
-              res.headers.location,
+              res.headers.location!,
               targetPath,
               progressCallback,
             )
@@ -130,6 +133,7 @@ export function downloadArcropolis(
 
           res.on('data', (chunk) => {
             receivedBytes += chunk.length;
+
             if (progressCallback) {
               progressCallback(receivedBytes, totalBytes);
             }
@@ -159,7 +163,10 @@ export function downloadArcropolis(
  * @param {string} targetDir - Target directory (e.g., atmosphere/contents/01006A800016E000/)
  * @returns {Promise<{success: boolean, exefsPath: string}>}
  */
-export async function extractAndInstallSkyline(zipPath, targetDir) {
+export async function extractAndInstallSkyline(
+  zipPath: string,
+  targetDir: string,
+) {
   try {
     if (!fs.existsSync(zipPath)) {
       throw new Error(`ZIP file does not exist: ${zipPath}`);
@@ -265,7 +272,7 @@ export async function extractAndInstallSkyline(zipPath, targetDir) {
     const exefsTarget = path.join(targetDir, 'exefs');
 
     // Copy exefs folder contents
-    const copyRecursive = (src, dest) => {
+    const copyRecursive = (src: string, dest: string) => {
       if (!fs.existsSync(dest)) {
         fs.mkdirSync(dest, { recursive: true });
       }
@@ -286,7 +293,7 @@ export async function extractAndInstallSkyline(zipPath, targetDir) {
     copyRecursive(exefsSource, exefsTarget);
 
     // Cleanup temp directory
-    const cleanup = (dir) => {
+    const cleanup = (dir: string) => {
       if (fs.existsSync(dir)) {
         const entries = fs.readdirSync(dir, { withFileTypes: true });
         for (const entry of entries) {
@@ -317,7 +324,10 @@ export async function extractAndInstallSkyline(zipPath, targetDir) {
  * @param {string} targetDir - Target directory (e.g., atmosphere/contents/01006A800016E000/)
  * @returns {Promise<{success: boolean, romfsPath: string}>}
  */
-export async function extractAndInstallArcropolis(zipPath, targetDir) {
+export async function extractAndInstallArcropolis(
+  zipPath: string,
+  targetDir: string,
+) {
   try {
     if (!fs.existsSync(zipPath)) {
       throw new Error(`ZIP file does not exist: ${zipPath}`);
@@ -346,7 +356,11 @@ export async function extractAndInstallArcropolis(zipPath, targetDir) {
     }
 
     // Find romfs folder in extracted content - ARCropolis provides romfs
-    const findRomfsFolder = (dir, depth = 0, maxDepth = 5) => {
+    const findRomfsFolder = (
+      dir: string,
+      depth = 0,
+      maxDepth = 5,
+    ): string | null => {
       if (depth > maxDepth) return null;
 
       try {
@@ -420,7 +434,7 @@ export async function extractAndInstallArcropolis(zipPath, targetDir) {
     if (!romfsSource) {
       // Log directory structure for debugging
       console.error('ARCropolis extraction failed - directory structure:');
-      const logDirStructure = (dir, indent = '') => {
+      const logDirStructure = (dir: string, indent = '') => {
         try {
           const entries = fs.readdirSync(dir, {
             withFileTypes: true,
@@ -452,7 +466,7 @@ export async function extractAndInstallArcropolis(zipPath, targetDir) {
     const romfsTarget = path.join(targetDir, 'romfs');
 
     // Copy romfs folder contents
-    const copyRecursive = (src, dest) => {
+    const copyRecursive = (src: string, dest: string) => {
       if (!fs.existsSync(dest)) {
         fs.mkdirSync(dest, { recursive: true });
       }
@@ -473,7 +487,7 @@ export async function extractAndInstallArcropolis(zipPath, targetDir) {
     copyRecursive(romfsSource, romfsTarget);
 
     // Cleanup temp directory
-    const cleanup = (dir) => {
+    const cleanup = (dir: string) => {
       if (fs.existsSync(dir)) {
         const entries = fs.readdirSync(dir, { withFileTypes: true });
         for (const entry of entries) {
@@ -505,7 +519,7 @@ export async function extractAndInstallArcropolis(zipPath, targetDir) {
  * @param {string} targetDir - Directory to check (e.g., atmosphere/contents/01006A800016E000/)
  * @returns {boolean}
  */
-export function checkArcropolisInstalled(targetDir) {
+export function checkArcropolisInstalled(targetDir: string) {
   try {
     const exefsPath = path.join(targetDir, 'exefs');
     const romfsPath = path.join(targetDir, 'romfs');
@@ -527,7 +541,7 @@ export function checkArcropolisInstalled(targetDir) {
  * @param {string} ultimatePath - Path to ultimate folder (e.g., sd:/ultimate/ or yuzu/sdmc/ultimate/)
  * @returns {boolean}
  */
-export function checkArcropolisFolder(ultimatePath) {
+export function checkArcropolisFolder(ultimatePath: string) {
   try {
     const arcropolisPath = path.join(ultimatePath, 'arcropolis');
     return (
@@ -543,7 +557,7 @@ export function checkArcropolisFolder(ultimatePath) {
  * @param {string} dirPath - Directory path to create
  * @returns {Promise<boolean>}
  */
-export async function createDirectory(dirPath) {
+export async function createDirectory(dirPath: string) {
   try {
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true });

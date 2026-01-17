@@ -85,30 +85,30 @@ export class UpdateManager {
 
     if (!modal) return;
 
-    versionNumber.textContent = data.version;
+    versionNumber!.textContent = data.version;
 
     if (data.releaseNotes) {
       if (typeof data.releaseNotes === 'string') {
-        releaseNotesContent.innerHTML = this.formatReleaseNotes(
+        releaseNotesContent!.innerHTML = this.formatReleaseNotes(
           data.releaseNotes,
         );
       } else if (Array.isArray(data.releaseNotes)) {
         const notes = data.releaseNotes
           .map((note) => note.note || '')
           .join('\n\n');
-        releaseNotesContent.innerHTML = this.formatReleaseNotes(notes);
+        releaseNotesContent!.innerHTML = this.formatReleaseNotes(notes);
       }
     } else {
-      releaseNotesContent.innerHTML = '<p>No release notes available.</p>';
+      releaseNotesContent!.innerHTML = '<p>No release notes available.</p>';
     }
 
-    availableContent.style.display = 'block';
-    downloadingContent.style.display = 'none';
-    downloadedContent.style.display = 'none';
+    availableContent!.style.display = 'block';
+    downloadingContent!.style.display = 'none';
+    downloadedContent!.style.display = 'none';
 
-    availableActions.style.display = 'flex';
-    downloadingActions.style.display = 'none';
-    downloadedActions.style.display = 'none';
+    availableActions!.style.display = 'flex';
+    downloadingActions!.style.display = 'none';
+    downloadedActions!.style.display = 'none';
 
     if (window.modalManager) {
       window.modalManager.showOverlay();
@@ -152,16 +152,16 @@ export class UpdateManager {
       'update-downloading-actions',
     );
 
-    availableContent.style.display = 'none';
-    downloadingContent.style.display = 'block';
-    availableActions.style.display = 'none';
-    downloadingActions.style.display = 'flex';
+    availableContent!.style.display = 'none';
+    downloadingContent!.style.display = 'block';
+    availableActions!.style.display = 'none';
+    downloadingActions!.style.display = 'flex';
 
     const progressFill = document.getElementById('update-progress-fill');
     const progressPercent = document.getElementById('update-progress-percent');
 
-    progressFill.style.width = '0%';
-    progressPercent.textContent = '0%';
+    progressFill!.style.width = '0%';
+    progressPercent!.textContent = '0%';
 
     try {
       const result = await window.electronAPI.downloadUpdate();
@@ -184,12 +184,12 @@ export class UpdateManager {
     const progressSpeed = document.getElementById('update-progress-speed');
 
     const percent = Math.round(data.percent);
-    progressFill.style.width = percent + '%';
-    progressPercent.textContent = percent + '%';
+    progressFill!.style.width = percent + '%';
+    progressPercent!.textContent = percent + '%';
 
     if (data.bytesPerSecond) {
       const speedMB = (data.bytesPerSecond / 1024 / 1024).toFixed(2);
-      progressSpeed.textContent = speedMB + ' MB/s';
+      progressSpeed!.textContent = speedMB + ' MB/s';
     }
   }
 
@@ -209,10 +209,10 @@ export class UpdateManager {
       'update-downloaded-actions',
     );
 
-    downloadingContent.style.display = 'none';
-    downloadedContent.style.display = 'block';
-    downloadingActions.style.display = 'none';
-    downloadedActions.style.display = 'flex';
+    downloadingContent!.style.display = 'none';
+    downloadedContent!.style.display = 'block';
+    downloadingActions!.style.display = 'none';
+    downloadedActions!.style.display = 'flex';
 
     if (window.toastManager) {
       window.toastManager.success('toasts.updateDownloaded', 5000, {

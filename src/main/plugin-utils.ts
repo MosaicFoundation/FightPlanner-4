@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-class PluginUtils {
+export default class PluginUtils {
   /**
    * Read all plugins from a folder (active and disabled)
    * @param {string} pluginsPath - Path to the plugins folder
@@ -177,5 +177,3 @@ class PluginUtils {
     }
   }
 }
-
-module.exports = PluginUtils;

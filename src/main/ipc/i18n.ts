@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-class I18n {
+export class I18n {
   constructor() {
     this.currentLocale = 'en';
     this.translations = {};
@@ -123,14 +123,10 @@ class I18n {
 
 let i18nInstance = null;
 
-async function getI18n(locale) {
+export async function getI18n(locale) {
   if (!i18nInstance) {
     i18nInstance = new I18n();
     await i18nInstance.init(locale);
   }
   return i18nInstance;
-}
-
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { I18n, getI18n };
 }

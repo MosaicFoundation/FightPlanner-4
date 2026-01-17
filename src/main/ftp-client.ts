@@ -3,7 +3,7 @@ import { enterPassiveModeIPv4 } from 'basic-ftp';
 import * as fs from 'fs';
 import * as path from 'path';
 
-class FTPClient {
+export default class FTPClient {
   constructor() {
     this.client = new ftp.Client();
     this.client.prepareTransfer = enterPassiveModeIPv4;
@@ -114,5 +114,3 @@ class FTPClient {
     }
   }
 }
-
-module.exports = FTPClient;
