@@ -1,11 +1,13 @@
-import { ipcMain } from 'electron';
+import { ipcMain, BrowserWindow } from 'electron';
 
 export default class AnimationHandler {
+  private mainWindow: BrowserWindow | null;
+
   constructor() {
     this.mainWindow = null;
   }
 
-  initialize(mainWindow) {
+  initialize(mainWindow: BrowserWindow) {
     this.mainWindow = mainWindow;
     this.setupListeners();
   }

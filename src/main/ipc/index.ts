@@ -1,3 +1,4 @@
+import { IpcMain } from 'electron';
 import { registerWindowHandlers } from './handlers/window-handlers';
 import { registerFileHandlers } from './handlers/file-handlers';
 import { registerModHandlers } from './handlers/mod-handlers';
@@ -11,13 +12,17 @@ import { registerFtpHandlers } from './handlers/ftp-handlers';
 import { registerDiscordHandlers } from './handlers/discord-handlers';
 import { registerAppHandlers } from './handlers/app-handlers';
 import { registerUpdateHandlers } from './handlers/update-handlers';
+import DiscordRPCManager from '../discord-rpc';
 
 /**
  * Register all IPC handlers for the application
  * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
  * @param {Object|null} discordRPC - Discord RPC manager instance (optional)
  */
-export function registerAllHandlers(ipcMain, discordRPC = null) {
+export function registerAllHandlers(
+  ipcMain: IpcMain,
+  discordRPC: DiscordRPCManager | null = null,
+) {
   registerWindowHandlers(ipcMain);
   registerFileHandlers(ipcMain);
   registerModHandlers(ipcMain);

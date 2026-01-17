@@ -1,10 +1,21 @@
 import { autoUpdater } from 'electron-updater';
-import { app } from 'electron';
-import * as semver from 'semver';
+import { app, BrowserWindow } from 'electron';
 import Store from 'electron-store';
+import { UpdateInfo } from 'electron-updater';
 const store = new Store();
 
 class AutoUpdater {
+  private mainWindow: BrowserWindow | null;
+  private updateInfo: UpdateInfo | null;
+  private isChecking: boolean;
+  private isDownloading: boolean;
+  private updateDownloaded: boolean;
+  private autoCheckEnabled: boolean;
+  private updateChannel: string;
+  private forceUpdateAvailable: boolean;
+  private ignoreUpdateCertErrors: boolean;
+  private disableUpdateSignatureCheck: boolean;
+
   constructor() {
     this.mainWindow = null;
     this.updateInfo = null;
@@ -12,11 +23,11 @@ class AutoUpdater {
     this.isDownloading = false;
     this.updateDownloaded = false;
     this.autoCheckEnabled = true;
-    this.updateChannel = store.get('updateChannel', 'stable');
+    this.updateChannel = store.get('updateChannel', 'stable') as string;
     this.forceUpdateAvailable = store.get(
       'developer.forceUpdateAvailable',
       false,
-    );
+    ) as boolean;
     const envIgnoreCertErrors =
       process.env.UPDATE_IGNORE_CERT_ERRORS === 'true';
     const envDisableSigCheck =
@@ -30,19 +41,18 @@ class AutoUpdater {
     this.ignoreUpdateCertErrors =
       envIgnoreCertErrors ||
       argIgnoreCertErrors ||
-      store.get('developer.ignoreUpdateCertErrors', false);
+      (store.get('developer.ignoreUpdateCertErrors', false) as boolean);
     this.disableUpdateSignatureCheck =
       envDisableSigCheck ||
       argDisableSigCheck ||
-      store.get('developer.disableUpdateSignatureCheck', false);
+      (store.get('developer.disableUpdateSignatureCheck', false) as boolean);
 
     autoUpdater.requestHeaders = { 'Cache-Control': 'no-cache' };
     autoUpdater.autoDownload = false;
     autoUpdater.autoInstallOnAppQuit = true;
-    autoUpdater.verifyCodeSignature = false;
     if (this.disableUpdateSignatureCheck) {
       if ('verifyUpdateCodeSignature' in autoUpdater) {
-        autoUpdater.verifyUpdateCodeSignature = false;
+        (autoUpdater as any).verifyUpdateCodeSignature = false;
       }
       process.env.ELECTRON_UPDATER_SKIP_SIGNATURE_CHECK = 'true';
     }
@@ -107,11 +117,11 @@ class AutoUpdater {
     });
   }
 
-  setMainWindow(window) {
+  setMainWindow(window: BrowserWindow) {
     this.mainWindow = window;
   }
 
-  sendToRenderer(channel, data = {}) {
+  sendToRenderer(channel: string, data?: unknown) {
     if (this.mainWindow && !this.mainWindow.isDestroyed()) {
       this.mainWindow.webContents.send(channel, data);
     }
@@ -139,8 +149,10 @@ class AutoUpdater {
         this.updateInfo = null;
       }
       return { success: true, updateInfo: result?.updateInfo };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      return { success: false, error: errorMessage };
     }
   }
 
@@ -166,10 +178,12 @@ class AutoUpdater {
             clearInterval(interval);
             this.isDownloading = false;
             this.updateDownloaded = true;
-            this.sendToRenderer('update-downloaded', {
-              version: this.updateInfo.version,
-              releaseDate: this.updateInfo.releaseDate,
-            });
+            if (this.updateInfo) {
+              this.sendToRenderer('update-downloaded', {
+                version: this.updateInfo.version,
+                releaseDate: this.updateInfo.releaseDate,
+              });
+            }
           } else {
             this.sendToRenderer('update-download-progress', {
               percent: progress,
@@ -189,9 +203,11 @@ class AutoUpdater {
       this.isDownloading = true;
       await autoUpdater.downloadUpdate();
       return { success: true };
-    } catch (error) {
+    } catch (error: unknown) {
       this.isDownloading = false;
-      return { success: false, error: error.message };
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      return { success: false, error: errorMessage };
     }
   }
 
@@ -207,19 +223,15 @@ class AutoUpdater {
     }, 5000);
   }
 
-  setAutoCheckEnabled(enabled) {
+  setAutoCheckEnabled(enabled: boolean) {
     this.autoCheckEnabled = enabled;
   }
 
-  setUpdateChannel(channel) {
+  setUpdateChannel(channel: string) {
     this.updateChannel = channel;
     store.set('updateChannel', channel);
 
-    if (channel === 'stable') {
-      autoUpdater.allowPrerelease = false;
-    } else {
-      autoUpdater.allowPrerelease = true;
-    }
+    autoUpdater.allowPrerelease = channel !== 'stable';
   }
 
   getUpdateChannel() {
@@ -230,7 +242,7 @@ class AutoUpdater {
     return this.updateInfo;
   }
 
-  setForceUpdateAvailable(value) {
+  setForceUpdateAvailable(value: boolean) {
     this.forceUpdateAvailable = value;
     store.set('developer.forceUpdateAvailable', value);
   }
@@ -239,7 +251,7 @@ class AutoUpdater {
     return this.forceUpdateAvailable;
   }
 
-  setIgnoreUpdateCertErrors(value) {
+  setIgnoreUpdateCertErrors(value: boolean) {
     this.ignoreUpdateCertErrors = value;
     store.set('developer.ignoreUpdateCertErrors', value);
   }
@@ -248,7 +260,7 @@ class AutoUpdater {
     return this.ignoreUpdateCertErrors;
   }
 
-  setDisableUpdateSignatureCheck(value) {
+  setDisableUpdateSignatureCheck(value: boolean) {
     this.disableUpdateSignatureCheck = value;
     store.set('developer.disableUpdateSignatureCheck', value);
   }
@@ -258,12 +270,14 @@ class AutoUpdater {
   }
 
   simulateUpdate() {
-    const dummyUpdateInfo = {
+    const dummyUpdateInfo: UpdateInfo = {
       version: '9.9.9-simulator',
       releaseNotes:
         '<h2>Simulation Update</h2><p>This is a simulated update to test the UI.</p><ul><li>Feature 1</li><li>Feature 2</li></ul>',
       releaseDate: new Date().toISOString(),
       files: [],
+      path: '',
+      sha512: '',
     };
 
     this.updateInfo = dummyUpdateInfo;

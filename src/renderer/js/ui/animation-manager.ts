@@ -1,4 +1,7 @@
-class AnimationManager {
+export class AnimationManager {
+  isReducedMotion: boolean;
+  initialized: boolean;
+
   constructor() {
     this.isReducedMotion = false;
     this.initialized = false;
@@ -76,7 +79,7 @@ class AnimationManager {
 
   handleReducedMotionTabSwitch(currentTab, selectedTab) {
     // Instant switch logic
-    document.querySelectorAll('.tab-content').forEach((tab) => {
+    document.querySelectorAll<HTMLElement>('.tab-content').forEach((tab) => {
       tab.classList.remove('active');
       tab.style.cssText = 'display: none;';
     });
@@ -168,7 +171,7 @@ class AnimationManager {
             zIndex: -1,
           });
         },
-        null,
+        undefined,
         0.3,
       );
     }

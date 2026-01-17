@@ -1,5 +1,23 @@
 import * as https from 'https';
 
+interface TagData {
+  name: string;
+  commit: {
+    sha: string;
+    url: string;
+  };
+}
+
+export interface PluginUpdateResult {
+  success: boolean;
+  hasUpdate?: boolean;
+  currentVersion?: string;
+  latestVersion?: string;
+  downloadUrl?: string;
+  repo?: string;
+  error?: string;
+}
+
 export default class PluginUpdateChecker {
   static normalizeRepoUrl(repoInput) {
     if (!repoInput) return null;
@@ -23,7 +41,9 @@ export default class PluginUpdateChecker {
     return null;
   }
 
-  static async fetchJson(url) {
+  static async fetchJson(
+    url: string,
+  ): Promise<Array<unknown> | Record<string, unknown>> {
     return new Promise((resolve, reject) => {
       const options = {
         headers: {
@@ -58,7 +78,7 @@ export default class PluginUpdateChecker {
     });
   }
 
-  static async getLatestRelease(owner, repo) {
+  static async getLatestRelease(owner: string, repo: string) {
     try {
       const url = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
       let release;
@@ -69,7 +89,7 @@ export default class PluginUpdateChecker {
         const allReleasesUrl = `https://api.github.com/repos/${owner}/${repo}/releases`;
         try {
           const releases = await this.fetchJson(allReleasesUrl);
-          if (releases && releases.length > 0) {
+          if (releases && Array.isArray(releases) && releases.length > 0) {
             release = releases[0];
           } else {
             return null;
@@ -84,7 +104,6 @@ export default class PluginUpdateChecker {
         return {
           version: release.tag_name.replace(/^v/, ''),
           downloadUrl: downloadUrl,
-          releaseData: release,
         };
       }
       return null;
@@ -93,17 +112,17 @@ export default class PluginUpdateChecker {
     }
   }
 
-  static async getLatestTag(owner, repo) {
+  static async getLatestTag(owner: string, repo: string) {
     try {
       const url = `https://api.github.com/repos/${owner}/${repo}/tags`;
-      const tags = await this.fetchJson(url);
+      const tags = (await this.fetchJson(url)) as TagData[] | null;
 
       if (tags && tags.length > 0) {
         const latestTag = tags[0];
+
         return {
           version: latestTag.name.replace(/^v/, ''),
           downloadUrl: null,
-          tagData: latestTag,
         };
       }
       return null;
@@ -151,9 +170,14 @@ export default class PluginUpdateChecker {
     return 0;
   }
 
-  static async checkPluginUpdate(pluginName, repoInput, currentVersion) {
+  static async checkPluginUpdate(
+    pluginName,
+    repoInput,
+    currentVersion,
+  ): Promise<PluginUpdateResult> {
     try {
       const repo = this.normalizeRepoUrl(repoInput);
+
       if (!repo) {
         console.error(
           `[PluginUpdate] Invalid repo format for ${pluginName}: ${repoInput}`,
@@ -233,8 +257,11 @@ export default class PluginUpdateChecker {
     }
   }
 
-  static async checkAllPlugins(pluginMappings, pluginVersions) {
-    const results = [];
+  static async checkAllPlugins(
+    pluginMappings: Record<string, string>,
+    pluginVersions,
+  ) {
+    const results: (PluginUpdateResult & { pluginName: string })[] = [];
 
     for (const [pluginName, repoInput] of Object.entries(pluginMappings)) {
       const currentVersion = pluginVersions[pluginName] || null;

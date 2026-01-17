@@ -1,4 +1,4 @@
-class FightPlannerManager {
+export class FightPlannerManager {
   constructor() {
     this.initialized = false;
     console.log('FightPlanner Manager created');

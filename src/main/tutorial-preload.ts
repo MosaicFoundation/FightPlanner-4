@@ -2,7 +2,9 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 console.log('Tutorial preload.js loaded!');
 
-contextBridge.exposeInMainWorld('tutorialAPI', {
+export type TutorialAPI = typeof tutorialAPI;
+
+const tutorialAPI = {
   closeTutorial: () => {
     console.log('tutorialAPI.closeTutorial() called from renderer');
     ipcRenderer.send('close-tutorial-window');
@@ -26,7 +28,8 @@ contextBridge.exposeInMainWorld('tutorialAPI', {
   detectSdDrives: () => ipcRenderer.invoke('detect-sd-drives'),
   detectYuzuPath: () => ipcRenderer.invoke('detect-yuzu-path'),
   detectRyujinxPath: () => ipcRenderer.invoke('detect-ryujinx-path'),
-  getGithubRelease: (repo) => ipcRenderer.invoke('get-github-release', repo),
+  getGithubRelease: (repo?: string) =>
+    ipcRenderer.invoke('get-github-release', repo),
   getSkylineRelease: () => ipcRenderer.invoke('get-skyline-release'),
   downloadArcropolis: (url, targetPath) =>
     ipcRenderer.invoke('download-arcropolis', url, targetPath),
@@ -43,6 +46,8 @@ contextBridge.exposeInMainWorld('tutorialAPI', {
   joinPath: (...parts) => ipcRenderer.invoke('join-path', ...parts),
   getTempDir: () => ipcRenderer.invoke('get-temp-dir'),
   openUrl: (url) => ipcRenderer.invoke('open-url', url),
-});
+};
+
+contextBridge.exposeInMainWorld('tutorialAPI', tutorialAPI);
 
 console.log('tutorialAPI exposed to window');

@@ -1,9 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+interface Translations {
+  [key: string]: string | Translations;
+}
+
 export class I18n {
   currentLocale: string;
-  translations: any;
+  translations: Translations;
   availableLocales: string[];
   localesPath: string;
 
@@ -126,7 +130,7 @@ export class I18n {
   }
 }
 
-let i18nInstance = null;
+let i18nInstance: I18n | null = null;
 
 export async function getI18n(locale) {
   if (!i18nInstance) {

@@ -1,4 +1,10 @@
 export class ModInfoManager {
+  currentModPath: string | null;
+  currentModData: {
+    display_name: string;
+    description: string;
+  } | null;
+
   constructor() {
     this.currentModPath = null;
     this.currentModData = null;

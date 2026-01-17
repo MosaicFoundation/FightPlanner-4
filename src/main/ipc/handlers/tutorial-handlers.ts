@@ -115,8 +115,7 @@ export function registerTutorialHandlers(ipcMain) {
 
   ipcMain.handle('get-skyline-release', async () => {
     try {
-      const release = await getLatestSkylineRelease();
-      return { success: true, ...release };
+      return await getLatestSkylineRelease();
     } catch (error) {
       handleError(error, 'get-skyline-release');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
@@ -125,8 +124,7 @@ export function registerTutorialHandlers(ipcMain) {
 
   ipcMain.handle('extract-skyline', async (event, zipPath, targetDir) => {
     try {
-      const result = await extractAndInstallSkyline(zipPath, targetDir);
-      return { success: true, ...result };
+      return await extractAndInstallSkyline(zipPath, targetDir);
     } catch (error) {
       handleError(error, 'extract-skyline');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
@@ -151,8 +149,7 @@ export function registerTutorialHandlers(ipcMain) {
 
   ipcMain.handle('extract-arcropolis', async (event, zipPath, targetDir) => {
     try {
-      const result = await extractAndInstallArcropolis(zipPath, targetDir);
-      return { success: true, ...result };
+      return await extractAndInstallArcropolis(zipPath, targetDir);
     } catch (error) {
       handleError(error, 'extract-arcropolis');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
@@ -215,7 +212,7 @@ export function registerTutorialHandlers(ipcMain) {
       const drives = await detectWindowsDrives();
 
       // Show custom dialog or use file picker
-      const result = await dialog.showOpenDialog(win, {
+      const result = await dialog.showOpenDialog(win!, {
         title: 'Select SD Card Drive',
         properties: ['openDirectory'],
         message: 'Please select your Nintendo Switch SD card drive',

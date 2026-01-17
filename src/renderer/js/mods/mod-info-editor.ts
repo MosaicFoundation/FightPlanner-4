@@ -1,4 +1,4 @@
-class ModInfoEditor {
+export class ModInfoEditor {
   currentModPath: string | null;
   currentInfo: any | null;
 
@@ -74,7 +74,7 @@ class ModInfoEditor {
         }
 
         if (window.modManager && window.modManager.selectedMod) {
-          window.modManager.selectMod(window.modManager.selectedMod.id);
+          await window.modManager.selectMod(window.modManager.selectedMod.id);
         }
       } else {
         if (window.toastManager) {

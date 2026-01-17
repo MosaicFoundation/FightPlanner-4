@@ -1,9 +1,9 @@
-import { app } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import ProtocolHandler from './protocol-handler';
 
-let protocolHandler = null;
-let mainWindow = null;
-let pendingProtocolUrl = null;
+let protocolHandler: ProtocolHandler | null = null;
+let mainWindow: BrowserWindow | null = null;
+let pendingProtocolUrl: string | null = null;
 
 console.log(
   '[protocol] init: platform=%s, defaultApp=%s, argv=%j',
@@ -43,7 +43,7 @@ export function initializeProtocol(window) {
     pendingProtocolUrl = null;
     console.log('[protocol] flushing pending URL after window ready:', url);
     window.webContents.once('did-finish-load', () => {
-      setTimeout(() => protocolHandler.handleDeepLink(url), 300);
+      setTimeout(() => protocolHandler!.handleDeepLink(url), 300);
     });
   }
 
@@ -56,7 +56,7 @@ export function initializeProtocol(window) {
     if (protocolUrl) {
       console.log('[protocol][argv] URL found:', protocolUrl);
       window.webContents.once('did-finish-load', () => {
-        setTimeout(() => protocolHandler.handleDeepLink(protocolUrl), 300);
+        setTimeout(() => protocolHandler!.handleDeepLink(protocolUrl), 300);
       });
     } else if (process.platform === 'linux') {
       console.log(

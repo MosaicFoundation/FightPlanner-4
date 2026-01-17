@@ -32,7 +32,7 @@ export function registerPluginHandlers(ipcMain) {
   ipcMain.handle('select-plugin-file', async (event, pluginsPath) => {
     try {
       const win = BrowserWindow.fromWebContents(event.sender);
-      const result = await dialog.showOpenDialog(win, {
+      const result = await dialog.showOpenDialog(win!, {
         properties: ['openFile'],
         filters: [
           { name: 'NRO Files', extensions: ['nro'] },
@@ -78,8 +78,14 @@ export function registerPluginHandlers(ipcMain) {
 
   ipcMain.handle('check-plugin-updates', async (event) => {
     try {
-      const pluginMappings = store.get('pluginRepoMappings') || {};
-      const pluginVersions = store.get('pluginVersions') || {};
+      const pluginMappings = (store.get('pluginRepoMappings') || {}) as Record<
+        string,
+        string
+      >;
+      const pluginVersions = (store.get('pluginVersions') || {}) as Record<
+        string,
+        string
+      >;
 
       const results = await PluginUpdateChecker.checkAllPlugins(
         pluginMappings,

@@ -1,4 +1,16 @@
-class LogsManager {
+export class LogsManager {
+  logs: Array<{
+    id: number;
+    timestamp: Date;
+    level: string;
+    message: string;
+    source: 'main' | 'renderer';
+  }>;
+  maxLogs: number;
+  currentFilter: string;
+  logsContainer: HTMLElement | null;
+  initialized: boolean;
+
   constructor() {
     this.logs = [];
     this.maxLogs = 1000;

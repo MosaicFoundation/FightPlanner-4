@@ -10,23 +10,25 @@ const tabConfigs = {
 };
 
 // Track document click listeners to prevent duplicates
-let categoryFilterDocumentListener = null;
+let categoryFilterDocumentListener: ((e: Event) => void) | null = null;
 
 function initializeTabFeatures(tabName) {
   console.log(`Initializing features for tab: ${tabName}`);
 
   if (tabName === 'tools') {
-    const searchInput = document.getElementById('search-mods-input');
+    const searchInput =
+      document.querySelector<HTMLInputElement>('#search-mods-input');
     const savedSearchValue = searchInput ? searchInput.value : '';
 
     if (searchInput) {
       const newSearchInput = searchInput.cloneNode(true);
-      searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+      searchInput.parentNode!.replaceChild(newSearchInput, searchInput);
 
-      const finalSearchInput = document.getElementById('search-mods-input');
+      const finalSearchInput =
+        document.querySelector<HTMLInputElement>('#search-mods-input');
       if (finalSearchInput) {
         finalSearchInput.addEventListener('input', (e) => {
-          const value = e.target.value;
+          const value = finalSearchInput.value;
           if (window.modManager) {
             window.modManager.filterMods(value);
           }
@@ -34,7 +36,7 @@ function initializeTabFeatures(tabName) {
 
         finalSearchInput.addEventListener('paste', (e) => {
           setTimeout(() => {
-            const value = e.target.value;
+            const value = finalSearchInput.value;
             if (window.modManager) {
               window.modManager.filterMods(value);
             }
@@ -46,7 +48,7 @@ function initializeTabFeatures(tabName) {
     const refreshBtn = document.getElementById('refresh-mods-btn');
     if (refreshBtn) {
       const newRefreshBtn = refreshBtn.cloneNode(true);
-      refreshBtn.parentNode.replaceChild(newRefreshBtn, refreshBtn);
+      refreshBtn.parentNode!.replaceChild(newRefreshBtn, refreshBtn);
 
       newRefreshBtn.addEventListener('click', () => {
         if (window.modManager) {
@@ -58,7 +60,7 @@ function initializeTabFeatures(tabName) {
     const openFolderBtn = document.getElementById('open-folder-btn');
     if (openFolderBtn) {
       const newOpenFolderBtn = openFolderBtn.cloneNode(true);
-      openFolderBtn.parentNode.replaceChild(newOpenFolderBtn, openFolderBtn);
+      openFolderBtn.parentNode!.replaceChild(newOpenFolderBtn, openFolderBtn);
 
       newOpenFolderBtn.addEventListener('click', () => {
         if (window.modManager) {
@@ -70,11 +72,12 @@ function initializeTabFeatures(tabName) {
     const editInfoBtn = document.getElementById('edit-info-btn');
     if (editInfoBtn && window.modInfoEditor) {
       editInfoBtn.addEventListener('click', () => {
-        window.modInfoEditor.handleClick();
+        window.modInfoEditor!.handleClick();
       });
     }
 
-    const actionButtons = document.querySelectorAll('.action-btn');
+    const actionButtons = document.querySelectorAll<HTMLElement>('.action-btn');
+
     actionButtons.forEach((btn) => {
       const title = btn.getAttribute('title');
       if (title === 'Add' && !btn.dataset.listenerAttached) {
@@ -179,7 +182,7 @@ function initializeTabFeatures(tabName) {
               window.toastManager.info('toasts.launchingEmulator');
             }
 
-            const result = await window.electronAPI.launchEmulator(
+            const result = await window.electronAPI!.launchEmulator(
               emulatorType,
               emulatorPath,
               gamePath,
@@ -214,14 +217,17 @@ function initializeTabFeatures(tabName) {
     const categoryFilter = document.getElementById('category-filter');
     if (categoryFilter) {
       const newCategoryFilter = categoryFilter.cloneNode(true);
-      categoryFilter.parentNode.replaceChild(newCategoryFilter, categoryFilter);
+      categoryFilter.parentNode!.replaceChild(
+        newCategoryFilter,
+        categoryFilter,
+      );
 
       const finalCategoryFilter = document.getElementById('category-filter');
       if (finalCategoryFilter) {
         const trigger = finalCategoryFilter.querySelector(
           '.custom-select-trigger',
         );
-        const options = finalCategoryFilter.querySelectorAll(
+        const options = finalCategoryFilter.querySelectorAll<HTMLInputElement>(
           '.custom-select-option',
         );
         const selectedValue =
@@ -241,7 +247,7 @@ function initializeTabFeatures(tabName) {
 
         // Create and add new document click listener
         categoryFilterDocumentListener = (e) => {
-          if (!finalCategoryFilter.contains(e.target)) {
+          if (!finalCategoryFilter.contains(e.target as HTMLElement)) {
             finalCategoryFilter.classList.remove('open');
           }
         };
@@ -250,7 +256,7 @@ function initializeTabFeatures(tabName) {
         options.forEach((option) => {
           option.addEventListener('click', () => {
             const value = option.dataset.value;
-            const text = option.querySelector('span').textContent;
+            const text = option.querySelector('span')!.textContent;
 
             if (selectedValue) {
               selectedValue.textContent = text;
@@ -289,7 +295,8 @@ function initializeTabFeatures(tabName) {
     }, 150);
 
     if (window.modManager) {
-      const currentInput = document.getElementById('search-mods-input');
+      const currentInput =
+        document.querySelector<HTMLInputElement>('#search-mods-input');
       const currentValue = currentInput ? currentInput.value : '';
 
       window.modManager.searchQuery = currentValue.toLowerCase();
@@ -357,7 +364,7 @@ function initializeTabFeatures(tabName) {
     const refreshBtn = document.getElementById('refresh-characters-btn');
     if (refreshBtn) {
       const newRefreshBtn = refreshBtn.cloneNode(true);
-      refreshBtn.parentNode.replaceChild(newRefreshBtn, refreshBtn);
+      refreshBtn.parentNode!.replaceChild(newRefreshBtn, refreshBtn);
 
       newRefreshBtn.addEventListener('click', () => {
         if (window.charactersManager) {

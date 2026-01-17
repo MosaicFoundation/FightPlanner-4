@@ -6,6 +6,20 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 const execAsync = promisify(exec);
 import { CONFLICT_WHITELIST_PATTERNS } from './config';
+import { ModInstallResult } from './plugin-update-installer';
+
+export interface Slot {
+  path: string;
+  type: 'file' | 'directory';
+  name: string;
+  parent: string;
+}
+
+export interface Mod {
+  name: string;
+  path: string;
+  status: 'active' | 'disabled';
+}
 
 export default class ModUtils {
   /**
@@ -24,8 +38,11 @@ export default class ModUtils {
    * @param {string} status - Status of the mods ('active' or 'disabled')
    * @returns {Array<Object>} Array of mod objects with name, path, and status
    */
-  static readModsFromFolder(folderPath, status = 'active') {
-    const mods = [];
+  static readModsFromFolder(
+    folderPath: string,
+    status: 'active' | 'disabled' = 'active',
+  ) {
+    const mods: Mod[] = [];
 
     if (!fs.existsSync(folderPath)) {
       console.log(`Folder does not exist: ${folderPath}`);
@@ -143,7 +160,7 @@ export default class ModUtils {
               }
             }
           } else {
-            if (line === '"""' || line.endsWith('"""')) {
+            if (currentKey && (line === '"""' || line.endsWith('"""'))) {
               info[currentKey] = multilineValue.trim();
               multilineValue = '';
               inMultiline = false;
@@ -177,7 +194,7 @@ export default class ModUtils {
    * @param {string} activeModsPath - Path to the active mods folder
    * @returns {Object} Object with activeMods and disabledMods arrays
    */
-  static readAllMods(activeModsPath) {
+  static readAllMods(activeModsPath: string) {
     const activeMods = this.readModsFromFolder(activeModsPath, 'active');
 
     const disabledModsPath = this.getDisabledModsFolder(activeModsPath);
@@ -197,8 +214,8 @@ export default class ModUtils {
    * @param {string} modFolderPath - Path to the mod folder
    * @returns {Array<Object>} Array of slot objects with slot number and files
    */
-  static scanModForSlots(modFolderPath) {
-    const slots = {};
+  static scanModForSlots(modFolderPath: string) {
+    const slots: Record<number, Slot[]> = {};
 
     try {
       const slotPattern = /c0[0-7]/gi;
@@ -219,7 +236,8 @@ export default class ModUtils {
           if (entry.isDirectory()) {
             const matches = entry.name.match(slotPattern);
             if (matches) {
-              const uniqueSlots = new Set();
+              const uniqueSlots: Set<number> = new Set();
+
               matches.forEach((match) => {
                 const slotNum = parseInt(match.toLowerCase().charAt(2));
                 uniqueSlots.add(slotNum);
@@ -251,8 +269,10 @@ export default class ModUtils {
             }
           } else if (entry.isFile()) {
             const matches = entry.name.match(slotPattern);
+
             if (matches) {
-              const uniqueSlots = new Set();
+              const uniqueSlots: Set<number> = new Set();
+
               matches.forEach((match) => {
                 const slotNum = parseInt(match.toLowerCase().charAt(2));
                 uniqueSlots.add(slotNum);
@@ -265,6 +285,7 @@ export default class ModUtils {
                 const exists = slots[slotNum].some(
                   (item) => item.path === relPath,
                 );
+
                 if (!exists) {
                   slots[slotNum].push({
                     path: relPath,
@@ -316,7 +337,7 @@ export default class ModUtils {
    * @returns {Array<number>} Array of used slot numbers (0-7)
    */
   static getUsedSlotsForFighter(modsPath, fighterId, excludeModPath = null) {
-    const usedSlots = new Set();
+    const usedSlots: Set<number> = new Set();
     const slotPattern = /c0[0-7]/gi;
 
     try {
@@ -402,7 +423,7 @@ export default class ModUtils {
    * @returns {Array<number>} Array of slot numbers used by this fighter
    */
   static scanModForSlotsByFighter(modFolderPath, fighterId) {
-    const slots = new Set();
+    const slots: Set<number> = new Set();
     const slotPattern = /c0[0-7]/gi;
 
     try {
@@ -476,7 +497,7 @@ export default class ModUtils {
       });
 
       const tempPrefix = 'TMPSLOT';
-      const renamedPaths = [];
+      const renamedPaths: { new: string; old: string; type: string }[] = [];
 
       modificationsMap.forEach((newSlot, originalSlot) => {
         const tempName = `${tempPrefix}_${originalSlot}`;
@@ -485,6 +506,7 @@ export default class ModUtils {
           `c0${originalSlot}`,
           tempName,
         );
+
         renamedPaths.push(...result);
       });
 
@@ -502,8 +524,12 @@ export default class ModUtils {
     }
   }
 
-  static renameSlotInMod(modFolderPath, oldPattern, newPattern) {
-    const renamedPaths = [];
+  static renameSlotInMod(
+    modFolderPath: string,
+    oldPattern: string,
+    newPattern: string,
+  ) {
+    const renamedPaths: { old: string; new: string; type: string }[] = [];
 
     const escapedPattern = oldPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -520,7 +546,11 @@ export default class ModUtils {
         return;
       }
 
-      const itemsToRename = [];
+      const itemsToRename: {
+        oldPath: string;
+        oldName: string;
+        isDirectory: boolean;
+      }[] = [];
 
       entries.forEach((entry) => {
         const fullPath = path.join(dirPath, entry.name);
@@ -565,6 +595,7 @@ export default class ModUtils {
               new: newPath,
               type: item.isDirectory ? 'directory' : 'file',
             });
+
             console.log(
               `Renamed ${item.isDirectory ? 'folder' : 'file'}: ${item.oldName} -> ${newName}`,
             );
@@ -627,7 +658,10 @@ export default class ModUtils {
    * @returns {Promise<Array<Object>>} Array of conflict objects with filePath and mods
    */
   static async detectConflicts(activeMods, whitelistPatterns = []) {
-    const conflicts = [];
+    const conflicts: {
+      filePath: string;
+      mods: { name: string; path: string };
+    }[] = [];
     const fileToMods = new Map();
 
     const allPatterns = [...CONFLICT_WHITELIST_PATTERNS, ...whitelistPatterns];
@@ -800,7 +834,7 @@ export default class ModUtils {
             '7za.exe',
           )
         : null,
-    ].filter(Boolean);
+    ].filter(Boolean) as string[];
 
     const existing7z = candidate7zPaths.find((p) => fs.existsSync(p));
 
@@ -842,7 +876,7 @@ export default class ModUtils {
   static copyRecursiveSync(src, dest) {
     const exists = fs.existsSync(src);
     const stats = exists && fs.statSync(src);
-    const isDirectory = exists && stats.isDirectory();
+    const isDirectory = stats && stats.isDirectory();
 
     if (isDirectory) {
       if (!fs.existsSync(dest)) {
@@ -866,7 +900,10 @@ export default class ModUtils {
    * @param {string} modsPath - Destination mods directory
    * @returns {Promise<Object>} Result object with success status, modPath, and modName
    */
-  static async installModFromPath(sourcePath, modsPath) {
+  static async installModFromPath(
+    sourcePath: string,
+    modsPath: string,
+  ): Promise<ModInstallResult> {
     try {
       if (!fs.existsSync(sourcePath)) {
         throw new Error(`Source path does not exist: ${sourcePath}`);
@@ -887,9 +924,9 @@ export default class ModUtils {
       const ext = path.extname(sourcePath).toLowerCase();
       const isArchive = ['.zip', '.rar', '.7z', '.tar', '.gz'].includes(ext);
 
-      let tempExtractDir = null;
-      let extractedItems = [];
-      let modFolderName = null;
+      let tempExtractDir: string | null = null;
+      let extractedItems: string[] = [];
+      let modFolderName: string | null = null;
 
       if (isArchive) {
         console.log('Installing mod from archive:', sourcePath);
@@ -925,7 +962,7 @@ export default class ModUtils {
         );
       }
 
-      const finalModPath = path.join(modsPath, modFolderName);
+      let finalModPath = path.join(modsPath, modFolderName);
 
       if (fs.existsSync(finalModPath)) {
         console.log('Mod already exists, removing old version');
@@ -933,7 +970,7 @@ export default class ModUtils {
       }
 
       if (isArchive) {
-        const sourceModPath = path.join(tempExtractDir, modFolderName);
+        const sourceModPath = path.join(tempExtractDir!, modFolderName);
         if (fs.existsSync(sourceModPath)) {
           console.log('Copying mod from temp to mods folder...');
           this.copyRecursiveSync(sourceModPath, finalModPath);

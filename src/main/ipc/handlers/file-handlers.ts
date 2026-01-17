@@ -9,7 +9,7 @@ import {
 export function registerFileHandlers(ipcMain) {
   ipcMain.handle('select-folder', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
-    const result = await dialog.showOpenDialog(win, {
+    const result = await dialog.showOpenDialog(win!, {
       properties: ['openDirectory'],
     });
     return result.canceled ? null : result.filePaths[0];
@@ -17,7 +17,7 @@ export function registerFileHandlers(ipcMain) {
 
   ipcMain.handle('select-emulator-file', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
-    const result = await dialog.showOpenDialog(win, {
+    const result = await dialog.showOpenDialog(win!, {
       properties: ['openFile'],
       filters: [
         { name: 'Executable Files', extensions: ['exe'] },
@@ -29,7 +29,7 @@ export function registerFileHandlers(ipcMain) {
 
   ipcMain.handle('select-game-file', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
-    const result = await dialog.showOpenDialog(win, {
+    const result = await dialog.showOpenDialog(win!, {
       properties: ['openFile'],
       filters: [
         {
@@ -45,7 +45,7 @@ export function registerFileHandlers(ipcMain) {
   ipcMain.handle('select-mod-file', async (event) => {
     try {
       const win = BrowserWindow.fromWebContents(event.sender);
-      const result = await dialog.showOpenDialog(win, {
+      const result = await dialog.showOpenDialog(win!, {
         properties: ['openFile'],
         filters: [
           {
@@ -152,7 +152,7 @@ export function registerFileHandlers(ipcMain) {
   ipcMain.handle('save-file-dialog', async (event, defaultPath, filters) => {
     try {
       const win = BrowserWindow.fromWebContents(event.sender);
-      const result = await dialog.showSaveDialog(win, {
+      const result = await dialog.showSaveDialog(win!, {
         defaultPath: defaultPath,
         filters: filters || [
           { name: 'Text Files', extensions: ['txt'] },

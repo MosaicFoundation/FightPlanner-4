@@ -8,6 +8,29 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
+export type PluginInstallResult =
+  | {
+      success: true;
+      pluginPath: string;
+      actualFileName: string;
+    }
+  | {
+      success: false;
+      error: string;
+    };
+
+export type ModInstallResult =
+  | {
+      success: true;
+      modPath: string;
+      modName: string;
+      autoDisabled?: boolean;
+    }
+  | {
+      success: false;
+      error: string;
+    };
+
 export default class PluginUpdateInstaller {
   static async downloadFile(url, targetPath) {
     return new Promise((resolve, reject) => {
@@ -141,7 +164,10 @@ export default class PluginUpdateInstaller {
     }
   }
 
-  static async installUpdate(downloadUrl, pluginPath) {
+  static async installUpdate(
+    downloadUrl: string,
+    pluginPath: string,
+  ): Promise<PluginInstallResult> {
     try {
       if (!downloadUrl) {
         return {

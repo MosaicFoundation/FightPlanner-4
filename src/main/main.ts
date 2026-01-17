@@ -7,7 +7,7 @@ import { createTutorialWindow } from './tutorial-window';
 import { migrateFromV3 } from './migration';
 import DiscordRPCManager from './discord-rpc';
 import { registerAllHandlers } from './ipc';
-import { PATHS, TEMP_FOLDERS } from './config';
+import { PATHS } from './config';
 import autoUpdater from './auto-updater';
 
 import AnimationHandler from './animations/animation-handler';
@@ -27,8 +27,10 @@ const originalConsoleLog = console.log;
 const originalConsoleWarn = console.warn;
 const originalConsoleError = console.error;
 
-let mainWindow = null;
-let discordRPC = null;
+let mainWindow: BrowserWindow | null = null;
+let discordRPC: DiscordRPCManager | null = null;
+
+const animationHandler = new AnimationHandler();
 
 function writeLog(level, args) {
   const timestamp = new Date().toISOString();
@@ -72,7 +74,11 @@ console.error = (...args) => {
   originalConsoleError.apply(console, args);
 };
 
-function createWindow(options = {}) {
+interface CreateWindowOptions {
+  animate?: boolean;
+}
+
+function createWindow(options: CreateWindowOptions = {}) {
   mainWindow = new BrowserWindow({
     width: 1300,
     height: 800,
@@ -96,7 +102,7 @@ function createWindow(options = {}) {
     }
   });
 
-  mainWindow.webContents.on('will-navigate', (event, url) => {
+  mainWindow.webContents.on('will-navigate', (event, _url) => {
     event.preventDefault();
   });
 
@@ -110,7 +116,7 @@ function createWindow(options = {}) {
 
   mainWindow.webContents.on(
     'will-attach-webview',
-    (event, webPreferences, params) => {
+    (event, webPreferences, _params) => {
       webPreferences.nodeIntegration = false;
     },
   );
@@ -122,7 +128,7 @@ function createWindow(options = {}) {
       windowShown = true;
       mainWindow.show();
 
-      AnimationHandler.initialize(mainWindow);
+      animationHandler.initialize(mainWindow);
 
       if (options.animate) {
         mainWindow.webContents.send('start-intro-animation');
@@ -156,16 +162,18 @@ function createWindow(options = {}) {
   });
 
   mainWindow.webContents.on('dom-ready', () => {
-    mainWindow.webContents.executeJavaScript(`
-      document.addEventListener('drop', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }, false);
-      document.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }, false);
-    `);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.executeJavaScript(`
+        document.addEventListener('drop', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }, false);
+        document.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }, false);
+      `);
+    }
   });
 
   const loadPath = path.join(__dirname, '../renderer/index.html');

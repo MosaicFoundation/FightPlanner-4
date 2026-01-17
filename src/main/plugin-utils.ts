@@ -1,6 +1,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+interface Plugin {
+  name: string;
+  path: string;
+  size: string;
+}
+
 export default class PluginUtils {
   /**
    * Read all plugins from a folder (active and disabled)
@@ -8,7 +14,10 @@ export default class PluginUtils {
    * @returns {object} Object with activePlugins and disabledPlugins arrays
    */
   static readAllPlugins(pluginsPath) {
-    const result = {
+    const result: {
+      activePlugins: Plugin[];
+      disabledPlugins: Plugin[];
+    } = {
       activePlugins: [],
       disabledPlugins: [],
     };

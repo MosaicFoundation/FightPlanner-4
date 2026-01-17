@@ -4,6 +4,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export default class FTPClient {
+  client: ftp.Client;
+
   constructor() {
     this.client = new ftp.Client();
     this.client.prepareTransfer = enterPassiveModeIPv4;

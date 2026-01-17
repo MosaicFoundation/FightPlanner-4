@@ -8,6 +8,7 @@ import {
   createErrorResponse,
   ErrorCodes,
 } from '../../utils/error-handler';
+import { ModInstallResult } from '../../plugin-update-installer';
 
 /**
  * Register all IPC handlers related to mod operations
@@ -99,7 +100,7 @@ export function registerModHandlers(ipcMain) {
 
   ipcMain.handle('scan-mod-for-fighters', async (event, modPath) => {
     try {
-      const fighters = [];
+      const fighters: string[] = [];
       const fighterPath = path.join(modPath, 'fighter');
       if (fs.existsSync(fighterPath)) {
         const fighterDirs = fs.readdirSync(fighterPath, {
@@ -306,7 +307,7 @@ export function registerModHandlers(ipcMain) {
 
   ipcMain.handle('handle-files-dropped', async (event, filePaths) => {
     try {
-      const modsPath = store.get('modsPath');
+      const modsPath = store.get('modsPath') as string | null;
       if (!modsPath) {
         return createErrorResponse(
           ErrorCodes.FOLDER_NOT_FOUND,
@@ -314,7 +315,11 @@ export function registerModHandlers(ipcMain) {
         );
       }
 
-      const results = [];
+      const results: {
+        filePath: string;
+        result: ModInstallResult;
+      }[] = [];
+
       for (const filePath of filePaths) {
         try {
           const installResult = await ModUtils.installModFromPath(

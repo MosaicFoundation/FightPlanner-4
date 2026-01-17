@@ -28,7 +28,16 @@ export async function migrateFromV3() {
 
     console.log('Old config loaded');
 
-    const migratedSettings = {};
+    const migratedSettings: {
+      modsPath?: string;
+      pluginsPath?: string;
+      selectedEmulator?: string;
+      emulatorPath?: string;
+      gamePath?: string;
+      protocolConfirmEnabled?: boolean;
+      discordRpcEnabled?: boolean;
+      volume?: number;
+    } = {};
 
     if (oldConfig.modsPath) {
       store.set('modsPath', oldConfig.modsPath);

@@ -2409,8 +2409,11 @@ export class SocialManager {
       );
       if (profileContainer) profileContainer.style.display = 'none';
 
-      const emailInput = document.getElementById('social-email');
-      const passInput = document.getElementById('social-password');
+      const emailInput =
+        document.querySelector<HTMLInputElement>('#social-email');
+      const passInput =
+        document.querySelector<HTMLInputElement>('#social-password');
+
       if (emailInput) emailInput.value = '';
       if (passInput) passInput.value = '';
 

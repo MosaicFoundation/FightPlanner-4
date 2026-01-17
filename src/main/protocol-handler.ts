@@ -253,7 +253,7 @@ export default class ProtocolHandler {
 
       let commandsExecuted = 0;
       commands.forEach((cmd, index) => {
-        exec(cmd, (error, stdout, stderr) => {
+        exec(cmd, (error, _stdout, _stderr) => {
           commandsExecuted++;
 
           if (error) {
@@ -272,7 +272,7 @@ export default class ProtocolHandler {
 
             exec(
               'reg query "HKCU\\Software\\Classes\\fightplanner\\shell\\open\\command"',
-              (error, stdout, stderr) => {
+              (error, stdout, _stderr) => {
                 if (!error) {
                   console.log('✓ Protocol verified in registry:');
                   console.log(stdout);

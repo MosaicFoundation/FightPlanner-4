@@ -1,6 +1,19 @@
 import RPC from 'discord-rpc';
 
+interface ActivityData {
+  tab: string;
+  details: string;
+  state: string | null;
+  modCount: number;
+}
+
 export default class DiscordRPCManager {
+  private client: RPC.Client | null;
+  private clientId: string;
+  private connected: boolean;
+  private startTimestamp: number;
+  private currentActivity: ActivityData;
+
   constructor() {
     this.client = null;
     this.clientId = '1304806839115972628';
@@ -36,8 +49,10 @@ export default class DiscordRPCManager {
       });
 
       await this.client.login({ clientId: this.clientId });
-    } catch (error) {
-      console.error('❌ Failed to connect to Discord RPC:', error.message);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      console.error('❌ Failed to connect to Discord RPC:', errorMessage);
       console.error(
         'Make sure Discord is running and you have a valid Client ID',
       );
@@ -58,7 +73,12 @@ export default class DiscordRPCManager {
     }
   }
 
-  setActivity(tab, details = null, state = null, modCount = null) {
+  setActivity(
+    tab: string,
+    details: string | null = null,
+    state: string | null = null,
+    modCount: number | null = null,
+  ) {
     this.currentActivity.tab = tab;
     if (details !== null) this.currentActivity.details = details;
     if (state !== null) this.currentActivity.state = state;
@@ -73,7 +93,7 @@ export default class DiscordRPCManager {
       return;
     }
 
-    const activity = {
+    const activity: RPC.Presence = {
       details: this.currentActivity.details,
       startTimestamp: this.startTimestamp,
       instance: false,
@@ -86,12 +106,14 @@ export default class DiscordRPCManager {
     try {
       console.log('📡 Updating Discord presence:', this.currentActivity);
       this.client.setActivity(activity);
-    } catch (error) {
-      console.error('❌ Error updating Discord presence:', error.message);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      console.error('❌ Error updating Discord presence:', errorMessage);
     }
   }
 
-  setModsTab(modCount = 0) {
+  setModsTab(modCount: number = 0) {
     this.setActivity(
       'Mods',
       'Managing mods',

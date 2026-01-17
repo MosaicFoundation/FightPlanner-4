@@ -1,4 +1,4 @@
-class PluginMarketplace {
+export class PluginMarketplace {
   constructor() {
     this.plugins = [
       {
@@ -43,10 +43,10 @@ class PluginMarketplace {
   }
 
   async downloadAndInstallPlugin(
-    pluginName,
-    repo,
-    downloadInfo,
-    actualFileName,
+    pluginName: string,
+    repo: string,
+    downloadInfo: string | { url: string; version: string },
+    actualFileName?: string,
   ) {
     if (!window.electronAPI || !window.electronAPI.updatePlugin) {
       console.error('Electron API not available');
@@ -71,6 +71,7 @@ class PluginMarketplace {
     // Support old call style (downloadInfo is string url)
     const downloadUrl =
       typeof downloadInfo === 'string' ? downloadInfo : downloadInfo.url;
+
     const targetVersion =
       typeof downloadInfo === 'object' ? downloadInfo.version : null;
 

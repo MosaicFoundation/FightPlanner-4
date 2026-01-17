@@ -1,3 +1,14 @@
+interface Changes {
+  modifications: Array<{
+    type: string;
+    originalSlot?: number | null;
+    newSlot?: number;
+    files?: Array<any>;
+    targetSlot?: number;
+  }>;
+  deletions: Array<number>;
+}
+
 export class ModalManager {
   currentMod: any | null;
   renameCallback: ((newName: string) => void) | null;
@@ -7,7 +18,21 @@ export class ModalManager {
   editInfoCallback: ((info: any) => void) | null;
   advancedInfoCallback: (() => void) | null;
   currentModPath: string | null;
-  pendingInstallData: string | null;
+  pendingInstallData: {
+    url: string;
+    downloadId: string;
+    modId: string;
+    modType: string;
+  } | null;
+
+  changeSlotCallback?: ((changes: Changes) => void) | null;
+
+  slotData: Array<{
+    originalSlot: number | null;
+    newSlot: number;
+    files: Array<any>;
+    isNew: boolean;
+  }> | null;
 
   constructor() {
     this.currentMod = null;
@@ -35,7 +60,7 @@ export class ModalManager {
   hideOverlay() {
     // Check if any modal is displayed (block) and NOT closing
     const visibleModals = Array.from(
-      document.querySelectorAll('.modal'),
+      document.querySelectorAll<HTMLElement>('.modal'),
     ).filter(
       (m) => m.style.display === 'block' && !m.classList.contains('closing'),
     );
@@ -51,7 +76,7 @@ export class ModalManager {
       setTimeout(() => {
         // Re-check before hiding
         const stillVisibleModals = Array.from(
-          document.querySelectorAll('.modal'),
+          document.querySelectorAll<HTMLElement>('.modal'),
         ).filter(
           (m) =>
             m.style.display === 'block' && !m.classList.contains('closing'),
@@ -74,8 +99,8 @@ export class ModalManager {
     this.currentMod = mod;
     this.renameCallback = callback;
 
-    const modal = document.getElementById('rename-modal');
-    const input = document.getElementById('rename-input');
+    const modal = document.querySelector<HTMLElement>('#rename-modal');
+    const input = document.querySelector<HTMLInputElement>('#rename-input');
 
     if (modal && input) {
       modal.classList.remove('closing');
@@ -117,8 +142,8 @@ export class ModalManager {
   }
 
   confirmRename() {
-    const input = document.getElementById('rename-input');
-    const newName = input.value.trim();
+    const input = document.querySelector<HTMLInputElement>('#rename-input');
+    const newName = input!.value.trim();
 
     if (!newName) {
       this.showAlert('error', 'Error', 'Mod name cannot be empty');
@@ -286,6 +311,7 @@ export class ModalManager {
   openChangeSlotModal(mod, detectedSlots, callback) {
     this.currentMod = mod;
     this.changeSlotCallback = callback;
+
     this.slotData = detectedSlots.map((slot) => ({
       originalSlot: slot.slot,
       newSlot: slot.slot,
@@ -333,10 +359,11 @@ export class ModalManager {
 
     container.innerHTML = '';
 
-    this.slotData.forEach((slot, index) => {
+    for (const [index, slot] of this.slotData.entries()) {
       const slotItem = document.createElement('div');
+
       slotItem.className = `slot-item ${slot.isNew ? 'slot-item-new' : ''}`;
-      slotItem.dataset.index = index;
+      slotItem.dataset.index = `${index}`;
 
       const content = document.createElement('div');
       content.className = 'slot-item-content';
@@ -358,7 +385,7 @@ export class ModalManager {
       // Create custom select structure
       const selectContainer = document.createElement('div');
       selectContainer.className = 'custom-select slot-select-custom';
-      selectContainer.dataset.index = index;
+      selectContainer.dataset.index = `${index}`;
 
       const selectTrigger = document.createElement('div');
       selectTrigger.className = 'custom-select-trigger';
@@ -384,7 +411,7 @@ export class ModalManager {
         if (i === slot.newSlot) {
           option.classList.add('active');
         }
-        option.dataset.value = i;
+        option.dataset.value = `${i}`;
 
         const optionText = document.createElement('span');
         optionText.textContent = t('modals.changeSlot.slotOption', {
@@ -396,7 +423,7 @@ export class ModalManager {
         option.addEventListener('click', (e) => {
           e.stopPropagation();
           // Update data
-          this.slotData[index].newSlot = i;
+          slot.newSlot = i;
 
           // Update UI
           selectedValueSpan.textContent = t('modals.changeSlot.slotOption', {
@@ -432,31 +459,36 @@ export class ModalManager {
         const wasOpen = selectContainer.classList.contains('open');
 
         // Close other open selects and restore them
-        document.querySelectorAll('.custom-select.open').forEach((el) => {
-          if (el !== selectContainer) {
-            el.classList.remove('open');
-            const drop = document.body.querySelector(
-              `.custom-select-dropdown[data-parent-id="${el.dataset.index}"]`,
-            );
-            if (drop) {
-              drop.style.transition = 'none'; // Disable transition
-              el.appendChild(drop);
-              drop.style.cssText = '';
-              void drop.offsetWidth; // Force reflow
-              delete drop.dataset.parentId;
-            } else {
-              // Fallback for non-portaled ones or if already moved back
-              const internalDrop = el.querySelector('.custom-select-dropdown');
-              if (internalDrop) internalDrop.style.cssText = '';
+        document
+          .querySelectorAll<HTMLElement>('.custom-select.open')
+          .forEach((el) => {
+            if (el !== selectContainer) {
+              el.classList.remove('open');
+              const drop = document.body.querySelector<HTMLElement>(
+                `.custom-select-dropdown[data-parent-id="${el.dataset.index}"]`,
+              );
+
+              if (drop) {
+                drop.style.transition = 'none'; // Disable transition
+                el.appendChild(drop);
+                drop.style.cssText = '';
+                void drop.offsetWidth; // Force reflow
+                delete drop.dataset.parentId;
+              } else {
+                // Fallback for non-portaled ones or if already moved back
+                const internalDrop = el.querySelector<HTMLElement>(
+                  '.custom-select-dropdown',
+                );
+                if (internalDrop) internalDrop.style.cssText = '';
+              }
             }
-          }
-        });
+          });
 
         if (!wasOpen) {
           selectContainer.classList.add('open');
 
           // Portal logic: Move to body and position fixed
-          selectDropdown.dataset.parentId = index;
+          selectDropdown.dataset.parentId = `${index}`;
 
           // CRITICAL: Disable transition before appending to body to prevent "flying from bottom"
           selectDropdown.style.transition = 'none';
@@ -502,9 +534,11 @@ export class ModalManager {
 
       // Close when clicking outside
       document.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+
         if (
-          !selectContainer.contains(e.target) &&
-          !selectDropdown.contains(e.target)
+          !selectContainer.contains(target) &&
+          !selectDropdown.contains(target)
         ) {
           if (selectContainer.classList.contains('open')) {
             selectContainer.classList.remove('open');
@@ -577,7 +611,7 @@ export class ModalManager {
       slotItem.appendChild(actions);
 
       container.appendChild(slotItem);
-    });
+    }
   }
 
   addNewSlot() {
@@ -603,7 +637,7 @@ export class ModalManager {
   confirmChangeSlot() {
     if (!this.changeSlotCallback || !this.slotData) return;
 
-    const changes = {
+    const changes: Changes = {
       modifications: [],
       deletions: [],
     };
@@ -635,14 +669,20 @@ export class ModalManager {
   openEditInfoModal(modPath, currentInfo, callback) {
     this.editInfoCallback = callback;
 
-    const modal = document.getElementById('edit-info-modal');
-    const displayNameInput = document.getElementById('edit-info-display-name');
-    const authorsInput = document.getElementById('edit-info-authors');
-    const versionInput = document.getElementById('edit-info-version');
-    const categorySelect = document.getElementById('edit-info-category');
-    const urlInput = document.getElementById('edit-info-url');
-    const descriptionTextarea = document.getElementById(
-      'edit-info-description',
+    const modal = document.querySelector<HTMLDivElement>('#edit-info-modal');
+    const displayNameInput = document.querySelector<HTMLInputElement>(
+      '#edit-info-display-name',
+    );
+    const authorsInput =
+      document.querySelector<HTMLInputElement>('#edit-info-authors');
+    const versionInput =
+      document.querySelector<HTMLInputElement>('#edit-info-version');
+    const categorySelect = document.querySelector<HTMLInputElement>(
+      '#edit-info-category',
+    );
+    const urlInput = document.querySelector<HTMLInputElement>('#edit-info-url');
+    const descriptionTextarea = document.querySelector<HTMLInputElement>(
+      '#edit-info-description',
     );
 
     if (modal) {
@@ -676,14 +716,14 @@ export class ModalManager {
   }
 
   confirmEditInfo() {
-    const form = document.getElementById('mod-info-form');
+    const form = document.querySelector<HTMLFormElement>('#mod-info-form');
     if (!form) return;
 
     const formData = new FormData(form);
     const info = {};
 
     formData.forEach((value, key) => {
-      if (value.trim()) {
+      if (typeof value === 'string' && value.trim()) {
         info[key] = value.trim();
       }
     });
@@ -698,8 +738,10 @@ export class ModalManager {
   openAdvancedInfoModal(modPath, currentTomlContent) {
     this.currentModPath = modPath;
 
-    const modal = document.getElementById('advanced-info-modal');
-    const textarea = document.getElementById('advanced-info-textarea');
+    const modal = document.querySelector<HTMLElement>('#advanced-info-modal');
+    const textarea = document.querySelector<HTMLTextAreaElement>(
+      '#advanced-info-textarea',
+    );
 
     if (modal && textarea) {
       modal.classList.remove('closing');
@@ -725,13 +767,16 @@ export class ModalManager {
   }
 
   async confirmAdvancedInfo() {
-    const textarea = document.getElementById('advanced-info-textarea');
+    const textarea = document.querySelector<HTMLTextAreaElement>(
+      '#advanced-info-textarea',
+    );
+
     if (!textarea || !this.currentModPath) return;
 
     const tomlContent = textarea.value;
 
     try {
-      const result = await window.electronAPI.saveModInfoRaw(
+      const result = await window.electronAPI!.saveModInfoRaw(
         this.currentModPath,
         tomlContent,
       );
@@ -792,19 +837,24 @@ export class ModalManager {
       modType !== 'Sound' &&
       window.electronAPI?.fetchGameBananaPreview
     ) {
-      const previewImage = document.getElementById('install-preview-image');
-      const previewLoading = document.querySelector('.install-preview-loading');
+      const previewImage = document.querySelector<HTMLImageElement>(
+        '#install-preview-image',
+      );
+
+      const previewLoading = document.querySelector<HTMLElement>(
+        '.install-preview-loading',
+      );
 
       try {
         const result = await window.electronAPI.fetchGameBananaPreview(modId);
 
         if (result.success && result.imageUrl) {
-          previewImage.onload = () => {
-            previewImage.classList.add('loaded');
+          previewImage!.onload = () => {
+            previewImage!.classList.add('loaded');
             if (previewLoading) previewLoading.style.display = 'none';
           };
-          previewImage.src = result.imageUrl;
-          previewImage.style.display = 'block';
+          previewImage!.src = result.imageUrl;
+          previewImage!.style.display = 'block';
         } else {
           if (previewLoading) previewLoading.style.display = 'none';
         }
@@ -813,7 +863,9 @@ export class ModalManager {
         if (previewLoading) previewLoading.style.display = 'none';
       }
     } else if (modType === 'Sound') {
-      const previewLoading = document.querySelector('.install-preview-loading');
+      const previewLoading = document.querySelector<HTMLElement>(
+        '.install-preview-loading',
+      );
       if (previewLoading) previewLoading.style.display = 'none';
     }
   }
@@ -829,8 +881,10 @@ export class ModalManager {
         const previewContainer = document.getElementById(
           'install-preview-container',
         );
-        const previewImage = document.getElementById('install-preview-image');
-        const previewLoading = document.querySelector(
+        const previewImage = document.querySelector<HTMLImageElement>(
+          '#install-preview-image',
+        );
+        const previewLoading = document.querySelector<HTMLElement>(
           '.install-preview-loading',
         );
         if (previewContainer) {
@@ -941,14 +995,19 @@ export class ModalManager {
     this.showOverlay();
     modal.style.display = 'block';
 
-    const closeBtn = modal.querySelector('#close-plugin-update-modal');
-    closeBtn.addEventListener('click', () => {
+    const closeBtn = modal.querySelector<HTMLButtonElement>(
+      '#close-plugin-update-modal',
+    );
+    closeBtn!.addEventListener('click', () => {
       this.closePluginUpdateModal();
     });
 
-    const updateAllBtn = modal.querySelector('#update-all-plugins-btn');
-    updateAllBtn.addEventListener('click', async () => {
-      const updateButtons = modal.querySelectorAll(
+    const updateAllBtn = modal.querySelector<HTMLButtonElement>(
+      '#update-all-plugins-btn',
+    );
+
+    updateAllBtn!.addEventListener('click', async () => {
+      const updateButtons = modal.querySelectorAll<HTMLButtonElement>(
         '.update-plugin-btn:not(:disabled)',
       );
 
@@ -959,8 +1018,8 @@ export class ModalManager {
         return;
       }
 
-      updateAllBtn.disabled = true;
-      updateAllBtn.textContent = 'Updating all...';
+      updateAllBtn!.disabled = true;
+      updateAllBtn!.textContent = 'Updating all...';
 
       for (const btn of updateButtons) {
         const pluginName = btn.dataset.pluginName;
@@ -984,7 +1043,7 @@ export class ModalManager {
           );
         }
 
-        const updateItem = modal.querySelector(
+        const updateItem = modal.querySelector<HTMLElement>(
           `[data-plugin-name="${pluginName}"]`,
         );
         if (updateItem) {
@@ -1000,7 +1059,9 @@ export class ModalManager {
       }, 1000);
     });
 
-    const updateButtons = modal.querySelectorAll('.update-plugin-btn');
+    const updateButtons =
+      modal.querySelectorAll<HTMLButtonElement>('.update-plugin-btn');
+
     updateButtons.forEach((btn) => {
       btn.addEventListener('click', async () => {
         const pluginName = btn.dataset.pluginName;
@@ -1038,9 +1099,10 @@ export class ModalManager {
           );
         }
 
-        const updateItem = modal.querySelector(
+        const updateItem = modal.querySelector<HTMLElement>(
           `[data-plugin-name="${pluginName}"]`,
         );
+
         if (updateItem) {
           updateItem.style.opacity = '0.5';
         }
@@ -1122,7 +1184,7 @@ export class ModalManager {
     }
 
     const closeBtn = modal.querySelector('#close-marketplace-modal');
-    closeBtn.addEventListener('click', () => {
+    closeBtn!.addEventListener('click', () => {
       this.closePluginMarketplaceModal();
     });
 

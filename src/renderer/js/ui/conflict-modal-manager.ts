@@ -444,7 +444,7 @@ export class ConflictModalManager {
     };
 
     const excludedModPaths = new Set();
-    const checkboxes = document.querySelectorAll(
+    const checkboxes = document.querySelectorAll<HTMLElement>(
       '.conflict-auto-slot-checkbox:checked',
     );
     checkboxes.forEach((checkbox) => {
@@ -470,7 +470,7 @@ export class ConflictModalManager {
 
     let successCount = 0;
     let errorCount = 0;
-    const errors = [];
+    const errors: string[] = [];
 
     for (const mod of modsToChange) {
       try {
@@ -539,7 +539,7 @@ export class ConflictModalManager {
           continue;
         }
 
-        let availableSlot = null;
+        let availableSlot: number | null = null;
         for (let i = 0; i <= 7; i++) {
           let isAvailableForAll = true;
 
@@ -632,7 +632,7 @@ export class ConflictModalManager {
         const whitelistPatterns =
           window.settingsManager.settings.conflictWhitelistPatterns || [];
         setTimeout(() => {
-          window.modManager.checkConflicts(whitelistPatterns);
+          window.modManager!.checkConflicts(whitelistPatterns);
         }, 500);
       }
     }
@@ -662,7 +662,7 @@ export class ConflictModalManager {
             actionButton: {
               text: t('toasts.viewLogs'),
               onClick: () => {
-                const settingsBtn = document.querySelector(
+                const settingsBtn = document.querySelector<HTMLButtonElement>(
                   '[data-tab="settings"]',
                 );
                 if (settingsBtn) {
@@ -672,9 +672,10 @@ export class ConflictModalManager {
                 setTimeout(() => {
                   if (window.settingsManager) {
                     window.settingsManager.switchSettingsTab('logs');
+
                     if (window.logsManager) {
                       setTimeout(() => {
-                        window.logsManager.reinitialize();
+                        window.logsManager!.reinitialize();
                       }, 250);
                     }
                   }

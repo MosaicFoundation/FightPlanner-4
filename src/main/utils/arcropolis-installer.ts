@@ -320,9 +320,6 @@ export async function extractAndInstallSkyline(
 
 /**
  * Extract ARCropolis ZIP and copy romfs files to target directory
- * @param {string} zipPath - Path to ARCropolis ZIP file
- * @param {string} targetDir - Target directory (e.g., atmosphere/contents/01006A800016E000/)
- * @returns {Promise<{success: boolean, romfsPath: string}>}
  */
 export async function extractAndInstallArcropolis(
   zipPath: string,

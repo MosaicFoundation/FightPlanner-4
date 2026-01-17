@@ -61,7 +61,11 @@ const electronAPI = {
   scanModSlots: (modPath) => ipcRenderer.invoke('scan-mod-slots', modPath),
   scanModSlotsByFighter: (modPath, fighterId) =>
     ipcRenderer.invoke('scan-mod-slots-by-fighter', modPath, fighterId),
-  getUsedSlotsForFighter: (modsPath, fighterId, excludeModPath = null) =>
+  getUsedSlotsForFighter: (
+    modsPath,
+    fighterId,
+    excludeModPath: string | null = null,
+  ) =>
     ipcRenderer.invoke(
       'get-used-slots-for-fighter',
       modsPath,

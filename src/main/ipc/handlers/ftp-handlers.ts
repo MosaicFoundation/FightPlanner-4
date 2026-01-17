@@ -14,7 +14,7 @@ import {
 function copyRecursiveSync(src, dest) {
   const exists = fs.existsSync(src);
   const stats = exists && fs.statSync(src);
-  const isDirectory = exists && stats.isDirectory();
+  const isDirectory = stats && stats.isDirectory();
 
   if (isDirectory) {
     if (!fs.existsSync(dest)) {
@@ -80,7 +80,7 @@ async function sendModsToDrive(config) {
     if (config.recentMods && config.recentMods.length > 0) {
       for (const mod of config.recentMods) {
         try {
-          let localModPath = null;
+          let localModPath: string | null = null;
           if (mod.folderPath && fs.existsSync(mod.folderPath)) {
             localModPath = mod.folderPath;
           } else {
@@ -176,7 +176,7 @@ async function sendModsToDrive(config) {
     }
 
     console.log(
-      `Successfully transferred ${transferredCount} files to drive ${driveLetter}:`,
+      `Successfully transferred ${transferredCount} files to drive ${config.switchDriveLetter}:`,
     );
     return { success: true, transferredCount };
   } catch (error) {
@@ -216,7 +216,7 @@ export function registerFtpHandlers(ipcMain) {
       if (config.recentMods && config.recentMods.length > 0) {
         for (const mod of config.recentMods) {
           try {
-            let localModPath = null;
+            let localModPath: string | null = null;
             if (mod.folderPath && fs.existsSync(mod.folderPath)) {
               localModPath = mod.folderPath;
             } else {

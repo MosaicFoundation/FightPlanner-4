@@ -124,7 +124,7 @@ let steps = [
             'tutorial.hardwareType',
           );
           if (hardwareType) {
-            const radio = document.querySelector(
+            const radio = document.querySelector<HTMLInputElement>(
               `input[name="hardware-type"][value="${hardwareType}"]`,
             );
             if (radio) {
@@ -145,13 +145,13 @@ let steps = [
       }
 
       const checkAndSave = async () => {
-        const hardwareSelected = document.querySelector(
+        const hardwareSelected = document.querySelector<HTMLInputElement>(
           'input[name="hardware-type"]:checked',
         );
 
         if (hardwareSelected && window.tutorialAPI) {
           const hardwareType = hardwareSelected.value;
-          await window.tutorialAPI.saveSetting(
+          await window.tutorialAPI!.saveSetting(
             'tutorial.hardwareType',
             hardwareType,
           );
@@ -284,7 +284,7 @@ let steps = [
             arcropolisInstalled !== undefined
           ) {
             const value = arcropolisInstalled ? 'yes' : 'no';
-            const radio = document.querySelector(
+            const radio = document.querySelector<HTMLInputElement>(
               `input[name="arcropolis-installed"][value="${value}"]`,
             );
             if (radio) {
@@ -305,7 +305,7 @@ let steps = [
       }
 
       const checkAndSave = async () => {
-        const arcropolisSelected = document.querySelector(
+        const arcropolisSelected = document.querySelector<HTMLInputElement>(
           'input[name="arcropolis-installed"]:checked',
         );
 
@@ -357,10 +357,10 @@ let steps = [
 `,
     onRender: async () => {
       // Check if this step should be shown
-      const hardwareType = await window.tutorialAPI?.getSetting(
+      const hardwareType = await window.tutorialAPI!.getSetting(
         'tutorial.hardwareType',
       );
-      const arcropolisInstalled = await window.tutorialAPI?.getSetting(
+      const arcropolisInstalled = await window.tutorialAPI!.getSetting(
         'tutorial.arcropolisInstalled',
       );
 
@@ -390,7 +390,7 @@ let steps = [
             const drives = result.drives;
 
             if (drives.length === 0) {
-              statusDiv.innerHTML = `
+              statusDiv!.innerHTML = `
                             <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
                                 <p style="color: #ffc107; margin-bottom: 16px;">No drives detected. Please insert your SD card and click "Detect Again".</p>
                                 <button id="retry-detect-btn" style="background: rgba(122, 155, 255, 0.2); color: #7a9bff; border: 1px solid rgba(122, 155, 255, 0.3); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
@@ -401,16 +401,16 @@ let steps = [
               document
                 .getElementById('retry-detect-btn')
                 ?.addEventListener('click', () => {
-                  statusDiv.innerHTML =
+                  statusDiv!.innerHTML =
                     '<div style="text-align: center; color: #fff;">Detecting drives...</div>';
                   setTimeout(() => this.onRender(), 1000);
                 });
             } else if (drives.length === 1) {
               const drive = drives[0];
               const sdPath = drive.path;
-              await window.tutorialAPI.saveSetting('tutorial.sdDrive', sdPath);
+              await window.tutorialAPI!.saveSetting('tutorial.sdDrive', sdPath);
 
-              statusDiv.innerHTML = `
+              statusDiv!.innerHTML = `
                             <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                                     <div style="display: flex; align-items: center; gap: 12px;">
@@ -430,13 +430,13 @@ let steps = [
               document
                 .getElementById('wrong-drive-btn')
                 ?.addEventListener('click', async () => {
-                  const result = await window.tutorialAPI.selectDrive();
+                  const result = await window.tutorialAPI!.selectDrive();
                   if (result.success && !result.canceled) {
-                    await window.tutorialAPI.saveSetting(
+                    await window.tutorialAPI!.saveSetting(
                       'tutorial.sdDrive',
                       result.path,
                     );
-                    statusDiv.innerHTML = `
+                    statusDiv!.innerHTML = `
                                     <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                                         <div style="display: flex; align-items: center; justify-content: space-between;">
                                             <div style="display: flex; align-items: center; gap: 12px;">
@@ -454,13 +454,13 @@ let steps = [
                     document
                       .getElementById('wrong-drive-btn-2')
                       ?.addEventListener('click', async () => {
-                        const result2 = await window.tutorialAPI.selectDrive();
+                        const result2 = await window.tutorialAPI!.selectDrive();
                         if (result2.success && !result2.canceled) {
-                          await window.tutorialAPI.saveSetting(
+                          await window.tutorialAPI!.saveSetting(
                             'tutorial.sdDrive',
                             result2.path,
                           );
-                          statusDiv.innerHTML = `
+                          statusDiv!.innerHTML = `
                                             <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                                                 <div style="display: flex; align-items: center; gap: 12px;">
                                                     <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 24px;"></i>
@@ -481,7 +481,7 @@ let steps = [
               }
             } else {
               // Multiple drives - show selector
-              statusDiv.innerHTML = `
+              statusDiv!.innerHTML = `
                             <div style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px;">
                                 <p style="color: #fff; margin-bottom: 12px; font-weight: 600;">Multiple drives detected. Please select your SD card:</p>
                                 <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -501,14 +501,16 @@ let steps = [
                             </div>
                         `;
 
-              document.querySelectorAll('.drive-select-btn').forEach((btn) => {
-                btn.addEventListener('click', async () => {
-                  const path = btn.dataset.path;
-                  await window.tutorialAPI.saveSetting(
-                    'tutorial.sdDrive',
-                    path,
-                  );
-                  statusDiv.innerHTML = `
+              document
+                .querySelectorAll<HTMLElement>('.drive-select-btn')
+                .forEach((btn) => {
+                  btn.addEventListener('click', async () => {
+                    const path = btn.dataset.path;
+                    await window.tutorialAPI!.saveSetting(
+                      'tutorial.sdDrive',
+                      path,
+                    );
+                    statusDiv!.innerHTML = `
                                     <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                                         <div style="display: flex; align-items: center; gap: 12px;">
                                             <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 24px;"></i>
@@ -518,23 +520,23 @@ let steps = [
                                         </div>
                                     </div>
                                 `;
-                  if (nextBtn) {
-                    nextBtn.style.opacity = '1';
-                    nextBtn.style.pointerEvents = 'auto';
-                  }
+                    if (nextBtn) {
+                      nextBtn.style.opacity = '1';
+                      nextBtn.style.pointerEvents = 'auto';
+                    }
+                  });
                 });
-              });
 
               document
                 .getElementById('manual-select-btn')
                 ?.addEventListener('click', async () => {
-                  const result = await window.tutorialAPI.selectDrive();
+                  const result = await window.tutorialAPI!.selectDrive();
                   if (result.success && !result.canceled) {
-                    await window.tutorialAPI.saveSetting(
+                    await window.tutorialAPI!.saveSetting(
                       'tutorial.sdDrive',
                       result.path,
                     );
-                    statusDiv.innerHTML = `
+                    statusDiv!.innerHTML = `
                                     <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                                         <div style="display: flex; align-items: center; gap: 12px;">
                                             <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 24px;"></i>
@@ -554,7 +556,7 @@ let steps = [
           }
         } catch (error) {
           console.error('Error detecting drives:', error);
-          statusDiv.innerHTML = `
+          statusDiv!.innerHTML = `
                     <div style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
                         <p style="color: #ff4d4d;">Error detecting drives. Please use manual selection.</p>
                         <button id="manual-select-error-btn" style="margin-top: 12px; padding: 10px 20px; background: rgba(122, 155, 255, 0.2); color: #7a9bff; border: 1px solid rgba(122, 155, 255, 0.3); border-radius: 8px; cursor: pointer; font-weight: 600;">
@@ -565,13 +567,13 @@ let steps = [
           document
             .getElementById('manual-select-error-btn')
             ?.addEventListener('click', async () => {
-              const result = await window.tutorialAPI.selectDrive();
+              const result = await window.tutorialAPI!.selectDrive();
               if (result.success && !result.canceled) {
-                await window.tutorialAPI.saveSetting(
+                await window.tutorialAPI!.saveSetting(
                   'tutorial.sdDrive',
                   result.path,
                 );
-                statusDiv.innerHTML = `
+                statusDiv!.innerHTML = `
                             <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                                 <div style="display: flex; align-items: center; gap: 12px;">
                                     <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 24px;"></i>
@@ -640,15 +642,16 @@ let steps = [
       }
 
       try {
-        const sdDrive = await window.tutorialAPI.getSetting('tutorial.sdDrive');
+        const sdDrive =
+          await window.tutorialAPI!.getSetting('tutorial.sdDrive');
         if (!sdDrive) {
-          statusDiv.innerHTML =
+          statusDiv!.innerHTML =
             '<div style="color: #ff4d4d;">Error: SD card path not found. Please go back and select your SD card.</div>';
           return;
         }
 
         // Get latest releases (Skyline for exefs, ARCropolis for romfs)
-        statusDiv.innerHTML = `
+        statusDiv!.innerHTML = `
                 <div style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px;">
                     <div style="color: #fff; margin-bottom: 8px;">Fetching latest releases...</div>
                     <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
@@ -657,16 +660,16 @@ let steps = [
                 </div>
             `;
 
-        const skylineRelease = await window.tutorialAPI.getSkylineRelease();
+        const skylineRelease = await window.tutorialAPI!.getSkylineRelease();
         if (!skylineRelease.success)
           throw new Error('Failed to get Skyline release');
 
-        const arcropolisRelease = await window.tutorialAPI.getGithubRelease();
+        const arcropolisRelease = await window.tutorialAPI!.getGithubRelease();
         if (!arcropolisRelease.success)
           throw new Error('Failed to get ARCropolis release');
 
-        progressBar.style.width = '20%';
-        statusDiv.innerHTML = `
+        progressBar!.style.width = '20%';
+        statusDiv!.innerHTML = `
                 <div style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px;">
                     <div style="color: #fff; margin-bottom: 8px;">Downloading Skyline ${skylineRelease.version} (exefs)...</div>
                     <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
@@ -676,10 +679,10 @@ let steps = [
             `;
 
         // Download Skyline - get temp directory
-        const tempDirResult = await window.tutorialAPI.getTempDir();
+        const tempDirResult = await window.tutorialAPI!.getTempDir();
         if (!tempDirResult.success)
           throw new Error('Failed to get temp directory');
-        const skylineTempPathResult = await window.tutorialAPI.joinPath(
+        const skylineTempPathResult = await window.tutorialAPI!.joinPath(
           tempDirResult.path,
           `skyline-${Date.now()}.zip`,
         );
@@ -687,15 +690,15 @@ let steps = [
           throw new Error('Failed to construct temp path');
         const skylineTempPath = skylineTempPathResult.path;
         const skylineDownloadResult =
-          await window.tutorialAPI.downloadArcropolis(
+          await window.tutorialAPI!.downloadArcropolis(
             skylineRelease.downloadUrl,
             skylineTempPath,
           );
         if (!skylineDownloadResult.success)
           throw new Error('Skyline download failed');
 
-        progressBar.style.width = '40%';
-        statusDiv.innerHTML = `
+        progressBar!.style.width = '40%';
+        statusDiv!.innerHTML = `
                 <div style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px;">
                     <div style="color: #fff; margin-bottom: 8px;">Downloading ARCropolis ${arcropolisRelease.version} (romfs)...</div>
                     <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
@@ -705,7 +708,7 @@ let steps = [
             `;
 
         // Download ARCropolis
-        const arcropolisTempPathResult = await window.tutorialAPI.joinPath(
+        const arcropolisTempPathResult = await window.tutorialAPI!.joinPath(
           tempDirResult.path,
           `arcropolis-${Date.now()}.zip`,
         );
@@ -713,15 +716,15 @@ let steps = [
           throw new Error('Failed to construct temp path');
         const arcropolisTempPath = arcropolisTempPathResult.path;
         const arcropolisDownloadResult =
-          await window.tutorialAPI.downloadArcropolis(
+          await window.tutorialAPI!.downloadArcropolis(
             arcropolisRelease.downloadUrl,
             arcropolisTempPath,
           );
         if (!arcropolisDownloadResult.success)
           throw new Error('ARCropolis download failed');
 
-        progressBar.style.width = '60%';
-        statusDiv.innerHTML = `
+        progressBar!.style.width = '60%';
+        statusDiv!.innerHTML = `
                 <div style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px;">
                     <div style="color: #fff; margin-bottom: 8px;">Installing Skyline (exefs)...</div>
                     <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
@@ -731,7 +734,7 @@ let steps = [
             `;
 
         // Extract and install Skyline (exefs) - construct paths
-        const targetDirResult = await window.tutorialAPI.joinPath(
+        const targetDirResult = await window.tutorialAPI!.joinPath(
           sdDrive,
           'atmosphere',
           'contents',
@@ -740,16 +743,16 @@ let steps = [
         if (!targetDirResult.success)
           throw new Error('Failed to construct target path');
         const targetDir = targetDirResult.path;
-        await window.tutorialAPI.createDirectory(targetDir);
-        const skylineExtractResult = await window.tutorialAPI.extractSkyline(
+        await window.tutorialAPI!.createDirectory(targetDir);
+        const skylineExtractResult = await window.tutorialAPI!.extractSkyline(
           skylineDownloadResult.path,
           targetDir,
         );
         if (!skylineExtractResult.success)
           throw new Error('Skyline extraction failed');
 
-        progressBar.style.width = '80%';
-        statusDiv.innerHTML = `
+        progressBar!.style.width = '80%';
+        statusDiv!.innerHTML = `
                 <div style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px;">
                     <div style="color: #fff; margin-bottom: 8px;">Installing ARCropolis (romfs)...</div>
                     <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
@@ -760,7 +763,7 @@ let steps = [
 
         // Extract and install ARCropolis (romfs)
         const arcropolisExtractResult =
-          await window.tutorialAPI.extractArcropolis(
+          await window.tutorialAPI!.extractArcropolis(
             arcropolisDownloadResult.path,
             targetDir,
           );
@@ -768,7 +771,7 @@ let steps = [
           throw new Error('ARCropolis extraction failed');
 
         // Create mods directory
-        const modsDirResult = await window.tutorialAPI.joinPath(
+        const modsDirResult = await window.tutorialAPI!.joinPath(
           sdDrive,
           'ultimate',
           'mods',
@@ -776,10 +779,10 @@ let steps = [
         if (!modsDirResult.success)
           throw new Error('Failed to construct mods path');
         const modsDir = modsDirResult.path;
-        await window.tutorialAPI.createDirectory(modsDir);
+        await window.tutorialAPI!.createDirectory(modsDir);
 
-        progressBar.style.width = '100%';
-        statusDiv.innerHTML = `
+        progressBar!.style.width = '100%';
+        statusDiv!.innerHTML = `
                 <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 24px;"></i>
@@ -797,7 +800,7 @@ let steps = [
         }
       } catch (error) {
         console.error('Installation error:', error);
-        statusDiv.innerHTML = `
+        statusDiv!.innerHTML = `
                 <div style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 12px; padding: 16px;">
                     <div style="color: #ff4d4d; margin-bottom: 12px;">
                         <strong>Installation failed:</strong> ${error.message}
@@ -892,12 +895,12 @@ let steps = [
       }
 
       verifyYesBtn?.addEventListener('click', async () => {
-        await window.tutorialAPI.saveSetting(
+        await window.tutorialAPI!.saveSetting(
           'tutorial.arcropolisVerified',
           true,
         );
         const statusDiv = document.getElementById('verification-status');
-        statusDiv.innerHTML = `
+        statusDiv!.innerHTML = `
                 <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
                     <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 32px; margin-bottom: 12px;"></i>
                     <p style="color: #fff; margin-bottom: 16px;">Great! ARCropolis is working correctly.</p>
@@ -912,7 +915,7 @@ let steps = [
 
       verifyNoBtn?.addEventListener('click', () => {
         const statusDiv = document.getElementById('verification-status');
-        statusDiv.innerHTML = `
+        statusDiv!.innerHTML = `
                 <div style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
                     <i class="bi bi-exclamation-triangle-fill" style="color: #ff4d4d; font-size: 32px; margin-bottom: 12px;"></i>
                     <p style="color: #fff; margin-bottom: 16px;">ARCropolis is not working.</p>
@@ -988,12 +991,12 @@ let steps = [
         nextBtn.style.pointerEvents = 'none';
       }
 
-      yuzuBtn?.addEventListener('click', async () => {
-        await window.tutorialAPI.saveSetting('tutorial.emulatorType', 'yuzu');
-        yuzuBtn.style.background = 'rgba(76, 175, 80, 0.2)';
-        yuzuBtn.style.borderColor = 'rgba(76, 175, 80, 0.5)';
-        ryujinxBtn.style.background = 'rgba(122, 155, 255, 0.1)';
-        ryujinxBtn.style.borderColor = 'rgba(122, 155, 255, 0.3)';
+      yuzuBtn!.addEventListener('click', async () => {
+        await window.tutorialAPI!.saveSetting('tutorial.emulatorType', 'yuzu');
+        yuzuBtn!.style.background = 'rgba(76, 175, 80, 0.2)';
+        yuzuBtn!.style.borderColor = 'rgba(76, 175, 80, 0.5)';
+        ryujinxBtn!.style.background = 'rgba(122, 155, 255, 0.1)';
+        ryujinxBtn!.style.borderColor = 'rgba(122, 155, 255, 0.3)';
         // Update dots to show new steps
         await renderProgressDots();
         if (nextBtn) {
@@ -1002,15 +1005,15 @@ let steps = [
         }
       });
 
-      ryujinxBtn?.addEventListener('click', async () => {
-        await window.tutorialAPI.saveSetting(
+      ryujinxBtn!.addEventListener('click', async () => {
+        await window.tutorialAPI!.saveSetting(
           'tutorial.emulatorType',
           'ryujinx',
         );
-        ryujinxBtn.style.background = 'rgba(76, 175, 80, 0.2)';
-        ryujinxBtn.style.borderColor = 'rgba(76, 175, 80, 0.5)';
-        yuzuBtn.style.background = 'rgba(122, 155, 255, 0.1)';
-        yuzuBtn.style.borderColor = 'rgba(122, 155, 255, 0.3)';
+        ryujinxBtn!.style.background = 'rgba(76, 175, 80, 0.2)';
+        ryujinxBtn!.style.borderColor = 'rgba(76, 175, 80, 0.5)';
+        yuzuBtn!.style.background = 'rgba(122, 155, 255, 0.1)';
+        yuzuBtn!.style.borderColor = 'rgba(122, 155, 255, 0.3)';
         // Update dots to show new steps
         await renderProgressDots();
         if (nextBtn) {
@@ -1024,9 +1027,9 @@ let steps = [
         'tutorial.emulatorType',
       );
       if (emulatorType === 'yuzu') {
-        yuzuBtn?.click();
+        yuzuBtn!.click();
       } else if (emulatorType === 'ryujinx') {
-        ryujinxBtn?.click();
+        ryujinxBtn!.click();
       }
     },
   },
@@ -1083,13 +1086,13 @@ let steps = [
       }
 
       try {
-        const result = await window.tutorialAPI.detectYuzuPath();
+        const result = await window.tutorialAPI!.detectYuzuPath();
         if (result.success && result.path) {
-          await window.tutorialAPI.saveSetting(
+          await window.tutorialAPI!.saveSetting(
             'tutorial.yuzuPath',
             result.path,
           );
-          statusDiv.innerHTML = `
+          statusDiv!.innerHTML = `
                     <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                             <div style="display: flex; align-items: center; gap: 12px;">
@@ -1109,10 +1112,13 @@ let steps = [
           document
             .getElementById('wrong-yuzu-path-btn')
             ?.addEventListener('click', async () => {
-              const path = await window.tutorialAPI.selectFolder();
+              const path = await window.tutorialAPI!.selectFolder();
               if (path) {
-                await window.tutorialAPI.saveSetting('tutorial.yuzuPath', path);
-                statusDiv.innerHTML = `
+                await window.tutorialAPI!.saveSetting(
+                  'tutorial.yuzuPath',
+                  path,
+                );
+                statusDiv!.innerHTML = `
                             <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                                 <div style="display: flex; align-items: center; justify-content: space-between;">
                                     <div style="display: flex; align-items: center; gap: 12px;">
@@ -1130,13 +1136,13 @@ let steps = [
                 document
                   .getElementById('wrong-yuzu-path-btn-2')
                   ?.addEventListener('click', async () => {
-                    const path2 = await window.tutorialAPI.selectFolder();
+                    const path2 = await window.tutorialAPI!.selectFolder();
                     if (path2) {
-                      await window.tutorialAPI.saveSetting(
+                      await window.tutorialAPI!.saveSetting(
                         'tutorial.yuzuPath',
                         path2,
                       );
-                      statusDiv.innerHTML = `
+                      statusDiv!.innerHTML = `
                                     <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                                         <div style="display: flex; align-items: center; gap: 12px;">
                                             <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 24px;"></i>
@@ -1156,7 +1162,7 @@ let steps = [
             nextBtn.style.pointerEvents = 'auto';
           }
         } else {
-          statusDiv.innerHTML = `
+          statusDiv!.innerHTML = `
                     <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 12px; padding: 16px;">
                         <p style="color: #ffc107; margin-bottom: 16px;">Yuzu path not detected automatically.</p>
                         <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin-bottom: 16px;">Please open Yuzu, go to <strong style="color: #fff;">File > Open yuzu folder</strong>, then copy the path and select it below.</p>
@@ -1168,10 +1174,13 @@ let steps = [
           document
             .getElementById('select-yuzu-btn')
             ?.addEventListener('click', async () => {
-              const path = await window.tutorialAPI.selectFolder();
+              const path = await window.tutorialAPI!.selectFolder();
               if (path) {
-                await window.tutorialAPI.saveSetting('tutorial.yuzuPath', path);
-                statusDiv.innerHTML = `
+                await window.tutorialAPI!.saveSetting(
+                  'tutorial.yuzuPath',
+                  path,
+                );
+                statusDiv!.innerHTML = `
                             <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                                 <div style="display: flex; align-items: center; gap: 12px;">
                                     <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 24px;"></i>
@@ -1190,7 +1199,7 @@ let steps = [
         }
       } catch (error) {
         console.error('Error detecting Yuzu:', error);
-        statusDiv.innerHTML =
+        statusDiv!.innerHTML =
           '<div style="color: #ff4d4d;">Error detecting Yuzu. Please select manually.</div>';
       }
     },
@@ -1245,30 +1254,30 @@ let steps = [
 
       try {
         const yuzuPath =
-          await window.tutorialAPI.getSetting('tutorial.yuzuPath');
+          await window.tutorialAPI!.getSetting('tutorial.yuzuPath');
         if (!yuzuPath) {
-          statusDiv.innerHTML =
+          statusDiv!.innerHTML =
             '<div style="color: #ff4d4d;">Error: Yuzu path not found. Please go back and select your Yuzu folder.</div>';
           return;
         }
 
         // Get latest releases (Skyline for exefs, ARCropolis for romfs)
-        statusDiv.innerHTML =
+        statusDiv!.innerHTML =
           '<div style="color: #fff;">Fetching latest releases...</div>';
-        const skylineRelease = await window.tutorialAPI.getSkylineRelease();
+        const skylineRelease = await window.tutorialAPI!.getSkylineRelease();
         if (!skylineRelease.success)
           throw new Error('Failed to get Skyline release');
-        const arcropolisRelease = await window.tutorialAPI.getGithubRelease();
+        const arcropolisRelease = await window.tutorialAPI!.getGithubRelease();
         if (!arcropolisRelease.success)
           throw new Error('Failed to get ARCropolis release');
 
         // Download Skyline
-        statusDiv.innerHTML =
+        statusDiv!.innerHTML =
           '<div style="color: #fff;">Downloading Skyline (exefs)...</div>';
-        const tempDirResult = await window.tutorialAPI.getTempDir();
+        const tempDirResult = await window.tutorialAPI!.getTempDir();
         if (!tempDirResult.success)
           throw new Error('Failed to get temp directory');
-        const skylineTempPathResult = await window.tutorialAPI.joinPath(
+        const skylineTempPathResult = await window.tutorialAPI!.joinPath(
           tempDirResult.path,
           `skyline-${Date.now()}.zip`,
         );
@@ -1276,7 +1285,7 @@ let steps = [
           throw new Error('Failed to construct temp path');
         const skylineTempPath = skylineTempPathResult.path;
         const skylineDownloadResult =
-          await window.tutorialAPI.downloadArcropolis(
+          await window.tutorialAPI!.downloadArcropolis(
             skylineRelease.downloadUrl,
             skylineTempPath,
           );
@@ -1284,9 +1293,9 @@ let steps = [
           throw new Error('Skyline download failed');
 
         // Download ARCropolis
-        statusDiv.innerHTML =
+        statusDiv!.innerHTML =
           '<div style="color: #fff;">Downloading ARCropolis (romfs)...</div>';
-        const arcropolisTempPathResult = await window.tutorialAPI.joinPath(
+        const arcropolisTempPathResult = await window.tutorialAPI!.joinPath(
           tempDirResult.path,
           `arcropolis-${Date.now()}.zip`,
         );
@@ -1294,7 +1303,7 @@ let steps = [
           throw new Error('Failed to construct temp path');
         const arcropolisTempPath = arcropolisTempPathResult.path;
         const arcropolisDownloadResult =
-          await window.tutorialAPI.downloadArcropolis(
+          await window.tutorialAPI!.downloadArcropolis(
             arcropolisRelease.downloadUrl,
             arcropolisTempPath,
           );
@@ -1302,7 +1311,7 @@ let steps = [
           throw new Error('ARCropolis download failed');
 
         // Create directories
-        const ultimateModsPathResult = await window.tutorialAPI.joinPath(
+        const ultimateModsPathResult = await window.tutorialAPI!.joinPath(
           yuzuPath,
           'sdmc',
           'ultimate',
@@ -1310,12 +1319,12 @@ let steps = [
         );
         if (!ultimateModsPathResult.success)
           throw new Error('Failed to construct mods path');
-        await window.tutorialAPI.createDirectory(ultimateModsPathResult.path);
+        await window.tutorialAPI!.createDirectory(ultimateModsPathResult.path);
 
         // Extract Skyline (exefs) to load directory
-        statusDiv.innerHTML =
+        statusDiv!.innerHTML =
           '<div style="color: #fff;">Installing Skyline (exefs)...</div>';
-        const loadPathResult = await window.tutorialAPI.joinPath(
+        const loadPathResult = await window.tutorialAPI!.joinPath(
           yuzuPath,
           'load',
           '01006A800016E000',
@@ -1323,8 +1332,8 @@ let steps = [
         if (!loadPathResult.success)
           throw new Error('Failed to construct load path');
         const loadPath = loadPathResult.path;
-        await window.tutorialAPI.createDirectory(loadPath);
-        const skylineExtractResult = await window.tutorialAPI.extractSkyline(
+        await window.tutorialAPI!.createDirectory(loadPath);
+        const skylineExtractResult = await window.tutorialAPI!.extractSkyline(
           skylineDownloadResult.path,
           loadPath,
         );
@@ -1332,17 +1341,17 @@ let steps = [
           throw new Error('Skyline extraction failed');
 
         // Extract ARCropolis (romfs)
-        statusDiv.innerHTML =
+        statusDiv!.innerHTML =
           '<div style="color: #fff;">Installing ARCropolis (romfs)...</div>';
         const arcropolisExtractResult =
-          await window.tutorialAPI.extractArcropolis(
+          await window.tutorialAPI!.extractArcropolis(
             arcropolisDownloadResult.path,
             loadPath,
           );
         if (!arcropolisExtractResult.success)
           throw new Error('ARCropolis extraction failed');
 
-        statusDiv.innerHTML = `
+        statusDiv!.innerHTML = `
                 <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 24px;"></i>
@@ -1360,7 +1369,7 @@ let steps = [
         }
       } catch (error) {
         console.error('Installation error:', error);
-        statusDiv.innerHTML = `
+        statusDiv!.innerHTML = `
                 <div style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 12px; padding: 16px;">
                     <div style="color: #ff4d4d; margin-bottom: 12px;">
                         <strong>Installation failed:</strong> ${error.message}
@@ -1460,15 +1469,15 @@ let steps = [
       }
 
       verifyYesBtn?.addEventListener('click', async () => {
-        await window.tutorialAPI.saveSetting(
+        await window.tutorialAPI!.saveSetting(
           'tutorial.arcropolisVerified',
           true,
         );
 
         // Check for arcropolis folder
         const yuzuPath =
-          await window.tutorialAPI.getSetting('tutorial.yuzuPath');
-        const ultimatePathResult = await window.tutorialAPI.joinPath(
+          await window.tutorialAPI!.getSetting('tutorial.yuzuPath');
+        const ultimatePathResult = await window.tutorialAPI!.joinPath(
           yuzuPath,
           'sdmc',
           'ultimate',
@@ -1477,11 +1486,11 @@ let steps = [
           throw new Error('Failed to construct ultimate path');
         const ultimatePath = ultimatePathResult.path;
         const arcropolisExists =
-          await window.tutorialAPI.checkArcropolisFolder(ultimatePath);
+          await window.tutorialAPI!.checkArcropolisFolder(ultimatePath);
 
         if (!arcropolisExists) {
           const statusDiv = document.getElementById('yuzu-verification-status');
-          statusDiv.innerHTML = `
+          statusDiv!.innerHTML = `
                     <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
                         <p style="color: #ffc107; margin-bottom: 12px;">ARCropolis folder not found. Please close the game and restart it to create the folder.</p>
                     </div>
@@ -1490,7 +1499,7 @@ let steps = [
         }
 
         // Auto-configure paths
-        const modsPathResult = await window.tutorialAPI.joinPath(
+        const modsPathResult = await window.tutorialAPI!.joinPath(
           yuzuPath,
           'sdmc',
           'ultimate',
@@ -1498,7 +1507,7 @@ let steps = [
         );
         if (!modsPathResult.success)
           throw new Error('Failed to construct mods path');
-        const pluginsPathResult = await window.tutorialAPI.joinPath(
+        const pluginsPathResult = await window.tutorialAPI!.joinPath(
           yuzuPath,
           'load',
           '01006A800016E000',
@@ -1508,14 +1517,14 @@ let steps = [
         );
         if (!pluginsPathResult.success)
           throw new Error('Failed to construct plugins path');
-        await window.tutorialAPI.saveSetting('modsPath', modsPathResult.path);
-        await window.tutorialAPI.saveSetting(
+        await window.tutorialAPI!.saveSetting('modsPath', modsPathResult.path);
+        await window.tutorialAPI!.saveSetting(
           'pluginsPath',
           pluginsPathResult.path,
         );
 
         const statusDiv = document.getElementById('yuzu-verification-status');
-        statusDiv.innerHTML = `
+        statusDiv!.innerHTML = `
                 <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
                     <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 32px; margin-bottom: 12px;"></i>
                     <p style="color: #fff; margin-bottom: 16px;">Perfect! ARCropolis is working and paths are configured.</p>
@@ -1530,7 +1539,7 @@ let steps = [
 
       verifyNoBtn?.addEventListener('click', () => {
         const statusDiv = document.getElementById('yuzu-verification-status');
-        statusDiv.innerHTML = `
+        statusDiv!.innerHTML = `
                 <div style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
                     <i class="bi bi-exclamation-triangle-fill" style="color: #ff4d4d; font-size: 32px; margin-bottom: 12px;"></i>
                     <p style="color: #fff; margin-bottom: 16px;">ARCropolis is not working.</p>
@@ -1610,13 +1619,13 @@ let steps = [
       }
 
       try {
-        const result = await window.tutorialAPI.detectRyujinxPath();
+        const result = await window.tutorialAPI!.detectRyujinxPath();
         if (result.success && result.path) {
-          await window.tutorialAPI.saveSetting(
+          await window.tutorialAPI!.saveSetting(
             'tutorial.ryujinxPath',
             result.path,
           );
-          statusDiv.innerHTML = `
+          statusDiv!.innerHTML = `
                     <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                             <div style="display: flex; align-items: center; gap: 12px;">
@@ -1636,13 +1645,13 @@ let steps = [
           document
             .getElementById('wrong-ryujinx-path-btn')
             ?.addEventListener('click', async () => {
-              const path = await window.tutorialAPI.selectFolder();
+              const path = await window.tutorialAPI!.selectFolder();
               if (path) {
-                await window.tutorialAPI.saveSetting(
+                await window.tutorialAPI!.saveSetting(
                   'tutorial.ryujinxPath',
                   path,
                 );
-                statusDiv.innerHTML = `
+                statusDiv!.innerHTML = `
                             <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                                 <div style="display: flex; align-items: center; justify-content: space-between;">
                                     <div style="display: flex; align-items: center; gap: 12px;">
@@ -1660,13 +1669,13 @@ let steps = [
                 document
                   .getElementById('wrong-ryujinx-path-btn-2')
                   ?.addEventListener('click', async () => {
-                    const path2 = await window.tutorialAPI.selectFolder();
+                    const path2 = await window.tutorialAPI!.selectFolder();
                     if (path2) {
-                      await window.tutorialAPI.saveSetting(
+                      await window.tutorialAPI!.saveSetting(
                         'tutorial.ryujinxPath',
                         path2,
                       );
-                      statusDiv.innerHTML = `
+                      statusDiv!.innerHTML = `
                                     <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                                         <div style="display: flex; align-items: center; gap: 12px;">
                                             <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 24px;"></i>
@@ -1686,7 +1695,7 @@ let steps = [
             nextBtn.style.pointerEvents = 'auto';
           }
         } else {
-          statusDiv.innerHTML = `
+          statusDiv!.innerHTML = `
                     <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 12px; padding: 16px;">
                         <p style="color: #ffc107; margin-bottom: 16px;">Ryujinx path not detected automatically.</p>
                         <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin-bottom: 16px;">Please open Ryujinx, go to <strong style="color: #fff;">File > Open Ryujinx folder</strong>, then copy the path and select it below.</p>
@@ -1698,13 +1707,13 @@ let steps = [
           document
             .getElementById('select-ryujinx-btn')
             ?.addEventListener('click', async () => {
-              const path = await window.tutorialAPI.selectFolder();
+              const path = await window.tutorialAPI!.selectFolder();
               if (path) {
-                await window.tutorialAPI.saveSetting(
+                await window.tutorialAPI!.saveSetting(
                   'tutorial.ryujinxPath',
                   path,
                 );
-                statusDiv.innerHTML = `
+                statusDiv!.innerHTML = `
                             <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                                 <div style="display: flex; align-items: center; gap: 12px;">
                                     <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 24px;"></i>
@@ -1723,7 +1732,7 @@ let steps = [
         }
       } catch (error) {
         console.error('Error detecting Ryujinx:', error);
-        statusDiv.innerHTML =
+        statusDiv!.innerHTML =
           '<div style="color: #ff4d4d;">Error detecting Ryujinx. Please select manually.</div>';
       }
     },
@@ -1744,13 +1753,13 @@ let steps = [
 </div>
 `,
     onRender: async () => {
-      const hardwareType = await window.tutorialAPI?.getSetting(
+      const hardwareType = await window.tutorialAPI!.getSetting(
         'tutorial.hardwareType',
       );
-      const emulatorType = await window.tutorialAPI?.getSetting(
+      const emulatorType = await window.tutorialAPI!.getSetting(
         'tutorial.emulatorType',
       );
-      const arcropolisInstalled = await window.tutorialAPI?.getSetting(
+      const arcropolisInstalled = await window.tutorialAPI!.getSetting(
         'tutorial.arcropolisInstalled',
       );
 
@@ -1777,32 +1786,32 @@ let steps = [
       }
 
       try {
-        const ryujinxPath = await window.tutorialAPI.getSetting(
+        const ryujinxPath = await window.tutorialAPI!.getSetting(
           'tutorial.ryujinxPath',
         );
         if (!ryujinxPath) {
-          statusDiv.innerHTML =
+          statusDiv!.innerHTML =
             '<div style="color: #ff4d4d;">Error: Ryujinx path not found. Please go back and select your Ryujinx folder.</div>';
           return;
         }
 
         // Get latest releases (Skyline for exefs, ARCropolis for romfs)
-        statusDiv.innerHTML =
+        statusDiv!.innerHTML =
           '<div style="color: #fff;">Fetching latest releases...</div>';
-        const skylineRelease = await window.tutorialAPI.getSkylineRelease();
+        const skylineRelease = await window.tutorialAPI!.getSkylineRelease();
         if (!skylineRelease.success)
           throw new Error('Failed to get Skyline release');
-        const arcropolisRelease = await window.tutorialAPI.getGithubRelease();
+        const arcropolisRelease = await window.tutorialAPI!.getGithubRelease();
         if (!arcropolisRelease.success)
           throw new Error('Failed to get ARCropolis release');
 
         // Download Skyline
-        statusDiv.innerHTML =
+        statusDiv!.innerHTML =
           '<div style="color: #fff;">Downloading Skyline (exefs)...</div>';
-        const tempDirResult = await window.tutorialAPI.getTempDir();
+        const tempDirResult = await window.tutorialAPI!.getTempDir();
         if (!tempDirResult.success)
           throw new Error('Failed to get temp directory');
-        const skylineTempPathResult = await window.tutorialAPI.joinPath(
+        const skylineTempPathResult = await window.tutorialAPI!.joinPath(
           tempDirResult.path,
           `skyline-${Date.now()}.zip`,
         );
@@ -1810,7 +1819,7 @@ let steps = [
           throw new Error('Failed to construct temp path');
         const skylineTempPath = skylineTempPathResult.path;
         const skylineDownloadResult =
-          await window.tutorialAPI.downloadArcropolis(
+          await window.tutorialAPI!.downloadArcropolis(
             skylineRelease.downloadUrl,
             skylineTempPath,
           );
@@ -1818,9 +1827,9 @@ let steps = [
           throw new Error('Skyline download failed');
 
         // Download ARCropolis
-        statusDiv.innerHTML =
+        statusDiv!.innerHTML =
           '<div style="color: #fff;">Downloading ARCropolis (romfs)...</div>';
-        const arcropolisTempPathResult = await window.tutorialAPI.joinPath(
+        const arcropolisTempPathResult = await window.tutorialAPI!.joinPath(
           tempDirResult.path,
           `arcropolis-${Date.now()}.zip`,
         );
@@ -1828,7 +1837,7 @@ let steps = [
           throw new Error('Failed to construct temp path');
         const arcropolisTempPath = arcropolisTempPathResult.path;
         const arcropolisDownloadResult =
-          await window.tutorialAPI.downloadArcropolis(
+          await window.tutorialAPI!.downloadArcropolis(
             arcropolisRelease.downloadUrl,
             arcropolisTempPath,
           );
@@ -1836,9 +1845,9 @@ let steps = [
           throw new Error('ARCropolis download failed');
 
         // Create directories and extract
-        statusDiv.innerHTML =
+        statusDiv!.innerHTML =
           '<div style="color: #fff;">Installing Skyline (exefs)...</div>';
-        const contentsPathResult = await window.tutorialAPI.joinPath(
+        const contentsPathResult = await window.tutorialAPI!.joinPath(
           ryujinxPath,
           'sdcard',
           'atmosphere',
@@ -1848,10 +1857,10 @@ let steps = [
         if (!contentsPathResult.success)
           throw new Error('Failed to construct contents path');
         const contentsPath = contentsPathResult.path;
-        await window.tutorialAPI.createDirectory(contentsPath);
+        await window.tutorialAPI!.createDirectory(contentsPath);
 
         // Extract Skyline (exefs)
-        const skylineExtractResult = await window.tutorialAPI.extractSkyline(
+        const skylineExtractResult = await window.tutorialAPI!.extractSkyline(
           skylineDownloadResult.path,
           contentsPath,
         );
@@ -1859,10 +1868,10 @@ let steps = [
           throw new Error('Skyline extraction failed');
 
         // Extract ARCropolis (romfs)
-        statusDiv.innerHTML =
+        statusDiv!.innerHTML =
           '<div style="color: #fff;">Installing ARCropolis (romfs)...</div>';
         const arcropolisExtractResult =
-          await window.tutorialAPI.extractArcropolis(
+          await window.tutorialAPI!.extractArcropolis(
             arcropolisDownloadResult.path,
             contentsPath,
           );
@@ -1870,7 +1879,7 @@ let steps = [
           throw new Error('ARCropolis extraction failed');
 
         // Create plugin directories
-        const pluginsPathResult = await window.tutorialAPI.joinPath(
+        const pluginsPathResult = await window.tutorialAPI!.joinPath(
           contentsPath,
           'romfs',
           'skyline',
@@ -1878,9 +1887,9 @@ let steps = [
         );
         if (!pluginsPathResult.success)
           throw new Error('Failed to construct plugins path');
-        await window.tutorialAPI.createDirectory(pluginsPathResult.path);
+        await window.tutorialAPI!.createDirectory(pluginsPathResult.path);
 
-        statusDiv.innerHTML = `
+        statusDiv!.innerHTML = `
                 <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 24px;"></i>
@@ -1898,7 +1907,7 @@ let steps = [
         }
       } catch (error) {
         console.error('Installation error:', error);
-        statusDiv.innerHTML = `
+        statusDiv!.innerHTML = `
                 <div style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 12px; padding: 16px;">
                     <div style="color: #ff4d4d; margin-bottom: 12px;">
                         <strong>Installation failed:</strong> ${error.message}
@@ -2000,16 +2009,16 @@ let steps = [
       }
 
       verifyYesBtn?.addEventListener('click', async () => {
-        await window.tutorialAPI.saveSetting(
+        await window.tutorialAPI!.saveSetting(
           'tutorial.arcropolisVerified',
           true,
         );
 
         // Auto-configure paths
-        const ryujinxPath = await window.tutorialAPI.getSetting(
+        const ryujinxPath = await window.tutorialAPI!.getSetting(
           'tutorial.ryujinxPath',
         );
-        const modsPathResult = await window.tutorialAPI.joinPath(
+        const modsPathResult = await window.tutorialAPI!.joinPath(
           ryujinxPath,
           'sdcard',
           'ultimate',
@@ -2017,7 +2026,7 @@ let steps = [
         );
         if (!modsPathResult.success)
           throw new Error('Failed to construct mods path');
-        const pluginsPathResult = await window.tutorialAPI.joinPath(
+        const pluginsPathResult = await window.tutorialAPI!.joinPath(
           ryujinxPath,
           'sdcard',
           'atmosphere',
@@ -2029,8 +2038,8 @@ let steps = [
         );
         if (!pluginsPathResult.success)
           throw new Error('Failed to construct plugins path');
-        await window.tutorialAPI.saveSetting('modsPath', modsPathResult.path);
-        await window.tutorialAPI.saveSetting(
+        await window.tutorialAPI!.saveSetting('modsPath', modsPathResult.path);
+        await window.tutorialAPI!.saveSetting(
           'pluginsPath',
           pluginsPathResult.path,
         );
@@ -2038,7 +2047,7 @@ let steps = [
         const statusDiv = document.getElementById(
           'ryujinx-verification-status',
         );
-        statusDiv.innerHTML = `
+        statusDiv!.innerHTML = `
                 <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
                     <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 32px; margin-bottom: 12px;"></i>
                     <p style="color: #fff; margin-bottom: 16px;">Perfect! ARCropolis is working and paths are configured.</p>
@@ -2055,7 +2064,7 @@ let steps = [
         const statusDiv = document.getElementById(
           'ryujinx-verification-status',
         );
-        statusDiv.innerHTML = `
+        statusDiv!.innerHTML = `
                 <div style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
                     <i class="bi bi-exclamation-triangle-fill" style="color: #ff4d4d; font-size: 32px; margin-bottom: 12px;"></i>
                     <p style="color: #fff; margin-bottom: 16px;">ARCropolis is not working.</p>
@@ -2116,7 +2125,9 @@ let steps = [
 `,
     onRender: async () => {
       const btn = document.getElementById('select-mods-path-btn');
-      const display = document.querySelector('#mods-path-display .path-text');
+      const display = document.querySelector<HTMLElement>(
+        '#mods-path-display .path-text',
+      );
       const nextBtn = document.getElementById('next-btn');
       const description = document.getElementById('mods-path-description');
 
@@ -2151,10 +2162,12 @@ let steps = [
       try {
         const currentPath = await window.tutorialAPI.getSetting('modsPath');
         if (currentPath) {
-          display.textContent = currentPath;
-          display.style.color = '#fff';
+          display!.textContent = currentPath;
+          display!.style.color = '#fff';
           // Add success indicator
-          const icon = document.querySelector('#mods-path-display i');
+          const icon = document.querySelector<HTMLElement>(
+            '#mods-path-display i',
+          );
           if (icon) {
             icon.className = 'bi bi-check-circle-fill';
             icon.style.color = '#4caf50';
@@ -2175,16 +2188,18 @@ let steps = [
       if (btn) {
         btn.addEventListener('click', async () => {
           try {
-            const path = await window.tutorialAPI.selectFolder();
+            const path = await window.tutorialAPI!.selectFolder();
             if (path) {
               // Save setting
-              await window.tutorialAPI.saveSetting('modsPath', path);
+              await window.tutorialAPI!.saveSetting('modsPath', path);
 
               // Update UI
-              display.textContent = path;
-              display.style.color = '#fff';
+              display!.textContent = path;
+              display!.style.color = '#fff';
 
-              const icon = document.querySelector('#mods-path-display i');
+              const icon = document.querySelector<HTMLElement>(
+                '#mods-path-display i',
+              );
               if (icon) {
                 icon.className = 'bi bi-check-circle-fill';
                 icon.style.color = '#4caf50';
@@ -2492,8 +2507,8 @@ function startAnimation() {
   const tutorialContainer = document.getElementById('tutorial-container');
   const tutorialWindow = document.querySelector('.tutorial-window');
 
-  const animation = lottie.loadAnimation({
-    container: lottieContainer,
+  const animation = window.lottie!.loadAnimation({
+    container: lottieContainer!,
     renderer: 'svg',
     loop: false,
     autoplay: false,
@@ -2505,49 +2520,49 @@ function startAnimation() {
   }, 200);
 
   setTimeout(() => {
-    tutorialWindow.classList.add('white-bg');
+    tutorialWindow!.classList.add('white-bg');
   }, 2330 + 200);
 
   setTimeout(() => {
-    lottieContainer.style.opacity = '0';
+    lottieContainer!.style.opacity = '0';
   }, 3200);
 
   setTimeout(() => {
-    welcomeText.classList.add('show');
+    welcomeText!.classList.add('show');
   }, 3500);
 
   setTimeout(() => {
-    screenshotPreview.classList.add('show');
+    screenshotPreview!.classList.add('show');
   }, 4500);
 
   setTimeout(() => {
-    welcomeText.classList.add('move-up');
-    screenshotPreview.classList.add('slide-up');
-    screenshotPreview.classList.add('clear');
+    welcomeText!.classList.add('move-up');
+    screenshotPreview!.classList.add('slide-up');
+    screenshotPreview!.classList.add('clear');
   }, 5000);
 
   setTimeout(() => {
-    welcomeText.style.opacity = '0';
-    screenshotPreview.style.opacity = '0';
-    lottieContainer.style.display = 'none';
+    welcomeText!.style.opacity = '0';
+    screenshotPreview!.style.opacity = '0';
+    lottieContainer!.style.display = 'none';
   }, 8000);
 
   setTimeout(async () => {
-    welcomeText.style.display = 'none';
-    screenshotPreview.style.display = 'none';
-    tutorialContainer.style.display = 'flex';
+    welcomeText!.style.display = 'none';
+    screenshotPreview!.style.display = 'none';
+    tutorialContainer!.style.display = 'flex';
 
     await renderProgressDots();
     renderStep(0);
 
     setTimeout(() => {
-      tutorialContainer.classList.add('show');
+      tutorialContainer!.classList.add('show');
     }, 50);
   }, 9000);
 }
 
 // Store previous visible steps for animation
-let previousVisibleSteps = [];
+let previousVisibleSteps: number[] = [];
 let isFirstRender = true;
 let previousActiveStepIndex = -1;
 
@@ -2555,7 +2570,7 @@ async function renderProgressDots() {
   const container = document.getElementById('progress-dots');
 
   // Calculate visible steps based on user answers - only show relevant steps
-  let visibleSteps = [];
+  let visibleSteps: number[] = [];
 
   // Always show welcome
   visibleSteps.push(0);
@@ -2638,8 +2653,8 @@ async function renderProgressDots() {
     !isFirstRender &&
     previousVisibleSteps.length > 0 &&
     visibleSteps.length > previousVisibleSteps.length;
-  const newStepIndices = [];
-  const removedStepIndices = [];
+  const newStepIndices: number[] = [];
+  const removedStepIndices: number[] = [];
 
   if (!isFirstRender && previousVisibleSteps.length > 0) {
     // Find which steps are new
@@ -2665,9 +2680,9 @@ async function renderProgressDots() {
   }
 
   // Animate out removed dots before updating
-  if (removedStepIndices.length > 0 && container.children.length > 0) {
+  if (removedStepIndices.length > 0 && container!.children.length > 0) {
     removedStepIndices.forEach((prevDisplayIndex) => {
-      const dot = container.children[prevDisplayIndex];
+      const dot = container!.children[prevDisplayIndex] as HTMLElement;
       if (dot) {
         dot.classList.add('removing-dot');
         dot.style.animation =
@@ -2769,7 +2784,7 @@ async function renderProgressDots() {
   }
 
   // Render dots with animation for new ones
-  container.innerHTML = visibleSteps
+  container!.innerHTML = visibleSteps
     .map((stepIndex, displayIndex) => {
       const isNew = newStepsAdded && newStepIndices.includes(displayIndex);
       const isActive = stepIndex === currentStep;
@@ -2785,13 +2800,13 @@ async function renderProgressDots() {
     .join('');
 
   // Handle active dot transition animation after DOM is updated
-  if (activeStepChanged && !wasFirstRender && container.children.length > 0) {
+  if (activeStepChanged && !wasFirstRender && container!.children.length > 0) {
     // Animate previous active dot deactivating (if it still exists in visible steps)
     if (
       previousActiveStepIndex >= 0 &&
-      previousActiveStepIndex < container.children.length
+      previousActiveStepIndex < container!.children.length
     ) {
-      const previousActiveDot = container.children[previousActiveStepIndex];
+      const previousActiveDot = container!.children[previousActiveStepIndex];
       if (previousActiveDot && previousActiveDot.classList.contains('active')) {
         previousActiveDot.classList.remove('active');
         previousActiveDot.classList.add('deactivating');
@@ -2804,9 +2819,12 @@ async function renderProgressDots() {
     // Animate new active dot activating
     if (
       currentActiveDisplayIndex >= 0 &&
-      currentActiveDisplayIndex < container.children.length
+      currentActiveDisplayIndex < container!.children.length
     ) {
-      const newActiveDot = container.children[currentActiveDisplayIndex];
+      const newActiveDot = container!.children[
+        currentActiveDisplayIndex
+      ] as HTMLElement;
+
       if (newActiveDot) {
         // Remove active class temporarily to trigger animation
         newActiveDot.classList.remove('active');
@@ -2823,10 +2841,10 @@ async function renderProgressDots() {
     // Animate completed dots
     for (
       let i = 0;
-      i < currentActiveDisplayIndex && i < container.children.length;
+      i < currentActiveDisplayIndex && i < container!.children.length;
       i++
     ) {
-      const completedDot = container.children[i];
+      const completedDot = container!.children[i];
       if (completedDot && completedDot.classList.contains('completed')) {
         completedDot.classList.add('completing');
         setTimeout(() => {
@@ -2837,10 +2855,10 @@ async function renderProgressDots() {
   } else if (
     !wasFirstRender &&
     currentActiveDisplayIndex >= 0 &&
-    currentActiveDisplayIndex < container.children.length
+    currentActiveDisplayIndex < container!.children.length
   ) {
     // Even if step didn't change, ensure active dot has animation on first appearance
-    const activeDot = container.children[currentActiveDisplayIndex];
+    const activeDot = container!.children[currentActiveDisplayIndex];
     if (
       activeDot &&
       activeDot.classList.contains('active') &&
@@ -2857,7 +2875,7 @@ async function renderProgressDots() {
   if (newStepsAdded && newStepIndices.length > 0) {
     setTimeout(() => {
       newStepIndices.forEach((displayIndex) => {
-        const dot = container.children[displayIndex];
+        const dot = container!.children[displayIndex] as HTMLElement;
         if (dot) {
           dot.classList.add('new-dot');
           // Force reflow to trigger animation
@@ -2868,16 +2886,18 @@ async function renderProgressDots() {
   }
 
   // Remove old event listeners by cloning and replacing
-  const oldDots = container.querySelectorAll('.tutorial-progress-dot');
+  const oldDots = container!.querySelectorAll('.tutorial-progress-dot');
   oldDots.forEach((dot) => {
     const newDot = dot.cloneNode(true);
-    dot.parentNode.replaceChild(newDot, dot);
+    dot.parentNode!.replaceChild(newDot, dot);
   });
 
   // Add fresh event listeners
-  container.querySelectorAll('.tutorial-progress-dot').forEach((dot) => {
+  container!.querySelectorAll('.tutorial-progress-dot').forEach((dot) => {
     dot.addEventListener('click', async (e) => {
-      const step = parseInt(e.target.dataset.step);
+      const target = e.currentTarget as HTMLElement;
+      const step = parseInt(target.dataset.step as string);
+
       if (!isNaN(step) && step >= 0 && step < steps.length) {
         await goToStep(step);
       }
@@ -2928,11 +2948,11 @@ function renderStep(index) {
   const prevBtn = document.getElementById('prev-btn');
   const nextBtn = document.getElementById('next-btn');
 
-  contentDiv.style.opacity = '0';
-  contentDiv.style.transform = 'translateY(10px)';
+  contentDiv!.style.opacity = '0';
+  contentDiv!.style.transform = 'translateY(10px)';
 
   setTimeout(() => {
-    contentDiv.innerHTML = `
+    contentDiv!.innerHTML = `
 <div class="tutorial-step">
 <div class="tutorial-step-header">
 <div class="tutorial-step-icon">
@@ -2949,8 +2969,8 @@ ${step.content}
 </div>
 `;
 
-    contentDiv.style.opacity = '1';
-    contentDiv.style.transform = 'translateY(0)';
+    contentDiv!.style.opacity = '1';
+    contentDiv!.style.transform = 'translateY(0)';
 
     // Handle Discord links - open in default browser
     setupDiscordLinks(contentDiv);
@@ -2961,27 +2981,29 @@ ${step.content}
   }, 200);
 
   // Update progress dots based on actual step index
-  document.querySelectorAll('.tutorial-progress-dot').forEach((dot) => {
-    const dotStepIndex = parseInt(dot.dataset.step);
-    const displayIndex = parseInt(dot.dataset.displayIndex) || 0;
+  document
+    .querySelectorAll<HTMLElement>('.tutorial-progress-dot')
+    .forEach((dot) => {
+      const dotStepIndex = parseInt(dot.dataset.step as string);
+      const displayIndex = parseInt(dot.dataset.displayIndex as string) || 0;
 
-    if (dotStepIndex === index) {
-      dot.classList.add('active');
-      dot.classList.remove('completed');
-    } else if (dotStepIndex < index) {
-      dot.classList.add('completed');
-      dot.classList.remove('active');
-    } else {
-      dot.classList.remove('active', 'completed');
-    }
-  });
+      if (dotStepIndex === index) {
+        dot.classList.add('active');
+        dot.classList.remove('completed');
+      } else if (dotStepIndex < index) {
+        dot.classList.add('completed');
+        dot.classList.remove('active');
+      } else {
+        dot.classList.remove('active', 'completed');
+      }
+    });
 
-  prevBtn.style.display = index > 0 ? 'flex' : 'none';
+  prevBtn!.style.display = index > 0 ? 'flex' : 'none';
 
   if (index === steps.length - 1) {
-    nextBtn.innerHTML = 'Get Started! <i class="bi bi-check-lg"></i>';
+    nextBtn!.innerHTML = 'Get Started! <i class="bi bi-check-lg"></i>';
   } else {
-    nextBtn.innerHTML = 'Next <i class="bi bi-arrow-right"></i>';
+    nextBtn!.innerHTML = 'Next <i class="bi bi-arrow-right"></i>';
   }
 }
 
@@ -3024,10 +3046,10 @@ function closeTutorial() {
   console.log('Closing tutorial...');
   console.log('window.tutorialAPI:', window.tutorialAPI);
 
-  if (window.tutorialAPI && window.tutorialAPI.closeTutorial) {
+  if (window.tutorialAPI) {
     console.log('Calling tutorialAPI.closeTutorial()');
     try {
-      window.tutorialAPI.closeTutorial();
+      window.tutorialAPI!.closeTutorial();
       console.log('✓ Close event sent');
     } catch (error) {
       console.error('Error calling closeTutorial:', error);
