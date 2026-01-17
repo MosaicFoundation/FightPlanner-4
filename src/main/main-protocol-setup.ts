@@ -31,7 +31,7 @@ app.on('open-url', (event, url) => {
   }
 });
 
-function initializeProtocol(window) {
+export function initializeProtocol(window) {
   mainWindow = window;
 
   protocolHandler = new ProtocolHandler(mainWindow);
@@ -105,8 +105,6 @@ function initializeProtocol(window) {
   });
 }
 
-function getProtocolHandler() {
+export function getProtocolHandler() {
   return protocolHandler;
 }
-
-module.exports = { initializeProtocol, getProtocolHandler };

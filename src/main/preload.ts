@@ -1,6 +1,8 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
-contextBridge.exposeInMainWorld('electronAPI', {
+export type ElectronAPI = typeof electronAPI;
+
+const electronAPI = {
   getPathForFile: (file) => webUtils.getPathForFile(file),
   minimize: () => ipcRenderer.send('minimize-window'),
   maximize: () => ipcRenderer.send('maximize-window'),
@@ -185,4 +187,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('update-downloaded', (event, data) => callback(data)),
   onUpdateError: (callback) =>
     ipcRenderer.on('update-error', (event, data) => callback(data)),
-});
+};
+
+contextBridge.exposeInMainWorld('electronAPI', electronAPI);

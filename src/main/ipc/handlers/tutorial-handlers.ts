@@ -26,7 +26,7 @@ const {
   createDirectory,
 } = require('../../utils/arcropolis-installer');
 
-function registerTutorialHandlers(ipcMain) {
+export function registerTutorialHandlers(ipcMain) {
   ipcMain.handle('open-tutorial-window', async () => {
     try {
       const windows = BrowserWindow.getAllWindows();
@@ -239,5 +239,3 @@ function registerTutorialHandlers(ipcMain) {
     }
   });
 }
-
-module.exports = { registerTutorialHandlers };

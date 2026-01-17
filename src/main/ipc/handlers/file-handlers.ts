@@ -181,5 +181,3 @@ export function registerFileHandlers(ipcMain) {
     }
   });
 }
-
-module.exports = { registerFileHandlers };

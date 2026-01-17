@@ -1,6 +1,6 @@
 const { BrowserWindow, ipcMain } = require('electron');
 
-function registerWindowHandlers(ipcMain) {
+export function registerWindowHandlers(ipcMain) {
   ipcMain.on('minimize-window', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (win) win.minimize();
@@ -22,5 +22,3 @@ function registerWindowHandlers(ipcMain) {
     if (win) win.close();
   });
 }
-
-module.exports = { registerWindowHandlers };

@@ -5,7 +5,7 @@ const {
   ErrorCodes,
 } = require('../../utils/error-handler');
 
-function registerStoreHandlers(ipcMain) {
+export function registerStoreHandlers(ipcMain) {
   ipcMain.handle('store-get', (event, key) => {
     try {
       return store.get(key);
@@ -53,5 +53,3 @@ function registerStoreHandlers(ipcMain) {
     }
   });
 }
-
-module.exports = { registerStoreHandlers };

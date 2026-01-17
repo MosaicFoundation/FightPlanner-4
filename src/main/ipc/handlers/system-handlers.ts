@@ -10,7 +10,7 @@ const {
 } = require('../../utils/error-handler');
 const { PATHS, TEMP_FOLDERS } = require('../../config');
 
-function registerSystemHandlers(ipcMain) {
+export function registerSystemHandlers(ipcMain) {
   ipcMain.handle('open-url', async (event, url) => {
     try {
       await shell.openExternal(url);
@@ -229,5 +229,3 @@ function registerSystemHandlers(ipcMain) {
     }
   });
 }
-
-module.exports = { registerSystemHandlers };

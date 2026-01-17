@@ -1,4 +1,4 @@
-class ModManager {
+export class ModManager {
   constructor() {
     this.mods = [];
     this.selectedMod = null;

@@ -7,7 +7,7 @@ const {
   ErrorCodes,
 } = require('../../utils/error-handler');
 
-function registerProtocolHandlers(ipcMain) {
+export function registerProtocolHandlers(ipcMain) {
   ipcMain.handle('confirm-protocol-install', async (event, url, downloadId) => {
     try {
       const protocolHandler = getProtocolHandler();
@@ -93,5 +93,3 @@ function registerProtocolHandlers(ipcMain) {
     }
   });
 }
-
-module.exports = { registerProtocolHandlers };

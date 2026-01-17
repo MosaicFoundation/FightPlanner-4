@@ -9,7 +9,7 @@ const execAsync = promisify(exec);
  * Detect available drives on Windows
  * @returns {Promise<Array<{letter: string, label: string, type: string, path: string}>>}
  */
-async function detectWindowsDrives() {
+export async function detectWindowsDrives() {
   if (process.platform !== 'win32') {
     return [];
   }
@@ -155,7 +155,7 @@ async function fallbackWindowsDetection() {
  * Detect available drives on Linux
  * @returns {Promise<Array<{letter: string, label: string, type: string, path: string}>>}
  */
-async function detectLinuxDrives() {
+export async function detectLinuxDrives() {
   if (process.platform !== 'linux') {
     return [];
   }
@@ -226,7 +226,7 @@ async function detectLinuxDrives() {
  * Detect available drives on macOS
  * @returns {Promise<Array<{letter: string, label: string, type: string, path: string}>>}
  */
-async function detectMacOSDrives() {
+export async function detectMacOSDrives() {
   if (process.platform !== 'darwin') {
     return [];
   }
@@ -291,7 +291,7 @@ async function detectMacOSDrives() {
  * Detect available drives on all platforms
  * @returns {Promise<Array<{letter: string, label: string, type: string, path: string}>>}
  */
-async function detectDrives() {
+export async function detectDrives() {
   if (process.platform === 'win32') {
     return await detectWindowsDrives();
   } else if (process.platform === 'linux') {
@@ -311,7 +311,7 @@ async function detectDrives() {
  * @param {string} drivePath - Path to check (e.g., "E:\\" on Windows, "/media/user/disk" on Linux)
  * @returns {boolean}
  */
-function isDriveAccessible(drivePath) {
+export function isDriveAccessible(drivePath) {
   try {
     return fs.existsSync(drivePath);
   } catch (error) {
@@ -324,7 +324,7 @@ function isDriveAccessible(drivePath) {
  * @param {string} basePath - Base path to check
  * @returns {boolean}
  */
-function isSwitchSdCard(basePath) {
+export function isSwitchSdCard(basePath) {
   try {
     const atmospherePath = path.join(basePath, 'atmosphere');
     const exists = fs.existsSync(atmospherePath);
@@ -333,12 +333,3 @@ function isSwitchSdCard(basePath) {
     return false;
   }
 }
-
-module.exports = {
-  detectWindowsDrives,
-  detectLinuxDrives,
-  detectMacOSDrives,
-  detectDrives,
-  isDriveAccessible,
-  isSwitchSdCard,
-};

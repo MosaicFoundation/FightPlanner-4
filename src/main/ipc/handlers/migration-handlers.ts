@@ -6,7 +6,7 @@ const {
   ErrorCodes,
 } = require('../../utils/error-handler');
 
-function registerMigrationHandlers(ipcMain) {
+export function registerMigrationHandlers(ipcMain) {
   ipcMain.handle('get-migration-status', async () => {
     try {
       const status = await getMigrationStatus();
@@ -17,5 +17,3 @@ function registerMigrationHandlers(ipcMain) {
     }
   });
 }
-
-module.exports = { registerMigrationHandlers };

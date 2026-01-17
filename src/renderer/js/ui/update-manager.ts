@@ -1,4 +1,4 @@
-class UpdateManager {
+export class UpdateManager {
   constructor() {
     this.updateInfo = null;
     this.isDownloading = false;

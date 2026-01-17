@@ -1,6 +1,6 @@
 const { app, ipcMain } = require('electron');
 
-function registerAppHandlers(ipcMain) {
+export function registerAppHandlers(ipcMain) {
   ipcMain.handle('get-app-version', () => {
     return {
       version: app.getVersion(),
@@ -11,5 +11,3 @@ function registerAppHandlers(ipcMain) {
     };
   });
 }
-
-module.exports = { registerAppHandlers };

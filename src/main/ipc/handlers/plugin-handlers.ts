@@ -14,7 +14,7 @@ const {
  * Register all IPC handlers related to plugin operations
  * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
  */
-function registerPluginHandlers(ipcMain) {
+export function registerPluginHandlers(ipcMain) {
   ipcMain.handle('read-plugins-folder', async (event, pluginsPath) => {
     try {
       const result = PluginUtils.readAllPlugins(pluginsPath);
@@ -202,5 +202,3 @@ function registerPluginHandlers(ipcMain) {
     },
   );
 }
-
-module.exports = { registerPluginHandlers };

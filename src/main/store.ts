@@ -4,4 +4,4 @@ const store = new Store({
   name: 'fightplanner-config',
 });
 
-module.exports = store;
+export default store;

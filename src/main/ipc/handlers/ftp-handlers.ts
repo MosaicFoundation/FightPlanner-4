@@ -185,7 +185,7 @@ async function sendModsToDrive(config) {
   }
 }
 
-function registerFtpHandlers(ipcMain) {
+export function registerFtpHandlers(ipcMain) {
   ipcMain.handle('send-mods-to-switch', async (event, config) => {
     const transferMethod = config.switchTransferMethod || 'ftp';
 
@@ -277,5 +277,3 @@ function registerFtpHandlers(ipcMain) {
     }
   });
 }
-
-module.exports = { registerFtpHandlers };

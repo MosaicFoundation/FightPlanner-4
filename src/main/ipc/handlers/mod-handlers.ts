@@ -13,7 +13,7 @@ const {
  * Register all IPC handlers related to mod operations
  * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
  */
-function registerModHandlers(ipcMain) {
+export function registerModHandlers(ipcMain) {
   ipcMain.handle('read-mods-folder', async (event, modsPath) => {
     try {
       const result = ModUtils.readAllMods(modsPath);
@@ -367,5 +367,3 @@ function registerModHandlers(ipcMain) {
     }
   });
 }
-
-module.exports = { registerModHandlers };

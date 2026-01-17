@@ -1,6 +1,6 @@
 const autoUpdater = require('../../auto-updater');
 
-function registerUpdateHandlers(ipcMain) {
+export function registerUpdateHandlers(ipcMain) {
   ipcMain.handle('check-for-updates', async () => {
     return await autoUpdater.checkForUpdates();
   });
@@ -45,5 +45,3 @@ function registerUpdateHandlers(ipcMain) {
     return autoUpdater.simulateUpdate();
   });
 }
-
-module.exports = { registerUpdateHandlers };

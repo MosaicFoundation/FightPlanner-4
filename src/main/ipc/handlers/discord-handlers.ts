@@ -1,6 +1,6 @@
 const { ipcMain } = require('electron');
 
-function registerDiscordHandlers(ipcMain, discordRPC) {
+export function registerDiscordHandlers(ipcMain, discordRPC) {
   ipcMain.on('discord-rpc-update', (event, data) => {
     console.log('Received discord-rpc-update:', data);
 
@@ -43,5 +43,3 @@ function registerDiscordHandlers(ipcMain, discordRPC) {
     }
   });
 }
-
-module.exports = { registerDiscordHandlers };

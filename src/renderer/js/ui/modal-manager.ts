@@ -1,4 +1,4 @@
-class ModalManager {
+export class ModalManager {
   constructor() {
     this.currentMod = null;
     this.renameCallback = null;

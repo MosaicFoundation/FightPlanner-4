@@ -17,7 +17,7 @@ const { registerUpdateHandlers } = require('./handlers/update-handlers');
  * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
  * @param {Object|null} discordRPC - Discord RPC manager instance (optional)
  */
-function registerAllHandlers(ipcMain, discordRPC = null) {
+export function registerAllHandlers(ipcMain, discordRPC = null) {
   registerWindowHandlers(ipcMain);
   registerFileHandlers(ipcMain);
   registerModHandlers(ipcMain);
@@ -32,5 +32,3 @@ function registerAllHandlers(ipcMain, discordRPC = null) {
   registerAppHandlers(ipcMain);
   registerUpdateHandlers(ipcMain);
 }
-
-module.exports = { registerAllHandlers };

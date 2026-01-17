@@ -1,4 +1,4 @@
-const ErrorCodes = {
+export const ErrorCodes = {
   MOD_NOT_FOUND: 'MOD_NOT_FOUND',
   MOD_READ_ERROR: 'MOD_READ_ERROR',
   MOD_SAVE_ERROR: 'MOD_SAVE_ERROR',
@@ -26,7 +26,7 @@ const ErrorCodes = {
   UNKNOWN_ERROR: 'UNKNOWN_ERROR',
 };
 
-function handleError(error, context) {
+export function handleError(error, context) {
   const errorMessage = error?.message || String(error);
   const errorStack = error?.stack;
 
@@ -41,7 +41,7 @@ function handleError(error, context) {
   };
 }
 
-function createErrorResponse(code, message, details = {}) {
+export function createErrorResponse(code, message, details = {}) {
   return {
     success: false,
     error: message,
@@ -49,9 +49,3 @@ function createErrorResponse(code, message, details = {}) {
     details: details,
   };
 }
-
-module.exports = {
-  ErrorCodes,
-  handleError,
-  createErrorResponse,
-};

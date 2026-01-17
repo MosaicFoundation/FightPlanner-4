@@ -1,4 +1,4 @@
-class ToastManager {
+export class ToastManager {
   constructor() {
     this.container = null;
     this.toasts = [];
@@ -6,6 +6,7 @@ class ToastManager {
     this.toastCooldown = 2000;
     this.groupedToasts = new Map();
     this.groupTimeout = null;
+
     this.init();
   }
 
@@ -183,19 +184,19 @@ ${actionButtonHtml}
     }, 320);
   }
 
-  success(message, duration, params, options) {
+  success(message, duration, params?, options?) {
     this.show('success', message, duration, params, options);
   }
 
-  error(message, duration, params, options) {
+  error(message, duration, params?, options?) {
     this.show('error', message, duration, params, options);
   }
 
-  warning(message, duration, params, options) {
+  warning(message, duration, params?, options?) {
     this.show('warning', message, duration, params, options);
   }
 
-  info(message, duration, params, options) {
+  info(message, duration, params?, options?) {
     this.show('info', message, duration, params, options);
   }
 
