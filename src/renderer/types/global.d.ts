@@ -1,3 +1,5 @@
+import type { LottiePlayer } from 'lottie-web';
+
 import type { ToastManager } from '../js/ui/toast-manager';
 import type { ElectronAPI } from '../../main/preload';
 import type { ModManager } from '../js/mods/mod-manager';
@@ -10,21 +12,29 @@ import type { SettingsManager } from '../js/settings/settings-manager';
 import type { ConflictModalManager } from '../js/ui/conflict-modal-manager';
 import type { CharactersManager } from '../js/characters/characters-manager';
 import type { SocialManager } from '../js/social/social-manager';
+import type { PluginManager } from '../js/mods/plugin-manager';
+import type { ResizeHandler } from '../js/ui/resize-handler';
+import type { ModInfoManager } from '../js/mods/mod-info';
 
 declare global {
   interface Window {
-    toastManager: ToastManager;
-    electronAPI: ElectronAPI;
-    modManager: ModManager;
-    modalManager: ModalManager;
-    updateManager: UpdateManager;
-    i18n: I18n;
-    statusBarManager: StatusBarManager;
-    downloadManager: DownloadManager;
-    settingsManager: SettingsManager;
-    conflictModalManager: ConflictModalManager;
-    charactersManager: CharactersManager;
-    socialManager: SocialManager;
+    electronAPI?: ElectronAPI;
+    toastManager?: ToastManager;
+    modManager?: ModManager;
+    modalManager?: ModalManager;
+    updateManager?: UpdateManager;
+    i18n?: I18n;
+    statusBarManager?: StatusBarManager;
+    downloadManager?: DownloadManager;
+    settingsManager?: SettingsManager;
+    conflictModalManager?: ConflictModalManager;
+    charactersManager?: CharactersManager;
+    socialManager?: SocialManager;
+    pluginManager?: PluginManager;
+    resizeHandler?: ResizeHandler;
+    modInfoManager?: ModInfoManager;
+
+    lottie?: LottiePlayer;
   }
 }
 

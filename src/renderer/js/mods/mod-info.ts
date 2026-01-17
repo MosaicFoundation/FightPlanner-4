@@ -1,4 +1,4 @@
-class ModInfoManager {
+export class ModInfoManager {
   constructor() {
     this.currentModPath = null;
     this.currentModData = null;

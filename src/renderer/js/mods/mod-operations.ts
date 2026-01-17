@@ -1,5 +1,9 @@
+import { ModManager } from './mod-manager';
+
 class ModOperations {
-  constructor(modManager) {
+  modManager: ModManager;
+
+  constructor(modManager: ModManager) {
     this.modManager = modManager;
   }
 

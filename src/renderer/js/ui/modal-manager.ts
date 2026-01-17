@@ -1,4 +1,14 @@
 export class ModalManager {
+  currentMod: any | null;
+  renameCallback: ((newName: string) => void) | null;
+  uninstallCallback: (() => void) | null;
+  deletePluginCallback: (() => void) | null;
+  currentPlugin: any | null;
+  editInfoCallback: ((info: any) => void) | null;
+  advancedInfoCallback: (() => void) | null;
+  currentModPath: string | null;
+  pendingInstallData: string | null;
+
   constructor() {
     this.currentMod = null;
     this.renameCallback = null;
@@ -219,12 +229,6 @@ export class ModalManager {
     if (window.i18n && window.i18n.updateDOM) {
       window.i18n.updateDOM();
     }
-  }
-
-  escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   }
 
   closeAlertModal() {
@@ -1353,7 +1357,7 @@ export class ModalManager {
       }
     };
 
-    enableBtn.addEventListener('click', () => {
+    enableBtn!.addEventListener('click', () => {
       if (onEnable) {
         // Pass close function to callback so it can control closure/overlay
         // Or just call it with keepOverlay = true if we know we are opening another modal?
@@ -1365,7 +1369,7 @@ export class ModalManager {
       }
     });
 
-    disableBtn.addEventListener('click', () => {
+    disableBtn!.addEventListener('click', () => {
       if (onDisable) onDisable();
       close();
     });
@@ -1379,17 +1383,19 @@ export class ModalManager {
 }
 
 if (typeof window !== 'undefined') {
-  window.modalManager = new ModalManager();
+  const modalManager = (window.modalManager = new ModalManager());
   console.log('Modal Manager initialized');
 
   document.addEventListener('DOMContentLoaded', () => {
     const overlay = document.getElementById('modal-overlay');
+
     if (overlay) {
       overlay.addEventListener('click', (e) => {
         // Check for blocking modals
-        const blockingModal = document.querySelector(
+        const blockingModal = document.querySelector<HTMLElement>(
           '.modal[data-blocking="true"]',
         );
+
         if (
           blockingModal &&
           blockingModal.style.display !== 'none' &&
@@ -1398,15 +1404,16 @@ if (typeof window !== 'undefined') {
           return; // Do not close other modals if a blocking modal is active
         }
 
-        window.modalManager.closeRenameModal();
-        window.modalManager.closeUninstallModal();
-        window.modalManager.closeAlertModal();
-        window.modalManager.closeChangeSlotModal();
-        window.modalManager.closeEditInfoModal();
-        window.modalManager.closeAdvancedInfoModal();
-        window.modalManager.closeInstallConfirmModal();
-        window.modalManager.closePluginUpdateModal();
-        window.modalManager.closePluginMarketplaceModal();
+        modalManager.closeRenameModal();
+        modalManager.closeUninstallModal();
+        modalManager.closeAlertModal();
+        modalManager.closeChangeSlotModal();
+        modalManager.closeEditInfoModal();
+        modalManager.closeAdvancedInfoModal();
+        modalManager.closeInstallConfirmModal();
+        modalManager.closePluginUpdateModal();
+        modalManager.closePluginMarketplaceModal();
+
         if (window.conflictModalManager) {
           window.conflictModalManager.closeConflictModal();
           window.conflictModalManager.closeSlotChangeModal();
@@ -1417,14 +1424,15 @@ if (typeof window !== 'undefined') {
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        window.modalManager.closeRenameModal();
-        window.modalManager.closeUninstallModal();
-        window.modalManager.closeAlertModal();
-        window.modalManager.closeDeletePluginModal();
-        window.modalManager.closeChangeSlotModal();
-        window.modalManager.closeEditInfoModal();
-        window.modalManager.closeAdvancedInfoModal();
-        window.modalManager.closeInstallConfirmModal();
+        modalManager.closeRenameModal();
+        modalManager.closeUninstallModal();
+        modalManager.closeAlertModal();
+        modalManager.closeDeletePluginModal();
+        modalManager.closeChangeSlotModal();
+        modalManager.closeEditInfoModal();
+        modalManager.closeAdvancedInfoModal();
+        modalManager.closeInstallConfirmModal();
+
         if (window.conflictModalManager) {
           window.conflictModalManager.closeConflictModal();
           window.conflictModalManager.closeSlotChangeModal();

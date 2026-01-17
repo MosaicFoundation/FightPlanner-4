@@ -89,7 +89,7 @@ export default class ModUtils {
    * @param {string} modFolderPath - Path to the mod folder
    * @returns {Object|null} Mod info object or null if not found/error
    */
-  static readModInfo(modFolderPath) {
+  static readModInfo(modFolderPath: string) {
     try {
       const infoPath = path.join(modFolderPath, 'info.toml');
 
@@ -99,13 +99,14 @@ export default class ModUtils {
 
       const content = fs.readFileSync(infoPath, 'utf8');
 
-      const info = {};
+      const info: Record<string, string> = {};
       const lines = content.split('\n');
-      let currentKey = null;
+
+      let currentKey: string | null = null;
       let multilineValue = '';
       let inMultiline = false;
 
-      lines.forEach((line, index) => {
+      lines.forEach((line: string) => {
         const originalLine = line;
         line = line.trim();
 
@@ -116,6 +117,7 @@ export default class ModUtils {
         if (tripleQuoteCount > 0) {
           if (!inMultiline) {
             const equalsIndex = line.indexOf('=');
+
             if (equalsIndex !== -1) {
               currentKey = line.substring(0, equalsIndex).trim();
               inMultiline = true;

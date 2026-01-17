@@ -150,8 +150,8 @@ export class ConflictModalManager {
     }
     if (window.statusBarManager && !keepOverlay) {
       setTimeout(() => {
-        if (!window.statusBarManager.hasModalOpen()) {
-          window.statusBarManager.restorePreservedStatus();
+        if (!window.statusBarManager!.hasModalOpen()) {
+          window.statusBarManager!.restorePreservedStatus();
         }
       }, 350);
     }
@@ -324,9 +324,10 @@ export class ConflictModalManager {
     window.modManager.conflicts.forEach((conflict) => {
       conflict.mods.forEach((mod) => {
         if (!modsMap.has(mod.path)) {
-          const fullMod = window.modManager.mods.find(
+          const fullMod = window.modManager!.mods.find(
             (m) => m.folderPath === mod.path || m.path === mod.path,
           );
+
           modsMap.set(mod.path, {
             name: mod.name,
             path: mod.path,
@@ -356,7 +357,10 @@ export class ConflictModalManager {
       const modItem = document.createElement('div');
       modItem.className = 'conflict-auto-slot-mod-item';
 
-      const isStage = mod.category && mod.category.toLowerCase() === 'stages';
+      const isStage = !!(
+        mod.category && mod.category.toLowerCase() === 'stages'
+      );
+
       if (isStage) {
         modItem.classList.add('conflict-auto-slot-mod-item-stage');
       }

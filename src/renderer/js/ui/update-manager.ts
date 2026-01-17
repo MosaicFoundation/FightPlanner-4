@@ -164,7 +164,7 @@ export class UpdateManager {
     progressPercent!.textContent = '0%';
 
     try {
-      const result = await window.electronAPI.downloadUpdate();
+      const result = await window.electronAPI!.downloadUpdate();
       if (!result.success) {
         throw new Error(result.error || 'Download failed');
       }
@@ -223,7 +223,7 @@ export class UpdateManager {
 
   async installUpdate() {
     try {
-      await window.electronAPI.installUpdate();
+      await window.electronAPI!.installUpdate();
     } catch (error) {
       console.error('Failed to install update:', error);
       if (window.toastManager) {
@@ -271,7 +271,7 @@ export class UpdateManager {
     }
 
     try {
-      const result = await window.electronAPI.checkForUpdates();
+      const result = await window.electronAPI!.checkForUpdates();
       console.log('[UpdateManager] Manual check result:', result);
 
       if (result.checking) {

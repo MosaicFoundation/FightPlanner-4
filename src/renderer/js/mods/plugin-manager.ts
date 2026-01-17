@@ -1,4 +1,16 @@
-class PluginManager {
+export class PluginManager {
+  plugins: Array<{
+    id: string;
+    name: string;
+    size: string;
+    status: 'active' | 'disabled';
+    filePath: string;
+    enabled?: boolean;
+  }>;
+  pluginListContainer: HTMLElement | null;
+  pluginsPath: string | null;
+  searchQuery: string;
+
   constructor() {
     this.plugins = [];
     this.pluginListContainer = null;

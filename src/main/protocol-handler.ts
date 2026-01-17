@@ -12,10 +12,29 @@ import AdmZip from 'adm-zip';
 import packageJson from '../../package.json';
 import sharedStore from './store';
 import ModUtils from './mod-utils';
+import { RequestOptions } from 'https';
 
 const USER_AGENT = `FightPlanner/${packageJson.version} (Electron ${process.versions.electron}; Node ${process.versions.node}; ${process.platform})`;
 
 export default class ProtocolHandler {
+  mainWindow: Electron.BrowserWindow;
+  downloadInProgress: boolean;
+  activeDownloads: Map<
+    string,
+    {
+      request: http.ClientRequest | null;
+      file: fs.WriteStream;
+      filePath: string;
+      cancelled: boolean;
+      paused?: boolean;
+    }
+  >;
+  pendingInstalls: Map<
+    string,
+    { url: string; modId: string | null; downloadId: string; modType: string }
+  >;
+  processingUrls: Set<string>;
+
   constructor(mainWindow) {
     this.mainWindow = mainWindow;
     this.downloadInProgress = false;
@@ -92,8 +111,8 @@ export default class ProtocolHandler {
         // HACK: As `electron.app.setAsDefaultProtocolClient` is based on `xdg-settings set default-url-scheme-handler`
         // which is not supported on Xfce, we manually create new .desktop entry and use `xdg-mime`
         // to make it default handler for protocol URLs.
-        let electronAppMainScriptPath = null;
-        let execArgs = [];
+        let electronAppMainScriptPath: string | null = null;
+        let execArgs: string[] = [];
 
         if (process.defaultApp && process.argv.length >= 2) {
           // Development mode
@@ -354,6 +373,7 @@ export default class ProtocolHandler {
 
     try {
       let modName = null;
+
       if (modId) {
         modName = await this.fetchModNameFromAPI(modId, modType);
       }
@@ -387,9 +407,10 @@ export default class ProtocolHandler {
         console.warn('Failed to delete temp file:', err);
       }
 
-      let modFolderPath = null;
+      let modFolderPath: string | null = null;
+
       if (modId && installedModName) {
-        const modsPath = sharedStore.get('modsPath');
+        const modsPath = sharedStore.get('modsPath') as string | null;
 
         if (modsPath) {
           modFolderPath = path.join(modsPath, installedModName);
@@ -400,7 +421,8 @@ export default class ProtocolHandler {
       // Auto-disable mod if setting is enabled
       if (installedModName && sharedStore.get('autoDisableNewMods')) {
         try {
-          const modsPath = sharedStore.get('modsPath');
+          const modsPath = sharedStore.get('modsPath') as string | null;
+
           if (modsPath) {
             const currentModPath = path.join(modsPath, installedModName);
             const parentDir = path.dirname(modsPath);
@@ -495,7 +517,7 @@ export default class ProtocolHandler {
     }
   }
 
-  async downloadMod(url, downloadId) {
+  async downloadMod(url: string, downloadId: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const tempDir = path.join(app.getPath('temp'), 'fightplanner-downloads');
       if (!fs.existsSync(tempDir)) {
@@ -529,10 +551,12 @@ export default class ProtocolHandler {
       let receivedBytes = 0;
       let totalBytes = 0;
 
-      const requestOptions = new URL(url);
-      requestOptions.headers = {
-        'User-Agent': USER_AGENT,
-        Accept: '*/*',
+      const requestOptions: RequestOptions = {
+        ...new URL(url),
+        headers: {
+          'User-Agent': USER_AGENT,
+          Accept: '*/*',
+        },
       };
 
       // Store download info for cancel
@@ -571,9 +595,10 @@ export default class ProtocolHandler {
             fs.unlinkSync(filePath);
           }
 
-          this.downloadMod(response.headers.location, downloadId)
+          this.downloadMod(response.headers.location as string, downloadId)
             .then(resolve)
             .catch(reject);
+
           return;
         }
 
@@ -604,7 +629,8 @@ export default class ProtocolHandler {
           }
         }
 
-        totalBytes = parseInt(response.headers['content-length'], 10) || 0;
+        totalBytes =
+          parseInt(response.headers['content-length'] as string, 10) || 0;
 
         response.on('data', (chunk) => {
           // Check if cancelled during download
@@ -682,7 +708,7 @@ export default class ProtocolHandler {
   async installMod(
     zipPath,
     downloadId,
-    modId = null,
+    modId: string | null = null,
     modNameFromAPI = null,
     modType = 'Mod',
   ) {
@@ -690,7 +716,7 @@ export default class ProtocolHandler {
       throw new Error(`Archive file does not exist: ${zipPath}`);
     }
 
-    const modsPath = sharedStore.get('modsPath');
+    const modsPath = sharedStore.get('modsPath') as string | null;
 
     if (!modsPath) {
       throw new Error('Mods folder not configured. Please set it in Settings.');
@@ -757,7 +783,7 @@ export default class ProtocolHandler {
 
     const installedModPath = path.join(modsPath, installedModName);
     if (/^mod-\d+$/.test(installedModName) && fs.existsSync(installedModPath)) {
-      let newName = null;
+      let newName: string | null = null;
 
       if (modNameFromAPI) {
         newName = modNameFromAPI;
@@ -797,7 +823,7 @@ export default class ProtocolHandler {
   copyRecursiveSync(src, dest) {
     const exists = fs.existsSync(src);
     const stats = exists && fs.statSync(src);
-    const isDirectory = exists && stats.isDirectory();
+    const isDirectory = stats && stats.isDirectory();
 
     if (isDirectory) {
       if (!fs.existsSync(dest)) {
@@ -897,7 +923,7 @@ export default class ProtocolHandler {
             '7za.exe',
           )
         : null,
-    ].filter(Boolean);
+    ].filter(Boolean) as string[];
 
     const existing7z = candidate7zPaths.find((p) => fs.existsSync(p));
 
@@ -968,7 +994,7 @@ export default class ProtocolHandler {
 
       const lines = content.split('\n');
       const structure = {};
-      const pathStack = [];
+      const pathStack: { name: string; indent: number }[] = [];
 
       console.log('[FPT] Parsing with indentation awareness...');
 
@@ -1018,7 +1044,7 @@ export default class ProtocolHandler {
   }
 
   getActualStructure(dirPath, basePath = dirPath) {
-    const structure = [];
+    const structure: string[] = [];
 
     try {
       const items = fs.readdirSync(dirPath);
@@ -1132,7 +1158,7 @@ export default class ProtocolHandler {
 
         const items = fs.readdirSync(fptDir);
         console.log('[FPT] Items in FPT dir:', items);
-        let foundSubdir = null;
+        let foundSubdir: string | null = null;
 
         for (const item of items) {
           console.log('[FPT] Checking item:', item);
@@ -1198,7 +1224,7 @@ export default class ProtocolHandler {
       console.log('[FPT] [RESTRUCTURE] ========== START ==========');
       console.log('[FPT] [RESTRUCTURE] Base directory:', baseDir);
 
-      const filesToMove = {};
+      const filesToMove: Record<string, string> = {};
 
       for (const [fptPath, type] of Object.entries(fptStructure)) {
         if (type === 'file') {
@@ -1462,13 +1488,15 @@ export default class ProtocolHandler {
     }
   }
 
-  fetchWithTimeout(url, timeout) {
+  fetchWithTimeout(url: string, timeout: number): Promise<string> {
     return new Promise((resolve, reject) => {
       const protocol = url.startsWith('https') ? https : http;
-      const requestOptions = new URL(url);
-      requestOptions.headers = {
-        'User-Agent': USER_AGENT,
-        Accept: 'application/json, */*;q=0.1',
+      const requestOptions: RequestOptions = {
+        ...new URL(url),
+        headers: {
+          'User-Agent': USER_AGENT,
+          Accept: 'application/json, */*;q=0.1',
+        },
       };
 
       const req = protocol.get(requestOptions, (res) => {
@@ -1496,15 +1524,17 @@ export default class ProtocolHandler {
   }
 
   async downloadPreviewImage(imageUrl, modFolderPath) {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       const protocol = imageUrl.startsWith('https') ? https : http;
       const previewPath = path.join(modFolderPath, 'preview.webp');
       const file = fs.createWriteStream(previewPath);
 
-      const requestOptions = new URL(imageUrl);
-      requestOptions.headers = {
-        'User-Agent': USER_AGENT,
-        Accept: 'image/webp,image/*;q=0.8,*/*;q=0.5',
+      const requestOptions: RequestOptions = {
+        ...new URL(imageUrl),
+        headers: {
+          'User-Agent': USER_AGENT,
+          Accept: 'image/webp,image/*;q=0.8,*/*;q=0.5',
+        },
       };
 
       const request = protocol.get(requestOptions, (response) => {
@@ -1560,7 +1590,7 @@ export default class ProtocolHandler {
     dialog.showErrorBox('FightPlanner - Installation Error', message);
   }
 
-  cancelDownload(downloadId) {
+  cancelDownload(downloadId: string) {
     const download = this.activeDownloads.get(downloadId);
     if (!download) {
       return { success: false, error: 'Download not found' };

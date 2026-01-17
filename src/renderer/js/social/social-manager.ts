@@ -1,4 +1,19 @@
 export class SocialManager {
+  API_URL: string;
+  authToken: string | null;
+  userData: any;
+  autoDownloadInterval: ReturnType<typeof setInterval> | null;
+  autoDownloadEnabled: boolean;
+  autoDownloadIntervalMs: number;
+  installingMods: Set<string>;
+  serviceUnavailableShown: boolean;
+  onboardingAnim: any;
+  loginAnim: any;
+  cache: {
+    [key: string]: { data: any; timestamp: number; ttl: number };
+  };
+  pendingRequests: Map<string, Promise<any>>;
+
   constructor() {
     this.API_URL =
       'https://fightplannersocialapi.nathancarlos19100.workers.dev';
@@ -60,7 +75,7 @@ export class SocialManager {
   }
 
   // Faire une requête avec cache et évitement de doublons
-  async fetchWithCache(url, options = {}, cacheKey = null) {
+  async fetchWithCache(url, options = {}, cacheKey: string | null = null) {
     // Vérifier le cache d'abord
     if (cacheKey && this.isCacheValid(cacheKey)) {
       console.log('[Social] Using cached data for:', cacheKey);
@@ -189,6 +204,7 @@ export class SocialManager {
     if (!onboarding) return;
 
     const lottieContainer = document.getElementById('social-onboarding-lottie');
+
     if (lottieContainer && window.lottie) {
       const anim = window.lottie.loadAnimation({
         container: lottieContainer,
@@ -199,7 +215,8 @@ export class SocialManager {
         rendererSettings: {
           preserveAspectRatio: 'xMidYMid slice',
           className: 'lottie-animation-fullscreen',
-          clearCanvas: true,
+          // For some reason, clearCanvas is not recognized unless type is "canvas"
+          ...{ clearCanvas: true },
         },
       });
 
@@ -222,6 +239,7 @@ export class SocialManager {
 
       let overlayShown = false;
       let paused = false;
+
       anim.addEventListener('enterFrame', () => {
         if (anim.totalFrames && anim.currentFrame !== undefined) {
           const frameRate = anim.frameRate || 30;

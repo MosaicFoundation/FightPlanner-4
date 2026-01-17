@@ -265,8 +265,9 @@ export class StatusBarManager {
     }
 
     const statusText =
-      document.querySelector('.bottom-text-left') ||
-      document.querySelector('.bottom-text');
+      document.querySelector<HTMLElement>('.bottom-text-left') ||
+      document.querySelector<HTMLElement>('.bottom-text');
+
     if (!statusText) return;
 
     if (hasActiveDownloads) {
@@ -789,12 +790,8 @@ export class StatusBarManager {
       try {
         if (window.charactersManager && window.charactersManager.characters) {
           const characters = window.charactersManager.characters;
-          const count =
-            characters instanceof Map
-              ? characters.size
-              : Array.isArray(characters)
-                ? characters.length
-                : 0;
+          const count = characters.size;
+
           if (count > 0) {
             this.setStatusText(
               this.t('statusBar.charactersAvailable', {
@@ -889,8 +886,8 @@ if (typeof window !== 'undefined') {
     if (window.statusBarManager && window.statusBarManager.currentTab) {
       // Mettre à jour le statut avec l'onglet actuel pour appliquer les nouvelles traductions
       setTimeout(() => {
-        window.statusBarManager.updateStatus(
-          window.statusBarManager.currentTab,
+        window.statusBarManager!.updateStatus(
+          window.statusBarManager!.currentTab,
         );
       }, 100);
     }
