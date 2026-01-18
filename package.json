@@ -10,11 +10,13 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "watch:ts": "npm run build:ts -- --watch",
-    "build:ts": "tsc --build",
-    "build:test": "electron-builder --win portable --config",
-    "build:win": "electron-builder --win --config",
-    "build:all": "electron-builder -wml --config",
+    "electron:watch": "npx nodemon --watch out --exec \"electron .\"",
+    "ts:build": "tsc -p tsconfig.main.json && tsc -p tsconfig.renderer.json",
+    "ts:watch": "tsc -p tsconfig.main.json --watch & tsc -p tsconfig.renderer.json --watch",
+    "dev:reload": "concurrently \"npm run watch:ts\" \"npm run start\"",
+    "build:test": "npm run build:ts && electron-builder --win portable --config",
+    "build:win": "npm run build:ts && electron-builder --win --config",
+    "build:all": "npm run build:ts && electron-builder -wml --config",
     "dist": "electron-builder",
     "i18n:upload": "crowdin upload sources",
     "i18n:download": "crowdin download",
@@ -30,6 +32,7 @@
     "semver": "^7.6.0"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "electron": "^39.0.0",
     "electron-builder": "^24.13.3",
     "gsap": "3.12.5",
@@ -68,7 +71,8 @@
       }
     ],
     "files": [
-      "src/**/*",
+      "out/**/*",
+      "assets/**/*",
       "package.json"
     ],
     "directories": {

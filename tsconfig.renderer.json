@@ -2,13 +2,9 @@
   "compilerOptions": {
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "CommonJS",
-    "outDir": "./out",
-    "rootDir": "./src",
     "isolatedModules": true,
     "resolveJsonModule": false
   },
-  "include": ["src/renderer/**/*", "src/locales/**/*"],
-  "exclude": ["node_modules", "out", "dist"],
-  "references": [{ "path": "./tsconfig.main.json" }],
+  "include": ["src/renderer/**/*"],
   "extends": "./tsconfig.json"
 }

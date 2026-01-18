@@ -11,10 +11,8 @@
     "allowSyntheticDefaultImports": true,
     "useUnknownInCatchVariables": false,
     "sourceMap": true,
-    "composite": true
+    "outDir": "./out",
+    "rootDir": "./src"
   },
-  "references": [
-    { "path": "./tsconfig.main.json" },
-    { "path": "./tsconfig.renderer.json" }
-  ]
+  "exclude": ["node_modules", "out", "dist"]
 }
