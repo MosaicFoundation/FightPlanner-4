@@ -10,8 +10,8 @@
   "license": "MIT",
   "scripts": {
     "start": "npx nodemon --watch out --exec \"electron .\"",
-    "ts:build": "tsc -p tsconfig.main.json && tsc -p tsconfig.renderer.json",
-    "ts:watch": "tsc -p tsconfig.main.json --watch & tsc -p tsconfig.renderer.json --watch",
+    "ts:build": "tsc --build",
+    "ts:watch": "tsc --build --watch",
     "dev:reload": "concurrently \"npm run ts:watch\" \"npm run start\"",
     "build:test": "npm run ts:build && electron-builder --win portable --config",
     "build:win": "npm run ts:build && electron-builder --win --config",

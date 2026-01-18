@@ -1,5 +1,3 @@
-import '../types/global';
-
 let steps = [
   {
     icon: 'bi-stars',

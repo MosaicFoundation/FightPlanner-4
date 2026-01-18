@@ -1,7 +1,7 @@
 import { ipcMain, BrowserWindow } from 'electron';
 
 export default class AnimationHandler {
-  private mainWindow: BrowserWindow | null;
+  mainWindow: BrowserWindow | null;
 
   constructor() {
     this.mainWindow = null;
