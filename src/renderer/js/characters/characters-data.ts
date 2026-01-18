@@ -1,3 +1,8 @@
+export type SSBUCharacters = typeof SSBU_CHARACTERS;
+export type SSBUCharacterImages = typeof CHARACTER_IMAGES;
+export type SSBUFolderAliases = typeof FOLDER_ALIASES;
+export type ResolveSSBUFolderName = (folderName: string) => string;
+
 const SSBU_CHARACTERS = {
   mario: { name: 'Mario', number: '01', series: 'Mario' },
   donkey: { name: 'Donkey Kong', number: '02', series: 'Donkey Kong' },

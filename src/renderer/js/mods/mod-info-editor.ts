@@ -39,21 +39,21 @@ export class ModInfoEditor {
   async openAdvancedMode() {
     if (!this.currentModPath) return;
 
-    window.modalManager.closeEditInfoModal();
+    window.modalManager!.closeEditInfoModal();
 
     try {
-      const rawContent = await window.electronAPI.readModInfoRaw(
+      const rawContent = await window.electronAPI!.readModInfoRaw(
         this.currentModPath,
       );
 
       setTimeout(() => {
-        window.modalManager.openAdvancedInfoModal(
+        window.modalManager!.openAdvancedInfoModal(
           this.currentModPath,
           rawContent,
         );
       }, 350);
     } catch (error) {
-      window.modalManager.showAlert(
+      window.modalManager!.showAlert(
         'error',
         'Error',
         'Failed to load info.toml content',
@@ -63,7 +63,7 @@ export class ModInfoEditor {
 
   async saveInfo(info) {
     try {
-      const result = await window.electronAPI.saveModInfo(
+      const result = await window.electronAPI!.saveModInfo(
         this.currentModPath,
         info,
       );

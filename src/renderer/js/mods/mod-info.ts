@@ -1,9 +1,15 @@
+export interface CurrentModData {
+  display_name: string;
+  description: string;
+  authors?: string;
+  version?: string;
+  category?: string;
+  url?: string;
+}
+
 export class ModInfoManager {
   currentModPath: string | null;
-  currentModData: {
-    display_name: string;
-    description: string;
-  } | null;
+  currentModData: CurrentModData | null;
 
   constructor() {
     this.currentModPath = null;
@@ -11,10 +17,10 @@ export class ModInfoManager {
   }
 
   getContainer() {
-    return document.getElementById('mod-info-content');
+    return document.querySelector<HTMLElement>('#mod-info-content');
   }
 
-  displayModInfo(modData, modPath = null) {
+  displayModInfo(modData: CurrentModData, modPath: string | null = null) {
     this.currentModData = modData;
     this.currentModPath = modPath;
 
@@ -108,7 +114,7 @@ ${escapeHtml(modData.url)}
 
     container.innerHTML = html;
 
-    const editBtn = document.getElementById('edit-info-btn');
+    const editBtn = document.querySelector<HTMLElement>('#edit-info-btn');
     if (editBtn && modPath) {
       editBtn.style.display = 'flex';
     }
@@ -125,7 +131,7 @@ ${escapeHtml(modData.url)}
     this.currentModPath = null;
     this.currentModData = null;
 
-    const editBtn = document.getElementById('edit-info-btn');
+    const editBtn = document.querySelector<HTMLElement>('#edit-info-btn');
     if (editBtn) {
       editBtn.style.display = 'none';
     }
@@ -139,7 +145,7 @@ ${escapeHtml(modData.url)}
     };
     container.innerHTML = `<p class="mod-info-placeholder">${t('tools.modInfo.loading')}</p>`;
 
-    const editBtn = document.getElementById('edit-info-btn');
+    const editBtn = document.querySelector<HTMLElement>('#edit-info-btn');
     if (editBtn) {
       editBtn.style.display = 'none';
     }
@@ -154,7 +160,7 @@ ${escapeHtml(modData.url)}
     const errorMessage = message || t('tools.modInfo.failedToLoad');
     container.innerHTML = `<p class="mod-info-placeholder" style="color: #ff4444;">${errorMessage}</p>`;
 
-    const editBtn = document.getElementById('edit-info-btn');
+    const editBtn = document.querySelector<HTMLElement>('#edit-info-btn');
     if (editBtn) {
       editBtn.style.display = 'none';
     }

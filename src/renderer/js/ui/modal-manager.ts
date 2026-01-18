@@ -1,3 +1,5 @@
+import { MarketplacePlugin } from '../mods/plugin-marketplace';
+
 interface Changes {
   modifications: Array<{
     type: string;
@@ -47,7 +49,7 @@ export class ModalManager {
   }
 
   showOverlay() {
-    const overlay = document.getElementById('modal-overlay');
+    const overlay = document.querySelector<HTMLElement>('#modal-overlay');
     if (overlay) {
       overlay.classList.remove('closing');
       overlay.style.display = 'block';
@@ -70,7 +72,7 @@ export class ModalManager {
       return;
     }
 
-    const overlay = document.getElementById('modal-overlay');
+    const overlay = document.querySelector<HTMLElement>('#modal-overlay');
     if (overlay) {
       overlay.classList.add('closing');
       setTimeout(() => {
@@ -128,7 +130,7 @@ export class ModalManager {
   }
 
   closeRenameModal() {
-    const modal = document.getElementById('rename-modal');
+    const modal = document.querySelector<HTMLElement>('#rename-modal');
     if (modal) {
       modal.classList.add('closing');
       setTimeout(() => {
@@ -166,8 +168,10 @@ export class ModalManager {
     this.currentMod = mod;
     this.uninstallCallback = callback;
 
-    const modal = document.getElementById('uninstall-modal');
-    const modNameEl = document.getElementById('uninstall-mod-name');
+    const modal = document.querySelector<HTMLElement>('#uninstall-modal');
+    const modNameEl = document.querySelector<HTMLElement>(
+      '#uninstall-mod-name',
+    );
 
     if (modal && modNameEl) {
       modal.classList.remove('closing');
@@ -182,7 +186,7 @@ export class ModalManager {
   }
 
   closeUninstallModal() {
-    const modal = document.getElementById('uninstall-modal');
+    const modal = document.querySelector<HTMLElement>('#uninstall-modal');
     if (modal) {
       modal.classList.add('closing');
       setTimeout(() => {
@@ -203,10 +207,12 @@ export class ModalManager {
   }
 
   showAlert(type, title, message, params = {}) {
-    const modal = document.getElementById('alert-modal');
-    const header = document.getElementById('alert-modal-header');
-    const titleEl = document.getElementById('alert-modal-title');
-    const messageEl = document.getElementById('alert-modal-message');
+    const modal = document.querySelector<HTMLElement>('#alert-modal');
+    const header = document.querySelector<HTMLElement>('#alert-modal-header');
+    const titleEl = document.querySelector<HTMLElement>('#alert-modal-title');
+    const messageEl = document.querySelector<HTMLElement>(
+      '#alert-modal-message',
+    );
 
     if (!modal || !header || !titleEl || !messageEl) return;
 
@@ -257,7 +263,7 @@ export class ModalManager {
   }
 
   closeAlertModal() {
-    const modal = document.getElementById('alert-modal');
+    const modal = document.querySelector<HTMLElement>('#alert-modal');
     if (modal) {
       modal.classList.add('closing');
       setTimeout(() => {
@@ -272,8 +278,10 @@ export class ModalManager {
     this.currentPlugin = plugin;
     this.deletePluginCallback = callback;
 
-    const modal = document.getElementById('delete-plugin-modal');
-    const pluginNameEl = document.getElementById('delete-plugin-name');
+    const modal = document.querySelector<HTMLElement>('#delete-plugin-modal');
+    const pluginNameEl = document.querySelector<HTMLElement>(
+      '#delete-plugin-name',
+    );
 
     if (modal && pluginNameEl) {
       modal.classList.remove('closing');
@@ -288,7 +296,7 @@ export class ModalManager {
   }
 
   closeDeletePluginModal() {
-    const modal = document.getElementById('delete-plugin-modal');
+    const modal = document.querySelector<HTMLElement>('#delete-plugin-modal');
     if (modal) {
       modal.classList.add('closing');
       setTimeout(() => {
@@ -319,8 +327,10 @@ export class ModalManager {
       isNew: false,
     }));
 
-    const modal = document.getElementById('change-slot-modal');
-    const container = document.getElementById('slot-list-container');
+    const modal = document.querySelector<HTMLElement>('#change-slot-modal');
+    const container = document.querySelector<HTMLElement>(
+      '#slot-list-container',
+    );
 
     if (modal && container) {
       modal.classList.remove('closing');
@@ -335,7 +345,7 @@ export class ModalManager {
   }
 
   closeChangeSlotModal() {
-    const modal = document.getElementById('change-slot-modal');
+    const modal = document.querySelector<HTMLElement>('#change-slot-modal');
     if (modal) {
       modal.classList.add('closing');
       setTimeout(() => {
@@ -350,7 +360,9 @@ export class ModalManager {
   }
 
   renderSlotList() {
-    const container = document.getElementById('slot-list-container');
+    const container = document.querySelector<HTMLElement>(
+      '#slot-list-container',
+    );
     if (!container || !this.slotData) return;
 
     const t = (key, params = {}) => {
@@ -439,7 +451,7 @@ export class ModalManager {
           delete selectDropdown.dataset.parentId;
 
           // Update active state in dropdown
-          const allOptions = selectDropdown.querySelectorAll(
+          const allOptions = selectDropdown.querySelectorAll<HTMLElement>(
             '.custom-select-option',
           );
           allOptions.forEach((opt) => opt.classList.remove('active'));
@@ -703,7 +715,7 @@ export class ModalManager {
   }
 
   closeEditInfoModal() {
-    const modal = document.getElementById('edit-info-modal');
+    const modal = document.querySelector<HTMLElement>('#edit-info-modal');
     if (modal) {
       modal.classList.add('closing');
       setTimeout(() => {
@@ -753,7 +765,7 @@ export class ModalManager {
   }
 
   closeAdvancedInfoModal() {
-    const modal = document.getElementById('advanced-info-modal');
+    const modal = document.querySelector<HTMLElement>('#advanced-info-modal');
     if (modal) {
       modal.classList.add('closing');
       setTimeout(() => {
@@ -809,20 +821,22 @@ export class ModalManager {
   async openInstallConfirmModal(url, downloadId, modId, modType = 'Mod') {
     this.pendingInstallData = { url, downloadId, modId, modType };
 
-    const urlDisplay = document.getElementById('install-url-display');
+    const urlDisplay = document.querySelector<HTMLElement>(
+      '#install-url-display',
+    );
     if (urlDisplay) {
       urlDisplay.textContent = url;
     }
 
-    const modal = document.getElementById('install-confirm-modal');
+    const modal = document.querySelector<HTMLElement>('#install-confirm-modal');
     if (modal) {
       modal.classList.remove('closing');
       this.showOverlay();
       modal.style.display = 'block';
     }
 
-    const previewContainer = document.getElementById(
-      'install-preview-container',
+    const previewContainer = document.querySelector<HTMLElement>(
+      '#install-preview-container',
     );
     if (previewContainer) {
       if (modType === 'Sound') {
@@ -871,15 +885,15 @@ export class ModalManager {
   }
 
   closeInstallConfirmModal() {
-    const modal = document.getElementById('install-confirm-modal');
+    const modal = document.querySelector<HTMLElement>('#install-confirm-modal');
     if (modal) {
       modal.classList.add('closing');
       setTimeout(() => {
         modal.style.display = 'none';
         modal.classList.remove('closing');
 
-        const previewContainer = document.getElementById(
-          'install-preview-container',
+        const previewContainer = document.querySelector<HTMLElement>(
+          '#install-preview-container',
         );
         const previewImage = document.querySelector<HTMLImageElement>(
           '#install-preview-image',
@@ -984,7 +998,7 @@ export class ModalManager {
       </div>
     `;
 
-    const overlay = document.getElementById('modal-overlay');
+    const overlay = document.querySelector<HTMLElement>('#modal-overlay');
     if (!overlay) {
       const newOverlay = document.createElement('div');
       newOverlay.id = 'modal-overlay';
@@ -1107,7 +1121,7 @@ export class ModalManager {
           updateItem.style.opacity = '0.5';
         }
 
-        const remainingUpdates = modal.querySelectorAll(
+        const remainingUpdates = modal.querySelectorAll<HTMLElement>(
           ".plugin-update-item:not([style*='opacity: 0.5'])",
         );
         if (remainingUpdates.length === 0) {
@@ -1131,7 +1145,7 @@ export class ModalManager {
   }
 
   closePluginUpdateModal() {
-    const modal = document.getElementById('plugin-update-modal');
+    const modal = document.querySelector<HTMLElement>('#plugin-update-modal');
     if (modal) {
       modal.classList.add('closing');
       setTimeout(() => {
@@ -1161,7 +1175,7 @@ export class ModalManager {
       </div>
     `;
 
-    const overlay = document.getElementById('modal-overlay');
+    const overlay = document.querySelector<HTMLElement>('#modal-overlay');
     if (!overlay) {
       const newOverlay = document.createElement('div');
       newOverlay.id = 'modal-overlay';
@@ -1176,14 +1190,19 @@ export class ModalManager {
       window.i18n.updateDOM();
     }
 
-    const resultsContainer = modal.querySelector('#marketplace-results');
+    const resultsContainer = modal.querySelector<HTMLElement>(
+      '#marketplace-results',
+    );
 
     if (window.pluginMarketplace) {
       const plugins = window.pluginMarketplace.getPlugins();
-      this.renderMarketplaceResults(plugins, resultsContainer);
+      this.renderMarketplaceResults(plugins, resultsContainer!);
     }
 
-    const closeBtn = modal.querySelector('#close-marketplace-modal');
+    const closeBtn = modal.querySelector<HTMLElement>(
+      '#close-marketplace-modal',
+    );
+
     closeBtn!.addEventListener('click', () => {
       this.closePluginMarketplaceModal();
     });
@@ -1197,7 +1216,10 @@ export class ModalManager {
     document.addEventListener('keydown', escapeHandler);
   }
 
-  renderMarketplaceResults(plugins, container) {
+  renderMarketplaceResults(
+    plugins: MarketplacePlugin[],
+    container: HTMLElement,
+  ) {
     if (!plugins || plugins.length === 0) {
       container.innerHTML = `
         <div class="marketplace-empty">
@@ -1247,7 +1269,9 @@ export class ModalManager {
       window.i18n.updateDOM();
     }
 
-    const githubLinks = container.querySelectorAll('.marketplace-card-link');
+    const githubLinks = container.querySelectorAll<HTMLElement>(
+      '.marketplace-card-link',
+    );
     githubLinks.forEach((link) => {
       link.addEventListener('click', async (e) => {
         e.preventDefault();
@@ -1260,13 +1284,14 @@ export class ModalManager {
       });
     });
 
-    const installButtons = container.querySelectorAll(
+    const installButtons = container.querySelectorAll<HTMLButtonElement>(
       '.marketplace-card-install-btn',
     );
+
     installButtons.forEach((btn) => {
       btn.addEventListener('click', async () => {
-        const pluginName = btn.dataset.pluginName;
-        const pluginRepo = btn.dataset.pluginRepo;
+        const pluginName = btn.dataset.pluginName as string;
+        const pluginRepo = btn.dataset.pluginRepo as string;
 
         btn.disabled = true;
         btn.innerHTML =
@@ -1320,7 +1345,9 @@ export class ModalManager {
   }
 
   closePluginMarketplaceModal() {
-    const modal = document.getElementById('plugin-marketplace-modal');
+    const modal = document.querySelector<HTMLElement>(
+      '#plugin-marketplace-modal',
+    );
     if (modal) {
       modal.classList.add('closing');
       setTimeout(() => {
@@ -1367,12 +1394,16 @@ export class ModalManager {
       window.i18n.updateDOM();
     }
 
-    const enableBtn = modal.querySelector('#enable-plugin-updates');
-    const disableBtn = modal.querySelector('#disable-plugin-updates');
-    const overlay = document.getElementById('modal-overlay');
+    const enableBtn = modal.querySelector<HTMLElement>(
+      '#enable-plugin-updates',
+    );
+    const disableBtn = modal.querySelector<HTMLElement>(
+      '#disable-plugin-updates',
+    );
+    const overlay = document.querySelector<HTMLElement>('#modal-overlay');
 
     // Inject shake style dynamically to ensure it's present
-    if (!document.getElementById('shake-style')) {
+    if (!document.querySelector<HTMLElement>('#shake-style')) {
       const style = document.createElement('style');
       style.id = 'shake-style';
       style.textContent = `
@@ -1449,7 +1480,7 @@ if (typeof window !== 'undefined') {
   console.log('Modal Manager initialized');
 
   document.addEventListener('DOMContentLoaded', () => {
-    const overlay = document.getElementById('modal-overlay');
+    const overlay = document.querySelector<HTMLElement>('#modal-overlay');
 
     if (overlay) {
       overlay.addEventListener('click', (e) => {

@@ -112,8 +112,8 @@ let steps = [
 </style>
 `,
     onRender: async () => {
-      const nextBtn = document.getElementById('next-btn');
-      const hardwareRadios = document.querySelectorAll(
+      const nextBtn = document.querySelector<HTMLElement>('#next-btn');
+      const hardwareRadios = document.querySelectorAll<HTMLElement>(
         'input[name="hardware-type"]',
       );
 
@@ -268,8 +268,8 @@ let steps = [
 </style>
 `,
     onRender: async () => {
-      const nextBtn = document.getElementById('next-btn');
-      const arcropolisRadios = document.querySelectorAll(
+      const nextBtn = document.querySelector<HTMLElement>('#next-btn');
+      const arcropolisRadios = document.querySelectorAll<HTMLElement>(
         'input[name="arcropolis-installed"]',
       );
 
@@ -375,8 +375,8 @@ let steps = [
         return;
       }
 
-      const statusDiv = document.getElementById('sd-card-status');
-      const nextBtn = document.getElementById('next-btn');
+      const statusDiv = document.querySelector<HTMLElement>('#sd-card-status');
+      const nextBtn = document.querySelector<HTMLElement>('#next-btn');
 
       if (nextBtn) {
         nextBtn.style.opacity = '0.5';
@@ -399,7 +399,7 @@ let steps = [
                             </div>
                         `;
               document
-                .getElementById('retry-detect-btn')
+                .querySelector<HTMLElement>('#retry-detect-btn')
                 ?.addEventListener('click', () => {
                   statusDiv!.innerHTML =
                     '<div style="text-align: center; color: #fff;">Detecting drives...</div>';
@@ -428,7 +428,7 @@ let steps = [
                         `;
 
               document
-                .getElementById('wrong-drive-btn')
+                .querySelector<HTMLElement>('#wrong-drive-btn')
                 ?.addEventListener('click', async () => {
                   const result = await window.tutorialAPI!.selectDrive();
                   if (result.success && !result.canceled) {
@@ -452,7 +452,7 @@ let steps = [
                                     </div>
                                 `;
                     document
-                      .getElementById('wrong-drive-btn-2')
+                      .querySelector<HTMLElement>('#wrong-drive-btn-2')
                       ?.addEventListener('click', async () => {
                         const result2 = await window.tutorialAPI!.selectDrive();
                         if (result2.success && !result2.canceled) {
@@ -528,7 +528,7 @@ let steps = [
                 });
 
               document
-                .getElementById('manual-select-btn')
+                .querySelector<HTMLElement>('#manual-select-btn')
                 ?.addEventListener('click', async () => {
                   const result = await window.tutorialAPI!.selectDrive();
                   if (result.success && !result.canceled) {
@@ -565,7 +565,7 @@ let steps = [
                     </div>
                 `;
           document
-            .getElementById('manual-select-error-btn')
+            .querySelector<HTMLElement>('#manual-select-error-btn')
             ?.addEventListener('click', async () => {
               const result = await window.tutorialAPI!.selectDrive();
               if (result.success && !result.canceled) {
@@ -632,9 +632,9 @@ let steps = [
         return;
       }
 
-      const statusDiv = document.getElementById('install-status');
-      const nextBtn = document.getElementById('next-btn');
-      const progressBar = document.getElementById('progress-bar');
+      const statusDiv = document.querySelector<HTMLElement>('#install-status');
+      const nextBtn = document.querySelector<HTMLElement>('#next-btn');
+      const progressBar = document.querySelector<HTMLElement>('#progress-bar');
 
       if (nextBtn) {
         nextBtn.style.opacity = '0.5';
@@ -810,7 +810,7 @@ let steps = [
                     </p>
                 </div>
             `;
-        setupDiscordLinks(statusDiv);
+        setupDiscordLinks(statusDiv!);
       }
     },
   },
@@ -867,11 +867,12 @@ let steps = [
         return;
       }
 
-      const nextBtn = document.getElementById('next-btn');
-      const verifyYesBtn = document.getElementById('verify-yes-btn');
-      const verifyNoBtn = document.getElementById('verify-no-btn');
-      const lottieContainer = document.getElementById(
-        'arcropolis-lottie-switch',
+      const nextBtn = document.querySelector<HTMLElement>('#next-btn');
+      const verifyYesBtn =
+        document.querySelector<HTMLElement>('#verify-yes-btn');
+      const verifyNoBtn = document.querySelector<HTMLElement>('#verify-no-btn');
+      const lottieContainer = document.querySelector<HTMLElement>(
+        '#arcropolis-lottie-switch',
       );
 
       // Load Lottie animation for Switch
@@ -899,7 +900,9 @@ let steps = [
           'tutorial.arcropolisVerified',
           true,
         );
-        const statusDiv = document.getElementById('verification-status');
+        const statusDiv = document.querySelector<HTMLElement>(
+          '#verification-status',
+        );
         statusDiv!.innerHTML = `
                 <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
                     <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 32px; margin-bottom: 12px;"></i>
@@ -914,7 +917,9 @@ let steps = [
       });
 
       verifyNoBtn?.addEventListener('click', () => {
-        const statusDiv = document.getElementById('verification-status');
+        const statusDiv = document.querySelector<HTMLElement>(
+          '#verification-status',
+        );
         statusDiv!.innerHTML = `
                 <div style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
                     <i class="bi bi-exclamation-triangle-fill" style="color: #ff4d4d; font-size: 32px; margin-bottom: 12px;"></i>
@@ -926,8 +931,9 @@ let steps = [
                     </button>
                 </div>
             `;
-        setupDiscordLinks(statusDiv);
-        const changeAnswerBtn = document.getElementById('change-answer-btn');
+        setupDiscordLinks(statusDiv!);
+        const changeAnswerBtn =
+          document.querySelector<HTMLElement>('#change-answer-btn');
         changeAnswerBtn?.addEventListener('click', async () => {
           // Go back to the installation step
           currentStep = 4; // Installing Skyline & ARCropolis (Switch)
@@ -982,9 +988,9 @@ let steps = [
         return;
       }
 
-      const nextBtn = document.getElementById('next-btn');
-      const yuzuBtn = document.getElementById('yuzu-btn');
-      const ryujinxBtn = document.getElementById('ryujinx-btn');
+      const nextBtn = document.querySelector<HTMLElement>('#next-btn');
+      const yuzuBtn = document.querySelector<HTMLElement>('#yuzu-btn');
+      const ryujinxBtn = document.querySelector<HTMLElement>('#ryujinx-btn');
 
       if (nextBtn) {
         nextBtn.style.opacity = '0.5';
@@ -1077,8 +1083,8 @@ let steps = [
         return;
       }
 
-      const statusDiv = document.getElementById('yuzu-status');
-      const nextBtn = document.getElementById('next-btn');
+      const statusDiv = document.querySelector<HTMLElement>('#yuzu-status');
+      const nextBtn = document.querySelector<HTMLElement>('#next-btn');
 
       if (nextBtn) {
         nextBtn.style.opacity = '0.5';
@@ -1110,7 +1116,7 @@ let steps = [
                 `;
 
           document
-            .getElementById('wrong-yuzu-path-btn')
+            .querySelector<HTMLElement>('#wrong-yuzu-path-btn')
             ?.addEventListener('click', async () => {
               const path = await window.tutorialAPI!.selectFolder();
               if (path) {
@@ -1134,7 +1140,7 @@ let steps = [
                             </div>
                         `;
                 document
-                  .getElementById('wrong-yuzu-path-btn-2')
+                  .querySelector<HTMLElement>('#wrong-yuzu-path-btn-2')
                   ?.addEventListener('click', async () => {
                     const path2 = await window.tutorialAPI!.selectFolder();
                     if (path2) {
@@ -1172,7 +1178,7 @@ let steps = [
                     </div>
                 `;
           document
-            .getElementById('select-yuzu-btn')
+            .querySelector<HTMLElement>('#select-yuzu-btn')
             ?.addEventListener('click', async () => {
               const path = await window.tutorialAPI!.selectFolder();
               if (path) {
@@ -1244,8 +1250,10 @@ let steps = [
         return;
       }
 
-      const statusDiv = document.getElementById('yuzu-install-status');
-      const nextBtn = document.getElementById('next-btn');
+      const statusDiv = document.querySelector<HTMLElement>(
+        '#yuzu-install-status',
+      );
+      const nextBtn = document.querySelector<HTMLElement>('#next-btn');
 
       if (nextBtn) {
         nextBtn.style.opacity = '0.5';
@@ -1379,7 +1387,7 @@ let steps = [
                     </p>
                 </div>
             `;
-        setupDiscordLinks(statusDiv);
+        setupDiscordLinks(statusDiv!);
       }
     },
   },
@@ -1443,10 +1451,16 @@ let steps = [
         return;
       }
 
-      const nextBtn = document.getElementById('next-btn');
-      const verifyYesBtn = document.getElementById('yuzu-verify-yes-btn');
-      const verifyNoBtn = document.getElementById('yuzu-verify-no-btn');
-      const lottieContainer = document.getElementById('arcropolis-lottie-yuzu');
+      const nextBtn = document.querySelector<HTMLElement>('#next-btn');
+      const verifyYesBtn = document.querySelector<HTMLElement>(
+        '#yuzu-verify-yes-btn',
+      );
+      const verifyNoBtn = document.querySelector<HTMLElement>(
+        '#yuzu-verify-no-btn',
+      );
+      const lottieContainer = document.querySelector<HTMLElement>(
+        '#arcropolis-lottie-yuzu',
+      );
 
       // Load Lottie animation for PC (Yuzu)
       if (lottieContainer && window.lottie) {
@@ -1489,7 +1503,9 @@ let steps = [
           await window.tutorialAPI!.checkArcropolisFolder(ultimatePath);
 
         if (!arcropolisExists) {
-          const statusDiv = document.getElementById('yuzu-verification-status');
+          const statusDiv = document.querySelector<HTMLElement>(
+            '#yuzu-verification-status',
+          );
           statusDiv!.innerHTML = `
                     <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
                         <p style="color: #ffc107; margin-bottom: 12px;">ARCropolis folder not found. Please close the game and restart it to create the folder.</p>
@@ -1523,7 +1539,9 @@ let steps = [
           pluginsPathResult.path,
         );
 
-        const statusDiv = document.getElementById('yuzu-verification-status');
+        const statusDiv = document.querySelector<HTMLElement>(
+          '#yuzu-verification-status',
+        );
         statusDiv!.innerHTML = `
                 <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
                     <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 32px; margin-bottom: 12px;"></i>
@@ -1538,7 +1556,9 @@ let steps = [
       });
 
       verifyNoBtn?.addEventListener('click', () => {
-        const statusDiv = document.getElementById('yuzu-verification-status');
+        const statusDiv = document.querySelector<HTMLElement>(
+          '#yuzu-verification-status',
+        );
         statusDiv!.innerHTML = `
                 <div style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
                     <i class="bi bi-exclamation-triangle-fill" style="color: #ff4d4d; font-size: 32px; margin-bottom: 12px;"></i>
@@ -1549,9 +1569,9 @@ let steps = [
                     </button>
                 </div>
             `;
-        setupDiscordLinks(statusDiv);
-        const changeAnswerBtn = document.getElementById(
-          'change-answer-yuzu-btn',
+        setupDiscordLinks(statusDiv!);
+        const changeAnswerBtn = document.querySelector<HTMLElement>(
+          '#change-answer-yuzu-btn',
         );
         changeAnswerBtn?.addEventListener('click', async () => {
           // Go back to the installation step
@@ -1610,8 +1630,8 @@ let steps = [
         return;
       }
 
-      const statusDiv = document.getElementById('ryujinx-status');
-      const nextBtn = document.getElementById('next-btn');
+      const statusDiv = document.querySelector<HTMLElement>('#ryujinx-status');
+      const nextBtn = document.querySelector<HTMLElement>('#next-btn');
 
       if (nextBtn) {
         nextBtn.style.opacity = '0.5';
@@ -1643,7 +1663,7 @@ let steps = [
                 `;
 
           document
-            .getElementById('wrong-ryujinx-path-btn')
+            .querySelector<HTMLElement>('#wrong-ryujinx-path-btn')
             ?.addEventListener('click', async () => {
               const path = await window.tutorialAPI!.selectFolder();
               if (path) {
@@ -1667,7 +1687,7 @@ let steps = [
                             </div>
                         `;
                 document
-                  .getElementById('wrong-ryujinx-path-btn-2')
+                  .querySelector<HTMLElement>('#wrong-ryujinx-path-btn-2')
                   ?.addEventListener('click', async () => {
                     const path2 = await window.tutorialAPI!.selectFolder();
                     if (path2) {
@@ -1705,7 +1725,7 @@ let steps = [
                     </div>
                 `;
           document
-            .getElementById('select-ryujinx-btn')
+            .querySelector<HTMLElement>('#select-ryujinx-btn')
             ?.addEventListener('click', async () => {
               const path = await window.tutorialAPI!.selectFolder();
               if (path) {
@@ -1777,8 +1797,10 @@ let steps = [
         return;
       }
 
-      const statusDiv = document.getElementById('ryujinx-install-status');
-      const nextBtn = document.getElementById('next-btn');
+      const statusDiv = document.querySelector<HTMLElement>(
+        '#ryujinx-install-status',
+      );
+      const nextBtn = document.querySelector<HTMLElement>('#next-btn');
 
       if (nextBtn) {
         nextBtn.style.opacity = '0.5';
@@ -1917,7 +1939,7 @@ let steps = [
                     </p>
                 </div>
             `;
-        setupDiscordLinks(statusDiv);
+        setupDiscordLinks(statusDiv!);
       }
     },
   },
@@ -1981,11 +2003,15 @@ let steps = [
         return;
       }
 
-      const nextBtn = document.getElementById('next-btn');
-      const verifyYesBtn = document.getElementById('ryujinx-verify-yes-btn');
-      const verifyNoBtn = document.getElementById('ryujinx-verify-no-btn');
-      const lottieContainer = document.getElementById(
-        'arcropolis-lottie-ryujinx',
+      const nextBtn = document.querySelector<HTMLElement>('#next-btn');
+      const verifyYesBtn = document.querySelector<HTMLElement>(
+        '#ryujinx-verify-yes-btn',
+      );
+      const verifyNoBtn = document.querySelector<HTMLElement>(
+        '#ryujinx-verify-no-btn',
+      );
+      const lottieContainer = document.querySelector<HTMLElement>(
+        '#arcropolis-lottie-ryujinx',
       );
 
       // Load Lottie animation for PC (Ryujinx)
@@ -2044,8 +2070,8 @@ let steps = [
           pluginsPathResult.path,
         );
 
-        const statusDiv = document.getElementById(
-          'ryujinx-verification-status',
+        const statusDiv = document.querySelector<HTMLElement>(
+          '#ryujinx-verification-status',
         );
         statusDiv!.innerHTML = `
                 <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
@@ -2061,8 +2087,8 @@ let steps = [
       });
 
       verifyNoBtn?.addEventListener('click', () => {
-        const statusDiv = document.getElementById(
-          'ryujinx-verification-status',
+        const statusDiv = document.querySelector<HTMLElement>(
+          '#ryujinx-verification-status',
         );
         statusDiv!.innerHTML = `
                 <div style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
@@ -2074,9 +2100,9 @@ let steps = [
                     </button>
                 </div>
             `;
-        setupDiscordLinks(statusDiv);
-        const changeAnswerBtn = document.getElementById(
-          'change-answer-ryujinx-btn',
+        setupDiscordLinks(statusDiv!);
+        const changeAnswerBtn = document.querySelector<HTMLElement>(
+          '#change-answer-ryujinx-btn',
         );
         changeAnswerBtn?.addEventListener('click', async () => {
           // Go back to the installation step
@@ -2124,12 +2150,14 @@ let steps = [
 </div>
 `,
     onRender: async () => {
-      const btn = document.getElementById('select-mods-path-btn');
+      const btn = document.querySelector<HTMLElement>('#select-mods-path-btn');
       const display = document.querySelector<HTMLElement>(
         '#mods-path-display .path-text',
       );
-      const nextBtn = document.getElementById('next-btn');
-      const description = document.getElementById('mods-path-description');
+      const nextBtn = document.querySelector<HTMLElement>('#next-btn');
+      const description = document.querySelector<HTMLElement>(
+        '#mods-path-description',
+      );
 
       // Update description based on hardware type
       if (description && window.tutorialAPI) {
@@ -2501,11 +2529,17 @@ async function initializeTutorial() {
 }
 
 function startAnimation() {
-  const lottieContainer = document.getElementById('lottie-animation');
-  const welcomeText = document.getElementById('welcome-text');
-  const screenshotPreview = document.getElementById('screenshot-preview');
-  const tutorialContainer = document.getElementById('tutorial-container');
-  const tutorialWindow = document.querySelector('.tutorial-window');
+  const lottieContainer =
+    document.querySelector<HTMLElement>('#lottie-animation');
+  const welcomeText = document.querySelector<HTMLElement>('#welcome-text');
+  const screenshotPreview = document.querySelector<HTMLElement>(
+    '#screenshot-preview',
+  );
+  const tutorialContainer = document.querySelector<HTMLElement>(
+    '#tutorial-container',
+  );
+  const tutorialWindow =
+    document.querySelector<HTMLElement>('.tutorial-window');
 
   const animation = window.lottie!.loadAnimation({
     container: lottieContainer!,
@@ -2567,7 +2601,7 @@ let isFirstRender = true;
 let previousActiveStepIndex = -1;
 
 async function renderProgressDots() {
-  const container = document.getElementById('progress-dots');
+  const container = document.querySelector<HTMLElement>('#progress-dots');
 
   // Calculate visible steps based on user answers - only show relevant steps
   let visibleSteps: number[] = [];
@@ -2697,7 +2731,7 @@ async function renderProgressDots() {
   previousVisibleSteps = [...visibleSteps];
 
   // Ensure animation styles are always available (add once, reuse)
-  if (!document.getElementById('dot-animation-style')) {
+  if (!document.querySelector<HTMLElement>('#dot-animation-style')) {
     const style = document.createElement('style');
     style.id = 'dot-animation-style';
     style.textContent = `
@@ -2886,29 +2920,33 @@ async function renderProgressDots() {
   }
 
   // Remove old event listeners by cloning and replacing
-  const oldDots = container!.querySelectorAll('.tutorial-progress-dot');
+  const oldDots = container!.querySelectorAll<HTMLElement>(
+    '.tutorial-progress-dot',
+  );
   oldDots.forEach((dot) => {
     const newDot = dot.cloneNode(true);
     dot.parentNode!.replaceChild(newDot, dot);
   });
 
   // Add fresh event listeners
-  container!.querySelectorAll('.tutorial-progress-dot').forEach((dot) => {
-    dot.addEventListener('click', async (e) => {
-      const target = e.currentTarget as HTMLElement;
-      const step = parseInt(target.dataset.step as string);
+  container!
+    .querySelectorAll<HTMLElement>('.tutorial-progress-dot')
+    .forEach((dot) => {
+      dot.addEventListener('click', async (e) => {
+        const target = e.currentTarget as HTMLElement;
+        const step = parseInt(target.dataset.step as string);
 
-      if (!isNaN(step) && step >= 0 && step < steps.length) {
-        await goToStep(step);
-      }
+        if (!isNaN(step) && step >= 0 && step < steps.length) {
+          await goToStep(step);
+        }
+      });
     });
-  });
 
   // Remove new-dot class after animation completes
   if (newStepsAdded && newStepIndices.length > 0) {
     setTimeout(() => {
       document
-        .querySelectorAll('.tutorial-progress-dot.new-dot')
+        .querySelectorAll<HTMLElement>('.tutorial-progress-dot.new-dot')
         .forEach((dot) => {
           dot.classList.remove('new-dot');
           // Keep the visual state but remove animation class
@@ -2921,12 +2959,15 @@ async function renderProgressDots() {
 }
 
 // Utility function to handle Discord links
-function setupDiscordLinks(container) {
-  const discordLinks = container.querySelectorAll('a[href*="discord.gg"]');
+function setupDiscordLinks(container: HTMLElement) {
+  const discordLinks = container.querySelectorAll<HTMLAnchorElement>(
+    'a[href*="discord.gg"]',
+  );
+
   discordLinks.forEach((link) => {
     // Remove existing listeners to avoid duplicates
-    const newLink = link.cloneNode(true);
-    link.parentNode.replaceChild(newLink, link);
+    const newLink = link.cloneNode(true) as HTMLElement;
+    link.parentNode!.replaceChild(newLink, link);
 
     newLink.addEventListener('click', async (e) => {
       e.preventDefault();
@@ -2944,9 +2985,9 @@ function setupDiscordLinks(container) {
 
 function renderStep(index) {
   const step = steps[index];
-  const contentDiv = document.getElementById('tutorial-content');
-  const prevBtn = document.getElementById('prev-btn');
-  const nextBtn = document.getElementById('next-btn');
+  const contentDiv = document.querySelector<HTMLElement>('#tutorial-content');
+  const prevBtn = document.querySelector<HTMLElement>('#prev-btn');
+  const nextBtn = document.querySelector<HTMLElement>('#next-btn');
 
   contentDiv!.style.opacity = '0';
   contentDiv!.style.transform = 'translateY(10px)';
@@ -2973,7 +3014,7 @@ ${step.content}
     contentDiv!.style.transform = 'translateY(0)';
 
     // Handle Discord links - open in default browser
-    setupDiscordLinks(contentDiv);
+    setupDiscordLinks(contentDiv!);
 
     if (step.onRender) {
       step.onRender();
@@ -3079,10 +3120,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeTutorial();
   }, 100);
 
-  const closeBtn = document.getElementById('close-btn');
-  const skipBtn = document.getElementById('skip-btn');
-  const prevBtn = document.getElementById('prev-btn');
-  const nextBtn = document.getElementById('next-btn');
+  const closeBtn = document.querySelector<HTMLElement>('#close-btn');
+  const skipBtn = document.querySelector<HTMLElement>('#skip-btn');
+  const prevBtn = document.querySelector<HTMLElement>('#prev-btn');
+  const nextBtn = document.querySelector<HTMLElement>('#next-btn');
 
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {

@@ -9,7 +9,7 @@ interface Download {
   startTime: number;
   endTime?: number;
   modName?: string;
-  folderPath?: string;
+  folderPath?: string | null;
   error?: string;
 }
 
@@ -20,8 +20,8 @@ export class DownloadManager {
   completedDownloadsList: HTMLElement | null;
   downloadsEmpty: HTMLElement | null;
   downloadsCount: HTMLElement | null;
-  clearCompletedBtn: HTMLElement | null;
-  sendToSwitchBtn: HTMLElement | null;
+  clearCompletedBtn: HTMLButtonElement | null;
+  sendToSwitchBtn: HTMLButtonElement | null;
   initialized: boolean;
 
   ftpTransfer: {
@@ -47,14 +47,22 @@ export class DownloadManager {
   initialize() {
     console.log('Initializing Download Manager...');
 
-    this.activeDownloadsList = document.getElementById('active-downloads-list');
-    this.completedDownloadsList = document.getElementById(
-      'completed-downloads-list',
+    this.activeDownloadsList = document.querySelector<HTMLElement>(
+      '#active-downloads-list',
     );
-    this.downloadsEmpty = document.getElementById('downloads-empty');
-    this.downloadsCount = document.getElementById('downloads-count');
-    this.clearCompletedBtn = document.getElementById('clear-completed-btn');
-    this.sendToSwitchBtn = document.getElementById('send-to-switch-btn');
+    this.completedDownloadsList = document.querySelector<HTMLElement>(
+      '#completed-downloads-list',
+    );
+    this.downloadsEmpty =
+      document.querySelector<HTMLElement>('#downloads-empty');
+    this.downloadsCount =
+      document.querySelector<HTMLElement>('#downloads-count');
+    this.clearCompletedBtn = document.querySelector<HTMLButtonElement>(
+      '#clear-completed-btn',
+    );
+    this.sendToSwitchBtn = document.querySelector<HTMLButtonElement>(
+      '#send-to-switch-btn',
+    );
 
     if (!this.activeDownloadsList || !this.completedDownloadsList) {
       console.error('Download lists not found');
@@ -152,7 +160,7 @@ export class DownloadManager {
     download.receivedBytes = receivedBytes;
     download.totalBytes = totalBytes;
 
-    const element = document.querySelector(
+    const element = document.querySelector<HTMLElement>(
       `[data-download-id="${downloadId}"]`,
     );
 
@@ -182,12 +190,16 @@ export class DownloadManager {
   markExtracting(downloadId) {
     const download = this.activeDownloads.get(downloadId);
     if (!download) return;
-    const element = document.querySelector(
+    const element = document.querySelector<HTMLElement>(
       `[data-download-id="${downloadId}"]`,
     );
     if (element) {
-      const statusText = element.querySelector('.download-status-text');
-      const progressText = element.querySelector('.download-progress-text');
+      const statusText = element.querySelector<HTMLElement>(
+        '.download-status-text',
+      );
+      const progressText = element.querySelector<HTMLElement>(
+        '.download-progress-text',
+      );
       if (statusText)
         statusText.innerHTML = '<i class="bi bi-file-zip"></i> Extracting...';
       if (progressText) progressText.textContent = 'Processing...';
@@ -218,7 +230,7 @@ export class DownloadManager {
     this.completedDownloads.unshift(download);
 
     if (this.initialized) {
-      const element = document.querySelector(
+      const element = document.querySelector<HTMLElement>(
         `[data-download-id="${downloadId}"]`,
       );
       if (element) {
@@ -253,7 +265,7 @@ export class DownloadManager {
     download.status = 'failed';
     download.error = error;
 
-    const element = document.querySelector(
+    const element = document.querySelector<HTMLElement>(
       `[data-download-id="${downloadId}"]`,
     );
     if (element) {
@@ -313,7 +325,9 @@ export class DownloadManager {
 `;
 
     // Add event listeners for action buttons
-    const cancelBtn = element.querySelector('[data-action="cancel"]');
+    const cancelBtn = element.querySelector<HTMLElement>(
+      '[data-action="cancel"]',
+    );
 
     if (cancelBtn) {
       cancelBtn.addEventListener('click', () =>
@@ -383,9 +397,11 @@ export class DownloadManager {
       this.downloadsEmpty.style.display = hasAnyDownloads ? 'none' : 'flex';
     }
 
-    const activeSections = document.getElementById('active-downloads-section');
-    const completedSections = document.getElementById(
-      'completed-downloads-section',
+    const activeSections = document.querySelector<HTMLElement>(
+      '#active-downloads-section',
+    );
+    const completedSections = document.querySelector<HTMLElement>(
+      '#completed-downloads-section',
     );
 
     if (activeSections) {
@@ -685,12 +701,14 @@ export class DownloadManager {
 
     this.activeDownloads.delete(downloadId);
 
-    const element = document.querySelector(
+    const element = document.querySelector<HTMLElement>(
       `[data-download-id="${downloadId}"]`,
     );
     if (element) {
       element.classList.add('download-failed');
-      const statusText = element.querySelector('.download-status-text');
+      const statusText = element.querySelector<HTMLElement>(
+        '.download-status-text',
+      );
       if (statusText) {
         statusText.innerHTML = '<i class="bi bi-x-circle"></i> Cancelled';
         statusText.style.color = '#ef4444';

@@ -1,4 +1,12 @@
-class CustomizationManager {
+export class CustomizationManager {
+  pendingJsPath: string | null;
+  customCssFiles: Array<{ path: string; element: HTMLStyleElement }>;
+  customJsFiles: Array<{ path: string; element: HTMLScriptElement }>;
+  customCssElement: HTMLStyleElement | null;
+  customJsElement: HTMLScriptElement | null;
+  savedCssPath: string | null;
+  savedJsPath: string | null;
+
   constructor() {
     this.pendingJsPath = null;
     this.customCssFiles = []; // Array of {path, element}
@@ -26,19 +34,20 @@ class CustomizationManager {
     this.renderCssList();
     this.renderJsList();
 
-    const addCssBtn = document.getElementById('add-custom-css');
+    const addCssBtn = document.querySelector<HTMLElement>('#add-custom-css');
     if (addCssBtn && !addCssBtn.dataset.listenerAttached) {
       addCssBtn.addEventListener('click', () => this.addCustomCss());
       addCssBtn.dataset.listenerAttached = 'true';
     }
 
-    const addJsBtn = document.getElementById('add-custom-js');
+    const addJsBtn = document.querySelector<HTMLElement>('#add-custom-js');
     if (addJsBtn && !addJsBtn.dataset.listenerAttached) {
       addJsBtn.addEventListener('click', () => this.addCustomJs());
       addJsBtn.dataset.listenerAttached = 'true';
     }
 
-    const reloadAllCssBtn = document.getElementById('reload-all-css');
+    const reloadAllCssBtn =
+      document.querySelector<HTMLElement>('#reload-all-css');
     if (reloadAllCssBtn && !reloadAllCssBtn.dataset.listenerAttached) {
       reloadAllCssBtn.addEventListener('click', () => this.reloadAllCss());
       reloadAllCssBtn.dataset.listenerAttached = 'true';
@@ -294,13 +303,21 @@ class CustomizationManager {
     `;
 
     document.body.appendChild(modal);
-    window.modalManager.showOverlay();
+    window.modalManager!.showOverlay();
     modal.style.display = 'block';
 
-    const checkbox = document.getElementById('js-warning-understand-checkbox');
-    const confirmBtn = document.getElementById('custom-modal-confirm-btn');
-    const closeBtn = document.getElementById('custom-modal-close-btn');
-    const cancelBtn = document.getElementById('custom-modal-cancel-btn');
+    const checkbox = document.querySelector<HTMLInputElement>(
+      '#js-warning-understand-checkbox',
+    );
+    const confirmBtn = document.querySelector<HTMLButtonElement>(
+      '#custom-modal-confirm-btn',
+    );
+    const closeBtn = document.querySelector<HTMLElement>(
+      '#custom-modal-close-btn',
+    );
+    const cancelBtn = document.querySelector<HTMLElement>(
+      '#custom-modal-cancel-btn',
+    );
 
     if (requireCheckbox && checkbox && confirmBtn) {
       checkbox.addEventListener('change', () => {
@@ -313,7 +330,7 @@ class CustomizationManager {
       setTimeout(() => {
         modal.remove();
       }, 300);
-      window.modalManager.hideOverlay();
+      window.modalManager!.hideOverlay();
       this.pendingJsPath = null;
     };
 
@@ -334,7 +351,7 @@ class CustomizationManager {
       });
     }
 
-    const overlay = document.getElementById('modal-overlay');
+    const overlay = document.querySelector<HTMLElement>('#modal-overlay');
     if (overlay) {
       const overlayClickHandler = () => {
         closeModal();
@@ -429,12 +446,12 @@ class CustomizationManager {
 
   async saveCssPaths() {
     const paths = this.customCssFiles.map((f) => f.path);
-    await window.electronAPI.store.set('customCssPaths', paths);
+    await window.electronAPI!.store.set('customCssPaths', paths);
   }
 
   async saveJsPaths() {
     const paths = this.customJsFiles.map((f) => f.path);
-    await window.electronAPI.store.set('customJsPaths', paths);
+    await window.electronAPI!.store.set('customJsPaths', paths);
   }
 
   async removeCustomCssFile(filePath) {
@@ -515,7 +532,7 @@ class CustomizationManager {
   }
 
   renderCssList() {
-    const container = document.getElementById('custom-css-list');
+    const container = document.querySelector<HTMLElement>('#custom-css-list');
     if (!container) {
       console.warn('CSS list container not found');
       return;
@@ -539,7 +556,7 @@ class CustomizationManager {
   }
 
   renderJsList() {
-    const container = document.getElementById('custom-js-list');
+    const container = document.querySelector<HTMLElement>('#custom-js-list');
     if (!container) {
       console.warn('JS list container not found');
       return;
@@ -581,7 +598,7 @@ class CustomizationManager {
       </div>
     `;
 
-    const reloadBtn = item.querySelector('[data-action="reload"]');
+    const reloadBtn = item.querySelector<HTMLElement>('[data-action="reload"]');
     if (reloadBtn) {
       reloadBtn.addEventListener('click', () => {
         if (type === 'css') {
@@ -590,7 +607,7 @@ class CustomizationManager {
       });
     }
 
-    const removeBtn = item.querySelector('[data-action="remove"]');
+    const removeBtn = item.querySelector<HTMLElement>('[data-action="remove"]');
     if (removeBtn) {
       removeBtn.addEventListener('click', () => {
         if (type === 'css') {
@@ -754,7 +771,7 @@ class CustomizationManager {
 
   updateCssPathUI(path) {
     console.log('Updating CSS path UI with:', path);
-    const input = document.getElementById('custom-css-path');
+    const input = document.querySelector<HTMLInputElement>('#custom-css-path');
     if (input) {
       input.value = path || '';
       input.placeholder = path ? '' : 'No custom CSS loaded';
@@ -766,7 +783,7 @@ class CustomizationManager {
 
   updateJsPathUI(path) {
     console.log('Updating JS path UI with:', path);
-    const input = document.getElementById('custom-js-path');
+    const input = document.querySelector<HTMLInputElement>('#custom-js-path');
     if (input) {
       input.value = path || '';
       input.placeholder = path ? '' : 'No custom JavaScript loaded';

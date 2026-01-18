@@ -57,30 +57,32 @@ export class UpdateManager {
   }
 
   showUpdateAvailable(data) {
-    const modal = document.getElementById('update-modal');
-    const versionNumber = document.getElementById('update-version-number');
-    const releaseNotesContent = document.getElementById(
-      'update-release-notes-content',
+    const modal = document.querySelector<HTMLElement>('#update-modal');
+    const versionNumber = document.querySelector<HTMLElement>(
+      '#update-version-number',
+    );
+    const releaseNotesContent = document.querySelector<HTMLElement>(
+      '#update-release-notes-content',
     );
 
-    const availableContent = document.getElementById(
-      'update-available-content',
+    const availableContent = document.querySelector<HTMLElement>(
+      '#update-available-content',
     );
-    const downloadingContent = document.getElementById(
-      'update-downloading-content',
+    const downloadingContent = document.querySelector<HTMLElement>(
+      '#update-downloading-content',
     );
-    const downloadedContent = document.getElementById(
-      'update-downloaded-content',
+    const downloadedContent = document.querySelector<HTMLElement>(
+      '#update-downloaded-content',
     );
 
-    const availableActions = document.getElementById(
-      'update-available-actions',
+    const availableActions = document.querySelector<HTMLElement>(
+      '#update-available-actions',
     );
-    const downloadingActions = document.getElementById(
-      'update-downloading-actions',
+    const downloadingActions = document.querySelector<HTMLElement>(
+      '#update-downloading-actions',
     );
-    const downloadedActions = document.getElementById(
-      'update-downloaded-actions',
+    const downloadedActions = document.querySelector<HTMLElement>(
+      '#update-downloaded-actions',
     );
 
     if (!modal) return;
@@ -139,17 +141,17 @@ export class UpdateManager {
 
     this.isDownloading = true;
 
-    const availableContent = document.getElementById(
-      'update-available-content',
+    const availableContent = document.querySelector<HTMLElement>(
+      '#update-available-content',
     );
-    const downloadingContent = document.getElementById(
-      'update-downloading-content',
+    const downloadingContent = document.querySelector<HTMLElement>(
+      '#update-downloading-content',
     );
-    const availableActions = document.getElementById(
-      'update-available-actions',
+    const availableActions = document.querySelector<HTMLElement>(
+      '#update-available-actions',
     );
-    const downloadingActions = document.getElementById(
-      'update-downloading-actions',
+    const downloadingActions = document.querySelector<HTMLElement>(
+      '#update-downloading-actions',
     );
 
     availableContent!.style.display = 'none';
@@ -157,8 +159,12 @@ export class UpdateManager {
     availableActions!.style.display = 'none';
     downloadingActions!.style.display = 'flex';
 
-    const progressFill = document.getElementById('update-progress-fill');
-    const progressPercent = document.getElementById('update-progress-percent');
+    const progressFill = document.querySelector<HTMLElement>(
+      '#update-progress-fill',
+    );
+    const progressPercent = document.querySelector<HTMLElement>(
+      '#update-progress-percent',
+    );
 
     progressFill!.style.width = '0%';
     progressPercent!.textContent = '0%';
@@ -179,9 +185,15 @@ export class UpdateManager {
   }
 
   updateDownloadProgress(data) {
-    const progressFill = document.getElementById('update-progress-fill');
-    const progressPercent = document.getElementById('update-progress-percent');
-    const progressSpeed = document.getElementById('update-progress-speed');
+    const progressFill = document.querySelector<HTMLElement>(
+      '#update-progress-fill',
+    );
+    const progressPercent = document.querySelector<HTMLElement>(
+      '#update-progress-percent',
+    );
+    const progressSpeed = document.querySelector<HTMLElement>(
+      '#update-progress-speed',
+    );
 
     const percent = Math.round(data.percent);
     progressFill!.style.width = percent + '%';
@@ -196,17 +208,17 @@ export class UpdateManager {
   showUpdateDownloaded(data) {
     this.isDownloading = false;
 
-    const downloadingContent = document.getElementById(
-      'update-downloading-content',
+    const downloadingContent = document.querySelector<HTMLElement>(
+      '#update-downloading-content',
     );
-    const downloadedContent = document.getElementById(
-      'update-downloaded-content',
+    const downloadedContent = document.querySelector<HTMLElement>(
+      '#update-downloaded-content',
     );
-    const downloadingActions = document.getElementById(
-      'update-downloading-actions',
+    const downloadingActions = document.querySelector<HTMLElement>(
+      '#update-downloading-actions',
     );
-    const downloadedActions = document.getElementById(
-      'update-downloaded-actions',
+    const downloadedActions = document.querySelector<HTMLElement>(
+      '#update-downloaded-actions',
     );
 
     downloadingContent!.style.display = 'none';
@@ -233,7 +245,7 @@ export class UpdateManager {
   }
 
   closeUpdateModal() {
-    const modal = document.getElementById('update-modal');
+    const modal = document.querySelector<HTMLElement>('#update-modal');
     if (!modal) return;
 
     modal.classList.add('closing');
@@ -241,14 +253,14 @@ export class UpdateManager {
       modal.style.display = 'none';
       modal.classList.remove('closing');
 
-      const availableContent = document.getElementById(
-        'update-available-content',
+      const availableContent = document.querySelector<HTMLElement>(
+        '#update-available-content',
       );
-      const downloadingContent = document.getElementById(
-        'update-downloading-content',
+      const downloadingContent = document.querySelector<HTMLElement>(
+        '#update-downloading-content',
       );
-      const downloadedContent = document.getElementById(
-        'update-downloaded-content',
+      const downloadedContent = document.querySelector<HTMLElement>(
+        '#update-downloaded-content',
       );
 
       availableContent!.style.display = 'none';

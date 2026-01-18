@@ -93,7 +93,7 @@ export class AnimationManager {
 
   handleFullMotionTabSwitch(currentTab, selectedTab) {
     // GSAP animation logic
-    document.querySelectorAll('.tab-content').forEach((tab) => {
+    document.querySelectorAll<HTMLElement>('.tab-content').forEach((tab) => {
       if (tab !== selectedTab && tab !== currentTab) {
         gsap.set(tab, { display: 'none', zIndex: -1 });
       }

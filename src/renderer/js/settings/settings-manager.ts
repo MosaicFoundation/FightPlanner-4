@@ -53,19 +53,21 @@ export class SettingsManager {
   setupEventListeners() {
     if (!this.tabSwitchingAttached) {
       document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('settings-tab-btn')) {
-          const tabName = e.target.dataset.settingsTab;
+        const target = e.target as HTMLElement;
+
+        if (target.classList.contains('settings-tab-btn')) {
+          const tabName = target.dataset.settingsTab;
           this.switchSettingsTab(tabName);
 
           if (tabName === 'logs' && window.logsManager) {
             setTimeout(() => {
-              window.logsManager.reinitialize();
+              window.logsManager!.reinitialize();
             }, 200);
           }
 
           if (tabName === 'customization' && window.customizationManager) {
             setTimeout(() => {
-              window.customizationManager.setupEventListeners();
+              window.customizationManager!.setupEventListeners();
             }, 200);
           }
         }
@@ -73,17 +75,19 @@ export class SettingsManager {
       this.tabSwitchingAttached = true;
     }
 
-    const animationSelector = document.getElementById('animation-preference');
+    const animationSelector = document.querySelector<HTMLElement>(
+      '#animation-preference',
+    );
     if (animationSelector && !animationSelector.dataset.listenerAttached) {
       animationSelector
-        .querySelectorAll('.animation-option')
+        .querySelectorAll<HTMLElement>('.animation-option')
         .forEach((option) => {
           option.addEventListener('click', () => {
             const value = option.dataset.value;
             this.setAnimationPreference(value);
 
             animationSelector
-              .querySelectorAll('.animation-option')
+              .querySelectorAll<HTMLElement>('.animation-option')
               .forEach((opt) => {
                 opt.classList.remove('active');
               });
@@ -94,21 +98,27 @@ export class SettingsManager {
       this.loadAnimationPreference();
     }
 
-    const browseMods = document.getElementById('browse-mods-folder');
+    const browseMods = document.querySelector<HTMLElement>(
+      '#browse-mods-folder',
+    );
     if (browseMods && !browseMods.dataset.listenerAttached) {
       browseMods.addEventListener('click', () => this.browseModsFolder());
       browseMods.dataset.listenerAttached = 'true';
       console.log('Browse mods button listener attached');
     }
 
-    const browsePlugins = document.getElementById('browse-plugins-folder');
+    const browsePlugins = document.querySelector<HTMLElement>(
+      '#browse-plugins-folder',
+    );
     if (browsePlugins && !browsePlugins.dataset.listenerAttached) {
       browsePlugins.addEventListener('click', () => this.browsePluginsFolder());
       browsePlugins.dataset.listenerAttached = 'true';
       console.log('Browse plugins button listener attached');
     }
 
-    const exportModsListBtn = document.getElementById('export-mods-list-btn');
+    const exportModsListBtn = document.querySelector<HTMLElement>(
+      '#export-mods-list-btn',
+    );
     if (exportModsListBtn && !exportModsListBtn.dataset.listenerAttached) {
       exportModsListBtn.addEventListener('click', async () => {
         if (window.modManager) {
@@ -119,21 +129,25 @@ export class SettingsManager {
       console.log('Export mods list button listener attached');
     }
 
-    const browseEmulator = document.getElementById('browse-emulator-path');
+    const browseEmulator = document.querySelector<HTMLElement>(
+      '#browse-emulator-path',
+    );
     if (browseEmulator && !browseEmulator.dataset.listenerAttached) {
       browseEmulator.addEventListener('click', () => this.browseEmulatorPath());
       browseEmulator.dataset.listenerAttached = 'true';
       console.log('Browse emulator button listener attached');
     }
 
-    const browseGame = document.getElementById('browse-game-path');
+    const browseGame = document.querySelector<HTMLElement>('#browse-game-path');
     if (browseGame && !browseGame.dataset.listenerAttached) {
       browseGame.addEventListener('click', () => this.browseGamePath());
       browseGame.dataset.listenerAttached = 'true';
       console.log('Browse game button listener attached');
     }
 
-    const restartTutorialBtn = document.getElementById('restart-tutorial-btn');
+    const restartTutorialBtn = document.querySelector<HTMLElement>(
+      '#restart-tutorial-btn',
+    );
     if (restartTutorialBtn && !restartTutorialBtn.dataset.listenerAttached) {
       restartTutorialBtn.addEventListener('click', async () => {
         if (window.tutorial) {
@@ -144,7 +158,9 @@ export class SettingsManager {
       console.log('Restart tutorial button listener attached');
     }
 
-    const clearTempFilesBtn = document.getElementById('clear-temp-files-btn');
+    const clearTempFilesBtn = document.querySelector<HTMLElement>(
+      '#clear-temp-files-btn',
+    );
     if (clearTempFilesBtn && !clearTempFilesBtn.dataset.listenerAttached) {
       clearTempFilesBtn.addEventListener('click', async () => {
         await this.clearTempFiles();
@@ -153,8 +169,8 @@ export class SettingsManager {
       console.log('Clear temp files button listener attached');
     }
 
-    const installConfirmToggle = document.getElementById(
-      'install-confirm-enabled',
+    const installConfirmToggle = document.querySelector<HTMLInputElement>(
+      '#install-confirm-enabled',
     );
     if (
       installConfirmToggle &&
@@ -166,7 +182,7 @@ export class SettingsManager {
         console.log('New value:', enabled);
 
         try {
-          await window.electronAPI.store.set('installConfirmEnabled', enabled);
+          await window.electronAPI!.store.set('installConfirmEnabled', enabled);
           console.log('Setting saved successfully');
 
           if (window.toastManager) {
@@ -192,7 +208,7 @@ export class SettingsManager {
       );
     }
 
-    const switchIp = document.getElementById('switch-ip');
+    const switchIp = document.querySelector<HTMLInputElement>('#switch-ip');
     if (switchIp && !switchIp.dataset.listenerAttached) {
       switchIp.addEventListener('change', () => {
         this.settings.switchIp = switchIp.value;
@@ -201,7 +217,7 @@ export class SettingsManager {
       switchIp.dataset.listenerAttached = 'true';
     }
 
-    const switchPort = document.getElementById('switch-port');
+    const switchPort = document.querySelector<HTMLInputElement>('#switch-port');
     if (switchPort && !switchPort.dataset.listenerAttached) {
       switchPort.addEventListener('change', () => {
         this.settings.switchPort = switchPort.value || '5000';
@@ -210,7 +226,8 @@ export class SettingsManager {
       switchPort.dataset.listenerAttached = 'true';
     }
 
-    const switchFtpPath = document.getElementById('switch-ftp-path');
+    const switchFtpPath =
+      document.querySelector<HTMLInputElement>('#switch-ftp-path');
     if (switchFtpPath && !switchFtpPath.dataset.listenerAttached) {
       switchFtpPath.addEventListener('change', () => {
         this.settings.switchFtpPath = switchFtpPath.value;
@@ -219,21 +236,23 @@ export class SettingsManager {
       switchFtpPath.dataset.listenerAttached = 'true';
     }
 
-    const switchTransferMethodSelect = document.getElementById(
-      'switch-transfer-method-select',
+    const switchTransferMethodSelect = document.querySelector<HTMLElement>(
+      '#switch-transfer-method-select',
     );
     if (
       switchTransferMethodSelect &&
       !switchTransferMethodSelect.dataset.listenerAttached
     ) {
-      const trigger = switchTransferMethodSelect.querySelector(
+      const trigger = switchTransferMethodSelect.querySelector<HTMLElement>(
         '.custom-select-trigger',
       );
-      const options = switchTransferMethodSelect.querySelectorAll(
+      const options = switchTransferMethodSelect.querySelectorAll<HTMLElement>(
         '.custom-select-option',
       );
       const selectedValue =
-        switchTransferMethodSelect.querySelector('.selected-value');
+        switchTransferMethodSelect.querySelector<HTMLElement>(
+          '.selected-value',
+        );
 
       if (trigger) {
         trigger.addEventListener('click', (e) => {
@@ -243,7 +262,8 @@ export class SettingsManager {
       }
 
       document.addEventListener('click', (e) => {
-        if (!switchTransferMethodSelect.contains(e.target)) {
+        const target = e.target as HTMLElement;
+        if (!switchTransferMethodSelect.contains(target)) {
           switchTransferMethodSelect.classList.remove('open');
         }
       });
@@ -251,7 +271,7 @@ export class SettingsManager {
       options.forEach((option) => {
         option.addEventListener('click', () => {
           const value = option.dataset.value;
-          const text = option.querySelector('span').textContent;
+          const text = option.querySelector<HTMLElement>('span')!.textContent;
 
           if (selectedValue) {
             selectedValue.textContent = text;
@@ -271,21 +291,21 @@ export class SettingsManager {
       switchTransferMethodSelect.dataset.listenerAttached = 'true';
     }
 
-    const switchDriveLetterSelect = document.getElementById(
-      'switch-drive-letter-select',
+    const switchDriveLetterSelect = document.querySelector<HTMLElement>(
+      '#switch-drive-letter-select',
     );
     if (
       switchDriveLetterSelect &&
       !switchDriveLetterSelect.dataset.listenerAttached
     ) {
-      const trigger = switchDriveLetterSelect.querySelector(
+      const trigger = switchDriveLetterSelect.querySelector<HTMLElement>(
         '.custom-select-trigger',
       );
-      const optionsContainer = document.getElementById(
-        'switch-drive-letter-options',
+      const optionsContainer = document.querySelector<HTMLElement>(
+        '#switch-drive-letter-options',
       );
       const selectedValue =
-        switchDriveLetterSelect.querySelector('.selected-value');
+        switchDriveLetterSelect.querySelector<HTMLElement>('.selected-value');
 
       if (trigger) {
         trigger.addEventListener('click', async (e) => {
@@ -305,7 +325,8 @@ export class SettingsManager {
       }
 
       document.addEventListener('click', (e) => {
-        if (!switchDriveLetterSelect.contains(e.target)) {
+        const target = e.target as HTMLElement;
+        if (!switchDriveLetterSelect.contains(target)) {
           switchDriveLetterSelect.classList.remove('open');
         }
       });
@@ -313,8 +334,8 @@ export class SettingsManager {
       switchDriveLetterSelect.dataset.listenerAttached = 'true';
     }
 
-    const conflictDetectionEnabled = document.getElementById(
-      'conflict-detection-enabled',
+    const conflictDetectionEnabled = document.querySelector<HTMLInputElement>(
+      '#conflict-detection-enabled',
     );
     if (
       conflictDetectionEnabled &&
@@ -328,8 +349,8 @@ export class SettingsManager {
       conflictDetectionEnabled.dataset.listenerAttached = 'true';
     }
 
-    const autoCheckPluginUpdates = document.getElementById(
-      'auto-check-plugin-updates-enabled',
+    const autoCheckPluginUpdates = document.querySelector<HTMLInputElement>(
+      '#auto-check-plugin-updates-enabled',
     );
     if (
       autoCheckPluginUpdates &&
@@ -342,8 +363,8 @@ export class SettingsManager {
       autoCheckPluginUpdates.dataset.listenerAttached = 'true';
     }
 
-    const autoDisableMods = document.getElementById(
-      'auto-disable-mods-enabled',
+    const autoDisableMods = document.querySelector<HTMLInputElement>(
+      '#auto-disable-mods-enabled',
     );
     if (autoDisableMods && !autoDisableMods.dataset.listenerAttached) {
       autoDisableMods.addEventListener('change', () => {
@@ -353,7 +374,8 @@ export class SettingsManager {
       autoDisableMods.dataset.listenerAttached = 'true';
     }
 
-    const checkUpdatesBtn = document.getElementById('check-updates-btn');
+    const checkUpdatesBtn =
+      document.querySelector<HTMLElement>('#check-updates-btn');
     if (checkUpdatesBtn && !checkUpdatesBtn.dataset.listenerAttached) {
       checkUpdatesBtn.addEventListener('click', async () => {
         if (window.updateManager) {
@@ -366,18 +388,18 @@ export class SettingsManager {
 
     this.updateAppVersionUI();
 
-    const updateChannelSelect = document.getElementById(
-      'update-channel-select',
+    const updateChannelSelect = document.querySelector<HTMLElement>(
+      '#update-channel-select',
     );
     if (updateChannelSelect && !updateChannelSelect.dataset.listenerAttached) {
-      const trigger = updateChannelSelect.querySelector(
+      const trigger = updateChannelSelect.querySelector<HTMLElement>(
         '.custom-select-trigger',
       );
-      const options = updateChannelSelect.querySelectorAll(
+      const options = updateChannelSelect.querySelectorAll<HTMLElement>(
         '.custom-select-option',
       );
       const selectedValue =
-        updateChannelSelect.querySelector('.selected-value');
+        updateChannelSelect.querySelector<HTMLElement>('.selected-value');
 
       if (trigger) {
         trigger.addEventListener('click', (e) => {
@@ -387,7 +409,8 @@ export class SettingsManager {
       }
 
       document.addEventListener('click', (e) => {
-        if (!updateChannelSelect.contains(e.target)) {
+        const target = e.target as HTMLElement;
+        if (!updateChannelSelect.contains(target)) {
           updateChannelSelect.classList.remove('open');
         }
       });
@@ -395,7 +418,7 @@ export class SettingsManager {
       options.forEach((option) => {
         option.addEventListener('click', async () => {
           const value = option.dataset.value;
-          const text = option.querySelector('span').textContent;
+          const text = option.querySelector<HTMLElement>('span')!.textContent;
 
           if (selectedValue) {
             selectedValue.textContent = text;
@@ -422,15 +445,18 @@ export class SettingsManager {
       this.updateChannelUI();
     }
 
-    const languageTypeSelect = document.getElementById('language-type-select');
+    const languageTypeSelect = document.querySelector<HTMLElement>(
+      '#language-type-select',
+    );
     if (languageTypeSelect && !languageTypeSelect.dataset.listenerAttached) {
-      const trigger = languageTypeSelect.querySelector(
+      const trigger = languageTypeSelect.querySelector<HTMLElement>(
         '.custom-select-trigger',
       );
-      const options = languageTypeSelect.querySelectorAll(
+      const options = languageTypeSelect.querySelectorAll<HTMLElement>(
         '.custom-select-option',
       );
-      const selectedValue = languageTypeSelect.querySelector('.selected-value');
+      const selectedValue =
+        languageTypeSelect.querySelector<HTMLElement>('.selected-value');
 
       if (trigger) {
         trigger.addEventListener('click', (e) => {
@@ -440,7 +466,8 @@ export class SettingsManager {
       }
 
       document.addEventListener('click', (e) => {
-        if (!languageTypeSelect.contains(e.target)) {
+        const target = e.target as HTMLElement;
+        if (!languageTypeSelect.contains(target)) {
           languageTypeSelect.classList.remove('open');
         }
       });
@@ -448,7 +475,7 @@ export class SettingsManager {
       options.forEach((option) => {
         option.addEventListener('click', async () => {
           const value = option.dataset.value;
-          const text = option.querySelector('span').textContent;
+          const text = option.querySelector<HTMLElement>('span')!.textContent;
 
           if (selectedValue) {
             selectedValue.textContent = text;
@@ -473,11 +500,16 @@ export class SettingsManager {
       });
     }
 
-    const themeSelect = document.getElementById('theme-select');
+    const themeSelect = document.querySelector<HTMLElement>('#theme-select');
     if (themeSelect && !themeSelect.dataset.listenerAttached) {
-      const trigger = themeSelect.querySelector('.custom-select-trigger');
-      const options = themeSelect.querySelectorAll('.custom-select-option');
-      const selectedValue = themeSelect.querySelector('.selected-value');
+      const trigger = themeSelect.querySelector<HTMLElement>(
+        '.custom-select-trigger',
+      );
+      const options = themeSelect.querySelectorAll<HTMLElement>(
+        '.custom-select-option',
+      );
+      const selectedValue =
+        themeSelect.querySelector<HTMLElement>('.selected-value');
 
       if (trigger) {
         trigger.addEventListener('click', (e) => {
@@ -487,7 +519,8 @@ export class SettingsManager {
       }
 
       document.addEventListener('click', (e) => {
-        if (!themeSelect.contains(e.target)) {
+        const target = e.target as HTMLElement;
+        if (!themeSelect.contains(target)) {
           themeSelect.classList.remove('open');
         }
       });
@@ -495,7 +528,7 @@ export class SettingsManager {
       options.forEach((option) => {
         option.addEventListener('click', () => {
           const value = option.dataset.value;
-          const text = option.querySelector('span').textContent;
+          const text = option.querySelector<HTMLElement>('span')!.textContent;
 
           if (selectedValue) {
             selectedValue.textContent = text;
@@ -514,15 +547,18 @@ export class SettingsManager {
       this.updateThemeUI();
     }
 
-    const emulatorTypeSelect = document.getElementById('emulator-type-select');
+    const emulatorTypeSelect = document.querySelector<HTMLElement>(
+      '#emulator-type-select',
+    );
     if (emulatorTypeSelect && !emulatorTypeSelect.dataset.listenerAttached) {
-      const trigger = emulatorTypeSelect.querySelector(
+      const trigger = emulatorTypeSelect.querySelector<HTMLElement>(
         '.custom-select-trigger',
       );
-      const options = emulatorTypeSelect.querySelectorAll(
+      const options = emulatorTypeSelect.querySelectorAll<HTMLElement>(
         '.custom-select-option',
       );
-      const selectedValue = emulatorTypeSelect.querySelector('.selected-value');
+      const selectedValue =
+        emulatorTypeSelect.querySelector<HTMLElement>('.selected-value');
 
       if (trigger) {
         trigger.addEventListener('click', (e) => {
@@ -532,7 +568,9 @@ export class SettingsManager {
       }
 
       document.addEventListener('click', (e) => {
-        if (!emulatorTypeSelect.contains(e.target)) {
+        const target = e.target as HTMLElement;
+
+        if (!emulatorTypeSelect.contains(target)) {
           emulatorTypeSelect.classList.remove('open');
         }
       });
@@ -540,7 +578,7 @@ export class SettingsManager {
       options.forEach((option) => {
         option.addEventListener('click', () => {
           const value = option.dataset.value;
-          const text = option.querySelector('span').textContent;
+          const text = option.querySelector<HTMLElement>('span')!.textContent;
 
           if (selectedValue) {
             selectedValue.textContent = text;
@@ -560,8 +598,8 @@ export class SettingsManager {
       emulatorTypeSelect.dataset.listenerAttached = 'true';
     }
 
-    const emulatorFullscreenToggle = document.getElementById(
-      'emulator-fullscreen-enabled',
+    const emulatorFullscreenToggle = document.querySelector<HTMLInputElement>(
+      '#emulator-fullscreen-enabled',
     );
     if (
       emulatorFullscreenToggle &&
@@ -589,25 +627,31 @@ export class SettingsManager {
     this.updateAutoDisableModsUI();
     this.updateDeveloperModeUI();
 
-    const devModeToggle = document.getElementById('developer-mode-enabled');
+    const devModeToggle = document.querySelector<HTMLInputElement>(
+      '#developer-mode-enabled',
+    );
     if (devModeToggle) {
       devModeToggle.addEventListener('change', (e) => {
-        this.settings.devMode = e.target.checked;
+        this.settings.devMode = devModeToggle.checked;
         this.saveSettings();
         this.updateDeveloperModeUI();
       });
     }
 
-    const fakeVersionInput = document.getElementById('fake-version-input');
-    const saveDevSettingsBtn = document.getElementById('save-dev-settings-btn');
-    const resetDevSettingsBtn = document.getElementById(
-      'reset-dev-settings-btn',
+    const fakeVersionInput = document.querySelector<HTMLInputElement>(
+      '#fake-version-input',
+    );
+    const saveDevSettingsBtn = document.querySelector<HTMLElement>(
+      '#save-dev-settings-btn',
+    );
+    const resetDevSettingsBtn = document.querySelector<HTMLElement>(
+      '#reset-dev-settings-btn',
     );
 
     if (fakeVersionInput && saveDevSettingsBtn) {
       // Load current fake version
-      window.electronAPI.store
-        .get('developer.fakeVersion')
+      window
+        .electronAPI!.store.get('developer.fakeVersion')
         .then((fakeVersion) => {
           if (fakeVersion) {
             fakeVersionInput.value = fakeVersion;
@@ -616,19 +660,21 @@ export class SettingsManager {
 
       saveDevSettingsBtn.addEventListener('click', () => {
         const fakeVersion = fakeVersionInput.value.trim();
-        window.electronAPI.store.set('developer.fakeVersion', fakeVersion);
+        window.electronAPI!.store.set('developer.fakeVersion', fakeVersion);
         this.showToast(this.translate('devSettingsSaved'), 'success');
       });
 
       if (resetDevSettingsBtn) {
         resetDevSettingsBtn.addEventListener('click', () => {
           fakeVersionInput.value = '';
-          window.electronAPI.store.set('developer.fakeVersion', '');
+          window.electronAPI!.store.set('developer.fakeVersion', '');
           this.showToast(this.translate('settingSaved'), 'success');
         });
       }
 
-      const simulateUpdateBtn = document.getElementById('simulate-update-btn');
+      const simulateUpdateBtn = document.querySelector<HTMLElement>(
+        '#simulate-update-btn',
+      );
       if (simulateUpdateBtn) {
         simulateUpdateBtn.addEventListener('click', async () => {
           if (window.electronAPI && window.electronAPI.simulateUpdate) {
@@ -638,7 +684,9 @@ export class SettingsManager {
         });
       }
 
-      const forceUpdateToggle = document.getElementById('force-update-enabled');
+      const forceUpdateToggle = document.querySelector<HTMLInputElement>(
+        '#force-update-enabled',
+      );
       if (
         forceUpdateToggle &&
         window.electronAPI &&
@@ -651,8 +699,8 @@ export class SettingsManager {
 
         // Add listener
         forceUpdateToggle.addEventListener('change', async (e) => {
-          if (window.electronAPI.setForceUpdate) {
-            await window.electronAPI.setForceUpdate(e.target.checked);
+          if (window.electronAPI) {
+            await window.electronAPI.setForceUpdate(forceUpdateToggle.checked);
             this.showToast('Force update setting saved', 'success');
           }
         });
@@ -661,8 +709,12 @@ export class SettingsManager {
   }
 
   updateDeveloperModeUI() {
-    const devTabBtn = document.getElementById('settings-tab-developer');
-    const devModeToggle = document.getElementById('developer-mode-enabled');
+    const devTabBtn = document.querySelector<HTMLElement>(
+      '#settings-tab-developer',
+    );
+    const devModeToggle = document.querySelector<HTMLInputElement>(
+      '#developer-mode-enabled',
+    );
 
     if (devModeToggle) {
       devModeToggle.checked = this.settings.devMode;
@@ -673,7 +725,7 @@ export class SettingsManager {
 
       // If we are on the developer tab and disable dev mode, switch to general
       if (!this.settings.devMode && devTabBtn.classList.contains('active')) {
-        const generalBtn = document.querySelector(
+        const generalBtn = document.querySelector<HTMLButtonElement>(
           '[data-settings-tab="general"]',
         );
         if (generalBtn) generalBtn.click();
@@ -682,17 +734,21 @@ export class SettingsManager {
   }
 
   updateAutoDisableModsUI() {
-    const toggle = document.getElementById('auto-disable-mods-enabled');
+    const toggle = document.querySelector<HTMLInputElement>(
+      '#auto-disable-mods-enabled',
+    );
     if (toggle) {
       toggle.checked = this.settings.autoDisableNewMods || false;
     }
   }
 
   switchSettingsTab(tabName) {
-    const newActive = document.getElementById(`settings-${tabName}`);
+    const newActive = document.querySelector<HTMLElement>(
+      `#settings-${tabName}`,
+    );
     if (!newActive) return;
 
-    const currentActive = document.querySelector(
+    const currentActive = document.querySelector<HTMLElement>(
       '.settings-tab-content.active:not(.fade-out)',
     );
 
@@ -706,16 +762,18 @@ export class SettingsManager {
 
       this.switchTabTimeout = setTimeout(() => {
         document
-          .querySelectorAll('.settings-tab-content')
+          .querySelectorAll<HTMLElement>('.settings-tab-content')
           .forEach((content) => {
             content.classList.remove('active', 'fade-out');
           });
 
-        document.querySelectorAll('.settings-tab-btn').forEach((btn) => {
-          btn.classList.remove('active');
-        });
+        document
+          .querySelectorAll<HTMLElement>('.settings-tab-btn')
+          .forEach((btn) => {
+            btn.classList.remove('active');
+          });
 
-        const activeBtn = document.querySelector(
+        const activeBtn = document.querySelector<HTMLElement>(
           `[data-settings-tab="${tabName}"]`,
         );
         if (activeBtn) {
@@ -724,7 +782,9 @@ export class SettingsManager {
 
         newActive.classList.add('active');
 
-        const contentArea = document.querySelector('.settings-content-area');
+        const contentArea = document.querySelector<HTMLElement>(
+          '.settings-content-area',
+        );
         if (contentArea) {
           contentArea.scrollTop = 0;
         }
@@ -732,15 +792,19 @@ export class SettingsManager {
         this.switchTabTimeout = null;
       }, 200);
     } else {
-      document.querySelectorAll('.settings-tab-content').forEach((content) => {
-        content.classList.remove('active', 'fade-out');
-      });
+      document
+        .querySelectorAll<HTMLElement>('.settings-tab-content')
+        .forEach((content) => {
+          content.classList.remove('active', 'fade-out');
+        });
 
-      document.querySelectorAll('.settings-tab-btn').forEach((btn) => {
-        btn.classList.remove('active');
-      });
+      document
+        .querySelectorAll<HTMLElement>('.settings-tab-btn')
+        .forEach((btn) => {
+          btn.classList.remove('active');
+        });
 
-      const activeBtn = document.querySelector(
+      const activeBtn = document.querySelector<HTMLElement>(
         `[data-settings-tab="${tabName}"]`,
       );
       if (activeBtn) {
@@ -749,7 +813,9 @@ export class SettingsManager {
 
       newActive.classList.add('active');
 
-      const contentArea = document.querySelector('.settings-content-area');
+      const contentArea = document.querySelector<HTMLElement>(
+        '.settings-content-area',
+      );
       if (contentArea) {
         contentArea.scrollTop = 0;
       }
@@ -830,8 +896,8 @@ ${t('settings.okUnderstand')}
 
     document.body.appendChild(modal);
 
-    const okBtn = modal.querySelector('#path-warning-ok');
-    okBtn.addEventListener('click', () => {
+    const okBtn = modal.querySelector<HTMLButtonElement>('#path-warning-ok');
+    okBtn!.addEventListener('click', () => {
       modal.remove();
     });
 
@@ -893,24 +959,29 @@ ${t('settings.okUnderstand')}
   }
 
   updateModsFolderUI() {
-    const input = document.getElementById('mods-folder-path');
+    const input = document.querySelector<HTMLInputElement>('#mods-folder-path');
     if (input && this.settings.modsPath) {
       input.value = this.settings.modsPath;
     }
   }
 
   updatePluginsFolderUI() {
-    const input = document.getElementById('plugins-folder-path');
+    const input = document.querySelector<HTMLInputElement>(
+      '#plugins-folder-path',
+    );
     if (input && this.settings.pluginsPath) {
       input.value = this.settings.pluginsPath;
     }
   }
 
   updateLanguageTypeUI() {
-    const languageTypeSelect = document.getElementById('language-type-select');
+    const languageTypeSelect = document.querySelector<HTMLElement>(
+      '#language-type-select',
+    );
     if (languageTypeSelect && window.i18n) {
-      const selectedValue = languageTypeSelect.querySelector('.selected-value');
-      const options = languageTypeSelect.querySelectorAll(
+      const selectedValue =
+        languageTypeSelect.querySelector<HTMLElement>('.selected-value');
+      const options = languageTypeSelect.querySelectorAll<HTMLElement>(
         '.custom-select-option',
       );
       const currentLocale = window.i18n.getCurrentLocale() || 'en';
@@ -920,7 +991,7 @@ ${t('settings.okUnderstand')}
           option.classList.add('active');
           if (selectedValue) {
             selectedValue.textContent =
-              option.querySelector('span').textContent;
+              option.querySelector<HTMLElement>('span')!.textContent;
           }
         } else {
           option.classList.remove('active');
@@ -930,10 +1001,13 @@ ${t('settings.okUnderstand')}
   }
 
   updateEmulatorTypeUI() {
-    const emulatorTypeSelect = document.getElementById('emulator-type-select');
+    const emulatorTypeSelect = document.querySelector<HTMLElement>(
+      '#emulator-type-select',
+    );
     if (emulatorTypeSelect) {
-      const selectedValue = emulatorTypeSelect.querySelector('.selected-value');
-      const options = emulatorTypeSelect.querySelectorAll(
+      const selectedValue =
+        emulatorTypeSelect.querySelector<HTMLElement>('.selected-value');
+      const options = emulatorTypeSelect.querySelectorAll<HTMLElement>(
         '.custom-select-option',
       );
       const currentType = this.settings.emulatorType || 'yuzu';
@@ -943,7 +1017,7 @@ ${t('settings.okUnderstand')}
           option.classList.add('active');
           if (selectedValue) {
             selectedValue.textContent =
-              option.querySelector('span').textContent;
+              option.querySelector<HTMLElement>('span')!.textContent;
           }
         } else {
           option.classList.remove('active');
@@ -953,33 +1027,37 @@ ${t('settings.okUnderstand')}
   }
 
   updateEmulatorPathUI() {
-    const input = document.getElementById('emulator-path');
+    const input = document.querySelector<HTMLInputElement>('#emulator-path');
     if (input && this.settings.emulatorPath) {
       input.value = this.settings.emulatorPath;
     }
   }
 
   updateGamePathUI() {
-    const input = document.getElementById('game-path');
+    const input = document.querySelector<HTMLInputElement>('#game-path');
     if (input && this.settings.gamePath) {
       input.value = this.settings.gamePath;
     }
   }
 
   updateEmulatorFullscreenUI() {
-    const toggle = document.getElementById('emulator-fullscreen-enabled');
+    const toggle = document.querySelector<HTMLInputElement>(
+      '#emulator-fullscreen-enabled',
+    );
     if (toggle) {
       toggle.checked = this.settings.emulatorFullscreen || false;
     }
   }
 
   updateFullscreenVisibility() {
-    const fullscreenToggle = document.querySelector(
+    const fullscreenToggle = document.querySelector<HTMLElement>(
       '#emulator-fullscreen-enabled',
     );
     if (!fullscreenToggle) return;
 
-    const fullscreenSection = fullscreenToggle.closest('.settings-section');
+    const fullscreenSection = fullscreenToggle.closest(
+      '.settings-section',
+    ) as HTMLElement;
     if (fullscreenSection) {
       if (this.settings.emulatorType === 'ryujinx') {
         fullscreenSection.style.display = 'none';
@@ -990,17 +1068,20 @@ ${t('settings.okUnderstand')}
   }
 
   updateSwitchSettingsUI() {
-    const switchIpInput = document.getElementById('switch-ip');
+    const switchIpInput =
+      document.querySelector<HTMLInputElement>('#switch-ip');
     if (switchIpInput && this.settings.switchIp) {
       switchIpInput.value = this.settings.switchIp;
     }
 
-    const switchPortInput = document.getElementById('switch-port');
+    const switchPortInput =
+      document.querySelector<HTMLInputElement>('#switch-port');
     if (switchPortInput && this.settings.switchPort) {
       switchPortInput.value = this.settings.switchPort;
     }
 
-    const switchFtpPathInput = document.getElementById('switch-ftp-path');
+    const switchFtpPathInput =
+      document.querySelector<HTMLInputElement>('#switch-ftp-path');
     if (switchFtpPathInput && this.settings.switchFtpPath) {
       switchFtpPathInput.value = this.settings.switchFtpPath;
     }
@@ -1008,16 +1089,20 @@ ${t('settings.okUnderstand')}
 
   updateSwitchTransferMethodUI() {
     const transferMethod = this.settings.switchTransferMethod || 'none';
-    const transferMethodSelect = document.getElementById(
-      'switch-transfer-method-select',
+    const transferMethodSelect = document.querySelector<HTMLElement>(
+      '#switch-transfer-method-select',
     );
-    const ftpSettings = document.getElementById('switch-ftp-settings');
-    const driveSettings = document.getElementById('switch-drive-settings');
+    const ftpSettings = document.querySelector<HTMLElement>(
+      '#switch-ftp-settings',
+    );
+    const driveSettings = document.querySelector<HTMLElement>(
+      '#switch-drive-settings',
+    );
 
     if (transferMethodSelect) {
       const selectedValue =
-        transferMethodSelect.querySelector('.selected-value');
-      const options = transferMethodSelect.querySelectorAll(
+        transferMethodSelect.querySelector<HTMLElement>('.selected-value');
+      const options = transferMethodSelect.querySelectorAll<HTMLElement>(
         '.custom-select-option',
       );
 
@@ -1027,7 +1112,7 @@ ${t('settings.okUnderstand')}
           option.classList.add('active');
           if (selectedValue) {
             selectedValue.textContent =
-              option.querySelector('span').textContent;
+              option.querySelector<HTMLElement>('span')!.textContent;
           }
           foundOption = true;
         } else {
@@ -1061,10 +1146,10 @@ ${t('settings.okUnderstand')}
       return;
     }
 
-    const optionsContainer = document.getElementById(
-      'switch-drive-letter-options',
+    const optionsContainer = document.querySelector<HTMLElement>(
+      '#switch-drive-letter-options',
     );
-    const selectedValue = document.querySelector(
+    const selectedValue = document.querySelector<HTMLElement>(
       '#switch-drive-letter-select .selected-value',
     );
 
@@ -1116,7 +1201,7 @@ ${t('settings.okUnderstand')}
           option.innerHTML = `<span>${displayText}</span>`;
 
           option.addEventListener('click', () => {
-            const selectedValue = document.querySelector(
+            const selectedValue = document.querySelector<HTMLElement>(
               '#switch-drive-letter-select .selected-value',
             );
             if (selectedValue) {
@@ -1124,14 +1209,14 @@ ${t('settings.okUnderstand')}
             }
 
             optionsContainer
-              .querySelectorAll('.custom-select-option')
+              .querySelectorAll<HTMLElement>('.custom-select-option')
               .forEach((opt) => {
                 opt.classList.remove('active');
               });
             option.classList.add('active');
 
             document
-              .getElementById('switch-drive-letter-select')
+              .querySelector<HTMLElement>('#switch-drive-letter-select')!
               .classList.remove('open');
 
             if (drive.path && drive.path.startsWith('/')) {
@@ -1186,17 +1271,18 @@ ${t('settings.okUnderstand')}
     const driveIdentifier = this.settings.switchDriveLetter;
     if (!driveIdentifier) return;
 
-    const driveLetterSelect = document.getElementById(
-      'switch-drive-letter-select',
+    const driveLetterSelect = document.querySelector<HTMLElement>(
+      '#switch-drive-letter-select',
     );
     if (driveLetterSelect) {
-      const selectedValue = driveLetterSelect.querySelector('.selected-value');
-      const optionsContainer = document.getElementById(
-        'switch-drive-letter-options',
+      const selectedValue =
+        driveLetterSelect.querySelector<HTMLElement>('.selected-value');
+      const optionsContainer = document.querySelector<HTMLElement>(
+        '#switch-drive-letter-options',
       );
 
       if (optionsContainer) {
-        const options = optionsContainer.querySelectorAll(
+        const options = optionsContainer.querySelectorAll<HTMLElement>(
           '.custom-select-option',
         );
 
@@ -1218,7 +1304,7 @@ ${t('settings.okUnderstand')}
             option.classList.add('active');
             if (selectedValue) {
               selectedValue.textContent =
-                option.querySelector('span').textContent;
+                option.querySelector<HTMLElement>('span')!.textContent;
             }
           } else {
             option.classList.remove('active');
@@ -1238,8 +1324,8 @@ ${t('settings.okUnderstand')}
   }
 
   updateConflictDetectionUI() {
-    const conflictDetectionCheckbox = document.getElementById(
-      'conflict-detection-enabled',
+    const conflictDetectionCheckbox = document.querySelector<HTMLInputElement>(
+      '#conflict-detection-enabled',
     );
     if (conflictDetectionCheckbox) {
       conflictDetectionCheckbox.checked =
@@ -1248,9 +1334,10 @@ ${t('settings.okUnderstand')}
   }
 
   updateAutoCheckPluginUpdatesUI() {
-    const autoCheckPluginUpdatesCheckbox = document.getElementById(
-      'auto-check-plugin-updates-enabled',
-    );
+    const autoCheckPluginUpdatesCheckbox =
+      document.querySelector<HTMLInputElement>(
+        '#auto-check-plugin-updates-enabled',
+      );
     if (autoCheckPluginUpdatesCheckbox) {
       autoCheckPluginUpdatesCheckbox.checked =
         this.settings.autoCheckPluginUpdates || false;
@@ -1258,7 +1345,7 @@ ${t('settings.okUnderstand')}
   }
 
   async updateAppVersionUI() {
-    const appVersionEl = document.getElementById('app-version');
+    const appVersionEl = document.querySelector<HTMLElement>('#app-version');
     if (
       appVersionEl &&
       window.electronAPI &&
@@ -1274,8 +1361,8 @@ ${t('settings.okUnderstand')}
   }
 
   async updateChannelUI() {
-    const updateChannelSelect = document.getElementById(
-      'update-channel-select',
+    const updateChannelSelect = document.querySelector<HTMLElement>(
+      '#update-channel-select',
     );
     if (
       updateChannelSelect &&
@@ -1285,8 +1372,8 @@ ${t('settings.okUnderstand')}
       try {
         const channel = await window.electronAPI.getUpdateChannel();
         const selectedValue =
-          updateChannelSelect.querySelector('.selected-value');
-        const options = updateChannelSelect.querySelectorAll(
+          updateChannelSelect.querySelector<HTMLElement>('.selected-value');
+        const options = updateChannelSelect.querySelectorAll<HTMLElement>(
           '.custom-select-option',
         );
 
@@ -1295,7 +1382,7 @@ ${t('settings.okUnderstand')}
             option.classList.add('active');
             if (selectedValue) {
               selectedValue.textContent =
-                option.querySelector('span').textContent;
+                option.querySelector<HTMLElement>('span')!.textContent;
             }
           } else {
             option.classList.remove('active');
@@ -1308,10 +1395,13 @@ ${t('settings.okUnderstand')}
   }
 
   updateThemeUI() {
-    const themeSelect = document.getElementById('theme-select');
+    const themeSelect = document.querySelector<HTMLElement>('#theme-select');
     if (themeSelect) {
-      const selectedValue = themeSelect.querySelector('.selected-value');
-      const options = themeSelect.querySelectorAll('.custom-select-option');
+      const selectedValue =
+        themeSelect.querySelector<HTMLElement>('.selected-value');
+      const options = themeSelect.querySelectorAll<HTMLElement>(
+        '.custom-select-option',
+      );
       const currentTheme = this.settings.theme || 'dark';
 
       options.forEach((option) => {
@@ -1319,7 +1409,7 @@ ${t('settings.okUnderstand')}
           option.classList.add('active');
           if (selectedValue) {
             selectedValue.textContent =
-              option.querySelector('span').textContent;
+              option.querySelector<HTMLElement>('span')!.textContent;
           }
         } else {
           option.classList.remove('active');
@@ -1331,7 +1421,7 @@ ${t('settings.okUnderstand')}
   async setTheme(theme) {
     this.settings.theme = theme;
     this.applyTheme(theme);
-    await window.electronAPI.store.set('theme', theme);
+    await window.electronAPI!.store.set('theme', theme);
   }
 
   applyTheme(theme) {
@@ -1344,31 +1434,32 @@ ${t('settings.okUnderstand')}
 
   async loadSettings() {
     try {
-      const modsPath = await window.electronAPI.store.get('modsPath');
-      const pluginsPath = await window.electronAPI.store.get('pluginsPath');
-      const emulatorType = await window.electronAPI.store.get('emulatorType');
-      const emulatorPath = await window.electronAPI.store.get('emulatorPath');
-      const gamePath = await window.electronAPI.store.get('gamePath');
+      const modsPath = await window.electronAPI!.store.get('modsPath');
+      const pluginsPath = await window.electronAPI!.store.get('pluginsPath');
+      const emulatorType = await window.electronAPI!.store.get('emulatorType');
+      const emulatorPath = await window.electronAPI!.store.get('emulatorPath');
+      const gamePath = await window.electronAPI!.store.get('gamePath');
       const emulatorFullscreen =
-        await window.electronAPI.store.get('emulatorFullscreen');
-      const switchIp = await window.electronAPI.store.get('switchIp');
-      const switchPort = await window.electronAPI.store.get('switchPort');
-      const switchFtpPath = await window.electronAPI.store.get('switchFtpPath');
-      const switchTransferMethod = await window.electronAPI.store.get(
+        await window.electronAPI!.store.get('emulatorFullscreen');
+      const switchIp = await window.electronAPI!.store.get('switchIp');
+      const switchPort = await window.electronAPI!.store.get('switchPort');
+      const switchFtpPath =
+        await window.electronAPI!.store.get('switchFtpPath');
+      const switchTransferMethod = await window.electronAPI!.store.get(
         'switchTransferMethod',
       );
       const switchDriveLetter =
-        await window.electronAPI.store.get('switchDriveLetter');
-      const conflictDetectionEnabled = await window.electronAPI.store.get(
+        await window.electronAPI!.store.get('switchDriveLetter');
+      const conflictDetectionEnabled = await window.electronAPI!.store.get(
         'conflictDetectionEnabled',
       );
-      const autoCheckPluginUpdates = await window.electronAPI.store.get(
+      const autoCheckPluginUpdates = await window.electronAPI!.store.get(
         'autoCheckPluginUpdates',
       );
-      const pluginUpdateIntroShown = await window.electronAPI.store.get(
+      const pluginUpdateIntroShown = await window.electronAPI!.store.get(
         'pluginUpdateIntroShown',
       );
-      const theme = await window.electronAPI.store.get('theme');
+      const theme = await window.electronAPI!.store.get('theme');
       return {
         modsPath: modsPath || null,
         pluginsPath: pluginsPath || null,
@@ -1410,54 +1501,54 @@ ${t('settings.okUnderstand')}
 
   async saveSettings() {
     try {
-      await window.electronAPI.store.set('modsPath', this.settings.modsPath);
-      await window.electronAPI.store.set(
+      await window.electronAPI!.store.set('modsPath', this.settings.modsPath);
+      await window.electronAPI!.store.set(
         'pluginsPath',
         this.settings.pluginsPath,
       );
-      await window.electronAPI.store.set(
+      await window.electronAPI!.store.set(
         'emulatorType',
         this.settings.emulatorType,
       );
-      await window.electronAPI.store.set(
+      await window.electronAPI!.store.set(
         'emulatorPath',
         this.settings.emulatorPath,
       );
-      await window.electronAPI.store.set('gamePath', this.settings.gamePath);
-      await window.electronAPI.store.set(
+      await window.electronAPI!.store.set('gamePath', this.settings.gamePath);
+      await window.electronAPI!.store.set(
         'emulatorFullscreen',
         this.settings.emulatorFullscreen,
       );
-      await window.electronAPI.store.set('switchIp', this.settings.switchIp);
-      await window.electronAPI.store.set(
+      await window.electronAPI!.store.set('switchIp', this.settings.switchIp);
+      await window.electronAPI!.store.set(
         'switchPort',
         this.settings.switchPort,
       );
-      await window.electronAPI.store.set(
+      await window.electronAPI!.store.set(
         'switchFtpPath',
         this.settings.switchFtpPath,
       );
-      await window.electronAPI.store.set(
+      await window.electronAPI!.store.set(
         'switchTransferMethod',
         this.settings.switchTransferMethod,
       );
-      await window.electronAPI.store.set(
+      await window.electronAPI!.store.set(
         'switchDriveLetter',
         this.settings.switchDriveLetter,
       );
-      await window.electronAPI.store.set(
+      await window.electronAPI!.store.set(
         'conflictDetectionEnabled',
         this.settings.conflictDetectionEnabled,
       );
-      await window.electronAPI.store.set(
+      await window.electronAPI!.store.set(
         'autoCheckPluginUpdates',
         this.settings.autoCheckPluginUpdates,
       );
-      await window.electronAPI.store.set(
+      await window.electronAPI!.store.set(
         'pluginUpdateIntroShown',
         this.settings.pluginUpdateIntroShown,
       );
-      await window.electronAPI.store.set('theme', this.settings.theme);
+      await window.electronAPI!.store.set('theme', this.settings.theme);
     } catch (error) {
       console.error('Failed to save settings:', error);
     }
@@ -1540,7 +1631,7 @@ ${t('settings.okUnderstand')}
 
   async setAnimationPreference(preference) {
     try {
-      await window.electronAPI.store.set('animationPreference', preference);
+      await window.electronAPI!.store.set('animationPreference', preference);
       this.applyAnimationPreference(preference);
     } catch (error) {
       console.error('Failed to save animation preference:', error);
@@ -1550,11 +1641,13 @@ ${t('settings.okUnderstand')}
   async loadAnimationPreference() {
     try {
       const preference =
-        (await window.electronAPI.store.get('animationPreference')) || 'full';
-      const animationSelector = document.getElementById('animation-preference');
+        (await window.electronAPI!.store.get('animationPreference')) || 'full';
+      const animationSelector = document.querySelector<HTMLElement>(
+        '#animation-preference',
+      );
       if (animationSelector) {
         animationSelector
-          .querySelectorAll('.animation-option')
+          .querySelectorAll<HTMLElement>('.animation-option')
           .forEach((option) => {
             if (option.dataset.value === preference) {
               option.classList.add('active');
@@ -1582,11 +1675,11 @@ ${t('settings.okUnderstand')}
 
   async loadInstallConfirmSetting() {
     try {
-      const installConfirmEnabled = await window.electronAPI.store.get(
+      const installConfirmEnabled = await window.electronAPI!.store.get(
         'installConfirmEnabled',
       );
-      const installConfirmToggle = document.getElementById(
-        'install-confirm-enabled',
+      const installConfirmToggle = document.querySelector<HTMLInputElement>(
+        '#install-confirm-enabled',
       );
       if (installConfirmToggle) {
         installConfirmToggle.checked = installConfirmEnabled !== false;
@@ -1605,7 +1698,9 @@ ${t('settings.okUnderstand')}
       return;
     }
 
-    const btn = document.getElementById('clear-temp-files-btn');
+    const btn = document.querySelector<HTMLButtonElement>(
+      '#clear-temp-files-btn',
+    );
     if (btn) {
       btn.disabled = true;
       btn.style.opacity = '0.6';

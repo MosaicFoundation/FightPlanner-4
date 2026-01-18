@@ -27,10 +27,14 @@ export class ConflictModalManager {
       return;
     }
 
-    const modal = document.getElementById('conflict-modal');
-    const summaryEl = document.getElementById('conflict-summary');
-    const container = document.getElementById('conflict-list-container');
-    const headerBadge = document.getElementById('conflict-header-badge');
+    const modal = document.querySelector<HTMLElement>('#conflict-modal');
+    const summaryEl = document.querySelector<HTMLElement>('#conflict-summary');
+    const container = document.querySelector<HTMLElement>(
+      '#conflict-list-container',
+    );
+    const headerBadge = document.querySelector<HTMLElement>(
+      '#conflict-header-badge',
+    );
 
     if (!modal || !summaryEl || !container) return;
 
@@ -137,7 +141,7 @@ export class ConflictModalManager {
   }
 
   closeConflictModal(keepOverlay = false) {
-    const modal = document.getElementById('conflict-modal');
+    const modal = document.querySelector<HTMLElement>('#conflict-modal');
     if (modal) {
       modal.classList.add('closing');
       setTimeout(() => {
@@ -161,8 +165,10 @@ export class ConflictModalManager {
     this.currentConflictFile = filePath;
     this.currentConflictingMods = conflictingMods;
 
-    const modal = document.getElementById('conflict-slot-modal');
-    const container = document.getElementById('conflict-mod-select-container');
+    const modal = document.querySelector<HTMLElement>('#conflict-slot-modal');
+    const container = document.querySelector<HTMLElement>(
+      '#conflict-mod-select-container',
+    );
 
     if (!modal || !container) return;
 
@@ -200,7 +206,7 @@ export class ConflictModalManager {
   }
 
   closeSlotChangeModal() {
-    const modal = document.getElementById('conflict-slot-modal');
+    const modal = document.querySelector<HTMLElement>('#conflict-slot-modal');
     if (modal) {
       modal.classList.add('closing');
       setTimeout(() => {
@@ -240,8 +246,10 @@ export class ConflictModalManager {
       return;
     }
 
-    const modal = document.getElementById('conflict-slot-modal');
-    const container = document.getElementById('conflict-mod-select-container');
+    const modal = document.querySelector<HTMLElement>('#conflict-slot-modal');
+    const container = document.querySelector<HTMLElement>(
+      '#conflict-mod-select-container',
+    );
 
     if (!modal || !container) return;
 
@@ -315,8 +323,12 @@ export class ConflictModalManager {
       return;
     }
 
-    const modal = document.getElementById('conflict-auto-slot-modal');
-    const container = document.getElementById('conflict-auto-slot-mod-list');
+    const modal = document.querySelector<HTMLElement>(
+      '#conflict-auto-slot-modal',
+    );
+    const container = document.querySelector<HTMLElement>(
+      '#conflict-auto-slot-mod-list',
+    );
 
     if (!modal || !container) return;
 
@@ -417,7 +429,9 @@ export class ConflictModalManager {
   }
 
   closeAutoSlotChangeModal() {
-    const modal = document.getElementById('conflict-auto-slot-modal');
+    const modal = document.querySelector<HTMLElement>(
+      '#conflict-auto-slot-modal',
+    );
     if (modal) {
       modal.classList.add('closing');
       setTimeout(() => {

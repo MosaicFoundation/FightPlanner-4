@@ -28,7 +28,7 @@ export class ToastManager {
   }
 
   setupContainer() {
-    this.container = document.getElementById('toast-container');
+    this.container = document.querySelector<HTMLElement>('#toast-container');
     if (!this.container) {
       console.warn('Toast container not found');
     }
@@ -157,13 +157,13 @@ ${actionButtonHtml}
     this.container.appendChild(toast);
     this.toasts.push(toast);
 
-    const closeBtn = toast.querySelector('.toast-close');
+    const closeBtn = toast.querySelector<HTMLElement>('.toast-close');
     closeBtn!.addEventListener('click', () => this.hide(toast));
 
     const onClick = options.actionButton?.onClick;
 
     if (onClick) {
-      const actionBtn = toast.querySelector('.toast-action-btn');
+      const actionBtn = toast.querySelector<HTMLElement>('.toast-action-btn');
 
       if (actionBtn) {
         actionBtn.addEventListener('click', () => {

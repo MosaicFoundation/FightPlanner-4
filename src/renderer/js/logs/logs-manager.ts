@@ -1,11 +1,13 @@
+interface Log {
+  id: number;
+  timestamp: Date;
+  level: string;
+  message: string;
+  source: 'main' | 'renderer';
+}
+
 export class LogsManager {
-  logs: Array<{
-    id: number;
-    timestamp: Date;
-    level: string;
-    message: string;
-    source: 'main' | 'renderer';
-  }>;
+  logs: Array<Log>;
   maxLogs: number;
   currentFilter: string;
   logsContainer: HTMLElement | null;
@@ -29,7 +31,7 @@ export class LogsManager {
   }
 
   initialize() {
-    this.logsContainer = document.getElementById('logs-container');
+    this.logsContainer = document.querySelector<HTMLElement>('#logs-container');
     if (!this.logsContainer) {
       console.warn('Logs container not found - will initialize later');
       return;
@@ -41,7 +43,7 @@ export class LogsManager {
   }
 
   reinitialize() {
-    this.logsContainer = document.getElementById('logs-container');
+    this.logsContainer = document.querySelector<HTMLElement>('#logs-container');
     if (this.logsContainer) {
       this.setupEventListeners();
       this.renderLogs();
@@ -100,7 +102,7 @@ export class LogsManager {
       })
       .join(' ');
 
-    const logEntry = {
+    const logEntry: Log = {
       id: Date.now() + Math.random(),
       timestamp,
       level,
@@ -120,7 +122,8 @@ export class LogsManager {
   }
 
   setupEventListeners() {
-    const filterButtons = document.querySelectorAll('.logs-filter-btn');
+    const filterButtons =
+      document.querySelectorAll<HTMLElement>('.logs-filter-btn');
     filterButtons.forEach((btn) => {
       if (!btn.dataset.listenerAttached) {
         btn.addEventListener('click', () => {
@@ -134,19 +137,21 @@ export class LogsManager {
       }
     });
 
-    const clearBtn = document.getElementById('clear-logs-btn');
+    const clearBtn = document.querySelector<HTMLElement>('#clear-logs-btn');
     if (clearBtn && !clearBtn.dataset.listenerAttached) {
       clearBtn.addEventListener('click', () => this.clearLogs());
       clearBtn.dataset.listenerAttached = 'true';
     }
 
-    const copyBtn = document.getElementById('copy-logs-btn');
+    const copyBtn = document.querySelector<HTMLElement>('#copy-logs-btn');
     if (copyBtn && !copyBtn.dataset.listenerAttached) {
       copyBtn.addEventListener('click', () => this.copyLogsToClipboard());
       copyBtn.dataset.listenerAttached = 'true';
     }
 
-    const openLogsFolderBtn = document.getElementById('open-logs-folder-btn');
+    const openLogsFolderBtn = document.querySelector<HTMLElement>(
+      '#open-logs-folder-btn',
+    );
     if (openLogsFolderBtn && !openLogsFolderBtn.dataset.listenerAttached) {
       openLogsFolderBtn.addEventListener('click', () => this.openLogsFolder());
       openLogsFolderBtn.dataset.listenerAttached = 'true';
@@ -250,7 +255,8 @@ export class LogsManager {
       return;
     }
 
-    const emptyState = this.logsContainer.querySelector('.logs-empty-state');
+    const emptyState =
+      this.logsContainer.querySelector<HTMLElement>('.logs-empty-state');
     if (emptyState) {
       emptyState.remove();
     }
@@ -278,7 +284,8 @@ export class LogsManager {
     }
 
     const maxVisibleLogs = 500;
-    const logEntries = this.logsContainer.querySelectorAll('.log-entry');
+    const logEntries =
+      this.logsContainer.querySelectorAll<HTMLElement>('.log-entry');
     if (logEntries.length > maxVisibleLogs) {
       logEntries[0].remove();
     }

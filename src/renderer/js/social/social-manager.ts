@@ -1,3 +1,16 @@
+interface UserFields {
+  username?: string;
+  photoURL?: string;
+
+  privacySettings?: {
+    showEmail?: boolean;
+    showFriendsList?: boolean;
+    showModsList?: boolean;
+    modsVisibility?: 'public' | 'friends' | 'private';
+    allowSync?: boolean;
+  };
+}
+
 export class SocialManager {
   API_URL: string;
   authToken: string | null;
@@ -13,6 +26,8 @@ export class SocialManager {
     [key: string]: { data: any; timestamp: number; ttl: number };
   };
   pendingRequests: Map<string, Promise<any>>;
+  viewedUserId: string | null;
+  viewedUsername: string | null;
 
   constructor() {
     this.API_URL =
@@ -75,7 +90,11 @@ export class SocialManager {
   }
 
   // Faire une requête avec cache et évitement de doublons
-  async fetchWithCache(url, options = {}, cacheKey: string | null = null) {
+  async fetchWithCache(
+    url: string,
+    options = {},
+    cacheKey: string | null = null,
+  ) {
     // Vérifier le cache d'abord
     if (cacheKey && this.isCacheValid(cacheKey)) {
       console.log('[Social] Using cached data for:', cacheKey);
@@ -108,7 +127,7 @@ export class SocialManager {
     // Stocker la promesse
     this.pendingRequests.set(url, requestPromise);
 
-    return await requestPromise;
+    return requestPromise;
   }
 
   async initialize() {
@@ -188,7 +207,8 @@ export class SocialManager {
     this.hideChrome();
 
     setTimeout(() => {
-      const onboarding = document.getElementById('social-onboarding');
+      const onboarding =
+        document.querySelector<HTMLElement>('#social-onboarding');
       if (onboarding) {
         onboarding.style.display = 'flex';
 
@@ -200,10 +220,13 @@ export class SocialManager {
   }
 
   loadOnboardingAnimation() {
-    const onboarding = document.getElementById('social-onboarding');
+    const onboarding =
+      document.querySelector<HTMLElement>('#social-onboarding');
     if (!onboarding) return;
 
-    const lottieContainer = document.getElementById('social-onboarding-lottie');
+    const lottieContainer = document.querySelector<HTMLElement>(
+      '#social-onboarding-lottie',
+    );
 
     if (lottieContainer && window.lottie) {
       const anim = window.lottie.loadAnimation({
@@ -221,7 +244,7 @@ export class SocialManager {
       });
 
       anim.addEventListener('DOMLoaded', () => {
-        const svg = lottieContainer.querySelector('svg');
+        const svg = lottieContainer.querySelector<HTMLElement>('svg');
         if (svg) {
           svg.style.position = 'absolute';
           svg.style.top = '0';
@@ -248,7 +271,7 @@ export class SocialManager {
           if (!overlayShown && currentTime >= 3.73) {
             overlayShown = true;
             setTimeout(() => {
-              const overlay = document.querySelector(
+              const overlay = document.querySelector<HTMLElement>(
                 '.social-onboarding-overlay',
               );
               if (overlay) {
@@ -256,7 +279,9 @@ export class SocialManager {
                 overlay.style.pointerEvents = 'auto';
               }
 
-              const button = document.getElementById('social-get-started');
+              const button = document.querySelector<HTMLElement>(
+                '#social-get-started',
+              );
               if (button) {
                 button.style.pointerEvents = 'auto';
                 button.style.cursor = 'pointer';
@@ -274,7 +299,9 @@ export class SocialManager {
       this.onboardingAnim = anim;
     }
 
-    const getStartedBtn = document.getElementById('social-get-started');
+    const getStartedBtn = document.querySelector<HTMLElement>(
+      '#social-get-started',
+    );
     if (getStartedBtn) {
       getStartedBtn.addEventListener(
         'click',
@@ -294,7 +321,8 @@ export class SocialManager {
       this.onboardingAnim = null;
     }
 
-    const onboarding = document.getElementById('social-onboarding');
+    const onboarding =
+      document.querySelector<HTMLElement>('#social-onboarding');
     if (onboarding) {
       onboarding.style.display = 'none';
     }
@@ -307,11 +335,13 @@ export class SocialManager {
   }
 
   showLoginScreen() {
-    const loginContainer = document.getElementById('social-login-container');
+    const loginContainer = document.querySelector<HTMLElement>(
+      '#social-login-container',
+    );
     if (loginContainer) {
       loginContainer.style.display = 'flex';
 
-      const container = document.getElementById('social-lottie');
+      const container = document.querySelector<HTMLElement>('#social-lottie');
       if (container && window.lottie) {
         if (this.loginAnim) {
           try {
@@ -338,13 +368,13 @@ export class SocialManager {
   }
 
   hideChrome() {
-    const sidebar = document.querySelector('.sidebar');
+    const sidebar = document.querySelector<HTMLElement>('.sidebar');
     if (sidebar) {
       sidebar.style.transform = 'translateX(-100%)';
       sidebar.style.transition = 'transform 0.5s ease-out';
     }
 
-    const bottomBar = document.querySelector('.bottom-bar');
+    const bottomBar = document.querySelector<HTMLElement>('.bottom-bar');
     if (bottomBar) {
       bottomBar.style.transform = 'translateY(100%)';
       bottomBar.style.transition = 'transform 0.5s ease-out';
@@ -352,13 +382,13 @@ export class SocialManager {
   }
 
   showChrome() {
-    const sidebar = document.querySelector('.sidebar');
+    const sidebar = document.querySelector<HTMLElement>('.sidebar');
     if (sidebar) {
       sidebar.style.transform = 'translateX(0)';
       sidebar.style.transition = 'transform 0.5s ease-out';
     }
 
-    const bottomBar = document.querySelector('.bottom-bar');
+    const bottomBar = document.querySelector<HTMLElement>('.bottom-bar');
     if (bottomBar) {
       bottomBar.style.transform = 'translateY(0)';
       bottomBar.style.transition = 'transform 0.5s ease-out';
@@ -457,14 +487,17 @@ export class SocialManager {
   }
 
   setupButtons() {
-    const form = document.getElementById('social-login-form');
-    const emailInput = document.getElementById('social-email');
-    const passInput = document.getElementById('social-password');
-    const remember = document.getElementById('social-remember');
-    const forgot = document.getElementById('social-forgot');
-    const create = document.getElementById('social-create');
+    const form = document.querySelector<HTMLElement>('#social-login-form');
+    const emailInput =
+      document.querySelector<HTMLInputElement>('#social-email');
+    const passInput =
+      document.querySelector<HTMLInputElement>('#social-password');
+    const remember =
+      document.querySelector<HTMLInputElement>('#social-remember');
+    const forgot = document.querySelector<HTMLElement>('#social-forgot');
+    const create = document.querySelector<HTMLElement>('#social-create');
     const submitButton = form
-      ? form.querySelector('button[type="submit"]')
+      ? form.querySelector<HTMLButtonElement>('button[type="submit"]')
       : null;
 
     if (form && emailInput && passInput) {
@@ -571,13 +604,16 @@ export class SocialManager {
       return;
     }
 
-    const modal = document.getElementById('social-forgot-modal');
+    const modal = document.querySelector<HTMLElement>('#social-forgot-modal');
     if (modal) {
       modal.style.display = 'flex';
       modal.style.opacity = '1';
 
-      const emailInput = document.getElementById('social-email');
-      const forgotEmailInput = document.getElementById('social-forgot-email');
+      const emailInput =
+        document.querySelector<HTMLInputElement>('#social-email');
+      const forgotEmailInput = document.querySelector<HTMLInputElement>(
+        '#social-forgot-email',
+      );
       if (emailInput && forgotEmailInput && emailInput.value) {
         forgotEmailInput.value = emailInput.value;
       }
@@ -585,21 +621,29 @@ export class SocialManager {
   }
 
   hideForgotPasswordModal() {
-    const modal = document.getElementById('social-forgot-modal');
+    const modal = document.querySelector<HTMLElement>('#social-forgot-modal');
     if (modal) {
       modal.style.display = 'none';
       modal.style.opacity = '0';
-      const form = document.getElementById('social-forgot-form');
+      const form = document.querySelector<HTMLFormElement>(
+        '#social-forgot-form',
+      );
       if (form) form.reset();
     }
   }
 
   setupForgotPasswordModal() {
-    const modal = document.getElementById('social-forgot-modal');
-    const closeBtn = document.getElementById('social-forgot-close');
-    const form = document.getElementById('social-forgot-form');
-    const emailInput = document.getElementById('social-forgot-email');
-    const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+    const modal = document.querySelector<HTMLElement>('#social-forgot-modal');
+    const closeBtn = document.querySelector<HTMLElement>(
+      '#social-forgot-close',
+    );
+    const form = document.querySelector<HTMLElement>('#social-forgot-form');
+    const emailInput = document.querySelector<HTMLInputElement>(
+      '#social-forgot-email',
+    );
+    const submitBtn = form
+      ? form.querySelector<HTMLButtonElement>('button[type="submit"]')
+      : null;
 
     if (closeBtn) {
       closeBtn.addEventListener('click', () => {
@@ -686,14 +730,15 @@ export class SocialManager {
       return;
     }
 
-    const modal = document.getElementById('social-register-modal');
+    const modal = document.querySelector<HTMLElement>('#social-register-modal');
     if (modal) {
       modal.style.display = 'flex';
       modal.style.opacity = '1';
 
-      const emailInput = document.getElementById('social-email');
-      const registerEmailInput = document.getElementById(
-        'social-register-email',
+      const emailInput =
+        document.querySelector<HTMLInputElement>('#social-email');
+      const registerEmailInput = document.querySelector<HTMLInputElement>(
+        '#social-register-email',
       );
       if (emailInput && registerEmailInput && emailInput.value) {
         registerEmailInput.value = emailInput.value;
@@ -702,26 +747,38 @@ export class SocialManager {
   }
 
   hideRegisterModal() {
-    const modal = document.getElementById('social-register-modal');
+    const modal = document.querySelector<HTMLElement>('#social-register-modal');
     if (modal) {
       modal.style.display = 'none';
       modal.style.opacity = '0';
-      const form = document.getElementById('social-register-form');
+      const form = document.querySelector<HTMLFormElement>(
+        '#social-register-form',
+      );
       if (form) form.reset();
     }
   }
 
   setupRegisterModal() {
-    const modal = document.getElementById('social-register-modal');
-    const closeBtn = document.getElementById('social-register-close');
-    const form = document.getElementById('social-register-form');
-    const usernameInput = document.getElementById('social-register-username');
-    const emailInput = document.getElementById('social-register-email');
-    const passwordInput = document.getElementById('social-register-password');
-    const passwordConfirmInput = document.getElementById(
-      'social-register-password-confirm',
+    const modal = document.querySelector<HTMLElement>('#social-register-modal');
+    const closeBtn = document.querySelector<HTMLElement>(
+      '#social-register-close',
     );
-    const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+    const form = document.querySelector<HTMLElement>('#social-register-form');
+    const usernameInput = document.querySelector<HTMLInputElement>(
+      '#social-register-username',
+    );
+    const emailInput = document.querySelector<HTMLInputElement>(
+      '#social-register-email',
+    );
+    const passwordInput = document.querySelector<HTMLInputElement>(
+      '#social-register-password',
+    );
+    const passwordConfirmInput = document.querySelector<HTMLInputElement>(
+      '#social-register-password-confirm',
+    );
+    const submitBtn = form
+      ? form.querySelector<HTMLButtonElement>('button[type="submit"]')
+      : null;
 
     if (closeBtn) {
       closeBtn.addEventListener('click', () => {
@@ -841,12 +898,15 @@ export class SocialManager {
   }
 
   async showProfileScreen() {
-    const loginContainer = document.getElementById('social-login-container');
+    const loginContainer = document.querySelector<HTMLElement>(
+      '#social-login-container',
+    );
     if (loginContainer) {
       loginContainer.style.display = 'none';
     }
 
-    const onboarding = document.getElementById('social-onboarding');
+    const onboarding =
+      document.querySelector<HTMLElement>('#social-onboarding');
     if (onboarding) {
       onboarding.style.display = 'none';
     }
@@ -855,8 +915,8 @@ export class SocialManager {
     this.hideForgotPasswordModal();
     this.hideRemoveFriendModal();
 
-    const profileContainer = document.getElementById(
-      'social-profile-container',
+    const profileContainer = document.querySelector<HTMLElement>(
+      '#social-profile-container',
     );
     if (profileContainer) {
       profileContainer.style.display = 'flex';
@@ -868,7 +928,7 @@ export class SocialManager {
   }
 
   setupNavigation() {
-    const navItems = document.querySelectorAll('.social-nav-item');
+    const navItems = document.querySelectorAll<HTMLElement>('.social-nav-item');
     navItems.forEach((item) => {
       item.addEventListener('click', () => {
         const section = item.getAttribute('data-section');
@@ -878,14 +938,16 @@ export class SocialManager {
   }
 
   switchSection(sectionName) {
-    const currentSections = document.querySelectorAll('.social-section.active');
+    const currentSections = document.querySelectorAll<HTMLElement>(
+      '.social-section.active',
+    );
     currentSections.forEach((section) => {
       section.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
       section.style.opacity = '0';
       section.style.transform = 'translateX(-10px)';
     });
 
-    const navItems = document.querySelectorAll('.social-nav-item');
+    const navItems = document.querySelectorAll<HTMLElement>('.social-nav-item');
     navItems.forEach((item) => {
       if (item.getAttribute('data-section') === sectionName) {
         item.classList.add('active');
@@ -895,7 +957,8 @@ export class SocialManager {
     });
 
     setTimeout(() => {
-      const sections = document.querySelectorAll('.social-section');
+      const sections =
+        document.querySelectorAll<HTMLElement>('.social-section');
       sections.forEach((section) => {
         if (section.id === `social-section-${sectionName}`) {
           section.classList.add('active');
@@ -934,7 +997,9 @@ export class SocialManager {
   }
 
   async loadFeed() {
-    const feedContent = document.getElementById('social-feed-content');
+    const feedContent = document.querySelector<HTMLElement>(
+      '#social-feed-content',
+    );
     if (!feedContent || !this.authToken) return;
 
     feedContent.innerHTML =
@@ -954,7 +1019,9 @@ export class SocialManager {
 
       if (Array.isArray(mods) && mods.length > 0) {
         const userId = this.userData?.localId;
-        const usernameEl = document.getElementById('social-profile-username');
+        const usernameEl = document.querySelector<HTMLElement>(
+          '#social-profile-username',
+        );
         const username = usernameEl ? usernameEl.textContent : null;
 
         feedContent.innerHTML =
@@ -963,15 +1030,19 @@ export class SocialManager {
             .map((mod) => {
               const modUserId = mod.userId;
               const modPseudo = mod.pseudo;
-              const isOwn =
-                modUserId === userId || (username && modPseudo === username);
+              const isOwn = !!(
+                modUserId === userId ||
+                (username && modPseudo === username)
+              );
+
               return this.renderModCard(mod, isOwn);
             })
             .join('') +
           '</div>';
 
         setTimeout(() => {
-          const cards = feedContent.querySelectorAll('.social-mod-card');
+          const cards =
+            feedContent.querySelectorAll<HTMLElement>('.social-mod-card');
           cards.forEach((card, index) => {
             card.style.opacity = '0';
             card.style.transform = 'translateY(20px) scale(0.95)';
@@ -994,7 +1065,9 @@ export class SocialManager {
   }
 
   async loadMyMods() {
-    const myModsContent = document.getElementById('social-my-mods-content');
+    const myModsContent = document.querySelector<HTMLElement>(
+      '#social-my-mods-content',
+    );
     if (!myModsContent || !this.userData) return;
 
     myModsContent.innerHTML =
@@ -1002,7 +1075,9 @@ export class SocialManager {
 
     try {
       const userId = this.userData.localId;
-      const usernameEl = document.getElementById('social-profile-username');
+      const usernameEl = document.querySelector<HTMLElement>(
+        '#social-profile-username',
+      );
       const username = usernameEl ? usernameEl.textContent : null;
 
       const modsData = await this.fetchWithCache(
@@ -1030,7 +1105,8 @@ export class SocialManager {
             '</div>';
 
           setTimeout(() => {
-            const cards = myModsContent.querySelectorAll('.social-mod-card');
+            const cards =
+              myModsContent.querySelectorAll<HTMLElement>('.social-mod-card');
             cards.forEach((card, index) => {
               card.style.opacity = '0';
               card.style.transform = 'translateY(20px) scale(0.95)';
@@ -1054,15 +1130,17 @@ export class SocialManager {
   }
 
   async loadFriends() {
-    const friendsContent = document.getElementById('social-friends-content');
-    const friendsListContainer = document.getElementById(
-      'social-friends-list-container',
+    const friendsContent = document.querySelector<HTMLElement>(
+      '#social-friends-content',
     );
-    const friendRequestsSection = document.getElementById(
-      'social-friend-requests-section',
+    const friendsListContainer = document.querySelector<HTMLElement>(
+      '#social-friends-list-container',
     );
-    const friendRequestsList = document.getElementById(
-      'social-friend-requests-list',
+    const friendRequestsSection = document.querySelector<HTMLElement>(
+      '#social-friend-requests-section',
+    );
+    const friendRequestsList = document.querySelector<HTMLElement>(
+      '#social-friend-requests-list',
     );
 
     if (!friendsContent || !this.authToken) return;
@@ -1112,7 +1190,7 @@ export class SocialManager {
           friendRequestsSection.style.display = 'block';
 
           setTimeout(() => {
-            const cards = friendRequestsList.querySelectorAll(
+            const cards = friendRequestsList.querySelectorAll<HTMLElement>(
               '.social-friend-request-card',
             );
             cards.forEach((card, index) => {
@@ -1141,12 +1219,13 @@ export class SocialManager {
             '</div>';
 
           setTimeout(() => {
-            const cards = friendsListContainer.querySelectorAll(
+            const cards = friendsListContainer.querySelectorAll<HTMLElement>(
               '.social-friend-card',
             );
             cards.forEach((card, index) => {
               card.style.opacity = '0';
               card.style.transform = 'translateX(-20px)';
+
               setTimeout(() => {
                 card.style.transition = 'all 0.3s ease';
                 card.style.opacity = '1';
@@ -1304,22 +1383,35 @@ export class SocialManager {
       const userId = this.userData.localId;
 
       const response = await fetch(`${this.API_URL}/read/users/${userId}`);
-      const data = await response.json();
+      const data: {
+        fields: { [key: string]: string[] };
+      } = await response.json();
 
       if (response.ok && data.fields) {
-        const userFields = {};
+        const userFields: UserFields = {};
+
         Object.entries(data.fields).forEach(([key, value]) => {
           userFields[key] = Object.values(value)[0];
         });
 
-        const usernameEl = document.getElementById('social-profile-username');
-        const emailEl = document.getElementById('social-profile-email');
-        const avatarEl = document.getElementById('social-profile-avatar');
-        const usernameInput = document.getElementById('social-edit-username');
-        const privacyVisibility = document.getElementById(
-          'social-privacy-visibility',
+        const usernameEl = document.querySelector<HTMLElement>(
+          '#social-profile-username',
         );
-        const privacySync = document.getElementById('social-privacy-sync');
+        const emailEl = document.querySelector<HTMLElement>(
+          '#social-profile-email',
+        );
+        const avatarEl = document.querySelector<HTMLImageElement>(
+          '#social-profile-avatar',
+        );
+        const usernameInput = document.querySelector<HTMLInputElement>(
+          '#social-edit-username',
+        );
+        const privacyVisibility = document.querySelector<HTMLSelectElement>(
+          '#social-privacy-visibility',
+        );
+        const privacySync = document.querySelector<HTMLInputElement>(
+          '#social-privacy-sync',
+        );
 
         if (usernameEl) usernameEl.textContent = userFields.username || 'User';
         if (emailEl) emailEl.textContent = this.userData.email || '';
@@ -1351,7 +1443,9 @@ export class SocialManager {
         setTimeout(() => {
           if (
             document
-              .querySelector('.social-nav-item[data-section="feed"]')
+              .querySelector<HTMLElement>(
+                '.social-nav-item[data-section="feed"]',
+              )
               ?.classList.contains('active')
           ) {
             this.loadFeed();
@@ -1377,7 +1471,9 @@ export class SocialManager {
     try {
       const userId = this.userData.localId;
 
-      const usernameEl = document.getElementById('social-profile-username');
+      const usernameEl = document.querySelector<HTMLElement>(
+        '#social-profile-username',
+      );
       const username = usernameEl ? usernameEl.textContent : null;
 
       const modsData = await this.fetchWithCache(
@@ -1417,33 +1513,40 @@ export class SocialManager {
         ).length;
       }
 
-      const modsStatEl = document.getElementById('social-stat-mods');
-      const friendsStatEl = document.getElementById('social-stat-friends');
+      const modsStatEl =
+        document.querySelector<HTMLElement>('#social-stat-mods');
+      const friendsStatEl = document.querySelector<HTMLElement>(
+        '#social-stat-friends',
+      );
 
-      if (modsStatEl) modsStatEl.textContent = modsCount;
-      if (friendsStatEl) friendsStatEl.textContent = friendsCount;
+      if (modsStatEl) modsStatEl.textContent = `${modsCount}`;
+      if (friendsStatEl) friendsStatEl.textContent = `${friendsCount}`;
     } catch (error) {
       console.error('Error loading user stats:', error);
     }
   }
 
   setupProfileButtons() {
-    const saveUsernameBtn = document.getElementById('social-save-username');
+    const saveUsernameBtn = document.querySelector<HTMLElement>(
+      '#social-save-username',
+    );
     if (saveUsernameBtn) {
       saveUsernameBtn.addEventListener('click', async () => {
         await this.updateUsername();
       });
     }
 
-    const savePrivacyBtn = document.getElementById('social-save-privacy');
+    const savePrivacyBtn = document.querySelector<HTMLElement>(
+      '#social-save-privacy',
+    );
     if (savePrivacyBtn) {
       savePrivacyBtn.addEventListener('click', async () => {
         await this.updatePrivacySettings();
       });
     }
 
-    const saveAutoDownloadBtn = document.getElementById(
-      'social-save-auto-download',
+    const saveAutoDownloadBtn = document.querySelector<HTMLElement>(
+      '#social-save-auto-download',
     );
     if (saveAutoDownloadBtn) {
       saveAutoDownloadBtn.addEventListener('click', async () => {
@@ -1451,7 +1554,7 @@ export class SocialManager {
       });
     }
 
-    const logoutBtn = document.getElementById('social-logout-btn');
+    const logoutBtn = document.querySelector<HTMLElement>('#social-logout-btn');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', async () => {
         await this.logout();
@@ -1459,7 +1562,7 @@ export class SocialManager {
     }
 
     document.addEventListener('click', async (e) => {
-      const clickedElement = e.target;
+      const clickedElement = e.target as HTMLElement;
       const removeBtn = clickedElement.closest('.social-remove-friend-btn');
 
       if (
@@ -1505,9 +1608,9 @@ export class SocialManager {
 
       if (this.authToken && this.userData) {
         if (
-          e.target.closest('#social-remove-friend-modal') ||
-          e.target.closest('#social-register-modal') ||
-          e.target.closest('#social-forgot-modal')
+          clickedElement.closest('#social-remove-friend-modal') ||
+          clickedElement.closest('#social-register-modal') ||
+          clickedElement.closest('#social-forgot-modal')
         ) {
           e.preventDefault();
           e.stopPropagation();
@@ -1515,9 +1618,9 @@ export class SocialManager {
         }
       }
 
-      if (e.target.closest('.social-mod-download-btn')) {
-        const btn = e.target.closest('.social-mod-download-btn');
-        const link = btn.getAttribute('data-link');
+      if (clickedElement.closest('.social-mod-download-btn')) {
+        const btn = clickedElement.closest('.social-mod-download-btn');
+        const link = btn!.getAttribute('data-link');
         if (
           link &&
           link.startsWith('fightplanner:') &&
@@ -1529,32 +1632,36 @@ export class SocialManager {
       }
 
       if (
-        e.target.closest('.social-creator-link') &&
-        !e.target.closest('.social-remove-friend-btn')
+        clickedElement.closest('.social-creator-link') &&
+        !clickedElement.closest('.social-remove-friend-btn')
       ) {
-        const creatorLink = e.target.closest('.social-creator-link');
-        const username = creatorLink.getAttribute('data-username');
-        const userId = creatorLink.getAttribute('data-userid');
-        if (username && !e.target.closest('.social-mod-download-btn')) {
+        const creatorLink = clickedElement.closest('.social-creator-link');
+        const username = creatorLink!.getAttribute('data-username');
+        const userId = creatorLink!.getAttribute('data-userid');
+        if (username && !clickedElement.closest('.social-mod-download-btn')) {
           this.showUserProfile(username, userId);
         }
       }
 
-      if (e.target.closest('#social-back-btn')) {
+      if (clickedElement.closest('#social-back-btn')) {
         this.switchSection('feed');
       }
 
-      if (e.target.closest('#social-add-friend-btn')) {
-        const btn = e.target.closest('#social-add-friend-btn');
-        let userId = btn.getAttribute('data-userid');
+      if (clickedElement.closest('#social-add-friend-btn')) {
+        const btn = clickedElement.closest(
+          '#social-add-friend-btn',
+        ) as HTMLButtonElement;
+
+        let userId = btn!.getAttribute('data-userid');
+
         const username =
-          btn.getAttribute('data-username') || this.viewedUsername;
+          btn!.getAttribute('data-username') || this.viewedUsername;
 
         if (!userId) {
           userId = this.viewedUserId;
           if (!userId && username) {
-            const addFriendText = document.getElementById(
-              'social-add-friend-text',
+            const addFriendText = document.querySelector<HTMLElement>(
+              '#social-add-friend-text',
             );
             if (addFriendText) addFriendText.textContent = 'Finding user...';
             btn.disabled = true;
@@ -1567,7 +1674,11 @@ export class SocialManager {
               );
 
               // Handle both array and paginated response
-              const mods = Array.isArray(modsData)
+              const mods: {
+                userId?: string;
+                pseudo?: string;
+                creator?: string;
+              }[] = Array.isArray(modsData)
                 ? modsData
                 : modsData.documents || [];
 
@@ -1575,6 +1686,7 @@ export class SocialManager {
                 const userMod = mods.find(
                   (mod) => (mod.pseudo || mod.creator) === username,
                 );
+
                 if (userMod && userMod.userId) {
                   userId = userMod.userId;
                   this.viewedUserId = userId;
@@ -1598,35 +1710,42 @@ export class SocialManager {
             window.toastManager.error(
               'Could not find user ID. Please try again.',
             );
-          const addFriendText = document.getElementById(
-            'social-add-friend-text',
+          const addFriendText = document.querySelector<HTMLElement>(
+            '#social-add-friend-text',
           );
           if (addFriendText) addFriendText.textContent = 'Add Friend';
           btn.disabled = false;
         }
       }
 
-      if (e.target.closest('.social-accept-friend-btn')) {
-        const btn = e.target.closest('.social-accept-friend-btn');
-        const requestId = btn.getAttribute('data-request-id');
+      const target = e.target as HTMLElement;
+
+      if (target.closest('.social-accept-friend-btn')) {
+        const btn = target.closest('.social-accept-friend-btn');
+        const requestId = btn!.getAttribute('data-request-id');
         if (requestId) {
-          this.acceptFriendRequest(requestId);
+          await this.acceptFriendRequest(requestId);
         }
       }
 
-      if (e.target.closest('.social-reject-friend-btn')) {
-        const btn = e.target.closest('.social-reject-friend-btn');
-        const requestId = btn.getAttribute('data-request-id');
+      if (target.closest('.social-reject-friend-btn')) {
+        const btn = target.closest('.social-reject-friend-btn');
+        const requestId = btn!.getAttribute('data-request-id');
         if (requestId) {
-          this.rejectFriendRequest(requestId);
+          await this.rejectFriendRequest(requestId);
         }
       }
     });
   }
 
   async updateAddFriendButton(username, userId) {
-    const addFriendBtn = document.getElementById('social-add-friend-btn');
-    const addFriendText = document.getElementById('social-add-friend-text');
+    const addFriendBtn = document.querySelector<HTMLInputElement>(
+      '#social-add-friend-btn',
+    );
+
+    const addFriendText = document.querySelector<HTMLElement>(
+      '#social-add-friend-text',
+    );
 
     if (!addFriendBtn) return;
 
@@ -1738,8 +1857,12 @@ export class SocialManager {
   async sendFriendRequest(targetUserId) {
     if (!this.authToken || !this.userData) return;
 
-    const addFriendBtn = document.getElementById('social-add-friend-btn');
-    const addFriendText = document.getElementById('social-add-friend-text');
+    const addFriendBtn = document.querySelector<HTMLInputElement>(
+      '#social-add-friend-btn',
+    );
+    const addFriendText = document.querySelector<HTMLElement>(
+      '#social-add-friend-text',
+    );
 
     if (addFriendBtn) {
       addFriendBtn.disabled = true;
@@ -1855,13 +1978,15 @@ export class SocialManager {
     console.log('[Social] removeFriend called:', { relationId, friendId });
 
     let friendUsername = 'this friend';
-    const removeBtn = document.querySelector(
+    const removeBtn = document.querySelector<HTMLElement>(
       `.social-remove-friend-btn[data-relation-id="${relationId}"]`,
     );
     if (removeBtn) {
       const friendCard = removeBtn.closest('.social-friend-card');
       if (friendCard) {
-        const nameEl = friendCard.querySelector('.social-friend-name');
+        const nameEl = friendCard.querySelector<HTMLElement>(
+          '.social-friend-name',
+        );
         if (nameEl) {
           friendUsername = nameEl.textContent || 'this friend';
         }
@@ -1889,19 +2014,23 @@ export class SocialManager {
     this.hideRegisterModal();
     this.hideForgotPasswordModal();
 
-    let modal = document.getElementById('social-remove-friend-modal');
+    let modal = document.querySelector<HTMLElement>(
+      '#social-remove-friend-modal',
+    );
 
     if (!modal) {
-      const socialTab = document.getElementById('tab-social');
+      const socialTab = document.querySelector<HTMLElement>('#tab-social');
       if (socialTab) {
-        modal = socialTab.querySelector('#social-remove-friend-modal');
+        modal = socialTab.querySelector<HTMLElement>(
+          '#social-remove-friend-modal',
+        );
       }
     }
 
     if (!modal) {
       console.error(
         '[Social] Remove friend modal not found in DOM. All modals:',
-        document.querySelectorAll('.social-modal'),
+        document.querySelectorAll<HTMLElement>('.social-modal'),
       );
       if (window.toastManager) {
         window.toastManager.error('toasts.modalNotFound');
@@ -1916,7 +2045,9 @@ export class SocialManager {
       modal.setAttribute('data-initialized', 'true');
     }
 
-    const friendNameEl = modal.querySelector('#social-remove-friend-name');
+    const friendNameEl = modal.querySelector<HTMLElement>(
+      '#social-remove-friend-name',
+    );
     if (friendNameEl) {
       friendNameEl.textContent = friendUsername;
       console.log('[Social] Friend name set in modal:', friendUsername);
@@ -1930,7 +2061,9 @@ export class SocialManager {
     modal.style.display = 'flex';
     modal.style.opacity = '0';
     modal.style.zIndex = '100000';
-    const content = modal.querySelector('.social-modal-content');
+
+    const content = modal.querySelector<HTMLElement>('.social-modal-content');
+
     if (content) {
       content.style.transform = 'translateY(20px)';
       content.style.opacity = '0';
@@ -1958,11 +2091,16 @@ export class SocialManager {
   }
 
   hideRemoveFriendModal() {
-    const modal = document.getElementById('social-remove-friend-modal');
+    const modal = document.querySelector<HTMLElement>(
+      '#social-remove-friend-modal',
+    );
     if (!modal) {
-      const socialTab = document.getElementById('tab-social');
+      const socialTab = document.querySelector<HTMLElement>('#tab-social');
       if (socialTab) {
-        const tabModal = socialTab.querySelector('#social-remove-friend-modal');
+        const tabModal = socialTab.querySelector<HTMLElement>(
+          '#social-remove-friend-modal',
+        );
+
         if (tabModal) {
           tabModal.style.display = 'none';
           tabModal.style.opacity = '0';
@@ -1975,7 +2113,8 @@ export class SocialManager {
     modal.style.opacity = '0';
     modal.style.transition = 'none';
 
-    const content = modal.querySelector('.social-modal-content');
+    const content = modal.querySelector<HTMLElement>('.social-modal-content');
+
     if (content) {
       content.style.opacity = '0';
       content.style.transform = 'translateY(20px)';
@@ -2017,7 +2156,9 @@ export class SocialManager {
 
   setupRemoveFriendModal() {
     setTimeout(() => {
-      const modal = document.getElementById('social-remove-friend-modal');
+      const modal = document.querySelector<HTMLElement>(
+        '#social-remove-friend-modal',
+      );
       if (!modal) {
         console.error('[Social] Remove friend modal not found during setup');
         return;
@@ -2028,9 +2169,15 @@ export class SocialManager {
       modal.style.display = 'none';
       modal.style.opacity = '0';
 
-      const closeBtn = modal.querySelector('#social-remove-friend-close');
-      const cancelBtn = modal.querySelector('#social-remove-friend-cancel');
-      const confirmBtn = modal.querySelector('#social-remove-friend-confirm');
+      const closeBtn = modal.querySelector<HTMLElement>(
+        '#social-remove-friend-close',
+      );
+      const cancelBtn = modal.querySelector<HTMLElement>(
+        '#social-remove-friend-cancel',
+      );
+      const confirmBtn = modal.querySelector<HTMLElement>(
+        '#social-remove-friend-confirm',
+      );
 
       if (closeBtn) {
         closeBtn.addEventListener('click', (e) => {
@@ -2071,19 +2218,25 @@ export class SocialManager {
     }, 100);
   }
 
-  async showUserProfile(username, userId = null) {
+  async showUserProfile(username: string, userId: string | null = null) {
     this.viewedUserId = userId;
     this.viewedUsername = username;
 
-    const userModsContent = document.getElementById('social-user-mods-content');
+    const userModsContent = document.querySelector<HTMLElement>(
+      '#social-user-mods-content',
+    );
     if (userModsContent) {
       userModsContent.innerHTML =
         '<div class="social-loading"><i class="bi bi-hourglass-split"></i><p>Loading user mods...</p></div>';
       userModsContent.style.opacity = '0.5';
     }
 
-    const usernameEl = document.getElementById('social-user-profile-username');
-    const avatarEl = document.getElementById('social-user-profile-avatar');
+    const usernameEl = document.querySelector<HTMLElement>(
+      '#social-user-profile-username',
+    );
+    const avatarEl = document.querySelector<HTMLImageElement>(
+      '#social-user-profile-avatar',
+    );
 
     if (usernameEl) {
       usernameEl.style.opacity = '0';
@@ -2104,7 +2257,7 @@ export class SocialManager {
 
     this.switchSection('user-profile');
 
-    const navItems = document.querySelectorAll('.social-nav-item');
+    const navItems = document.querySelectorAll<HTMLElement>('.social-nav-item');
     navItems.forEach((item) => {
       item.classList.remove('active');
     });
@@ -2115,8 +2268,8 @@ export class SocialManager {
       const resolvedUserId = userId || this.viewedUserId;
       if (resolvedUserId && resolvedUserId !== userId) {
         this.checkFriendshipStatus(
-          document.getElementById('social-add-friend-btn'),
-          document.getElementById('social-add-friend-text'),
+          document.querySelector<HTMLElement>('#social-add-friend-btn'),
+          document.querySelector<HTMLElement>('#social-add-friend-text'),
           resolvedUserId,
           username,
         );
@@ -2129,8 +2282,10 @@ export class SocialManager {
     }
   }
 
-  async loadUserMods(username, userId = null) {
-    const userModsContent = document.getElementById('social-user-mods-content');
+  async loadUserMods(username, userId: string | null = null) {
+    const userModsContent = document.querySelector<HTMLElement>(
+      '#social-user-mods-content',
+    );
     if (!userModsContent || !this.authToken) return;
 
     try {
@@ -2167,20 +2322,26 @@ export class SocialManager {
             const userResponse = await fetch(
               `${this.API_URL}/read/users/${userId}`,
             );
-            const userData = await userResponse.json();
+
+            const userData: {
+              fields: { [key: string]: string[] };
+            } = await userResponse.json();
+
             if (userData.fields) {
-              const userFields = {};
+              const userFields: UserFields = {};
+
               Object.entries(userData.fields).forEach(([key, value]) => {
                 userFields[key] = Object.values(value)[0];
               });
-              const avatarEl = document.getElementById(
-                'social-user-profile-avatar',
+              const avatarEl = document.querySelector<HTMLImageElement>(
+                '#social-user-profile-avatar',
               );
               if (avatarEl && userFields.photoURL) {
                 avatarEl.style.transition = 'opacity 0.3s ease';
                 avatarEl.style.opacity = '0';
+
                 setTimeout(() => {
-                  avatarEl.src = userFields.photoURL;
+                  avatarEl.src = userFields.photoURL!;
                   avatarEl.style.opacity = '1';
                 }, 150);
               }
@@ -2190,11 +2351,13 @@ export class SocialManager {
           }
         }
 
-        const modsCountEl = document.getElementById('social-user-stat-mods');
+        const modsCountEl = document.querySelector<HTMLElement>(
+          '#social-user-stat-mods',
+        );
         if (modsCountEl) {
           modsCountEl.style.transform = 'scale(0.8)';
           modsCountEl.style.opacity = '0';
-          modsCountEl.textContent = userMods.length;
+          modsCountEl.textContent = `${userMods.length}`;
           setTimeout(() => {
             modsCountEl.style.transition = 'all 0.3s ease';
             modsCountEl.style.transform = 'scale(1)';
@@ -2222,10 +2385,15 @@ export class SocialManager {
           userModsContent.style.opacity = '1';
           userModsContent.style.transform = 'translateY(0)';
 
-          const cards = userModsContent.querySelectorAll('.social-mod-card');
+          const cards =
+            userModsContent.querySelectorAll<HTMLInputElement>(
+              '.social-mod-card',
+            );
+
           cards.forEach((card, index) => {
             card.style.opacity = '0';
             card.style.transform = 'translateY(20px)';
+
             setTimeout(() => {
               card.style.transition = 'all 0.3s ease';
               card.style.opacity = '1';
@@ -2246,27 +2414,27 @@ export class SocialManager {
   async loadAutoDownloadSettingsToUI() {
     await this.loadAutoDownloadSettings();
 
-    const enabledCheckbox = document.getElementById(
-      'social-auto-download-enabled',
+    const enabledCheckbox = document.querySelector<HTMLInputElement>(
+      '#social-auto-download-enabled',
     );
-    const intervalInput = document.getElementById(
-      'social-auto-download-interval',
+    const intervalInput = document.querySelector<HTMLInputElement>(
+      '#social-auto-download-interval',
     );
 
     if (enabledCheckbox) {
       enabledCheckbox.checked = this.autoDownloadEnabled;
     }
     if (intervalInput) {
-      intervalInput.value = this.autoDownloadIntervalMs / (60 * 1000);
+      intervalInput.value = `${this.autoDownloadIntervalMs / (60 * 1000)}`;
     }
   }
 
   async updateAutoDownloadSettings() {
-    const enabledCheckbox = document.getElementById(
-      'social-auto-download-enabled',
+    const enabledCheckbox = document.querySelector<HTMLInputElement>(
+      '#social-auto-download-enabled',
     );
-    const intervalInput = document.getElementById(
-      'social-auto-download-interval',
+    const intervalInput = document.querySelector<HTMLInputElement>(
+      '#social-auto-download-interval',
     );
 
     if (!enabledCheckbox || !intervalInput) return;
@@ -2296,7 +2464,9 @@ export class SocialManager {
   }
 
   async updateUsername() {
-    const usernameInput = document.getElementById('social-edit-username');
+    const usernameInput = document.querySelector<HTMLInputElement>(
+      '#social-edit-username',
+    );
     if (!usernameInput || !this.authToken) return;
 
     const newUsername = usernameInput.value.trim();
@@ -2330,7 +2500,9 @@ export class SocialManager {
           });
         }
 
-        const usernameEl = document.getElementById('social-profile-username');
+        const usernameEl = document.querySelector<HTMLElement>(
+          '#social-profile-username',
+        );
         if (usernameEl) usernameEl.textContent = newUsername;
 
         if (window.toastManager)
@@ -2347,10 +2519,12 @@ export class SocialManager {
   }
 
   async updatePrivacySettings() {
-    const privacyVisibility = document.getElementById(
-      'social-privacy-visibility',
+    const privacyVisibility = document.querySelector<HTMLInputElement>(
+      '#social-privacy-visibility',
     );
-    const privacySync = document.getElementById('social-privacy-sync');
+    const privacySync = document.querySelector<HTMLInputElement>(
+      '#social-privacy-sync',
+    );
 
     if (!privacyVisibility || !privacySync || !this.authToken || !this.userData)
       return;
@@ -2404,8 +2578,8 @@ export class SocialManager {
         } catch (e) {}
       }
 
-      const profileContainer = document.getElementById(
-        'social-profile-container',
+      const profileContainer = document.querySelector<HTMLElement>(
+        '#social-profile-container',
       );
       if (profileContainer) profileContainer.style.display = 'none';
 
@@ -2427,8 +2601,8 @@ export class SocialManager {
       console.error('Logout error:', error);
 
       this.stopAutoDownloadCheck();
-      const profileContainer = document.getElementById(
-        'social-profile-container',
+      const profileContainer = document.querySelector<HTMLElement>(
+        '#social-profile-container',
       );
       if (profileContainer) profileContainer.style.display = 'none';
       this.showLoginScreen();
@@ -2497,7 +2671,9 @@ export class SocialManager {
     try {
       const userId = this.userData.localId;
 
-      const usernameEl = document.getElementById('social-profile-username');
+      const usernameEl = document.querySelector<HTMLElement>(
+        '#social-profile-username',
+      );
       const username = usernameEl ? usernameEl.textContent : null;
 
       const modsData = await this.fetchWithCache(
@@ -2645,7 +2821,9 @@ export class SocialManager {
       }
 
       const userId = this.userData.localId;
-      const usernameEl = document.getElementById('social-profile-username');
+      const usernameEl = document.querySelector<HTMLElement>(
+        '#social-profile-username',
+      );
       const username = usernameEl ? usernameEl.textContent : null;
 
       for (const mod of modsData) {

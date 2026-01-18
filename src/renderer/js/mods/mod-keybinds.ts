@@ -1,17 +1,24 @@
-class ModKeybindsHandler {
-  constructor(modManager) {
+import { ModManager } from './mod-manager';
+
+export class ModKeybindsHandler {
+  modManager: ModManager;
+
+  constructor(modManager: ModManager) {
     this.modManager = modManager;
     this.setupKeybinds();
   }
 
   setupKeybinds() {
     document.addEventListener('keydown', async (e) => {
-      const activeTab = document.querySelector('.tab-content.active');
+      const activeTab = document.querySelector<HTMLElement>(
+        '.tab-content.active',
+      );
       if (!activeTab || activeTab.id !== 'tab-tools') {
         return;
       }
 
-      const activeElement = document.activeElement;
+      const activeElement = document.activeElement as HTMLElement;
+
       if (
         activeElement &&
         (activeElement.tagName === 'INPUT' ||

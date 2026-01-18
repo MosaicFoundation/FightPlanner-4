@@ -38,17 +38,19 @@ export class ResizeHandler {
   }
 
   async setupResizeHandlers() {
-    const resizeHandle = document.getElementById('resize-handle');
-    const rightPanel = document.getElementById('right-panel');
+    const resizeHandle = document.querySelector<HTMLElement>('#resize-handle');
+    const rightPanel = document.querySelector<HTMLElement>('#right-panel');
 
     if (resizeHandle && rightPanel) {
       await this.setupResizeForPanel(resizeHandle, rightPanel);
     }
 
-    const resizeHandlePlugins = document.getElementById(
-      'resize-handle-plugins',
+    const resizeHandlePlugins = document.querySelector<HTMLElement>(
+      '#resize-handle-plugins',
     );
-    const rightPanelPlugins = document.getElementById('right-panel-plugins');
+    const rightPanelPlugins = document.querySelector<HTMLElement>(
+      '#right-panel-plugins',
+    );
 
     if (resizeHandlePlugins && rightPanelPlugins) {
       await this.setupResizeForPanel(resizeHandlePlugins, rightPanelPlugins);

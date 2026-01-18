@@ -1,4 +1,6 @@
 export class FightPlannerManager {
+  initialized: boolean;
+
   constructor() {
     this.initialized = false;
     console.log('FightPlanner Manager created');
@@ -24,7 +26,9 @@ export class FightPlannerManager {
       const versionInfo = await window.electronAPI.getAppVersion();
       console.log('Version info received:', versionInfo);
 
-      const headerVersion = document.getElementById('app-version-display');
+      const headerVersion = document.querySelector<HTMLElement>(
+        '#app-version-display',
+      );
       if (headerVersion && versionInfo.version) {
         headerVersion.textContent = versionInfo.version;
         console.log('Header version updated:', versionInfo.version);
@@ -32,17 +36,19 @@ export class FightPlannerManager {
         console.warn('Header version element not found or no version');
       }
 
-      const appVersionFull = document.getElementById('app-version-full');
+      const appVersionFull =
+        document.querySelector<HTMLElement>('#app-version-full');
       if (appVersionFull && versionInfo.version) {
         appVersionFull.textContent = `v${versionInfo.version}`;
       }
 
-      const electronVersion = document.getElementById('electron-version');
+      const electronVersion =
+        document.querySelector<HTMLElement>('#electron-version');
       if (electronVersion && versionInfo.electronVersion) {
         electronVersion.textContent = `v${versionInfo.electronVersion}`;
       }
 
-      const nodeVersion = document.getElementById('node-version');
+      const nodeVersion = document.querySelector<HTMLElement>('#node-version');
       if (nodeVersion && versionInfo.nodeVersion) {
         nodeVersion.textContent = `v${versionInfo.nodeVersion}`;
       }

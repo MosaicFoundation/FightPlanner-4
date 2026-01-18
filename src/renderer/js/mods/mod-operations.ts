@@ -1,6 +1,6 @@
 import { ModManager } from './mod-manager';
 
-class ModOperations {
+export class ModOperations {
   modManager: ModManager;
 
   constructor(modManager: ModManager) {
@@ -123,7 +123,8 @@ class ModOperations {
               this.modManager.selectedMod.id === mod.id
             ) {
               this.modManager.selectedMod = null;
-              const previewArea = document.querySelector('.preview-area');
+              const previewArea =
+                document.querySelector<HTMLElement>('.preview-area');
               if (previewArea) {
                 previewArea.innerHTML =
                   '<p style="color: #666; text-align: center;">No preview available</p>';

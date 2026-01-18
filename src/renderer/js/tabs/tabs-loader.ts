@@ -45,7 +45,7 @@ function initializeTabFeatures(tabName) {
       }
     }
 
-    const refreshBtn = document.getElementById('refresh-mods-btn');
+    const refreshBtn = document.querySelector<HTMLElement>('#refresh-mods-btn');
     if (refreshBtn) {
       const newRefreshBtn = refreshBtn.cloneNode(true);
       refreshBtn.parentNode!.replaceChild(newRefreshBtn, refreshBtn);
@@ -57,7 +57,8 @@ function initializeTabFeatures(tabName) {
       });
     }
 
-    const openFolderBtn = document.getElementById('open-folder-btn');
+    const openFolderBtn =
+      document.querySelector<HTMLElement>('#open-folder-btn');
     if (openFolderBtn) {
       const newOpenFolderBtn = openFolderBtn.cloneNode(true);
       openFolderBtn.parentNode!.replaceChild(newOpenFolderBtn, openFolderBtn);
@@ -69,7 +70,7 @@ function initializeTabFeatures(tabName) {
       });
     }
 
-    const editInfoBtn = document.getElementById('edit-info-btn');
+    const editInfoBtn = document.querySelector<HTMLElement>('#edit-info-btn');
     if (editInfoBtn && window.modInfoEditor) {
       editInfoBtn.addEventListener('click', () => {
         window.modInfoEditor!.handleClick();
@@ -214,7 +215,8 @@ function initializeTabFeatures(tabName) {
       }
     });
 
-    const categoryFilter = document.getElementById('category-filter');
+    const categoryFilter =
+      document.querySelector<HTMLElement>('#category-filter');
     if (categoryFilter) {
       const newCategoryFilter = categoryFilter.cloneNode(true);
       categoryFilter.parentNode!.replaceChild(
@@ -222,16 +224,17 @@ function initializeTabFeatures(tabName) {
         categoryFilter,
       );
 
-      const finalCategoryFilter = document.getElementById('category-filter');
+      const finalCategoryFilter =
+        document.querySelector<HTMLElement>('#category-filter');
       if (finalCategoryFilter) {
-        const trigger = finalCategoryFilter.querySelector(
+        const trigger = finalCategoryFilter.querySelector<HTMLElement>(
           '.custom-select-trigger',
         );
         const options = finalCategoryFilter.querySelectorAll<HTMLInputElement>(
           '.custom-select-option',
         );
         const selectedValue =
-          finalCategoryFilter.querySelector('.selected-value');
+          finalCategoryFilter.querySelector<HTMLElement>('.selected-value');
 
         if (trigger) {
           trigger.addEventListener('click', (e) => {
@@ -256,7 +259,7 @@ function initializeTabFeatures(tabName) {
         options.forEach((option) => {
           option.addEventListener('click', () => {
             const value = option.dataset.value;
-            const text = option.querySelector('span')!.textContent;
+            const text = option.querySelector<HTMLElement>('span')!.textContent;
 
             if (selectedValue) {
               selectedValue.textContent = text;
@@ -361,7 +364,9 @@ function initializeTabFeatures(tabName) {
       window.charactersManager.initialize();
     }
 
-    const refreshBtn = document.getElementById('refresh-characters-btn');
+    const refreshBtn = document.querySelector<HTMLElement>(
+      '#refresh-characters-btn',
+    );
     if (refreshBtn) {
       const newRefreshBtn = refreshBtn.cloneNode(true);
       refreshBtn.parentNode!.replaceChild(newRefreshBtn, refreshBtn);
@@ -391,7 +396,7 @@ function initializeTabFeatures(tabName) {
 }
 
 async function loadTabContent(tabName) {
-  const tabElement = document.getElementById(`tab-${tabName}`);
+  const tabElement = document.querySelector<HTMLElement>(`#tab-${tabName}`);
   if (!tabElement) {
     console.warn(`Tab element not found: tab-${tabName}`);
     return;

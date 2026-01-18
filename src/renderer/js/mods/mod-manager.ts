@@ -1,17 +1,43 @@
+import { ModListRenderer } from './mod-list-renderer';
+import { ModContextMenuHandler } from './mod-context-menu';
+import { ModOperations } from './mod-operations';
+import { ModKeybindsHandler } from './mod-keybinds';
+
+interface Mod {
+  id: string;
+  name: string;
+  version: string;
+  author: string;
+  description: string;
+  size: string;
+  category: string | null;
+  folderPath?: string | null;
+  path?: string;
+  status: 'active' | 'disabled' | 'conflict';
+}
+
+interface SimpleMod {
+  name: string;
+  url: string;
+}
+
 export class ModManager {
-  mods: any[];
-  selectedMod: any | null;
+  mods: Mod[];
+  selectedMod: Mod | null;
   modListContainer: HTMLElement | null;
   modsPath: string | null;
   searchQuery: string;
   categoryFilter: string;
-  renderedModIds: Set<any>;
-  conflicts: any[];
+  renderedModIds: Set<string>;
+  conflicts: {
+    filePath: string;
+    mods: { name: string; path: string }[];
+  }[];
   isCheckingConflicts: boolean;
-  listRenderer: any | null;
-  contextMenuHandler: any | null;
-  operations: any | null;
-  keybindsHandler: any | null;
+  listRenderer: ModListRenderer | null;
+  contextMenuHandler: ModContextMenuHandler | null;
+  operations: ModOperations | null;
+  keybindsHandler: ModKeybindsHandler | null;
 
   constructor() {
     this.mods = [];
@@ -36,23 +62,26 @@ export class ModManager {
   }
 
   initContainer() {
-    this.modListContainer = document.getElementById('mod-list');
+    this.modListContainer = document.querySelector<HTMLElement>('#mod-list');
     if (!this.modListContainer) {
       console.warn('Mod list container not found - will be initialized later');
       return;
     }
 
     if (!this.listRenderer) {
-      this.listRenderer = new window.ModListRenderer(this);
+      this.listRenderer = new window.ModListRenderer!(this);
     }
+
     if (!this.contextMenuHandler) {
-      this.contextMenuHandler = new window.ModContextMenuHandler(this);
+      this.contextMenuHandler = new window.ModContextMenuHandler!(this);
     }
+
     if (!this.operations) {
-      this.operations = new window.ModOperations(this);
+      this.operations = new window.ModOperations!(this);
     }
+
     if (!this.keybindsHandler) {
-      this.keybindsHandler = new window.ModKeybindsHandler(this);
+      this.keybindsHandler = new window.ModKeybindsHandler!(this);
     }
 
     console.log('Mod Manager components initialized');
@@ -80,7 +109,7 @@ export class ModManager {
 
   updateVisibility() {
     if (!this.modListContainer) {
-      this.modListContainer = document.getElementById('mod-list');
+      this.modListContainer = document.querySelector<HTMLElement>('#mod-list');
     }
 
     if (!this.modListContainer) {
@@ -117,7 +146,7 @@ export class ModManager {
 
   renderModList(forceRender = false) {
     if (!this.modListContainer) {
-      this.modListContainer = document.getElementById('mod-list');
+      this.modListContainer = document.querySelector<HTMLElement>('#mod-list');
     }
 
     if (!this.modListContainer) {
@@ -172,13 +201,14 @@ export class ModManager {
     }
   }
 
-  async selectMod(modId, forceUpdate = false) {
+  async selectMod(modId: string, forceUpdate = false) {
     const mod = this.mods.find((m) => m.id === modId);
     if (!mod) return;
 
     const isSameMod = this.selectedMod && this.selectedMod.id === modId;
 
-    const allModItems = this.modListContainer.querySelectorAll('.mod-item');
+    const allModItems =
+      this.modListContainer!.querySelectorAll<HTMLElement>('.mod-item');
     allModItems.forEach((item) => {
       if (item.dataset.modId === modId) {
         item.classList.add('selected');
@@ -250,7 +280,7 @@ export class ModManager {
   }
 
   async updatePreview(mod) {
-    const previewArea = document.querySelector('.preview-area');
+    const previewArea = document.querySelector<HTMLElement>('.preview-area');
     if (!previewArea) return;
 
     previewArea.classList.add('loading');
@@ -267,7 +297,7 @@ export class ModManager {
 
         if (previewPath) {
           // Animate out existing image if present
-          const existingImg = previewArea.querySelector('img');
+          const existingImg = previewArea.querySelector<HTMLElement>('img');
           if (existingImg) {
             existingImg.style.opacity = '0';
             await new Promise((resolve) => setTimeout(resolve, 200));
@@ -279,7 +309,7 @@ export class ModManager {
           img.style.opacity = '0';
           img.alt = 'Preview';
 
-          await new Promise((resolve, reject) => {
+          await new Promise<void>((resolve, reject) => {
             img.onload = () => {
               // Calculate optimal height based on image aspect ratio
               const aspectRatio = img.naturalHeight / img.naturalWidth;
@@ -313,7 +343,7 @@ export class ModManager {
 
     if (mod.previewImage) {
       // Animate out existing image if present
-      const existingImg = previewArea.querySelector('img');
+      const existingImg = previewArea.querySelector<HTMLElement>('img');
       if (existingImg) {
         existingImg.style.opacity = '0';
         await new Promise((resolve) => setTimeout(resolve, 200));
@@ -325,7 +355,7 @@ export class ModManager {
       img.style.opacity = '0';
       img.alt = 'Preview';
 
-      await new Promise((resolve) => {
+      await new Promise<void>((resolve) => {
         img.onload = () => {
           // Calculate optimal height based on image aspect ratio
           const aspectRatio = img.naturalHeight / img.naturalWidth;
@@ -338,7 +368,9 @@ export class ModManager {
           previewArea.style.height = `${optimalHeight}px`;
           resolve();
         };
-        img.onerror = resolve;
+        img.onerror = () => {
+          resolve();
+        };
         img.src = mod.previewImage;
       });
 
@@ -351,7 +383,7 @@ export class ModManager {
       }, 10);
     } else {
       // Animate out existing image if present before showing "No preview"
-      const existingImg = previewArea.querySelector('img');
+      const existingImg = previewArea.querySelector<HTMLElement>('img');
       if (existingImg) {
         existingImg.classList.add('preview-exit');
 
@@ -428,7 +460,7 @@ export class ModManager {
       },
     ];
 
-    this.loadMods(exampleMods);
+    return this.loadMods(exampleMods);
   }
 
   async loadModsFromFolder(modsPath) {
@@ -449,11 +481,11 @@ export class ModManager {
         return;
       }
 
-      const allMods = [];
+      const allMods: Mod[] = [];
       let idCounter = 1;
 
       for (const mod of result.activeMods) {
-        const modData = {
+        const modData: Mod = {
           id: String(idCounter++),
           name: mod.name,
           version: 'Unknown',
@@ -464,11 +496,12 @@ export class ModManager {
           folderPath: mod.path,
           category: null,
         };
+
         allMods.push(modData);
       }
 
       for (const mod of result.disabledMods) {
-        const modData = {
+        const modData: Mod = {
           id: String(idCounter++),
           name: mod.name,
           version: 'Unknown',
@@ -479,6 +512,7 @@ export class ModManager {
           folderPath: mod.path,
           category: null,
         };
+
         allMods.push(modData);
       }
 
@@ -505,7 +539,8 @@ export class ModManager {
   async loadCategoriesInBackground(mods) {
     for (const mod of mods) {
       try {
-        const modInfo = await window.electronAPI.getModInfo(mod.folderPath);
+        const modInfo = await window.electronAPI!.getModInfo(mod.folderPath);
+
         if (modInfo && modInfo.category) {
           let category = modInfo.category;
 
@@ -607,7 +642,8 @@ export class ModManager {
         if (result.totalConflicts > 0) {
           window.statusBarManager.updateConflictStatus(result.totalConflicts);
         } else {
-          const statusRight = document.querySelector('.bottom-text-right');
+          const statusRight =
+            document.querySelector<HTMLElement>('.bottom-text-right');
           if (statusRight) {
             statusRight.innerHTML = '';
           }
@@ -628,7 +664,8 @@ export class ModManager {
       console.error('Error checking conflicts:', error);
       this.isCheckingConflicts = false;
       if (window.statusBarManager) {
-        const statusRight = document.querySelector('.bottom-text-right');
+        const statusRight =
+          document.querySelector<HTMLElement>('.bottom-text-right');
         if (statusRight) {
           statusRight.innerHTML = '';
         }
@@ -685,7 +722,7 @@ export class ModManager {
         window.modalManager.showOverlay();
       }
 
-      const closeModal = (format = null) => {
+      const closeModal = (format: string | null = null) => {
         modal.style.display = 'none';
         modal.remove();
         if (window.modalManager) {
@@ -695,16 +732,16 @@ export class ModManager {
       };
 
       document
-        .getElementById('export-format-close-btn')
+        .querySelector<HTMLElement>('#export-format-close-btn')!
         .addEventListener('click', () => closeModal(null));
       document
-        .getElementById('export-format-cancel-btn')
+        .querySelector<HTMLElement>('#export-format-cancel-btn')!
         .addEventListener('click', () => closeModal(null));
       document
-        .getElementById('export-format-txt-btn')
+        .querySelector<HTMLElement>('#export-format-txt-btn')!
         .addEventListener('click', () => closeModal('txt'));
       document
-        .getElementById('export-format-md-btn')
+        .querySelector<HTMLElement>('#export-format-md-btn')!
         .addEventListener('click', () => closeModal('md'));
     });
   }
@@ -740,12 +777,10 @@ export class ModManager {
     }
 
     // Group mods by character
-    const modsByCharacter = new Map();
-    const modsWithoutCharacter = [];
+    const modsByCharacter: Map<string, SimpleMod[]> = new Map();
 
     for (const mod of enabledMods) {
       if (!mod.folderPath) {
-        modsWithoutCharacter.push(mod);
         continue;
       }
 
@@ -775,7 +810,7 @@ export class ModManager {
               modsByCharacter.set(charName, []);
             }
 
-            modsByCharacter.get(charName).push({
+            modsByCharacter.get(charName)!.push({
               name: modName,
               url: modUrl,
             });
@@ -785,14 +820,14 @@ export class ModManager {
           if (!modsByCharacter.has('Other')) {
             modsByCharacter.set('Other', []);
           }
-          modsByCharacter.get('Other').push({
+
+          modsByCharacter.get('Other')!.push({
             name: modName,
             url: modUrl,
           });
         }
       } catch (error) {
         console.error(`Error processing mod ${mod.name}:`, error);
-        modsWithoutCharacter.push(mod);
       }
     }
 
@@ -819,7 +854,7 @@ export class ModManager {
 
     // Write mods grouped by character
     for (const charName of sortedCharacters) {
-      const mods = modsByCharacter.get(charName);
+      const mods = modsByCharacter.get(charName)!;
 
       // Format character name based on format
       if (isMarkdown) {
@@ -829,8 +864,9 @@ export class ModManager {
       }
 
       // Remove duplicates (same mod name)
-      const uniqueMods = [];
-      const seenNames = new Set();
+      const uniqueMods: SimpleMod[] = [];
+      const seenNames: Set<string> = new Set();
+
       for (const mod of mods) {
         if (!seenNames.has(mod.name)) {
           seenNames.add(mod.name);

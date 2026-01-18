@@ -13,7 +13,7 @@ const electronAPI = {
   readModsFolder: (path) => ipcRenderer.invoke('read-mods-folder', path),
   getPreviewImage: (modPath) =>
     ipcRenderer.invoke('get-preview-image', modPath),
-  getModInfo: (modPath) => ipcRenderer.invoke('get-mod-info', modPath),
+  getModInfo: (modPath: string) => ipcRenderer.invoke('get-mod-info', modPath),
   saveModInfo: (modPath, infoData) =>
     ipcRenderer.invoke('save-mod-info', modPath, infoData),
   readModInfoRaw: (modPath) => ipcRenderer.invoke('read-mod-info-raw', modPath),

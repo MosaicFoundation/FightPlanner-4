@@ -1,12 +1,14 @@
+export interface Plugin {
+  id: string;
+  name: string;
+  size: string;
+  status: 'active' | 'disabled';
+  filePath: string;
+  enabled?: boolean;
+}
+
 export class PluginManager {
-  plugins: Array<{
-    id: string;
-    name: string;
-    size: string;
-    status: 'active' | 'disabled';
-    filePath: string;
-    enabled?: boolean;
-  }>;
+  plugins: Array<Plugin>;
   pluginListContainer: HTMLElement | null;
   pluginsPath: string | null;
   searchQuery: string;
@@ -25,7 +27,8 @@ export class PluginManager {
   }
 
   initContainer() {
-    this.pluginListContainer = document.getElementById('plugin-list');
+    this.pluginListContainer =
+      document.querySelector<HTMLElement>('#plugin-list');
     if (!this.pluginListContainer) {
       console.warn(
         'Plugin list container not found - will be initialized later',
@@ -38,39 +41,48 @@ export class PluginManager {
   }
 
   setupEventListeners() {
-    const searchInput = document.getElementById('plugin-search');
+    const searchInput =
+      document.querySelector<HTMLInputElement>('#plugin-search');
     if (searchInput && !searchInput.dataset.listenerAttached) {
       searchInput.addEventListener('input', (e) =>
-        this.filterPlugins(e.target.value),
+        this.filterPlugins(searchInput.value),
       );
       searchInput.dataset.listenerAttached = 'true';
     }
 
-    const addBtn = document.getElementById('add-plugin-btn');
+    const addBtn = document.querySelector<HTMLElement>('#add-plugin-btn');
     if (addBtn && !addBtn.dataset.listenerAttached) {
       addBtn.addEventListener('click', () => this.addPlugin());
       addBtn.dataset.listenerAttached = 'true';
     }
 
-    const refreshBtn = document.getElementById('refresh-plugin-btn');
+    const refreshBtn = document.querySelector<HTMLElement>(
+      '#refresh-plugin-btn',
+    );
     if (refreshBtn && !refreshBtn.dataset.listenerAttached) {
       refreshBtn.addEventListener('click', () => this.refreshPlugins());
       refreshBtn.dataset.listenerAttached = 'true';
     }
 
-    const openFolderBtn = document.getElementById('open-plugin-folder-btn');
+    const openFolderBtn = document.querySelector<HTMLElement>(
+      '#open-plugin-folder-btn',
+    );
     if (openFolderBtn && !openFolderBtn.dataset.listenerAttached) {
       openFolderBtn.addEventListener('click', () => this.openPluginFolder());
       openFolderBtn.dataset.listenerAttached = 'true';
     }
 
-    const checkUpdatesBtn = document.getElementById('check-plugin-updates-btn');
+    const checkUpdatesBtn = document.querySelector<HTMLElement>(
+      '#check-plugin-updates-btn',
+    );
     if (checkUpdatesBtn && !checkUpdatesBtn.dataset.listenerAttached) {
       checkUpdatesBtn.addEventListener('click', () => this.checkForUpdates());
       checkUpdatesBtn.dataset.listenerAttached = 'true';
     }
 
-    const marketplaceBtn = document.getElementById('plugin-marketplace-btn');
+    const marketplaceBtn = document.querySelector<HTMLElement>(
+      '#plugin-marketplace-btn',
+    );
     if (marketplaceBtn && !marketplaceBtn.dataset.listenerAttached) {
       marketplaceBtn.addEventListener('click', () => this.openMarketplace());
       marketplaceBtn.dataset.listenerAttached = 'true';
@@ -93,7 +105,8 @@ export class PluginManager {
 
   updateVisibility() {
     if (!this.pluginListContainer) {
-      this.pluginListContainer = document.getElementById('plugin-list');
+      this.pluginListContainer =
+        document.querySelector<HTMLElement>('#plugin-list');
     }
 
     if (!this.pluginListContainer) {
@@ -102,12 +115,14 @@ export class PluginManager {
     }
 
     const pluginItems =
-      this.pluginListContainer.querySelectorAll('.plugin-item');
+      this.pluginListContainer.querySelectorAll<HTMLElement>('.plugin-item');
     let visibleCount = 0;
 
     pluginItems.forEach((item) => {
       const pluginName =
-        item.querySelector('.plugin-name')?.textContent.toLowerCase() || '';
+        item
+          .querySelector<HTMLElement>('.plugin-name')
+          ?.textContent.toLowerCase() || '';
       const matches = pluginName.includes(this.searchQuery);
 
       if (matches) {
@@ -129,7 +144,8 @@ export class PluginManager {
 
   renderPluginList() {
     if (!this.pluginListContainer) {
-      this.pluginListContainer = document.getElementById('plugin-list');
+      this.pluginListContainer =
+        document.querySelector<HTMLElement>('#plugin-list');
     }
 
     if (!this.pluginListContainer) {
@@ -151,7 +167,7 @@ export class PluginManager {
     this.plugins.forEach((plugin, index) => {
       console.log(`Creating element for plugin ${index}:`, plugin);
       const pluginElement = this.createPluginElement(plugin);
-      this.pluginListContainer.appendChild(pluginElement);
+      this.pluginListContainer!.appendChild(pluginElement);
     });
 
     console.log(
@@ -193,7 +209,7 @@ ${
 </div>
 `;
 
-    const toggleBtn = div.querySelector('.toggle-plugin-btn');
+    const toggleBtn = div.querySelector<HTMLElement>('.toggle-plugin-btn');
     if (toggleBtn) {
       toggleBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -201,7 +217,7 @@ ${
       });
     }
 
-    const deleteBtn = div.querySelector('.delete-plugin-btn');
+    const deleteBtn = div.querySelector<HTMLElement>('.delete-plugin-btn');
     if (deleteBtn) {
       deleteBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -267,7 +283,7 @@ ${
       return;
     }
 
-    const pluginElement = this.pluginListContainer.querySelector(
+    const pluginElement = this.pluginListContainer!.querySelector<HTMLElement>(
       `[data-plugin-id="${pluginId}"]`,
     );
     if (pluginElement) {
@@ -334,7 +350,7 @@ ${
       return;
     }
 
-    const pluginElement = this.pluginListContainer.querySelector(
+    const pluginElement = this.pluginListContainer!.querySelector<HTMLElement>(
       `[data-plugin-id="${plugin.id}"]`,
     );
     if (pluginElement) {
@@ -387,7 +403,7 @@ ${
     }
   }
 
-  async loadPluginsFromFolder(pluginsPath) {
+  async loadPluginsFromFolder(pluginsPath: string) {
     if (!window.electronAPI || !window.electronAPI.readPluginsFolder) {
       console.error('Electron API not available');
       return;
@@ -404,7 +420,7 @@ ${
         return;
       }
 
-      const allPlugins = [];
+      const allPlugins: Plugin[] = [];
       let idCounter = 1;
 
       for (const plugin of result.activePlugins) {
@@ -440,9 +456,10 @@ ${
       window.settingsManager
     ) {
       const pluginsPath = window.settingsManager.getPluginsPath();
+
       if (pluginsPath) {
         console.log('Refreshing plugins from saved path:', pluginsPath);
-        this.loadPluginsFromFolder(pluginsPath);
+        await this.loadPluginsFromFolder(pluginsPath);
         return;
       }
     }
@@ -493,7 +510,9 @@ ${
       return;
     }
 
-    const checkBtn = document.getElementById('check-plugin-updates-btn');
+    const checkBtn = document.querySelector<HTMLInputElement>(
+      '#check-plugin-updates-btn',
+    );
     if (checkBtn) {
       checkBtn.disabled = true;
       checkBtn.style.opacity = '0.6';
@@ -622,11 +641,11 @@ ${
             window.modalManager.openPluginUpdateIntroModal(
               async () => {
                 // On Enable
-                await window.settingsManager.setSetting(
+                await window.settingsManager!.setSetting(
                   'autoCheckPluginUpdates',
                   true,
                 );
-                await window.settingsManager.setSetting(
+                await window.settingsManager!.setSetting(
                   'pluginUpdateIntroShown',
                   true,
                 );
@@ -649,7 +668,7 @@ ${
               },
               async () => {
                 // On Disable
-                await window.settingsManager.setSetting(
+                await window.settingsManager!.setSetting(
                   'pluginUpdateIntroShown',
                   true,
                 );

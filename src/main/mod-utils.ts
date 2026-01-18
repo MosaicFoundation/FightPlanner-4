@@ -660,7 +660,7 @@ export default class ModUtils {
   static async detectConflicts(activeMods, whitelistPatterns = []) {
     const conflicts: {
       filePath: string;
-      mods: { name: string; path: string };
+      mods: { name: string; path: string }[];
     }[] = [];
     const fileToMods = new Map();
 

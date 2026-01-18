@@ -1,4 +1,13 @@
+export interface MarketplacePlugin {
+  name: string;
+  repo: string;
+  description: string;
+  url: string;
+}
+
 export class PluginMarketplace {
+  plugins: Array<MarketplacePlugin>;
+
   constructor() {
     this.plugins = [
       {
@@ -110,7 +119,7 @@ export class PluginMarketplace {
 
         if (window.pluginManager) {
           setTimeout(() => {
-            window.pluginManager.refreshPlugins();
+            window.pluginManager!.refreshPlugins();
           }, 500);
         }
       } else {
@@ -162,7 +171,15 @@ export class PluginMarketplace {
         `Repository found: ${repoInfo.full_name} (${repoInfo.private ? 'private' : 'public'})`,
       );
 
-      let release = null;
+      let release: {
+        tag_name: string;
+        assets: Array<{
+          name: string;
+          browser_download_url: string;
+          size: number;
+          content_type: string;
+        }>;
+      } | null = null;
 
       const latestUrl = `https://api.github.com/repos/${owner}/${repoName}/releases/latest`;
       console.log('Fetching latest release from:', latestUrl);
@@ -176,7 +193,7 @@ export class PluginMarketplace {
 
       if (latestResponse.ok) {
         release = await latestResponse.json();
-        console.log('Found latest release:', release.tag_name);
+        console.log('Found latest release:', release!.tag_name);
       } else {
         const errorText = await latestResponse.text();
         console.warn(
@@ -198,7 +215,7 @@ export class PluginMarketplace {
           console.log(`Found ${releases.length} releases`);
           if (releases && releases.length > 0) {
             release = releases[0];
-            console.log('Using first release:', release.tag_name);
+            console.log('Using first release:', release!.tag_name);
           }
         } else {
           const allReleasesError = await allReleasesResponse.text();

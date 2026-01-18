@@ -1,4 +1,9 @@
-class LanguageSelector {
+export class LanguageSelector {
+  containerId: string;
+  languages: {
+    [code: string]: { name: string; flag: string };
+  };
+
   constructor(containerId = 'language-selector-container') {
     this.containerId = containerId;
     this.languages = {
@@ -16,14 +21,16 @@ class LanguageSelector {
   }
 
   render() {
-    const container = document.getElementById(this.containerId);
+    const container = document.querySelector<HTMLElement>(
+      `#${this.containerId}`,
+    );
     if (!container) {
       console.error(`Container #${this.containerId} not found`);
       return;
     }
 
-    const availableLocales = window.i18n.getAvailableLocales();
-    const currentLocale = window.i18n.getCurrentLocale();
+    const availableLocales = window.i18n!.getAvailableLocales();
+    const currentLocale = window.i18n!.getCurrentLocale();
 
     const select = document.createElement('select');
     select.className = 'language-selector';
@@ -41,9 +48,9 @@ class LanguageSelector {
       select.appendChild(option);
     });
 
-    select.addEventListener('change', async (e) => {
-      const newLocale = e.target.value;
-      await window.i18n.changeLocale(newLocale);
+    select.addEventListener('change', async () => {
+      const newLocale = select.value;
+      await window.i18n!.changeLocale(newLocale);
     });
 
     container.innerHTML = '';
@@ -51,14 +58,16 @@ class LanguageSelector {
   }
 
   renderDropdown() {
-    const container = document.getElementById(this.containerId);
+    const container = document.querySelector<HTMLElement>(
+      `#${this.containerId}`,
+    );
     if (!container) {
       console.error(`Container #${this.containerId} not found`);
       return;
     }
 
-    const availableLocales = window.i18n.getAvailableLocales();
-    const currentLocale = window.i18n.getCurrentLocale();
+    const availableLocales = window.i18n!.getAvailableLocales();
+    const currentLocale = window.i18n!.getCurrentLocale();
     const currentLang = this.languages[currentLocale] || {
       name: currentLocale,
       flag: '🌐',
@@ -97,30 +106,34 @@ class LanguageSelector {
     container.innerHTML = '';
     container.appendChild(dropdown);
 
-    const toggle = dropdown.querySelector('#lang-dropdown-toggle');
-    const menu = dropdown.querySelector('#lang-dropdown-menu');
+    const toggle = dropdown.querySelector<HTMLElement>('#lang-dropdown-toggle');
+    const menu = dropdown.querySelector<HTMLElement>('#lang-dropdown-menu');
 
-    toggle.addEventListener('click', () => {
-      const isVisible = menu.style.display === 'block';
-      menu.style.display = isVisible ? 'none' : 'block';
+    toggle!.addEventListener('click', () => {
+      const isVisible = menu!.style.display === 'block';
+      menu!.style.display = isVisible ? 'none' : 'block';
     });
 
     document.addEventListener('click', (e) => {
-      if (!dropdown.contains(e.target)) {
-        menu.style.display = 'none';
+      const target = e.target as HTMLElement;
+
+      if (!dropdown.contains(target)) {
+        menu!.style.display = 'none';
       }
     });
 
-    dropdown.querySelectorAll('.language-option').forEach((option) => {
-      option.addEventListener('click', async () => {
-        const locale = option.getAttribute('data-locale');
-        await window.i18n.changeLocale(locale);
-        menu.style.display = 'none';
-        this.updateDropdownCurrent(locale);
+    dropdown
+      .querySelectorAll<HTMLElement>('.language-option')
+      .forEach((option) => {
+        option.addEventListener('click', async () => {
+          const locale = option.getAttribute('data-locale');
+          await window.i18n!.changeLocale(locale);
+          menu!.style.display = 'none';
+          this.updateDropdownCurrent(locale);
+        });
       });
-    });
 
-    window.addEventListener('localeChanged', (event) => {
+    window.addEventListener('localeChanged', (event: CustomEvent) => {
       this.updateDropdownCurrent(event.detail.locale);
     });
   }
@@ -130,31 +143,36 @@ class LanguageSelector {
       name: locale,
       flag: '🌐',
     };
-    const toggle = document.querySelector('#lang-dropdown-toggle');
+    const toggle = document.querySelector<HTMLElement>('#lang-dropdown-toggle');
     if (toggle) {
-      toggle.querySelector('.current-lang-flag').textContent = currentLang.flag;
-      toggle.querySelector('.current-lang-name').textContent = currentLang.name;
+      toggle.querySelector<HTMLElement>('.current-lang-flag')!.textContent =
+        currentLang.flag;
+
+      toggle.querySelector<HTMLElement>('.current-lang-name')!.textContent =
+        currentLang.name;
     }
 
-    document.querySelectorAll('.language-option').forEach((option) => {
-      const optionLocale = option.getAttribute('data-locale');
-      option.classList.toggle('active', optionLocale === locale);
+    document
+      .querySelectorAll<HTMLElement>('.language-option')
+      .forEach((option) => {
+        const optionLocale = option.getAttribute('data-locale');
+        option.classList.toggle('active', optionLocale === locale);
 
-      const checkmark = option.querySelector('.checkmark');
-      if (checkmark) checkmark.remove();
+        const checkmark = option.querySelector<HTMLElement>('.checkmark');
+        if (checkmark) checkmark.remove();
 
-      if (optionLocale === locale) {
-        const check = document.createElement('span');
-        check.className = 'checkmark';
-        check.textContent = '✓';
-        option.appendChild(check);
-      }
-    });
+        if (optionLocale === locale) {
+          const check = document.createElement('span');
+          check.className = 'checkmark';
+          check.textContent = '✓';
+          option.appendChild(check);
+        }
+      });
   }
 
   addLanguage(code, name, flag) {
     this.languages[code] = { name, flag };
-    window.i18n.addLocale(code);
+    window.i18n!.addLocale(code);
   }
 }
 

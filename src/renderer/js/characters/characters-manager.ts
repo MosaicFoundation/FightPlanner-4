@@ -58,7 +58,7 @@ export class CharactersManager {
   }
 
   renderFilteredCharacters(characters) {
-    const container = document.getElementById('characters-grid');
+    const container = document.querySelector<HTMLElement>('#characters-grid');
     if (!container) return;
 
     if (characters.length === 0) {
@@ -142,7 +142,7 @@ export class CharactersManager {
             : rawFighterId.toLowerCase();
 
           if (!this.characters.has(fighterId)) {
-            const charInfo = window.SSBU_CHARACTERS[fighterId];
+            const charInfo = window.SSBU_CHARACTERS![fighterId];
 
             if (charInfo) {
               this.characters.set(fighterId, {
@@ -173,7 +173,7 @@ export class CharactersManager {
   }
 
   renderCharacters() {
-    const container = document.getElementById('characters-grid');
+    const container = document.querySelector<HTMLElement>('#characters-grid');
     if (!container) {
       console.warn('Characters grid container not found');
       return;
@@ -201,7 +201,7 @@ export class CharactersManager {
   }
 
   updateCharacterCount(count) {
-    const countEl = document.getElementById('characters-count');
+    const countEl = document.querySelector<HTMLElement>('#characters-count');
     if (countEl) {
       countEl.textContent = `${count} character${count !== 1 ? 's' : ''}`;
     }
@@ -213,7 +213,7 @@ export class CharactersManager {
     card.dataset.characterId = char.id;
 
     const imageUrl =
-      window.CHARACTER_IMAGES[char.id] ||
+      window.CHARACTER_IMAGES![char.id] ||
       'https://www.smashbros.com/assets_v2/img/fighter/mario/main.png';
     const escapedName = this.escapeHtml(char.info.name);
 
@@ -250,7 +250,7 @@ ${char.mods
 </div>
 `;
 
-    const modItems = card.querySelectorAll('.character-mod-item');
+    const modItems = card.querySelectorAll<HTMLElement>('.character-mod-item');
     modItems.forEach((item) => {
       item.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -267,7 +267,9 @@ ${char.mods
   }
 
   showCharacterDetails(char) {
-    const existingModal = document.querySelector('.character-modal-overlay');
+    const existingModal = document.querySelector<HTMLElement>(
+      '.character-modal-overlay',
+    );
     if (existingModal) {
       existingModal.remove();
     }
@@ -306,7 +308,7 @@ ${char.mods
     const isNoAnimations = document.body.classList.contains('no-animations');
     if (isNoAnimations) {
       const overlay = modal;
-      const modalContent = modal.querySelector('.character-modal');
+      const modalContent = modal.querySelector<HTMLElement>('.character-modal');
       if (overlay) {
         overlay.style.opacity = '1';
         overlay.style.animation = 'none';
@@ -326,8 +328,8 @@ ${char.mods
       }
     }
 
-    const closeBtn = modal.querySelector('.character-modal-close');
-    closeBtn.addEventListener('click', (e) => {
+    const closeBtn = modal.querySelector<HTMLElement>('.character-modal-close');
+    closeBtn!.addEventListener('click', (e) => {
       e.stopPropagation();
       modal.remove();
     });
@@ -338,14 +340,16 @@ ${char.mods
       }
     });
 
-    const modalContent = modal.querySelector('.character-modal');
+    const modalContent = modal.querySelector<HTMLElement>('.character-modal');
     if (modalContent) {
       modalContent.addEventListener('click', (e) => {
         e.stopPropagation();
       });
     }
 
-    const modItems = modal.querySelectorAll('.character-modal-mod-item');
+    const modItems = modal.querySelectorAll<HTMLElement>(
+      '.character-modal-mod-item',
+    );
     modItems.forEach((item) => {
       item.addEventListener('click', () => {
         const modPath = item.dataset.modPath;
@@ -366,7 +370,7 @@ ${char.mods
   openModInToolsTab(modPath) {
     console.log('Opening mod in tools tab:', modPath);
 
-    const toolsBtn = document.querySelector('[data-tab="tools"]');
+    const toolsBtn = document.querySelector<HTMLElement>('[data-tab="tools"]');
     if (toolsBtn) {
       toolsBtn.click();
     }
@@ -380,7 +384,7 @@ ${char.mods
           window.modManager.selectMod(mod.id);
 
           setTimeout(() => {
-            const modElement = document.querySelector(
+            const modElement = document.querySelector<HTMLElement>(
               `.mod-item[data-mod-id="${mod.id}"]`,
             );
             if (modElement) {
@@ -401,7 +405,7 @@ ${char.mods
   }
 
   renderEmptyState() {
-    const container = document.getElementById('characters-grid');
+    const container = document.querySelector<HTMLElement>('#characters-grid');
     if (!container) return;
 
     container.innerHTML = `
@@ -422,7 +426,7 @@ ${char.mods
   }
 
   showLoading() {
-    const container = document.getElementById('characters-grid');
+    const container = document.querySelector<HTMLElement>('#characters-grid');
     if (container) {
       container.innerHTML = `
 <div class="characters-loading">

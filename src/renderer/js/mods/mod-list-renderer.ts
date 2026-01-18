@@ -1,5 +1,10 @@
-class ModListRenderer {
-  constructor(modManager) {
+import { ModManager } from './mod-manager';
+
+export class ModListRenderer {
+  modManager: ModManager;
+  intersectionObserver: IntersectionObserver | null;
+
+  constructor(modManager: ModManager) {
     this.modManager = modManager;
     this.intersectionObserver = null;
     this.setupIntersectionObserver();
@@ -9,7 +14,7 @@ class ModListRenderer {
     this.intersectionObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          const modItem = entry.target;
+          const modItem = entry.target as HTMLElement;
 
           if (modItem.dataset.processed === 'true') {
             return;
@@ -19,7 +24,7 @@ class ModListRenderer {
             modItem.classList.add('mod-item-visible');
             modItem.dataset.processed = 'true';
 
-            this.intersectionObserver.unobserve(modItem);
+            this.intersectionObserver!.unobserve(modItem);
           }
         });
       },
@@ -35,7 +40,9 @@ class ModListRenderer {
     if (!this.modManager || !this.modManager.modListContainer) return;
 
     const allModItems =
-      this.modManager.modListContainer.querySelectorAll('.mod-item');
+      this.modManager.modListContainer.querySelectorAll<HTMLElement>(
+        '.mod-item',
+      );
     allModItems.forEach((modItem) => {
       if (modItem.dataset.processed !== 'true') {
         modItem.classList.add('mod-item-instant');
@@ -104,14 +111,19 @@ class ModListRenderer {
     return modItem;
   }
 
-  renderModList(mods, container, searchQuery = '', categoryFilter = '') {
+  renderModList(
+    mods,
+    container: HTMLElement,
+    searchQuery = '',
+    categoryFilter = '',
+  ) {
     if (!container) {
       console.warn('Mod list container not found');
       return;
     }
 
     const existingProcessedStates = new Map();
-    const existingItems = container.querySelectorAll('.mod-item');
+    const existingItems = container.querySelectorAll<HTMLElement>('.mod-item');
     existingItems.forEach((item) => {
       const modId = item.dataset.modId;
       const processed = item.dataset.processed;
@@ -172,10 +184,15 @@ class ModListRenderer {
     }, 150);
   }
 
-  updateVisibility(mods, container, searchQuery = '', categoryFilter = '') {
+  updateVisibility(
+    mods,
+    container: HTMLElement,
+    searchQuery = '',
+    categoryFilter = '',
+  ) {
     if (!container) return;
 
-    const allModItems = container.querySelectorAll('.mod-item');
+    const allModItems = container.querySelectorAll<HTMLElement>('.mod-item');
 
     if (allModItems.length === 0) {
       return false;
@@ -225,7 +242,9 @@ class ModListRenderer {
       }
     });
 
-    const existingMessage = container.querySelector('.no-results-message');
+    const existingMessage = container.querySelector<HTMLElement>(
+      '.no-results-message',
+    );
     if (visibleCount === 0 && !existingMessage) {
       const message = document.createElement('p');
       message.className = 'no-results-message';

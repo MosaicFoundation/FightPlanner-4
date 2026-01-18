@@ -5,7 +5,7 @@ if (window.electronAPI && window.electronAPI.onModInstallConfirmRequest) {
     let installConfirmEnabled = true;
 
     try {
-      const setting = await window.electronAPI.store.get(
+      const setting = await window.electronAPI!.store.get(
         'installConfirmEnabled',
       );
       console.log('Install confirm setting:', setting);
@@ -19,7 +19,7 @@ if (window.electronAPI && window.electronAPI.onModInstallConfirmRequest) {
 
     if (!installConfirmEnabled) {
       console.log('Install confirmation disabled, proceeding directly...');
-      if (window.electronAPI.confirmProtocolInstall) {
+      if (window.electronAPI) {
         await window.electronAPI.confirmProtocolInstall(
           data.url,
           data.downloadId,

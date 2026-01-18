@@ -1,4 +1,8 @@
-class ModDragDropHandler {
+export class ModDragDropHandler {
+  dragOverlay: HTMLElement | null;
+  isDragging: boolean;
+  dragAnimation: gsap.core.Timeline | null;
+
   constructor() {
     this.dragOverlay = null;
     this.isDragging = false;
@@ -36,7 +40,9 @@ class ModDragDropHandler {
   }
 
   isToolsTabActive() {
-    const activeTab = document.querySelector('.tab-content.active');
+    const activeTab = document.querySelector<HTMLElement>(
+      '.tab-content.active',
+    );
     return activeTab && activeTab.id === 'tab-tools';
   }
 
@@ -98,10 +104,15 @@ class ModDragDropHandler {
       0,
     );
 
-    const iconContainer = overlay.querySelector('.drag-overlay-icon');
-    const iconElement = iconContainer ? iconContainer.querySelector('i') : null;
-    const text = overlay.querySelector('.drag-overlay-text');
-    const subtitle = overlay.querySelector('.drag-overlay-subtitle');
+    const iconContainer =
+      overlay.querySelector<HTMLElement>('.drag-overlay-icon');
+    const iconElement = iconContainer
+      ? iconContainer.querySelector<HTMLElement>('i')
+      : null;
+    const text = overlay.querySelector<HTMLElement>('.drag-overlay-text');
+    const subtitle = overlay.querySelector<HTMLElement>(
+      '.drag-overlay-subtitle',
+    );
 
     if (iconContainer && iconElement) {
       this.dragAnimation.to(
@@ -221,11 +232,11 @@ class ModDragDropHandler {
       return;
     }
 
-    const filePaths = [];
+    const filePaths: string[] = [];
 
     for (const file of files) {
       try {
-        const filePath = window.electronAPI.getPathForFile(file);
+        const filePath = window.electronAPI!.getPathForFile(file);
         if (filePath) {
           filePaths.push(filePath);
         }
@@ -242,7 +253,7 @@ class ModDragDropHandler {
     }
 
     try {
-      const modsPath = await window.electronAPI.store.get('modsPath');
+      const modsPath = await window.electronAPI!.store.get('modsPath');
       if (!modsPath) {
         if (window.toastManager) {
           window.toastManager.error('toasts.modsFolderNotConfigured');
@@ -258,7 +269,7 @@ class ModDragDropHandler {
 
       for (const filePath of filePaths) {
         try {
-          const result = await window.electronAPI.installModFromPath(
+          const result = await window.electronAPI!.installModFromPath(
             filePath,
             modsPath,
           );

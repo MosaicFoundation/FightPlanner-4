@@ -42,10 +42,9 @@ export function registerModHandlers(ipcMain) {
     }
   });
 
-  ipcMain.handle('get-mod-info', async (event, modPath) => {
+  ipcMain.handle('get-mod-info', async (event, modPath: string) => {
     try {
-      const modInfo = ModUtils.readModInfo(modPath);
-      return modInfo;
+      return ModUtils.readModInfo(modPath);
     } catch (error) {
       handleError(error, 'get-mod-info');
       return null;

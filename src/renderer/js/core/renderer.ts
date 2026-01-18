@@ -1,30 +1,36 @@
-document.querySelector('.minimize').addEventListener('click', () => {
-  if (window.electronAPI) {
-    window.electronAPI.minimize();
-  }
-});
+document
+  .querySelector<HTMLElement>('.minimize')!
+  .addEventListener('click', () => {
+    if (window.electronAPI) {
+      window.electronAPI.minimize();
+    }
+  });
 
-document.querySelector('.maximize').addEventListener('click', () => {
-  if (window.electronAPI) {
-    window.electronAPI.maximize();
-  }
-});
+document
+  .querySelector<HTMLElement>('.maximize')!
+  .addEventListener('click', () => {
+    if (window.electronAPI) {
+      window.electronAPI.maximize();
+    }
+  });
 
-document.querySelector('.close').addEventListener('click', () => {
+document.querySelector<HTMLElement>('.close')!.addEventListener('click', () => {
   if (window.electronAPI) {
     window.electronAPI.close();
   }
 });
 
-let currentTimeline = null;
+let currentTimeline: {
+  kill: () => void;
+} | null = null;
 
 async function switchTab(tabName) {
   if (currentTimeline) {
     currentTimeline.kill();
   }
 
-  const currentTab = document.querySelector('.tab-content.active');
-  const selectedTab = document.getElementById(`tab-${tabName}`);
+  const currentTab = document.querySelector<HTMLElement>('.tab-content.active');
+  const selectedTab = document.querySelector<HTMLElement>(`#tab-${tabName}`);
 
   if (currentTab === selectedTab) return;
 
@@ -47,11 +53,13 @@ async function switchTab(tabName) {
     }
   }
 
-  document.querySelectorAll('.sidebar-btn').forEach((btn) => {
+  document.querySelectorAll<HTMLElement>('.sidebar-btn').forEach((btn) => {
     btn.classList.remove('active');
   });
 
-  const activeButton = document.querySelector(`[data-tab="${tabName}"]`);
+  const activeButton = document.querySelector<HTMLElement>(
+    `[data-tab="${tabName}"]`,
+  );
   if (activeButton) {
     activeButton.classList.add('active');
   }
@@ -69,7 +77,7 @@ async function switchTab(tabName) {
   }
 }
 
-const sidebarButtons = document.querySelectorAll('.sidebar-btn');
+const sidebarButtons = document.querySelectorAll<HTMLElement>('.sidebar-btn');
 sidebarButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
     const tabName = btn.getAttribute('data-tab');
@@ -79,7 +87,7 @@ sidebarButtons.forEach((btn) => {
   });
 });
 
-const actionButtons = document.querySelectorAll('.action-btn');
+const actionButtons = document.querySelectorAll<HTMLElement>('.action-btn');
 actionButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
     console.log('Action button clicked:', btn.title);
@@ -97,7 +105,9 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   setTimeout(() => {
-    const activeTab = document.querySelector('.tab-content.active');
+    const activeTab = document.querySelector<HTMLElement>(
+      '.tab-content.active',
+    );
     if (activeTab) {
       const tabId = activeTab.id.replace('tab-', '');
       if (window.statusBarManager && tabId) {

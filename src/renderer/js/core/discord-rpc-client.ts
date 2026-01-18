@@ -1,4 +1,7 @@
-class DiscordRPCClient {
+export class DiscordRPCClient {
+  currentTab: string | null;
+  modCount: number;
+
   constructor() {
     this.currentTab = null;
     this.modCount = 0;
@@ -17,7 +20,7 @@ class DiscordRPCClient {
 
   setupListeners() {
     console.log('Setting up Discord RPC listeners...');
-    const tabButtons = document.querySelectorAll('.sidebar-btn');
+    const tabButtons = document.querySelectorAll<HTMLElement>('.sidebar-btn');
     console.log(`Found ${tabButtons.length} tab buttons`);
 
     tabButtons.forEach((btn) => {

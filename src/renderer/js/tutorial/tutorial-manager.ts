@@ -296,10 +296,10 @@ Next <i class="bi bi-arrow-right"></i>
   }
 
   attachEventListeners() {
-    const closeBtn = document.getElementById('tutorial-close');
-    const skipBtn = document.getElementById('tutorial-skip');
-    const prevBtn = document.getElementById('tutorial-prev');
-    const nextBtn = document.getElementById('tutorial-next');
+    const closeBtn = document.querySelector<HTMLElement>('#tutorial-close');
+    const skipBtn = document.querySelector<HTMLElement>('#tutorial-skip');
+    const prevBtn = document.querySelector<HTMLElement>('#tutorial-prev');
+    const nextBtn = document.querySelector<HTMLElement>('#tutorial-next');
 
     closeBtn!.addEventListener('click', () => this.close());
     skipBtn!.addEventListener('click', () => this.skip());
@@ -318,9 +318,9 @@ Next <i class="bi bi-arrow-right"></i>
 
   renderStep() {
     const step = this.steps[this.currentStep];
-    const content = document.getElementById('tutorial-content');
-    const prevBtn = document.getElementById('tutorial-prev');
-    const nextBtn = document.getElementById('tutorial-next');
+    const content = document.querySelector<HTMLElement>('#tutorial-content');
+    const prevBtn = document.querySelector<HTMLElement>('#tutorial-prev');
+    const nextBtn = document.querySelector<HTMLElement>('#tutorial-next');
 
     if (!content) return;
 
@@ -345,16 +345,18 @@ ${step.content}
       content.style.transform = 'translateY(0)';
     }, 200);
 
-    document.querySelectorAll('.tutorial-progress-dot').forEach((dot, i) => {
-      if (i === this.currentStep) {
-        dot.classList.add('active');
-      } else if (i < this.currentStep) {
-        dot.classList.add('completed');
-        dot.classList.remove('active');
-      } else {
-        dot.classList.remove('active', 'completed');
-      }
-    });
+    document
+      .querySelectorAll<HTMLElement>('.tutorial-progress-dot')
+      .forEach((dot, i) => {
+        if (i === this.currentStep) {
+          dot.classList.add('active');
+        } else if (i < this.currentStep) {
+          dot.classList.add('completed');
+          dot.classList.remove('active');
+        } else {
+          dot.classList.remove('active', 'completed');
+        }
+      });
 
     prevBtn!.style.display = this.currentStep > 0 ? 'flex' : 'none';
 
@@ -410,7 +412,8 @@ ${step.content}
     if (this.overlay) {
       this.overlay.classList.remove('show');
 
-      const mainContainer = document.querySelector('.main-container');
+      const mainContainer =
+        document.querySelector<HTMLElement>('.main-container');
       if (mainContainer) {
         mainContainer.classList.remove('tutorial-slide-up');
       }

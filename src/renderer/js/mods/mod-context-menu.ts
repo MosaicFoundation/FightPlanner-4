@@ -1,25 +1,34 @@
-class ModContextMenuHandler {
-  constructor(modManager) {
+import { ModManager } from './mod-manager';
+
+export class ModContextMenuHandler {
+  modManager: ModManager;
+
+  constructor(modManager: ModManager) {
     this.modManager = modManager;
     this.setupContextMenu();
   }
 
   setupContextMenu() {
     document.addEventListener('click', (e) => {
-      const contextMenu = document.getElementById('mod-context-menu');
+      const contextMenu =
+        document.querySelector<HTMLElement>('#mod-context-menu');
+
+      const target = e.target as HTMLElement;
+
       if (
         contextMenu &&
-        !contextMenu.contains(e.target) &&
+        !contextMenu.contains(target) &&
         contextMenu.style.display !== 'none'
       ) {
         this.closeContextMenu();
       }
     });
 
-    const contextMenu = document.getElementById('mod-context-menu');
+    const contextMenu =
+      document.querySelector<HTMLElement>('#mod-context-menu');
     if (contextMenu) {
       contextMenu.addEventListener('click', async (e) => {
-        const item = e.target.closest('.context-menu-item');
+        const item = contextMenu.closest('.context-menu-item') as HTMLElement;
         if (!item) return;
 
         const action = item.dataset.action;
@@ -54,7 +63,8 @@ class ModContextMenuHandler {
   }
 
   closeContextMenu() {
-    const contextMenu = document.getElementById('mod-context-menu');
+    const contextMenu =
+      document.querySelector<HTMLElement>('#mod-context-menu');
     if (!contextMenu) return;
 
     const noAnimations = document.body.classList.contains('no-animations');
@@ -74,11 +84,12 @@ class ModContextMenuHandler {
   showContextMenu(e, mod) {
     e.preventDefault();
 
-    const contextMenu = document.getElementById('mod-context-menu');
+    const contextMenu =
+      document.querySelector<HTMLElement>('#mod-context-menu');
     if (!contextMenu) return;
 
-    const toggleText = document.getElementById('toggle-text');
-    const toggleIcon = document.getElementById('toggle-icon');
+    const toggleText = document.querySelector<HTMLElement>('#toggle-text');
+    const toggleIcon = document.querySelector<HTMLElement>('#toggle-icon');
 
     const t = (key) => {
       return window.i18n && window.i18n.t ? window.i18n.t(key) : key;

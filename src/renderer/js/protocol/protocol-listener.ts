@@ -1,4 +1,6 @@
-class ProtocolListener {
+export class ProtocolListener {
+  idMap: Map<string, string>;
+
   constructor() {
     this.idMap = new Map();
     this.setupListeners();

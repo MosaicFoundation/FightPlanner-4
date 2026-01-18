@@ -18,8 +18,8 @@ export class StatusBarManager {
 
   updateStatus(tabName) {
     const statusText =
-      document.querySelector('.bottom-text-left') ||
-      document.querySelector('.bottom-text');
+      document.querySelector<HTMLElement>('.bottom-text-left') ||
+      document.querySelector<HTMLElement>('.bottom-text');
     if (!statusText) return;
 
     const modalOpen = this.hasModalOpen();
@@ -162,7 +162,7 @@ export class StatusBarManager {
   }
 
   hasModalOpen() {
-    const overlay = document.getElementById('modal-overlay');
+    const overlay = document.querySelector<HTMLElement>('#modal-overlay');
     if (overlay && overlay.style.display === 'block') {
       return true;
     }
@@ -181,8 +181,8 @@ export class StatusBarManager {
 
   preserveCurrentStatus() {
     const statusText =
-      document.querySelector('.bottom-text-left') ||
-      document.querySelector('.bottom-text');
+      document.querySelector<HTMLElement>('.bottom-text-left') ||
+      document.querySelector<HTMLElement>('.bottom-text');
     if (statusText) {
       const currentStatus = statusText.textContent || statusText.innerHTML;
       if (
@@ -204,8 +204,8 @@ export class StatusBarManager {
       !this.hasModalOpen()
     ) {
       const statusText =
-        document.querySelector('.bottom-text-left') ||
-        document.querySelector('.bottom-text');
+        document.querySelector<HTMLElement>('.bottom-text-left') ||
+        document.querySelector<HTMLElement>('.bottom-text');
       if (statusText) {
         statusText.textContent = this.preservedStatus;
         this.preservedStatus = null;
@@ -227,8 +227,8 @@ export class StatusBarManager {
       return false;
     }
     const statusText =
-      document.querySelector('.bottom-text-left') ||
-      document.querySelector('.bottom-text');
+      document.querySelector<HTMLElement>('.bottom-text-left') ||
+      document.querySelector<HTMLElement>('.bottom-text');
     if (statusText) {
       if (useInnerHTML) {
         statusText.innerHTML = content;
@@ -324,8 +324,8 @@ export class StatusBarManager {
               : modsData.documents || [];
 
             if (Array.isArray(mods)) {
-              const usernameEl = document.getElementById(
-                'social-profile-username',
+              const usernameEl = document.querySelector<HTMLElement>(
+                '#social-profile-username',
               );
               const username = usernameEl ? usernameEl.textContent : null;
               const myMods = mods.filter((mod) => {
@@ -422,8 +422,8 @@ export class StatusBarManager {
 
           if (this.setStatusText(statusContent, true)) {
             const statusText =
-              document.querySelector('.bottom-text-left') ||
-              document.querySelector('.bottom-text');
+              document.querySelector<HTMLElement>('.bottom-text-left') ||
+              document.querySelector<HTMLElement>('.bottom-text');
             if (
               statusText &&
               !statusText.classList.contains('status-downloading')
@@ -517,8 +517,8 @@ export class StatusBarManager {
 
             if (this.setStatusText(statusContent, true)) {
               const statusText =
-                document.querySelector('.bottom-text-left') ||
-                document.querySelector('.bottom-text');
+                document.querySelector<HTMLElement>('.bottom-text-left') ||
+                document.querySelector<HTMLElement>('.bottom-text');
               if (
                 statusText &&
                 !statusText.classList.contains('status-downloading')
@@ -818,7 +818,8 @@ export class StatusBarManager {
   }
 
   updateCheckingConflictsStatus() {
-    const statusRight = document.querySelector('.bottom-text-right');
+    const statusRight =
+      document.querySelector<HTMLElement>('.bottom-text-right');
     if (!statusRight) return;
 
     statusRight.innerHTML = '';
@@ -828,7 +829,8 @@ export class StatusBarManager {
   }
 
   updateConflictStatus(conflictCount) {
-    const statusRight = document.querySelector('.bottom-text-right');
+    const statusRight =
+      document.querySelector<HTMLElement>('.bottom-text-right');
     if (!statusRight) return;
 
     statusRight.innerHTML = '';
@@ -864,13 +866,14 @@ export class StatusBarManager {
     }
     if (!this.preservedStatus) {
       const statusText =
-        document.querySelector('.bottom-text-left') ||
-        document.querySelector('.bottom-text');
+        document.querySelector<HTMLElement>('.bottom-text-left') ||
+        document.querySelector<HTMLElement>('.bottom-text');
       if (statusText && !this.currentTab) {
         statusText.textContent = this.t('statusBar.ready');
       }
     }
-    const statusRight = document.querySelector('.bottom-text-right');
+    const statusRight =
+      document.querySelector<HTMLElement>('.bottom-text-right');
     if (statusRight) {
       statusRight.innerHTML = '';
     }

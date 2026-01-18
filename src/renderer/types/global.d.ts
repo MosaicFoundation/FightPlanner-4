@@ -8,7 +8,6 @@ import type { ToastManager } from '../js/ui/toast-manager';
 import type { ModManager } from '../js/mods/mod-manager';
 import type { ModalManager } from '../js/ui/modal-manager';
 import type { UpdateManager } from '../js/ui/update-manager';
-import type { I18n } from '../../locales/i18n';
 import type { StatusBarManager } from '../js/ui/status-bar-manager';
 import type { DownloadManager } from '../js/downloads/download-manager';
 import type { SettingsManager } from '../js/settings/settings-manager';
@@ -24,17 +23,35 @@ import type { AnimationManager } from '../js/ui/animation-manager';
 import type { TutorialManager } from '../js/tutorial/tutorial-manager';
 import type { FightPlannerManager } from '../js/fightplanner/fightplanner-manager';
 import type { ModInfoEditor } from '../js/mods/mod-info-editor';
+import type { CustomizationManager } from '../js/customization/customization-manager';
+import type { ProtocolListener } from '../js/protocol/protocol-listener';
+import type { DiscordRPCClient } from '../js/core/discord-rpc-client';
+import type { ModDragDropHandler } from '../js/mods/mod-drag-drop';
+import type { I18nClient } from '../js/i18n/i18n-client';
+
+import type { ModOperations } from '../js/mods/mod-operations';
+import type { ModContextMenuHandler } from '../js/mods/mod-context-menu';
+import type { ModKeybindsHandler } from '../js/mods/mod-keybinds';
+import type { ModListRenderer } from '../js/mods/mod-list-renderer';
+import type { LanguageSelector } from '../js/i18n/language-selector';
+
+import {
+  ResolveSSBUFolderName,
+  SSBUCharacterImages,
+  SSBUCharacters,
+  SSBUFolderAliases,
+} from '../js/characters/characters-data';
 
 declare global {
   interface Window {
     electronAPI?: ElectronAPI;
     tutorialAPI?: TutorialAPI;
 
+    i18n?: I18nClient;
     toastManager?: ToastManager;
     modManager?: ModManager;
     modalManager?: ModalManager;
     updateManager?: UpdateManager;
-    i18n?: I18n;
     statusBarManager?: StatusBarManager;
     downloadManager?: DownloadManager;
     settingsManager?: SettingsManager;
@@ -50,6 +67,16 @@ declare global {
     tutorialManager?: TutorialManager;
     fightPlannerManager?: FightPlannerManager;
     modInfoEditor?: ModInfoEditor;
+    customizationManager?: CustomizationManager;
+    protocolListener?: ProtocolListener;
+    discordRPCClient?: DiscordRPCClient;
+    modDragDropHandler?: ModDragDropHandler;
+
+    ModOperations?: typeof ModOperations;
+    ModContextMenuHandler?: typeof ModContextMenuHandler;
+    ModKeybindsHandler?: typeof ModKeybindsHandler;
+    ModListRenderer?: typeof ModListRenderer;
+    LanguageSelector?: typeof LanguageSelector;
 
     tutorial?: {
       show: () => void;
@@ -64,6 +91,11 @@ declare global {
 
     lottie?: LottiePlayer;
     gsap?: typeof gsap;
+
+    SSBU_CHARACTERS?: SSBUCharacters;
+    CHARACTER_IMAGES?: SSBUCharacterImages;
+    FOLDER_ALIASES?: SSBUFolderAliases;
+    resolveFolderName?: ResolveSSBUFolderName;
   }
 }
 

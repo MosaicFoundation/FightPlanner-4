@@ -1,4 +1,8 @@
-class I18nClient {
+export class I18nClient {
+  currentLocale: string;
+  translations: { [key: string]: any };
+  availableLocales: string[];
+
   constructor() {
     this.currentLocale = 'en';
     this.translations = {};
@@ -35,7 +39,7 @@ class I18nClient {
         `locales/${locale}.json`,
       ];
 
-      let lastError = null;
+      let lastError: Error | null = null;
       for (const url of urls) {
         try {
           console.log(`Trying to load translations from: ${url}`);
@@ -143,7 +147,7 @@ class I18nClient {
   }
 
   updateDOM() {
-    const elements = document.querySelectorAll('[data-i18n]');
+    const elements = document.querySelectorAll<HTMLElement>('[data-i18n]');
     console.log(`Updating ${elements.length} elements with data-i18n`);
 
     let updatedCount = 0;
@@ -154,7 +158,10 @@ class I18nClient {
       const params = this.getDataParams(element);
       const translation = this.t(key, params);
 
-      if (element.hasAttribute('data-i18n-placeholder')) {
+      if (
+        element.hasAttribute('data-i18n-placeholder') &&
+        'placeholder' in element
+      ) {
         element.placeholder = translation;
         updatedCount++;
       } else if (element.hasAttribute('data-i18n-title')) {
