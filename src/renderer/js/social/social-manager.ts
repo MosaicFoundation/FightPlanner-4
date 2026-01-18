@@ -234,7 +234,7 @@ class SocialManager {
         renderer: 'svg',
         loop: false,
         autoplay: true,
-        path: '../assets/images/social1.json',
+        path: '../images/social1.json',
         rendererSettings: {
           preserveAspectRatio: 'xMidYMid slice',
           className: 'lottie-animation-fullscreen',
@@ -359,7 +359,7 @@ class SocialManager {
           renderer: 'svg',
           loop: true,
           autoplay: true,
-          path: '../assets/images/social.json',
+          path: '../images/social.json',
         });
       }
 
