@@ -69,19 +69,19 @@ class ModManager {
     }
 
     if (!this.listRenderer) {
-      this.listRenderer = new window.ModListRenderer!(this);
+      this.listRenderer = new window.ModListRenderer(this);
     }
 
     if (!this.contextMenuHandler) {
-      this.contextMenuHandler = new window.ModContextMenuHandler!(this);
+      this.contextMenuHandler = new window.ModContextMenuHandler(this);
     }
 
     if (!this.operations) {
-      this.operations = new window.ModOperations!(this);
+      this.operations = new window.ModOperations(this);
     }
 
     if (!this.keybindsHandler) {
-      this.keybindsHandler = new window.ModKeybindsHandler!(this);
+      this.keybindsHandler = new window.ModKeybindsHandler(this);
     }
 
     console.log('Mod Manager components initialized');
@@ -539,7 +539,7 @@ class ModManager {
   async loadCategoriesInBackground(mods) {
     for (const mod of mods) {
       try {
-        const modInfo = await window.electronAPI!.getModInfo(mod.folderPath);
+        const modInfo = await window.electronAPI.getModInfo(mod.folderPath);
 
         if (modInfo && modInfo.category) {
           let category = modInfo.category;

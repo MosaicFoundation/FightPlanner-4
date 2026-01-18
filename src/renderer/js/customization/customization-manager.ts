@@ -303,7 +303,7 @@ class CustomizationManager {
     `;
 
     document.body.appendChild(modal);
-    window.modalManager!.showOverlay();
+    window.modalManager.showOverlay();
     modal.style.display = 'block';
 
     const checkbox = document.querySelector<HTMLInputElement>(
@@ -330,7 +330,7 @@ class CustomizationManager {
       setTimeout(() => {
         modal.remove();
       }, 300);
-      window.modalManager!.hideOverlay();
+      window.modalManager.hideOverlay();
       this.pendingJsPath = null;
     };
 
@@ -446,12 +446,12 @@ class CustomizationManager {
 
   async saveCssPaths() {
     const paths = this.customCssFiles.map((f) => f.path);
-    await window.electronAPI!.store.set('customCssPaths', paths);
+    await window.electronAPI.store.set('customCssPaths', paths);
   }
 
   async saveJsPaths() {
     const paths = this.customJsFiles.map((f) => f.path);
-    await window.electronAPI!.store.set('customJsPaths', paths);
+    await window.electronAPI.store.set('customJsPaths', paths);
   }
 
   async removeCustomCssFile(filePath) {

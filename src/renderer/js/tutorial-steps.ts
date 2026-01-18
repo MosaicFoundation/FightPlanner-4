@@ -153,7 +153,7 @@ let steps = [
 
         if (hardwareSelected && window.tutorialAPI) {
           const hardwareType = hardwareSelected.value;
-          await window.tutorialAPI!.saveSetting(
+          await window.tutorialAPI.saveSetting(
             'tutorial.hardwareType',
             hardwareType,
           );
@@ -359,10 +359,10 @@ let steps = [
 `,
     onRender: async () => {
       // Check if this step should be shown
-      const hardwareType = await window.tutorialAPI!.getSetting(
+      const hardwareType = await window.tutorialAPI.getSetting(
         'tutorial.hardwareType',
       );
-      const arcropolisInstalled = await window.tutorialAPI!.getSetting(
+      const arcropolisInstalled = await window.tutorialAPI.getSetting(
         'tutorial.arcropolisInstalled',
       );
 
@@ -410,7 +410,7 @@ let steps = [
             } else if (drives.length === 1) {
               const drive = drives[0];
               const sdPath = drive.path;
-              await window.tutorialAPI!.saveSetting('tutorial.sdDrive', sdPath);
+              await window.tutorialAPI.saveSetting('tutorial.sdDrive', sdPath);
 
               statusDiv!.innerHTML = `
                             <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
@@ -432,9 +432,9 @@ let steps = [
               document
                 .querySelector<HTMLElement>('#wrong-drive-btn')
                 ?.addEventListener('click', async () => {
-                  const result = await window.tutorialAPI!.selectDrive();
+                  const result = await window.tutorialAPI.selectDrive();
                   if (result.success && !result.canceled) {
-                    await window.tutorialAPI!.saveSetting(
+                    await window.tutorialAPI.saveSetting(
                       'tutorial.sdDrive',
                       result.path,
                     );
@@ -456,9 +456,9 @@ let steps = [
                     document
                       .querySelector<HTMLElement>('#wrong-drive-btn-2')
                       ?.addEventListener('click', async () => {
-                        const result2 = await window.tutorialAPI!.selectDrive();
+                        const result2 = await window.tutorialAPI.selectDrive();
                         if (result2.success && !result2.canceled) {
-                          await window.tutorialAPI!.saveSetting(
+                          await window.tutorialAPI.saveSetting(
                             'tutorial.sdDrive',
                             result2.path,
                           );
@@ -508,7 +508,7 @@ let steps = [
                 .forEach((btn) => {
                   btn.addEventListener('click', async () => {
                     const path = btn.dataset.path;
-                    await window.tutorialAPI!.saveSetting(
+                    await window.tutorialAPI.saveSetting(
                       'tutorial.sdDrive',
                       path,
                     );
@@ -532,9 +532,9 @@ let steps = [
               document
                 .querySelector<HTMLElement>('#manual-select-btn')
                 ?.addEventListener('click', async () => {
-                  const result = await window.tutorialAPI!.selectDrive();
+                  const result = await window.tutorialAPI.selectDrive();
                   if (result.success && !result.canceled) {
-                    await window.tutorialAPI!.saveSetting(
+                    await window.tutorialAPI.saveSetting(
                       'tutorial.sdDrive',
                       result.path,
                     );
@@ -569,9 +569,9 @@ let steps = [
           document
             .querySelector<HTMLElement>('#manual-select-error-btn')
             ?.addEventListener('click', async () => {
-              const result = await window.tutorialAPI!.selectDrive();
+              const result = await window.tutorialAPI.selectDrive();
               if (result.success && !result.canceled) {
-                await window.tutorialAPI!.saveSetting(
+                await window.tutorialAPI.saveSetting(
                   'tutorial.sdDrive',
                   result.path,
                 );
@@ -644,8 +644,7 @@ let steps = [
       }
 
       try {
-        const sdDrive =
-          await window.tutorialAPI!.getSetting('tutorial.sdDrive');
+        const sdDrive = await window.tutorialAPI.getSetting('tutorial.sdDrive');
         if (!sdDrive) {
           statusDiv!.innerHTML =
             '<div style="color: #ff4d4d;">Error: SD card path not found. Please go back and select your SD card.</div>';
@@ -662,11 +661,11 @@ let steps = [
                 </div>
             `;
 
-        const skylineRelease = await window.tutorialAPI!.getSkylineRelease();
+        const skylineRelease = await window.tutorialAPI.getSkylineRelease();
         if (!skylineRelease.success)
           throw new Error('Failed to get Skyline release');
 
-        const arcropolisRelease = await window.tutorialAPI!.getGithubRelease();
+        const arcropolisRelease = await window.tutorialAPI.getGithubRelease();
         if (!arcropolisRelease.success)
           throw new Error('Failed to get ARCropolis release');
 
@@ -681,10 +680,10 @@ let steps = [
             `;
 
         // Download Skyline - get temp directory
-        const tempDirResult = await window.tutorialAPI!.getTempDir();
+        const tempDirResult = await window.tutorialAPI.getTempDir();
         if (!tempDirResult.success)
           throw new Error('Failed to get temp directory');
-        const skylineTempPathResult = await window.tutorialAPI!.joinPath(
+        const skylineTempPathResult = await window.tutorialAPI.joinPath(
           tempDirResult.path,
           `skyline-${Date.now()}.zip`,
         );
@@ -692,7 +691,7 @@ let steps = [
           throw new Error('Failed to construct temp path');
         const skylineTempPath = skylineTempPathResult.path;
         const skylineDownloadResult =
-          await window.tutorialAPI!.downloadArcropolis(
+          await window.tutorialAPI.downloadArcropolis(
             skylineRelease.downloadUrl,
             skylineTempPath,
           );
@@ -710,7 +709,7 @@ let steps = [
             `;
 
         // Download ARCropolis
-        const arcropolisTempPathResult = await window.tutorialAPI!.joinPath(
+        const arcropolisTempPathResult = await window.tutorialAPI.joinPath(
           tempDirResult.path,
           `arcropolis-${Date.now()}.zip`,
         );
@@ -718,7 +717,7 @@ let steps = [
           throw new Error('Failed to construct temp path');
         const arcropolisTempPath = arcropolisTempPathResult.path;
         const arcropolisDownloadResult =
-          await window.tutorialAPI!.downloadArcropolis(
+          await window.tutorialAPI.downloadArcropolis(
             arcropolisRelease.downloadUrl,
             arcropolisTempPath,
           );
@@ -736,7 +735,7 @@ let steps = [
             `;
 
         // Extract and install Skyline (exefs) - construct paths
-        const targetDirResult = await window.tutorialAPI!.joinPath(
+        const targetDirResult = await window.tutorialAPI.joinPath(
           sdDrive,
           'atmosphere',
           'contents',
@@ -745,8 +744,8 @@ let steps = [
         if (!targetDirResult.success)
           throw new Error('Failed to construct target path');
         const targetDir = targetDirResult.path;
-        await window.tutorialAPI!.createDirectory(targetDir);
-        const skylineExtractResult = await window.tutorialAPI!.extractSkyline(
+        await window.tutorialAPI.createDirectory(targetDir);
+        const skylineExtractResult = await window.tutorialAPI.extractSkyline(
           skylineDownloadResult.path,
           targetDir,
         );
@@ -765,7 +764,7 @@ let steps = [
 
         // Extract and install ARCropolis (romfs)
         const arcropolisExtractResult =
-          await window.tutorialAPI!.extractArcropolis(
+          await window.tutorialAPI.extractArcropolis(
             arcropolisDownloadResult.path,
             targetDir,
           );
@@ -773,7 +772,7 @@ let steps = [
           throw new Error('ARCropolis extraction failed');
 
         // Create mods directory
-        const modsDirResult = await window.tutorialAPI!.joinPath(
+        const modsDirResult = await window.tutorialAPI.joinPath(
           sdDrive,
           'ultimate',
           'mods',
@@ -781,7 +780,7 @@ let steps = [
         if (!modsDirResult.success)
           throw new Error('Failed to construct mods path');
         const modsDir = modsDirResult.path;
-        await window.tutorialAPI!.createDirectory(modsDir);
+        await window.tutorialAPI.createDirectory(modsDir);
 
         progressBar!.style.width = '100%';
         statusDiv!.innerHTML = `
@@ -898,7 +897,7 @@ let steps = [
       }
 
       verifyYesBtn?.addEventListener('click', async () => {
-        await window.tutorialAPI!.saveSetting(
+        await window.tutorialAPI.saveSetting(
           'tutorial.arcropolisVerified',
           true,
         );
@@ -1000,7 +999,7 @@ let steps = [
       }
 
       yuzuBtn!.addEventListener('click', async () => {
-        await window.tutorialAPI!.saveSetting('tutorial.emulatorType', 'yuzu');
+        await window.tutorialAPI.saveSetting('tutorial.emulatorType', 'yuzu');
         yuzuBtn!.style.background = 'rgba(76, 175, 80, 0.2)';
         yuzuBtn!.style.borderColor = 'rgba(76, 175, 80, 0.5)';
         ryujinxBtn!.style.background = 'rgba(122, 155, 255, 0.1)';
@@ -1014,7 +1013,7 @@ let steps = [
       });
 
       ryujinxBtn!.addEventListener('click', async () => {
-        await window.tutorialAPI!.saveSetting(
+        await window.tutorialAPI.saveSetting(
           'tutorial.emulatorType',
           'ryujinx',
         );
@@ -1094,9 +1093,9 @@ let steps = [
       }
 
       try {
-        const result = await window.tutorialAPI!.detectYuzuPath();
+        const result = await window.tutorialAPI.detectYuzuPath();
         if (result.success && result.path) {
-          await window.tutorialAPI!.saveSetting(
+          await window.tutorialAPI.saveSetting(
             'tutorial.yuzuPath',
             result.path,
           );
@@ -1120,12 +1119,9 @@ let steps = [
           document
             .querySelector<HTMLElement>('#wrong-yuzu-path-btn')
             ?.addEventListener('click', async () => {
-              const path = await window.tutorialAPI!.selectFolder();
+              const path = await window.tutorialAPI.selectFolder();
               if (path) {
-                await window.tutorialAPI!.saveSetting(
-                  'tutorial.yuzuPath',
-                  path,
-                );
+                await window.tutorialAPI.saveSetting('tutorial.yuzuPath', path);
                 statusDiv!.innerHTML = `
                             <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                                 <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -1144,9 +1140,9 @@ let steps = [
                 document
                   .querySelector<HTMLElement>('#wrong-yuzu-path-btn-2')
                   ?.addEventListener('click', async () => {
-                    const path2 = await window.tutorialAPI!.selectFolder();
+                    const path2 = await window.tutorialAPI.selectFolder();
                     if (path2) {
-                      await window.tutorialAPI!.saveSetting(
+                      await window.tutorialAPI.saveSetting(
                         'tutorial.yuzuPath',
                         path2,
                       );
@@ -1182,12 +1178,9 @@ let steps = [
           document
             .querySelector<HTMLElement>('#select-yuzu-btn')
             ?.addEventListener('click', async () => {
-              const path = await window.tutorialAPI!.selectFolder();
+              const path = await window.tutorialAPI.selectFolder();
               if (path) {
-                await window.tutorialAPI!.saveSetting(
-                  'tutorial.yuzuPath',
-                  path,
-                );
+                await window.tutorialAPI.saveSetting('tutorial.yuzuPath', path);
                 statusDiv!.innerHTML = `
                             <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                                 <div style="display: flex; align-items: center; gap: 12px;">
@@ -1264,7 +1257,7 @@ let steps = [
 
       try {
         const yuzuPath =
-          await window.tutorialAPI!.getSetting('tutorial.yuzuPath');
+          await window.tutorialAPI.getSetting('tutorial.yuzuPath');
         if (!yuzuPath) {
           statusDiv!.innerHTML =
             '<div style="color: #ff4d4d;">Error: Yuzu path not found. Please go back and select your Yuzu folder.</div>';
@@ -1274,20 +1267,20 @@ let steps = [
         // Get latest releases (Skyline for exefs, ARCropolis for romfs)
         statusDiv!.innerHTML =
           '<div style="color: #fff;">Fetching latest releases...</div>';
-        const skylineRelease = await window.tutorialAPI!.getSkylineRelease();
+        const skylineRelease = await window.tutorialAPI.getSkylineRelease();
         if (!skylineRelease.success)
           throw new Error('Failed to get Skyline release');
-        const arcropolisRelease = await window.tutorialAPI!.getGithubRelease();
+        const arcropolisRelease = await window.tutorialAPI.getGithubRelease();
         if (!arcropolisRelease.success)
           throw new Error('Failed to get ARCropolis release');
 
         // Download Skyline
         statusDiv!.innerHTML =
           '<div style="color: #fff;">Downloading Skyline (exefs)...</div>';
-        const tempDirResult = await window.tutorialAPI!.getTempDir();
+        const tempDirResult = await window.tutorialAPI.getTempDir();
         if (!tempDirResult.success)
           throw new Error('Failed to get temp directory');
-        const skylineTempPathResult = await window.tutorialAPI!.joinPath(
+        const skylineTempPathResult = await window.tutorialAPI.joinPath(
           tempDirResult.path,
           `skyline-${Date.now()}.zip`,
         );
@@ -1295,7 +1288,7 @@ let steps = [
           throw new Error('Failed to construct temp path');
         const skylineTempPath = skylineTempPathResult.path;
         const skylineDownloadResult =
-          await window.tutorialAPI!.downloadArcropolis(
+          await window.tutorialAPI.downloadArcropolis(
             skylineRelease.downloadUrl,
             skylineTempPath,
           );
@@ -1305,7 +1298,7 @@ let steps = [
         // Download ARCropolis
         statusDiv!.innerHTML =
           '<div style="color: #fff;">Downloading ARCropolis (romfs)...</div>';
-        const arcropolisTempPathResult = await window.tutorialAPI!.joinPath(
+        const arcropolisTempPathResult = await window.tutorialAPI.joinPath(
           tempDirResult.path,
           `arcropolis-${Date.now()}.zip`,
         );
@@ -1313,7 +1306,7 @@ let steps = [
           throw new Error('Failed to construct temp path');
         const arcropolisTempPath = arcropolisTempPathResult.path;
         const arcropolisDownloadResult =
-          await window.tutorialAPI!.downloadArcropolis(
+          await window.tutorialAPI.downloadArcropolis(
             arcropolisRelease.downloadUrl,
             arcropolisTempPath,
           );
@@ -1321,7 +1314,7 @@ let steps = [
           throw new Error('ARCropolis download failed');
 
         // Create directories
-        const ultimateModsPathResult = await window.tutorialAPI!.joinPath(
+        const ultimateModsPathResult = await window.tutorialAPI.joinPath(
           yuzuPath,
           'sdmc',
           'ultimate',
@@ -1329,12 +1322,12 @@ let steps = [
         );
         if (!ultimateModsPathResult.success)
           throw new Error('Failed to construct mods path');
-        await window.tutorialAPI!.createDirectory(ultimateModsPathResult.path);
+        await window.tutorialAPI.createDirectory(ultimateModsPathResult.path);
 
         // Extract Skyline (exefs) to load directory
         statusDiv!.innerHTML =
           '<div style="color: #fff;">Installing Skyline (exefs)...</div>';
-        const loadPathResult = await window.tutorialAPI!.joinPath(
+        const loadPathResult = await window.tutorialAPI.joinPath(
           yuzuPath,
           'load',
           '01006A800016E000',
@@ -1342,8 +1335,8 @@ let steps = [
         if (!loadPathResult.success)
           throw new Error('Failed to construct load path');
         const loadPath = loadPathResult.path;
-        await window.tutorialAPI!.createDirectory(loadPath);
-        const skylineExtractResult = await window.tutorialAPI!.extractSkyline(
+        await window.tutorialAPI.createDirectory(loadPath);
+        const skylineExtractResult = await window.tutorialAPI.extractSkyline(
           skylineDownloadResult.path,
           loadPath,
         );
@@ -1354,7 +1347,7 @@ let steps = [
         statusDiv!.innerHTML =
           '<div style="color: #fff;">Installing ARCropolis (romfs)...</div>';
         const arcropolisExtractResult =
-          await window.tutorialAPI!.extractArcropolis(
+          await window.tutorialAPI.extractArcropolis(
             arcropolisDownloadResult.path,
             loadPath,
           );
@@ -1485,15 +1478,15 @@ let steps = [
       }
 
       verifyYesBtn?.addEventListener('click', async () => {
-        await window.tutorialAPI!.saveSetting(
+        await window.tutorialAPI.saveSetting(
           'tutorial.arcropolisVerified',
           true,
         );
 
         // Check for arcropolis folder
         const yuzuPath =
-          await window.tutorialAPI!.getSetting('tutorial.yuzuPath');
-        const ultimatePathResult = await window.tutorialAPI!.joinPath(
+          await window.tutorialAPI.getSetting('tutorial.yuzuPath');
+        const ultimatePathResult = await window.tutorialAPI.joinPath(
           yuzuPath,
           'sdmc',
           'ultimate',
@@ -1502,7 +1495,7 @@ let steps = [
           throw new Error('Failed to construct ultimate path');
         const ultimatePath = ultimatePathResult.path;
         const arcropolisExists =
-          await window.tutorialAPI!.checkArcropolisFolder(ultimatePath);
+          await window.tutorialAPI.checkArcropolisFolder(ultimatePath);
 
         if (!arcropolisExists) {
           const statusDiv = document.querySelector<HTMLElement>(
@@ -1517,7 +1510,7 @@ let steps = [
         }
 
         // Auto-configure paths
-        const modsPathResult = await window.tutorialAPI!.joinPath(
+        const modsPathResult = await window.tutorialAPI.joinPath(
           yuzuPath,
           'sdmc',
           'ultimate',
@@ -1525,7 +1518,7 @@ let steps = [
         );
         if (!modsPathResult.success)
           throw new Error('Failed to construct mods path');
-        const pluginsPathResult = await window.tutorialAPI!.joinPath(
+        const pluginsPathResult = await window.tutorialAPI.joinPath(
           yuzuPath,
           'load',
           '01006A800016E000',
@@ -1535,8 +1528,8 @@ let steps = [
         );
         if (!pluginsPathResult.success)
           throw new Error('Failed to construct plugins path');
-        await window.tutorialAPI!.saveSetting('modsPath', modsPathResult.path);
-        await window.tutorialAPI!.saveSetting(
+        await window.tutorialAPI.saveSetting('modsPath', modsPathResult.path);
+        await window.tutorialAPI.saveSetting(
           'pluginsPath',
           pluginsPathResult.path,
         );
@@ -1641,9 +1634,9 @@ let steps = [
       }
 
       try {
-        const result = await window.tutorialAPI!.detectRyujinxPath();
+        const result = await window.tutorialAPI.detectRyujinxPath();
         if (result.success && result.path) {
-          await window.tutorialAPI!.saveSetting(
+          await window.tutorialAPI.saveSetting(
             'tutorial.ryujinxPath',
             result.path,
           );
@@ -1667,9 +1660,9 @@ let steps = [
           document
             .querySelector<HTMLElement>('#wrong-ryujinx-path-btn')
             ?.addEventListener('click', async () => {
-              const path = await window.tutorialAPI!.selectFolder();
+              const path = await window.tutorialAPI.selectFolder();
               if (path) {
-                await window.tutorialAPI!.saveSetting(
+                await window.tutorialAPI.saveSetting(
                   'tutorial.ryujinxPath',
                   path,
                 );
@@ -1691,9 +1684,9 @@ let steps = [
                 document
                   .querySelector<HTMLElement>('#wrong-ryujinx-path-btn-2')
                   ?.addEventListener('click', async () => {
-                    const path2 = await window.tutorialAPI!.selectFolder();
+                    const path2 = await window.tutorialAPI.selectFolder();
                     if (path2) {
-                      await window.tutorialAPI!.saveSetting(
+                      await window.tutorialAPI.saveSetting(
                         'tutorial.ryujinxPath',
                         path2,
                       );
@@ -1729,9 +1722,9 @@ let steps = [
           document
             .querySelector<HTMLElement>('#select-ryujinx-btn')
             ?.addEventListener('click', async () => {
-              const path = await window.tutorialAPI!.selectFolder();
+              const path = await window.tutorialAPI.selectFolder();
               if (path) {
-                await window.tutorialAPI!.saveSetting(
+                await window.tutorialAPI.saveSetting(
                   'tutorial.ryujinxPath',
                   path,
                 );
@@ -1775,13 +1768,13 @@ let steps = [
 </div>
 `,
     onRender: async () => {
-      const hardwareType = await window.tutorialAPI!.getSetting(
+      const hardwareType = await window.tutorialAPI.getSetting(
         'tutorial.hardwareType',
       );
-      const emulatorType = await window.tutorialAPI!.getSetting(
+      const emulatorType = await window.tutorialAPI.getSetting(
         'tutorial.emulatorType',
       );
-      const arcropolisInstalled = await window.tutorialAPI!.getSetting(
+      const arcropolisInstalled = await window.tutorialAPI.getSetting(
         'tutorial.arcropolisInstalled',
       );
 
@@ -1810,7 +1803,7 @@ let steps = [
       }
 
       try {
-        const ryujinxPath = await window.tutorialAPI!.getSetting(
+        const ryujinxPath = await window.tutorialAPI.getSetting(
           'tutorial.ryujinxPath',
         );
         if (!ryujinxPath) {
@@ -1822,20 +1815,20 @@ let steps = [
         // Get latest releases (Skyline for exefs, ARCropolis for romfs)
         statusDiv!.innerHTML =
           '<div style="color: #fff;">Fetching latest releases...</div>';
-        const skylineRelease = await window.tutorialAPI!.getSkylineRelease();
+        const skylineRelease = await window.tutorialAPI.getSkylineRelease();
         if (!skylineRelease.success)
           throw new Error('Failed to get Skyline release');
-        const arcropolisRelease = await window.tutorialAPI!.getGithubRelease();
+        const arcropolisRelease = await window.tutorialAPI.getGithubRelease();
         if (!arcropolisRelease.success)
           throw new Error('Failed to get ARCropolis release');
 
         // Download Skyline
         statusDiv!.innerHTML =
           '<div style="color: #fff;">Downloading Skyline (exefs)...</div>';
-        const tempDirResult = await window.tutorialAPI!.getTempDir();
+        const tempDirResult = await window.tutorialAPI.getTempDir();
         if (!tempDirResult.success)
           throw new Error('Failed to get temp directory');
-        const skylineTempPathResult = await window.tutorialAPI!.joinPath(
+        const skylineTempPathResult = await window.tutorialAPI.joinPath(
           tempDirResult.path,
           `skyline-${Date.now()}.zip`,
         );
@@ -1843,7 +1836,7 @@ let steps = [
           throw new Error('Failed to construct temp path');
         const skylineTempPath = skylineTempPathResult.path;
         const skylineDownloadResult =
-          await window.tutorialAPI!.downloadArcropolis(
+          await window.tutorialAPI.downloadArcropolis(
             skylineRelease.downloadUrl,
             skylineTempPath,
           );
@@ -1853,7 +1846,7 @@ let steps = [
         // Download ARCropolis
         statusDiv!.innerHTML =
           '<div style="color: #fff;">Downloading ARCropolis (romfs)...</div>';
-        const arcropolisTempPathResult = await window.tutorialAPI!.joinPath(
+        const arcropolisTempPathResult = await window.tutorialAPI.joinPath(
           tempDirResult.path,
           `arcropolis-${Date.now()}.zip`,
         );
@@ -1861,7 +1854,7 @@ let steps = [
           throw new Error('Failed to construct temp path');
         const arcropolisTempPath = arcropolisTempPathResult.path;
         const arcropolisDownloadResult =
-          await window.tutorialAPI!.downloadArcropolis(
+          await window.tutorialAPI.downloadArcropolis(
             arcropolisRelease.downloadUrl,
             arcropolisTempPath,
           );
@@ -1871,7 +1864,7 @@ let steps = [
         // Create directories and extract
         statusDiv!.innerHTML =
           '<div style="color: #fff;">Installing Skyline (exefs)...</div>';
-        const contentsPathResult = await window.tutorialAPI!.joinPath(
+        const contentsPathResult = await window.tutorialAPI.joinPath(
           ryujinxPath,
           'sdcard',
           'atmosphere',
@@ -1881,10 +1874,10 @@ let steps = [
         if (!contentsPathResult.success)
           throw new Error('Failed to construct contents path');
         const contentsPath = contentsPathResult.path;
-        await window.tutorialAPI!.createDirectory(contentsPath);
+        await window.tutorialAPI.createDirectory(contentsPath);
 
         // Extract Skyline (exefs)
-        const skylineExtractResult = await window.tutorialAPI!.extractSkyline(
+        const skylineExtractResult = await window.tutorialAPI.extractSkyline(
           skylineDownloadResult.path,
           contentsPath,
         );
@@ -1895,7 +1888,7 @@ let steps = [
         statusDiv!.innerHTML =
           '<div style="color: #fff;">Installing ARCropolis (romfs)...</div>';
         const arcropolisExtractResult =
-          await window.tutorialAPI!.extractArcropolis(
+          await window.tutorialAPI.extractArcropolis(
             arcropolisDownloadResult.path,
             contentsPath,
           );
@@ -1903,7 +1896,7 @@ let steps = [
           throw new Error('ARCropolis extraction failed');
 
         // Create plugin directories
-        const pluginsPathResult = await window.tutorialAPI!.joinPath(
+        const pluginsPathResult = await window.tutorialAPI.joinPath(
           contentsPath,
           'romfs',
           'skyline',
@@ -1911,7 +1904,7 @@ let steps = [
         );
         if (!pluginsPathResult.success)
           throw new Error('Failed to construct plugins path');
-        await window.tutorialAPI!.createDirectory(pluginsPathResult.path);
+        await window.tutorialAPI.createDirectory(pluginsPathResult.path);
 
         statusDiv!.innerHTML = `
                 <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
@@ -2037,16 +2030,16 @@ let steps = [
       }
 
       verifyYesBtn?.addEventListener('click', async () => {
-        await window.tutorialAPI!.saveSetting(
+        await window.tutorialAPI.saveSetting(
           'tutorial.arcropolisVerified',
           true,
         );
 
         // Auto-configure paths
-        const ryujinxPath = await window.tutorialAPI!.getSetting(
+        const ryujinxPath = await window.tutorialAPI.getSetting(
           'tutorial.ryujinxPath',
         );
-        const modsPathResult = await window.tutorialAPI!.joinPath(
+        const modsPathResult = await window.tutorialAPI.joinPath(
           ryujinxPath,
           'sdcard',
           'ultimate',
@@ -2054,7 +2047,7 @@ let steps = [
         );
         if (!modsPathResult.success)
           throw new Error('Failed to construct mods path');
-        const pluginsPathResult = await window.tutorialAPI!.joinPath(
+        const pluginsPathResult = await window.tutorialAPI.joinPath(
           ryujinxPath,
           'sdcard',
           'atmosphere',
@@ -2066,8 +2059,8 @@ let steps = [
         );
         if (!pluginsPathResult.success)
           throw new Error('Failed to construct plugins path');
-        await window.tutorialAPI!.saveSetting('modsPath', modsPathResult.path);
-        await window.tutorialAPI!.saveSetting(
+        await window.tutorialAPI.saveSetting('modsPath', modsPathResult.path);
+        await window.tutorialAPI.saveSetting(
           'pluginsPath',
           pluginsPathResult.path,
         );
@@ -2218,10 +2211,10 @@ let steps = [
       if (btn) {
         btn.addEventListener('click', async () => {
           try {
-            const path = await window.tutorialAPI!.selectFolder();
+            const path = await window.tutorialAPI.selectFolder();
             if (path) {
               // Save setting
-              await window.tutorialAPI!.saveSetting('modsPath', path);
+              await window.tutorialAPI.saveSetting('modsPath', path);
 
               // Update UI
               display!.textContent = path;
@@ -3092,7 +3085,7 @@ function closeTutorial() {
   if (window.tutorialAPI) {
     console.log('Calling tutorialAPI.closeTutorial()');
     try {
-      window.tutorialAPI!.closeTutorial();
+      window.tutorialAPI.closeTutorial();
       console.log('✓ Close event sent');
     } catch (error) {
       console.error('Error calling closeTutorial:', error);

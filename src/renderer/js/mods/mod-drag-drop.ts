@@ -236,7 +236,7 @@ class ModDragDropHandler {
 
     for (const file of files) {
       try {
-        const filePath = window.electronAPI!.getPathForFile(file);
+        const filePath = window.electronAPI.getPathForFile(file);
         if (filePath) {
           filePaths.push(filePath);
         }
@@ -253,7 +253,7 @@ class ModDragDropHandler {
     }
 
     try {
-      const modsPath = await window.electronAPI!.store.get('modsPath');
+      const modsPath = await window.electronAPI.store.get('modsPath');
       if (!modsPath) {
         if (window.toastManager) {
           window.toastManager.error('toasts.modsFolderNotConfigured');
@@ -269,7 +269,7 @@ class ModDragDropHandler {
 
       for (const filePath of filePaths) {
         try {
-          const result = await window.electronAPI!.installModFromPath(
+          const result = await window.electronAPI.installModFromPath(
             filePath,
             modsPath,
           );

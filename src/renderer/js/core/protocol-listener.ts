@@ -7,7 +7,7 @@ if (window.electronAPI && window.electronAPI.onModInstallConfirmRequest) {
     let installConfirmEnabled = true;
 
     try {
-      const setting = await window.electronAPI!.store.get(
+      const setting = await window.electronAPI.store.get(
         'installConfirmEnabled',
       );
       console.log('Install confirm setting:', setting);

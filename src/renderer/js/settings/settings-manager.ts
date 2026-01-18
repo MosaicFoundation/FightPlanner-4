@@ -182,7 +182,7 @@ class SettingsManager {
         console.log('New value:', enabled);
 
         try {
-          await window.electronAPI!.store.set('installConfirmEnabled', enabled);
+          await window.electronAPI.store.set('installConfirmEnabled', enabled);
           console.log('Setting saved successfully');
 
           if (window.toastManager) {
@@ -650,8 +650,8 @@ class SettingsManager {
 
     if (fakeVersionInput && saveDevSettingsBtn) {
       // Load current fake version
-      window
-        .electronAPI!.store.get('developer.fakeVersion')
+      window.electronAPI.store
+        .get('developer.fakeVersion')
         .then((fakeVersion) => {
           if (fakeVersion) {
             fakeVersionInput.value = fakeVersion;
@@ -660,14 +660,14 @@ class SettingsManager {
 
       saveDevSettingsBtn.addEventListener('click', () => {
         const fakeVersion = fakeVersionInput.value.trim();
-        window.electronAPI!.store.set('developer.fakeVersion', fakeVersion);
+        window.electronAPI.store.set('developer.fakeVersion', fakeVersion);
         this.showToast(this.translate('devSettingsSaved'), 'success');
       });
 
       if (resetDevSettingsBtn) {
         resetDevSettingsBtn.addEventListener('click', () => {
           fakeVersionInput.value = '';
-          window.electronAPI!.store.set('developer.fakeVersion', '');
+          window.electronAPI.store.set('developer.fakeVersion', '');
           this.showToast(this.translate('settingSaved'), 'success');
         });
       }
@@ -1421,7 +1421,7 @@ ${t('settings.okUnderstand')}
   async setTheme(theme) {
     this.settings.theme = theme;
     this.applyTheme(theme);
-    await window.electronAPI!.store.set('theme', theme);
+    await window.electronAPI.store.set('theme', theme);
   }
 
   applyTheme(theme) {
@@ -1434,32 +1434,31 @@ ${t('settings.okUnderstand')}
 
   async loadSettings() {
     try {
-      const modsPath = await window.electronAPI!.store.get('modsPath');
-      const pluginsPath = await window.electronAPI!.store.get('pluginsPath');
-      const emulatorType = await window.electronAPI!.store.get('emulatorType');
-      const emulatorPath = await window.electronAPI!.store.get('emulatorPath');
-      const gamePath = await window.electronAPI!.store.get('gamePath');
+      const modsPath = await window.electronAPI.store.get('modsPath');
+      const pluginsPath = await window.electronAPI.store.get('pluginsPath');
+      const emulatorType = await window.electronAPI.store.get('emulatorType');
+      const emulatorPath = await window.electronAPI.store.get('emulatorPath');
+      const gamePath = await window.electronAPI.store.get('gamePath');
       const emulatorFullscreen =
-        await window.electronAPI!.store.get('emulatorFullscreen');
-      const switchIp = await window.electronAPI!.store.get('switchIp');
-      const switchPort = await window.electronAPI!.store.get('switchPort');
-      const switchFtpPath =
-        await window.electronAPI!.store.get('switchFtpPath');
-      const switchTransferMethod = await window.electronAPI!.store.get(
+        await window.electronAPI.store.get('emulatorFullscreen');
+      const switchIp = await window.electronAPI.store.get('switchIp');
+      const switchPort = await window.electronAPI.store.get('switchPort');
+      const switchFtpPath = await window.electronAPI.store.get('switchFtpPath');
+      const switchTransferMethod = await window.electronAPI.store.get(
         'switchTransferMethod',
       );
       const switchDriveLetter =
-        await window.electronAPI!.store.get('switchDriveLetter');
-      const conflictDetectionEnabled = await window.electronAPI!.store.get(
+        await window.electronAPI.store.get('switchDriveLetter');
+      const conflictDetectionEnabled = await window.electronAPI.store.get(
         'conflictDetectionEnabled',
       );
-      const autoCheckPluginUpdates = await window.electronAPI!.store.get(
+      const autoCheckPluginUpdates = await window.electronAPI.store.get(
         'autoCheckPluginUpdates',
       );
-      const pluginUpdateIntroShown = await window.electronAPI!.store.get(
+      const pluginUpdateIntroShown = await window.electronAPI.store.get(
         'pluginUpdateIntroShown',
       );
-      const theme = await window.electronAPI!.store.get('theme');
+      const theme = await window.electronAPI.store.get('theme');
       return {
         modsPath: modsPath || null,
         pluginsPath: pluginsPath || null,
@@ -1501,54 +1500,54 @@ ${t('settings.okUnderstand')}
 
   async saveSettings() {
     try {
-      await window.electronAPI!.store.set('modsPath', this.settings.modsPath);
-      await window.electronAPI!.store.set(
+      await window.electronAPI.store.set('modsPath', this.settings.modsPath);
+      await window.electronAPI.store.set(
         'pluginsPath',
         this.settings.pluginsPath,
       );
-      await window.electronAPI!.store.set(
+      await window.electronAPI.store.set(
         'emulatorType',
         this.settings.emulatorType,
       );
-      await window.electronAPI!.store.set(
+      await window.electronAPI.store.set(
         'emulatorPath',
         this.settings.emulatorPath,
       );
-      await window.electronAPI!.store.set('gamePath', this.settings.gamePath);
-      await window.electronAPI!.store.set(
+      await window.electronAPI.store.set('gamePath', this.settings.gamePath);
+      await window.electronAPI.store.set(
         'emulatorFullscreen',
         this.settings.emulatorFullscreen,
       );
-      await window.electronAPI!.store.set('switchIp', this.settings.switchIp);
-      await window.electronAPI!.store.set(
+      await window.electronAPI.store.set('switchIp', this.settings.switchIp);
+      await window.electronAPI.store.set(
         'switchPort',
         this.settings.switchPort,
       );
-      await window.electronAPI!.store.set(
+      await window.electronAPI.store.set(
         'switchFtpPath',
         this.settings.switchFtpPath,
       );
-      await window.electronAPI!.store.set(
+      await window.electronAPI.store.set(
         'switchTransferMethod',
         this.settings.switchTransferMethod,
       );
-      await window.electronAPI!.store.set(
+      await window.electronAPI.store.set(
         'switchDriveLetter',
         this.settings.switchDriveLetter,
       );
-      await window.electronAPI!.store.set(
+      await window.electronAPI.store.set(
         'conflictDetectionEnabled',
         this.settings.conflictDetectionEnabled,
       );
-      await window.electronAPI!.store.set(
+      await window.electronAPI.store.set(
         'autoCheckPluginUpdates',
         this.settings.autoCheckPluginUpdates,
       );
-      await window.electronAPI!.store.set(
+      await window.electronAPI.store.set(
         'pluginUpdateIntroShown',
         this.settings.pluginUpdateIntroShown,
       );
-      await window.electronAPI!.store.set('theme', this.settings.theme);
+      await window.electronAPI.store.set('theme', this.settings.theme);
     } catch (error) {
       console.error('Failed to save settings:', error);
     }
@@ -1631,7 +1630,7 @@ ${t('settings.okUnderstand')}
 
   async setAnimationPreference(preference) {
     try {
-      await window.electronAPI!.store.set('animationPreference', preference);
+      await window.electronAPI.store.set('animationPreference', preference);
       this.applyAnimationPreference(preference);
     } catch (error) {
       console.error('Failed to save animation preference:', error);
@@ -1641,7 +1640,7 @@ ${t('settings.okUnderstand')}
   async loadAnimationPreference() {
     try {
       const preference =
-        (await window.electronAPI!.store.get('animationPreference')) || 'full';
+        (await window.electronAPI.store.get('animationPreference')) || 'full';
       const animationSelector = document.querySelector<HTMLElement>(
         '#animation-preference',
       );
@@ -1675,7 +1674,7 @@ ${t('settings.okUnderstand')}
 
   async loadInstallConfirmSetting() {
     try {
-      const installConfirmEnabled = await window.electronAPI!.store.get(
+      const installConfirmEnabled = await window.electronAPI.store.get(
         'installConfirmEnabled',
       );
       const installConfirmToggle = document.querySelector<HTMLInputElement>(

@@ -788,7 +788,7 @@ class ModalManager {
     const tomlContent = textarea.value;
 
     try {
-      const result = await window.electronAPI!.saveModInfoRaw(
+      const result = await window.electronAPI.saveModInfoRaw(
         this.currentModPath,
         tomlContent,
       );

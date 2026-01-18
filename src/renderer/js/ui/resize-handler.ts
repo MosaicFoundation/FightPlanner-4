@@ -19,7 +19,7 @@ class ResizeHandler {
 
   async loadSavedWidth() {
     try {
-      const saved = await window.electronAPI!.store.get('panelWidth');
+      const saved = await window.electronAPI.store.get('panelWidth');
       if (saved) {
         return saved;
       }
@@ -31,7 +31,7 @@ class ResizeHandler {
 
   async saveWidth(width) {
     try {
-      await window.electronAPI!.store.set('panelWidth', width);
+      await window.electronAPI.store.set('panelWidth', width);
     } catch (error) {
       console.error('Failed to save panel width:', error);
     }
