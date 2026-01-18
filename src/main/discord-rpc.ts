@@ -8,11 +8,11 @@ interface ActivityData {
 }
 
 export default class DiscordRPCManager {
-  private client: RPC.Client | null;
-  private clientId: string;
-  private connected: boolean;
-  private startTimestamp: number;
-  private currentActivity: ActivityData;
+  client: RPC.Client | null;
+  clientId: string;
+  connected: boolean;
+  startTimestamp: number;
+  currentActivity: ActivityData;
 
   constructor() {
     this.client = null;
@@ -49,10 +49,8 @@ export default class DiscordRPCManager {
       });
 
       await this.client.login({ clientId: this.clientId });
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      console.error('❌ Failed to connect to Discord RPC:', errorMessage);
+    } catch (error) {
+      console.error('❌ Failed to connect to Discord RPC:', error.message);
       console.error(
         'Make sure Discord is running and you have a valid Client ID',
       );
@@ -106,10 +104,8 @@ export default class DiscordRPCManager {
     try {
       console.log('📡 Updating Discord presence:', this.currentActivity);
       this.client.setActivity(activity);
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      console.error('❌ Error updating Discord presence:', errorMessage);
+    } catch (error) {
+      console.error('❌ Error updating Discord presence:', error.message);
     }
   }
 

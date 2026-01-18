@@ -5,16 +5,16 @@ import { UpdateInfo } from 'electron-updater';
 const store = new Store();
 
 class AutoUpdater {
-  private mainWindow: BrowserWindow | null;
-  private updateInfo: UpdateInfo | null;
-  private isChecking: boolean;
-  private isDownloading: boolean;
-  private updateDownloaded: boolean;
-  private autoCheckEnabled: boolean;
-  private updateChannel: string;
-  private forceUpdateAvailable: boolean;
-  private ignoreUpdateCertErrors: boolean;
-  private disableUpdateSignatureCheck: boolean;
+  mainWindow: BrowserWindow | null;
+  updateInfo: UpdateInfo | null;
+  isChecking: boolean;
+  isDownloading: boolean;
+  updateDownloaded: boolean;
+  autoCheckEnabled: boolean;
+  updateChannel: string;
+  forceUpdateAvailable: boolean;
+  ignoreUpdateCertErrors: boolean;
+  disableUpdateSignatureCheck: boolean;
 
   constructor() {
     this.mainWindow = null;
@@ -52,7 +52,7 @@ class AutoUpdater {
     autoUpdater.autoInstallOnAppQuit = true;
     if (this.disableUpdateSignatureCheck) {
       if ('verifyUpdateCodeSignature' in autoUpdater) {
-        (autoUpdater as any).verifyUpdateCodeSignature = false;
+        autoUpdater.verifyUpdateCodeSignature = false;
       }
       process.env.ELECTRON_UPDATER_SKIP_SIGNATURE_CHECK = 'true';
     }
@@ -121,9 +121,9 @@ class AutoUpdater {
     this.mainWindow = window;
   }
 
-  sendToRenderer(channel: string, data?: unknown) {
+  sendToRenderer(channel: string, data: Record<string, any> = {}) {
     if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-      this.mainWindow.webContents.send(channel, data);
+      this.mainWindow.webContents.send(channel, data || {});
     }
   }
 
@@ -149,10 +149,8 @@ class AutoUpdater {
         this.updateInfo = null;
       }
       return { success: true, updateInfo: result?.updateInfo };
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      return { success: false, error: errorMessage };
+    } catch (error) {
+      return { success: false, error: error.message };
     }
   }
 
@@ -203,11 +201,9 @@ class AutoUpdater {
       this.isDownloading = true;
       await autoUpdater.downloadUpdate();
       return { success: true };
-    } catch (error: unknown) {
+    } catch (error) {
       this.isDownloading = false;
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      return { success: false, error: errorMessage };
+      return { success: false, error: error.message };
     }
   }
 
