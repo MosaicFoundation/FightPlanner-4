@@ -882,7 +882,7 @@ let steps = [
             renderer: 'svg',
             loop: true,
             autoplay: true,
-            path: '../assets/images/tutorial-arcropolisSWITCH.json',
+            path: '../images/tutorial-arcropolisSWITCH.json',
           });
         } catch (e) {
           console.error('Failed to load Lottie animation:', e);
@@ -1463,7 +1463,7 @@ let steps = [
             renderer: 'svg',
             loop: true,
             autoplay: true,
-            path: '../assets/images/tutorial-arcropolisPC.json',
+            path: '../images/tutorial-arcropolisPC.json',
           });
         } catch (e) {
           console.error('Failed to load Lottie animation:', e);
@@ -2015,7 +2015,7 @@ let steps = [
             renderer: 'svg',
             loop: true,
             autoplay: true,
-            path: '../assets/images/tutorial-arcropolisPC.json',
+            path: '../images/tutorial-arcropolisPC.json',
           });
         } catch (e) {
           console.error('Failed to load Lottie animation:', e);
@@ -2315,7 +2315,7 @@ let steps = [
         
         <!-- Fake GameBanana Button -->
         <div style="background: #181a1e; border-radius: 4px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 10px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 1px solid #2f3136;">
-            <img src="../assets/images/logo.png" style="width: 32px; height: 32px; filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.2));">
+            <img src="../images/logo.png" style="width: 32px; height: 32px; filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.2));">
             <div style="display: flex; flex-direction: column; text-align: left; gap: 0px;">
                 <span style="color: #ffd700; font-weight: 800; font-size: 14px; line-height: 1; text-shadow: 0 0 15px rgba(255, 215, 0, 0.4); font-family: 'Segoe UI', sans-serif;">FightPlanner</span>
                 <span style="color: #fff; font-weight: 800; font-size: 11px; line-height: 1.2; text-shadow: 0 0 10px rgba(255,255,255,0.5); font-family: 'Segoe UI', sans-serif;">1-CLICK INSTALL</span>
@@ -2539,7 +2539,7 @@ function startAnimation() {
     renderer: 'svg',
     loop: false,
     autoplay: false,
-    path: '../assets/images/animation.json',
+    path: '../images/animation.json',
   });
 
   setTimeout(() => {
