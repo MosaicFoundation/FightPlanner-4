@@ -1,3 +1,5 @@
+import '../types/global';
+
 let steps = [
   {
     icon: 'bi-stars',
@@ -403,7 +405,7 @@ let steps = [
                 ?.addEventListener('click', () => {
                   statusDiv!.innerHTML =
                     '<div style="text-align: center; color: #fff;">Detecting drives...</div>';
-                  setTimeout(() => this.onRender(), 1000);
+                  setTimeout(() => steps[currentStep].onRender!(), 1000);
                 });
             } else if (drives.length === 1) {
               const drive = drives[0];

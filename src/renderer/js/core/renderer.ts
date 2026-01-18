@@ -1,3 +1,5 @@
+import '../../types/global';
+
 document
   .querySelector<HTMLElement>('.minimize')!
   .addEventListener('click', () => {

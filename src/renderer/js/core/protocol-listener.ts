@@ -1,3 +1,5 @@
+import '../../types/global';
+
 if (window.electronAPI && window.electronAPI.onModInstallConfirmRequest) {
   window.electronAPI.onModInstallConfirmRequest(async (data) => {
     console.log('Received install confirmation request:', data);

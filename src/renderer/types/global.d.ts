@@ -98,5 +98,3 @@ declare global {
     resolveFolderName: ResolveSSBUFolderName;
   }
 }
-
-export {};
