@@ -29,8 +29,8 @@ class LanguageSelector {
       return;
     }
 
-    const availableLocales = window.i18n!.getAvailableLocales();
-    const currentLocale = window.i18n!.getCurrentLocale();
+    const availableLocales = window.i18n.getAvailableLocales();
+    const currentLocale = window.i18n.getCurrentLocale();
 
     const select = document.createElement('select');
     select.className = 'language-selector';
@@ -50,7 +50,7 @@ class LanguageSelector {
 
     select.addEventListener('change', async () => {
       const newLocale = select.value;
-      await window.i18n!.changeLocale(newLocale);
+      await window.i18n.changeLocale(newLocale);
     });
 
     container.innerHTML = '';
@@ -66,8 +66,8 @@ class LanguageSelector {
       return;
     }
 
-    const availableLocales = window.i18n!.getAvailableLocales();
-    const currentLocale = window.i18n!.getCurrentLocale();
+    const availableLocales = window.i18n.getAvailableLocales();
+    const currentLocale = window.i18n.getCurrentLocale();
     const currentLang = this.languages[currentLocale] || {
       name: currentLocale,
       flag: '🌐',
@@ -127,7 +127,7 @@ class LanguageSelector {
       .forEach((option) => {
         option.addEventListener('click', async () => {
           const locale = option.getAttribute('data-locale');
-          await window.i18n!.changeLocale(locale);
+          await window.i18n.changeLocale(locale);
           menu!.style.display = 'none';
           this.updateDropdownCurrent(locale);
         });
@@ -172,7 +172,7 @@ class LanguageSelector {
 
   addLanguage(code, name, flag) {
     this.languages[code] = { name, flag };
-    window.i18n!.addLocale(code);
+    window.i18n.addLocale(code);
   }
 }
 

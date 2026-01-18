@@ -641,11 +641,11 @@ ${
             window.modalManager.openPluginUpdateIntroModal(
               async () => {
                 // On Enable
-                await window.settingsManager!.setSetting(
+                await window.settingsManager.setSetting(
                   'autoCheckPluginUpdates',
                   true,
                 );
-                await window.settingsManager!.setSetting(
+                await window.settingsManager.setSetting(
                   'pluginUpdateIntroShown',
                   true,
                 );
@@ -668,7 +668,7 @@ ${
               },
               async () => {
                 // On Disable
-                await window.settingsManager!.setSetting(
+                await window.settingsManager.setSetting(
                   'pluginUpdateIntroShown',
                   true,
                 );

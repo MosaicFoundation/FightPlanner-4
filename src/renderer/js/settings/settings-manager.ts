@@ -61,13 +61,13 @@ class SettingsManager {
 
           if (tabName === 'logs' && window.logsManager) {
             setTimeout(() => {
-              window.logsManager!.reinitialize();
+              window.logsManager.reinitialize();
             }, 200);
           }
 
           if (tabName === 'customization' && window.customizationManager) {
             setTimeout(() => {
-              window.customizationManager!.setupEventListeners();
+              window.customizationManager.setupEventListeners();
             }, 200);
           }
         }
@@ -500,7 +500,6 @@ class SettingsManager {
       });
     }
 
-    console.log('HELLO I AM THE SETTINGS MANAGERRRR!');
     const themeSelect = document.querySelector<HTMLElement>('#theme-select');
     if (themeSelect && !themeSelect.dataset.listenerAttached) {
       const trigger = themeSelect.querySelector<HTMLElement>(

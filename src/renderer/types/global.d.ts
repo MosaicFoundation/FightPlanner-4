@@ -43,59 +43,59 @@ import {
 } from '../js/characters/characters-data';
 
 declare global {
-  interface Window {
-    electronAPI?: ElectronAPI;
-    tutorialAPI?: TutorialAPI;
+  interface window {
+    electronAPI: ElectronAPI;
+    tutorialAPI: TutorialAPI;
 
-    i18n?: I18nClient;
-    toastManager?: ToastManager;
-    modManager?: ModManager;
-    modalManager?: ModalManager;
-    updateManager?: UpdateManager;
-    statusBarManager?: StatusBarManager;
-    downloadManager?: DownloadManager;
-    settingsManager?: SettingsManager;
-    conflictModalManager?: ConflictModalManager;
-    charactersManager?: CharactersManager;
-    socialManager?: SocialManager;
-    pluginManager?: PluginManager;
-    resizeHandler?: ResizeHandler;
-    modInfoManager?: ModInfoManager;
-    pluginMarketplace?: PluginMarketplace;
-    logsManager?: LogsManager;
-    animationManager?: AnimationManager;
-    tutorialManager?: TutorialManager;
-    fightPlannerManager?: FightPlannerManager;
-    modInfoEditor?: ModInfoEditor;
-    customizationManager?: CustomizationManager;
-    protocolListener?: ProtocolListener;
-    discordRPCClient?: DiscordRPCClient;
-    modDragDropHandler?: ModDragDropHandler;
+    i18n: I18nClient;
+    toastManager: ToastManager;
+    modManager: ModManager;
+    modalManager: ModalManager;
+    updateManager: UpdateManager;
+    statusBarManager: StatusBarManager;
+    downloadManager: DownloadManager;
+    settingsManager: SettingsManager;
+    conflictModalManager: ConflictModalManager;
+    charactersManager: CharactersManager;
+    socialManager: SocialManager;
+    pluginManager: PluginManager;
+    resizeHandler: ResizeHandler;
+    modInfoManager: ModInfoManager;
+    pluginMarketplace: PluginMarketplace;
+    logsManager: LogsManager;
+    animationManager: AnimationManager;
+    tutorialManager: TutorialManager;
+    fightPlannerManager: FightPlannerManager;
+    modInfoEditor: ModInfoEditor;
+    customizationManager: CustomizationManager;
+    protocolListener: ProtocolListener;
+    discordRPCClient: DiscordRPCClient;
+    modDragDropHandler: ModDragDropHandler;
 
-    ModOperations?: typeof ModOperations;
-    ModContextMenuHandler?: typeof ModContextMenuHandler;
-    ModKeybindsHandler?: typeof ModKeybindsHandler;
-    ModListRenderer?: typeof ModListRenderer;
-    LanguageSelector?: typeof LanguageSelector;
+    ModOperations: typeof ModOperations;
+    ModContextMenuHandler: typeof ModContextMenuHandler;
+    ModKeybindsHandler: typeof ModKeybindsHandler;
+    ModListRenderer: typeof ModListRenderer;
+    LanguageSelector: typeof LanguageSelector;
 
-    tutorial?: {
+    tutorial: {
       show: () => void;
       reset: () => void;
       resetFirstLaunch: () => void;
     };
 
-    tabLoader?: {
+    tabLoader: {
       loadTabContent: (tabId: string) => Promise<void>;
       initializeTabs: () => void;
     };
 
-    lottie?: LottiePlayer;
-    gsap?: typeof gsap;
+    lottie: LottiePlayer;
+    gsap: typeof gsap;
 
-    SSBU_CHARACTERS?: SSBUCharacters;
-    CHARACTER_IMAGES?: SSBUCharacterImages;
-    FOLDER_ALIASES?: SSBUFolderAliases;
-    resolveFolderName?: ResolveSSBUFolderName;
+    SSBU_CHARACTERS: SSBUCharacters;
+    CHARACTER_IMAGES: SSBUCharacterImages;
+    FOLDER_ALIASES: SSBUFolderAliases;
+    resolveFolderName: ResolveSSBUFolderName;
   }
 }
 

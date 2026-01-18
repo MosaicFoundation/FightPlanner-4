@@ -2541,7 +2541,7 @@ function startAnimation() {
   const tutorialWindow =
     document.querySelector<HTMLElement>('.tutorial-window');
 
-  const animation = window.lottie!.loadAnimation({
+  const animation = window.lottie.loadAnimation({
     container: lottieContainer!,
     renderer: 'svg',
     loop: false,

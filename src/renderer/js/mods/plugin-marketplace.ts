@@ -119,7 +119,7 @@ class PluginMarketplace {
 
         if (window.pluginManager) {
           setTimeout(() => {
-            window.pluginManager!.refreshPlugins();
+            window.pluginManager.refreshPlugins();
           }, 500);
         }
       } else {

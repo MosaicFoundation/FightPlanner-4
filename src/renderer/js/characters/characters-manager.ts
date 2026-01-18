@@ -142,7 +142,7 @@ class CharactersManager {
             : rawFighterId.toLowerCase();
 
           if (!this.characters.has(fighterId)) {
-            const charInfo = window.SSBU_CHARACTERS![fighterId];
+            const charInfo = window.SSBU_CHARACTERS[fighterId];
 
             if (charInfo) {
               this.characters.set(fighterId, {
@@ -213,7 +213,7 @@ class CharactersManager {
     card.dataset.characterId = char.id;
 
     const imageUrl =
-      window.CHARACTER_IMAGES![char.id] ||
+      window.CHARACTER_IMAGES[char.id] ||
       'https://www.smashbros.com/assets_v2/img/fighter/mario/main.png';
     const escapedName = this.escapeHtml(char.info.name);
 

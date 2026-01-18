@@ -2,12 +2,12 @@ import { BrowserWindow, ipcMain } from 'electron';
 
 export function registerWindowHandlers(ipcMain) {
   ipcMain.on('minimize-window', (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender);
+    const win = BrowserWindow.fromWebContents(event.sender)!;
     if (win) win.minimize();
   });
 
   ipcMain.on('maximize-window', (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender);
+    const win = BrowserWindow.fromWebContents(event.sender)!;
     if (win) {
       if (win.isMaximized()) {
         win.unmaximize();
@@ -18,7 +18,7 @@ export function registerWindowHandlers(ipcMain) {
   });
 
   ipcMain.on('close-window', (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender);
+    const win = BrowserWindow.fromWebContents(event.sender)!;
     if (win) win.close();
   });
 }

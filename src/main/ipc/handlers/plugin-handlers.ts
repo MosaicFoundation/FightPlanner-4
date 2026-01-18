@@ -31,8 +31,8 @@ export function registerPluginHandlers(ipcMain) {
 
   ipcMain.handle('select-plugin-file', async (event, pluginsPath) => {
     try {
-      const win = BrowserWindow.fromWebContents(event.sender);
-      const result = await dialog.showOpenDialog(win!, {
+      const win = BrowserWindow.fromWebContents(event.sender)!;
+      const result = await dialog.showOpenDialog(win, {
         properties: ['openFile'],
         filters: [
           { name: 'NRO Files', extensions: ['nro'] },

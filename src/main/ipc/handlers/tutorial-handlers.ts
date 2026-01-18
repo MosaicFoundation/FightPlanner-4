@@ -208,11 +208,11 @@ export function registerTutorialHandlers(ipcMain) {
 
   ipcMain.handle('select-drive', async (event) => {
     try {
-      const win = BrowserWindow.fromWebContents(event.sender);
+      const win = BrowserWindow.fromWebContents(event.sender)!;
       const drives = await detectWindowsDrives();
 
       // Show custom dialog or use file picker
-      const result = await dialog.showOpenDialog(win!, {
+      const result = await dialog.showOpenDialog(win, {
         title: 'Select SD Card Drive',
         properties: ['openDirectory'],
         message: 'Please select your Nintendo Switch SD card drive',

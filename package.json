@@ -9,11 +9,10 @@
   },
   "license": "MIT",
   "scripts": {
-    "start": "electron .",
-    "electron:watch": "npx nodemon --watch out --exec \"electron .\"",
+    "start": "npx nodemon --watch out --exec \"electron .\"",
     "ts:build": "tsc -p tsconfig.main.json && tsc -p tsconfig.renderer.json",
     "ts:watch": "tsc -p tsconfig.main.json --watch & tsc -p tsconfig.renderer.json --watch",
-    "dev:reload": "concurrently \"npm run watch:ts\" \"npm run start\"",
+    "dev:reload": "concurrently \"npm run ts:watch\" \"npm run start\"",
     "build:test": "npm run build:ts && electron-builder --win portable --config",
     "build:win": "npm run build:ts && electron-builder --win --config",
     "build:all": "npm run build:ts && electron-builder -wml --config",
