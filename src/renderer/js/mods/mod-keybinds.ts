@@ -1,6 +1,6 @@
-import { ModManager } from './mod-manager';
+import type { ModManager } from './mod-manager';
 
-export class ModKeybindsHandler {
+class ModKeybindsHandler {
   modManager: ModManager;
 
   constructor(modManager: ModManager) {
@@ -176,3 +176,5 @@ export class ModKeybindsHandler {
 if (typeof window !== 'undefined') {
   window.ModKeybindsHandler = ModKeybindsHandler;
 }
+
+export { type ModKeybindsHandler };

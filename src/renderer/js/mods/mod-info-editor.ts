@@ -1,4 +1,4 @@
-export class ModInfoEditor {
+class ModInfoEditor {
   currentModPath: string | null;
   currentInfo: any | null;
 
@@ -95,3 +95,5 @@ export class ModInfoEditor {
 }
 
 window.modInfoEditor = new ModInfoEditor();
+
+export { type ModInfoEditor };

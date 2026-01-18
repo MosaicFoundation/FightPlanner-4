@@ -192,6 +192,7 @@ export function registerSystemHandlers(ipcMain) {
     try {
       const localesPath = PATHS.localesDir();
       const localePath = path.join(localesPath, `${locale}.json`);
+      console.log('localePath :: ', localePath);
 
       if (!fs.existsSync(localePath)) {
         console.warn(

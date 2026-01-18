@@ -1,25 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "outDir": "./out/renderer",
-    "rootDir": "./src/renderer",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": false,
-    "strictNullChecks": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true,
-    "useUnknownInCatchVariables": false,
-    "sourceMap": true,
-    "allowJs": true,
-    "checkJs": false,
-    "composite": true,
-    "types": []
+    "module": "CommonJS",
+    "outDir": "./out",
+    "rootDir": "./src",
+    "isolatedModules": true,
+    "resolveJsonModule": false
   },
   "include": ["src/renderer/**/*", "src/locales/**/*"],
-  "exclude": ["node_modules", "out", "dist"]
+  "exclude": ["node_modules", "out", "dist"],
+  "references": [{ "path": "./tsconfig.main.json" }],
+  "extends": "./tsconfig.json"
 }

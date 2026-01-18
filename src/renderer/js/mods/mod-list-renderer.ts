@@ -1,6 +1,6 @@
-import { ModManager } from './mod-manager';
+import type { ModManager } from './mod-manager';
 
-export class ModListRenderer {
+class ModListRenderer {
   modManager: ModManager;
   intersectionObserver: IntersectionObserver | null;
 
@@ -263,3 +263,5 @@ export class ModListRenderer {
 if (typeof window !== 'undefined') {
   window.ModListRenderer = ModListRenderer;
 }
+
+export { type ModListRenderer };

@@ -176,7 +176,8 @@ function createWindow(options: CreateWindowOptions = {}) {
     }
   });
 
-  const loadPath = path.join(__dirname, '../renderer/index.html');
+  const loadPath = path.join(app.getAppPath(), 'assets', 'pages', 'index.html');
+
   if (options.animate) {
     mainWindow.loadFile(loadPath, { query: { animate: 'true' } });
   } else {

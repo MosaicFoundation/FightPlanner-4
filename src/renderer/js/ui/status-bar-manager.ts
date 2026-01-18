@@ -1,4 +1,4 @@
-export class StatusBarManager {
+class StatusBarManager {
   updateInterval: ReturnType<typeof setTimeout> | null;
   currentTab: string | null;
   preservedStatus: string | null;
@@ -896,3 +896,5 @@ if (typeof window !== 'undefined') {
     }
   });
 }
+
+export { type StatusBarManager };

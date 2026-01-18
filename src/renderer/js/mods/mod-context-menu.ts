@@ -1,6 +1,6 @@
-import { ModManager } from './mod-manager';
+import type { ModManager } from './mod-manager';
 
-export class ModContextMenuHandler {
+class ModContextMenuHandler {
   modManager: ModManager;
 
   constructor(modManager: ModManager) {
@@ -128,3 +128,5 @@ export class ModContextMenuHandler {
 if (typeof window !== 'undefined') {
   window.ModContextMenuHandler = ModContextMenuHandler;
 }
+
+export { type ModContextMenuHandler };

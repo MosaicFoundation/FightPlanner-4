@@ -1,6 +1,6 @@
-import { ModManager } from './mod-manager';
+import type { ModManager } from './mod-manager';
 
-export class ModOperations {
+class ModOperations {
   modManager: ModManager;
 
   constructor(modManager: ModManager) {
@@ -207,3 +207,5 @@ export class ModOperations {
 if (typeof window !== 'undefined') {
   window.ModOperations = ModOperations;
 }
+
+export { type ModOperations };

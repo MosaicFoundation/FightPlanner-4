@@ -1,4 +1,4 @@
-export class UpdateManager {
+class UpdateManager {
   updateInfo: any | null;
   isDownloading: boolean;
 
@@ -326,3 +326,5 @@ if (typeof window !== 'undefined') {
   window.updateManager = new UpdateManager();
   console.log('Update Manager initialized');
 }
+
+export { type UpdateManager };

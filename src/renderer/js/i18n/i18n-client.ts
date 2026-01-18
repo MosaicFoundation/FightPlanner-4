@@ -1,4 +1,4 @@
-export class I18nClient {
+class I18nClient {
   currentLocale: string;
   translations: { [key: string]: any };
   availableLocales: string[];
@@ -217,3 +217,5 @@ export class I18nClient {
 const i18n = new I18nClient();
 
 window.i18n = i18n;
+
+export type { I18nClient };

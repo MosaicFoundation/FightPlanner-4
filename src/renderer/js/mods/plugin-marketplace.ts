@@ -5,7 +5,7 @@ export interface MarketplacePlugin {
   url: string;
 }
 
-export class PluginMarketplace {
+class PluginMarketplace {
   plugins: Array<MarketplacePlugin>;
 
   constructor() {
@@ -286,3 +286,5 @@ export class PluginMarketplace {
 if (typeof window !== 'undefined') {
   window.pluginMarketplace = new PluginMarketplace();
 }
+
+export { type PluginMarketplace };

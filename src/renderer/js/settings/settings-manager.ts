@@ -1,4 +1,4 @@
-export class SettingsManager {
+class SettingsManager {
   settings: any;
   initialized: boolean;
   tabSwitchingAttached: boolean;
@@ -500,6 +500,7 @@ export class SettingsManager {
       });
     }
 
+    console.log('HELLO I AM THE SETTINGS MANAGERRRR!');
     const themeSelect = document.querySelector<HTMLElement>('#theme-select');
     if (themeSelect && !themeSelect.dataset.listenerAttached) {
       const trigger = themeSelect.querySelector<HTMLElement>(
@@ -1777,3 +1778,5 @@ if (typeof window !== 'undefined') {
     });
   }
 }
+
+export { type SettingsManager };

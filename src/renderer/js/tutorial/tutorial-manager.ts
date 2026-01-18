@@ -1,4 +1,4 @@
-export class TutorialManager {
+class TutorialManager {
   currentStep: number;
   tutorialShown: boolean;
   overlay: HTMLElement | null;
@@ -474,3 +474,5 @@ if (typeof window !== 'undefined') {
     '   → window.tutorial.resetFirstLaunch() - Test first launch behavior',
   );
 }
+
+export { type TutorialManager };

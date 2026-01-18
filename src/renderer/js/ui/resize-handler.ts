@@ -1,4 +1,4 @@
-export class ResizeHandler {
+class ResizeHandler {
   isResizing: boolean;
   currentPanel: HTMLElement | null;
 
@@ -115,3 +115,5 @@ if (typeof window !== 'undefined') {
   window.resizeHandler = new ResizeHandler();
   console.log('Resize Handler initialized');
 }
+
+export { type ResizeHandler };

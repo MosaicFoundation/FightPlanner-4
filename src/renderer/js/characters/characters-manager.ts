@@ -4,7 +4,7 @@ interface Character {
   mods: { name: string; path: string; status: string }[];
 }
 
-export class CharactersManager {
+class CharactersManager {
   characters: Map<string, Character>;
   allCharacters: any[];
   searchQuery: string;
@@ -449,3 +449,5 @@ if (typeof window !== 'undefined') {
   window.charactersManager = new CharactersManager();
   console.log('Characters Manager initialized globally');
 }
+
+export { type CharactersManager };

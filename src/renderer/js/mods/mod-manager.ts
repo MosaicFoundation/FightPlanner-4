@@ -1,7 +1,7 @@
-import { ModListRenderer } from './mod-list-renderer';
-import { ModContextMenuHandler } from './mod-context-menu';
-import { ModOperations } from './mod-operations';
-import { ModKeybindsHandler } from './mod-keybinds';
+import type { ModListRenderer } from './mod-list-renderer';
+import type { ModContextMenuHandler } from './mod-context-menu';
+import type { ModOperations } from './mod-operations';
+import type { ModKeybindsHandler } from './mod-keybinds';
 
 interface Mod {
   id: string;
@@ -21,7 +21,7 @@ interface SimpleMod {
   url: string;
 }
 
-export class ModManager {
+class ModManager {
   mods: Mod[];
   selectedMod: Mod | null;
   modListContainer: HTMLElement | null;
@@ -941,3 +941,5 @@ if (typeof window !== 'undefined') {
   window.modManager = new ModManager();
   console.log('Mod Manager initialized');
 }
+
+export { type ModManager };

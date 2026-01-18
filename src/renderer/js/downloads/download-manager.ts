@@ -13,7 +13,7 @@ interface Download {
   error?: string;
 }
 
-export class DownloadManager {
+class DownloadManager {
   activeDownloads: Map<string, Download>;
   completedDownloads: any[];
   activeDownloadsList: HTMLElement | null;
@@ -733,3 +733,5 @@ if (typeof window !== 'undefined') {
   window.downloadManager = new DownloadManager();
   console.log('Download Manager created');
 }
+
+export { type DownloadManager };

@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
 
 let tutorialWindow: BrowserWindow | null = null;
@@ -32,7 +32,14 @@ export function createTutorialWindow(parentWindow) {
     },
   });
 
-  tutorialWindow.loadFile(path.join(__dirname, '../renderer/tutorial.html'));
+  const loadPath = path.join(
+    app.getAppPath(),
+    'assets',
+    'pages',
+    'tutorial.html',
+  );
+
+  tutorialWindow.loadFile(loadPath);
 
   tutorialWindow.setMenuBarVisibility(false);
 

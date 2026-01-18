@@ -8,8 +8,8 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
     />
-    <link rel="stylesheet" href="css/main.css" />
-    <link rel="stylesheet" href="css/animations/shake.css" />
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="stylesheet" href="../css/animations/shake.css" />
     <style>
       /* Critical CSS to hide content immediately if animating */
       body.app-entrance-animation .content-area-wrapper,
@@ -25,6 +25,7 @@
       if (urlParams.get('animate') === 'true') {
         document.body.classList.add('app-entrance-animation');
       }
+      var exports = {};
     </script>
     <script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
   </head>
@@ -33,7 +34,7 @@
     <!-- Custom Title Bar -->
     <div class="titlebar">
       <div class="titlebar-left">
-        <img src="../assets/images/logo.png" alt="FightPlanner" class="logo" />
+        <img src="../images/logo.png" alt="FightPlanner" class="logo" />
         <span class="title" data-i18n="app.title">FightPlanner</span>
       </div>
       <div class="titlebar-buttons">
@@ -91,7 +92,7 @@
           data-i18n="sidebar.tools"
           data-i18n-title
         >
-          <img src="../assets/images/icons/tools.svg" alt="Mods" />
+          <img src="../images/icons/tools.svg" alt="Mods" />
         </button>
         <button
           class="sidebar-btn"
@@ -99,7 +100,7 @@
           data-i18n="sidebar.plugins"
           data-i18n-title
         >
-          <img src="../assets/images/icons/plugins.svg" alt="Plugins" />
+          <img src="../images/icons/plugins.svg" alt="Plugins" />
         </button>
         <button
           class="sidebar-btn"
@@ -107,7 +108,7 @@
           data-i18n="sidebar.characters"
           data-i18n-title
         >
-          <img src="../assets/images/icons/char.svg" alt="Characters" />
+          <img src="../images/icons/char.svg" alt="Characters" />
         </button>
         <button
           class="sidebar-btn"
@@ -115,7 +116,7 @@
           data-i18n="sidebar.stages"
           data-i18n-title
         >
-          <img src="../assets/images/icons/stages.png" alt="Stages" />
+          <img src="../images/icons/stages.png" alt="Stages" />
         </button>
         <button
           class="sidebar-btn"
@@ -123,7 +124,7 @@
           data-i18n="sidebar.social"
           data-i18n-title
         >
-          <img src="../assets/images/icons/social.svg" alt="Social" />
+          <img src="../images/icons/social.svg" alt="Social" />
         </button>
         <button
           class="sidebar-btn"
@@ -131,7 +132,7 @@
           data-i18n="sidebar.downloads"
           data-i18n-title
         >
-          <img src="../assets/images/icons/downloads.svg" alt="Downloads" />
+          <img src="../images/icons/downloads.svg" alt="Downloads" />
         </button>
         <button
           class="sidebar-btn"
@@ -139,7 +140,7 @@
           data-i18n="sidebar.settings"
           data-i18n-title
         >
-          <img src="../assets/images/icons/settings.svg" alt="Settings" />
+          <img src="../images/icons/settings.svg" alt="Settings" />
         </button>
         <button
           class="sidebar-btn"
@@ -147,7 +148,7 @@
           data-i18n="sidebar.fightplanner"
           data-i18n-title
         >
-          <img src="../assets/images/icons/fightplanner.svg" alt="Credits" />
+          <img src="../images/icons/fightplanner.svg" alt="Credits" />
         </button>
       </div>
 
@@ -991,49 +992,49 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <script src="js/i18n/i18n-client.js"></script>
-    <script src="js/i18n/language-selector.js"></script>
-    <script src="js/tutorial/tutorial-manager.js"></script>
-    <script src="js/ui/toast-manager.js"></script>
-    <script src="js/ui/modal-manager.js"></script>
-    <script src="js/ui/update-manager.js"></script>
-    <script src="js/logs/logs-manager.js"></script>
-    <script src="js/customization/customization-manager.js"></script>
-    <script src="js/fightplanner/fightplanner-manager.js"></script>
+    <script src="../../out/renderer/js/i18n/i18n-client.js"></script>
+    <script src="../../out/renderer/js/i18n/language-selector.js"></script>
+    <script src="../../out/renderer/js/tutorial/tutorial-manager.js"></script>
+    <script src="../../out/renderer/js/ui/toast-manager.js"></script>
+    <script src="../../out/renderer/js/ui/modal-manager.js"></script>
+    <script src="../../out/renderer/js/ui/update-manager.js"></script>
+    <script src="../../out/renderer/js/logs/logs-manager.js"></script>
+    <script src="../../out/renderer/js/customization/customization-manager.js"></script>
+    <script src="../../out/renderer/js/fightplanner/fightplanner-manager.js"></script>
     <!-- Characters Manager -->
-    <script src="js/characters/characters-data.js"></script>
-    <script src="js/characters/characters-manager.js"></script>
+    <script src="../../out/renderer/js/characters/characters-data.js"></script>
+    <script src="../../out/renderer/js/characters/characters-manager.js"></script>
 
     <!-- Downloads Manager -->
-    <script src="js/downloads/download-manager.js"></script>
+    <script src="../../out/renderer/js/downloads/download-manager.js"></script>
 
     <!-- Protocol Listener -->
-    <script src="js/protocol/protocol-listener.js"></script>
+    <script src="../../out/renderer/js/protocol/protocol-listener.js"></script>
     <!-- End Characters Manager -->
-    <script src="js/tabs/tabs-loader.js"></script>
-    <script src="js/settings/settings-manager.js"></script>
-    <script src="js/mods/mod-info.js"></script>
-    <script src="js/mods/mod-info-editor.js"></script>
+    <script src="../../out/renderer/js/tabs/tabs-loader.js"></script>
+    <script src="../../out/renderer/js/settings/settings-manager.js"></script>
+    <script src="../../out/renderer/js/mods/mod-info.js"></script>
+    <script src="../../out/renderer/js/mods/mod-info-editor.js"></script>
     <!-- Mod Manager components (order is important) -->
-    <script src="js/mods/mod-list-renderer.js"></script>
-    <script src="js/mods/mod-context-menu.js"></script>
-    <script src="js/mods/mod-operations.js"></script>
-    <script src="js/mods/mod-keybinds.js"></script>
-    <script src="js/mods/mod-drag-drop.js"></script>
-    <script src="js/mods/mod-manager.js"></script>
+    <script src="../../out/renderer/js/mods/mod-list-renderer.js"></script>
+    <script src="../../out/renderer/js/mods/mod-context-menu.js"></script>
+    <script src="../../out/renderer/js/mods/mod-operations.js"></script>
+    <script src="../../out/renderer/js/mods/mod-keybinds.js"></script>
+    <script src="../../out/renderer/js/mods/mod-drag-drop.js"></script>
+    <script src="../../out/renderer/js/mods/mod-manager.js"></script>
     <!-- End Mod Manager -->
     <!-- Plugin Manager -->
-    <script src="js/mods/plugin-marketplace.js"></script>
-    <script src="js/mods/plugin-manager.js"></script>
+    <script src="../../out/renderer/js/mods/plugin-marketplace.js"></script>
+    <script src="../../out/renderer/js/mods/plugin-manager.js"></script>
     <!-- End Plugin Manager -->
-    <script src="js/ui/resize-handler.js"></script>
-    <script src="js/ui/status-bar-manager.js"></script>
-    <script src="js/ui/animation-manager.js"></script>
-    <script src="js/ui/conflict-modal-manager.js"></script>
-    <script src="js/core/renderer.js"></script>
-    <script src="js/social/social-manager.js"></script>
-    <script src="js/core/discord-rpc-client.js"></script>
-    <script src="js/core/protocol-listener.js"></script>
+    <script src="../../out/renderer/js/ui/resize-handler.js"></script>
+    <script src="../../out/renderer/js/ui/status-bar-manager.js"></script>
+    <script src="../../out/renderer/js/ui/animation-manager.js"></script>
+    <script src="../../out/renderer/js/ui/conflict-modal-manager.js"></script>
+    <script src="../../out/renderer/js/core/renderer.js"></script>
+    <script src="../../out/renderer/js/social/social-manager.js"></script>
+    <script src="../../out/renderer/js/core/discord-rpc-client.js"></script>
+    <script src="../../out/renderer/js/core/protocol-listener.js"></script>
     <script>
       // Initialize i18n when DOM is ready
       document.addEventListener('DOMContentLoaded', async () => {

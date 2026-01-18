@@ -7,7 +7,7 @@ export interface CurrentModData {
   url?: string;
 }
 
-export class ModInfoManager {
+class ModInfoManager {
   currentModPath: string | null;
   currentModData: CurrentModData | null;
 
@@ -179,3 +179,5 @@ size: "250 MB",
 date: "2024-01-15"
 });
 */
+
+export { type ModInfoManager };

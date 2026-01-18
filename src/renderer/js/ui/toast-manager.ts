@@ -1,4 +1,4 @@
-export class ToastManager {
+class ToastManager {
   container: HTMLElement | null;
   toasts: HTMLElement[];
   toastHistory: Map<string, number>;
@@ -245,3 +245,5 @@ if (typeof window !== 'undefined') {
   window.toastManager = new ToastManager();
   console.log('Toast Manager initialized');
 }
+
+export { type ToastManager };

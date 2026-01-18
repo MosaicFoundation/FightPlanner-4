@@ -1,4 +1,4 @@
-export class DiscordRPCClient {
+class DiscordRPCClient {
   currentTab: string | null;
   modCount: number;
 
@@ -68,3 +68,5 @@ if (typeof window !== 'undefined') {
   window.discordRPCClient = new DiscordRPCClient();
   console.log('Discord RPC Client initialized');
 }
+
+export { type DiscordRPCClient };

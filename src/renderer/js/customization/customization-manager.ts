@@ -1,4 +1,4 @@
-export class CustomizationManager {
+class CustomizationManager {
   pendingJsPath: string | null;
   customCssFiles: Array<{ path: string; element: HTMLStyleElement }>;
   customJsFiles: Array<{ path: string; element: HTMLScriptElement }>;
@@ -798,3 +798,5 @@ if (typeof window !== 'undefined') {
   window.customizationManager = new CustomizationManager();
   console.log('Customization Manager initialized');
 }
+
+export { type CustomizationManager };

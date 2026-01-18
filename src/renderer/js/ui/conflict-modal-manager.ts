@@ -1,4 +1,4 @@
-export class ConflictModalManager {
+class ConflictModalManager {
   currentConflictFile: string | null;
   currentConflictingMods: Array<{ name: string; path: string }>;
   autoSlotChangeMods: Array<{
@@ -710,3 +710,5 @@ export class ConflictModalManager {
 if (typeof window !== 'undefined') {
   window.conflictModalManager = new ConflictModalManager();
 }
+
+export { type ConflictModalManager };

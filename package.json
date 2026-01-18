@@ -2,7 +2,7 @@
   "name": "fightplanner",
   "version": "4.0.0",
   "description": "FightPlanner 4.0 - Your Ultimate Mod Manager",
-  "main": "src/main/main.js",
+  "main": "out/main/main.js",
   "author": {
     "name": "Shattered Chaos",
     "email": "noreply@fightplanner.app"
@@ -32,8 +32,8 @@
   "devDependencies": {
     "electron": "^39.0.0",
     "electron-builder": "^24.13.3",
-    "gsap": "^3.14.2",
-    "lottie-web": "^5.13.0",
+    "gsap": "3.12.5",
+    "lottie-web": "5.12.2",
     "prettier": "^3.8.0",
     "typescript": "^5.9.3"
   },

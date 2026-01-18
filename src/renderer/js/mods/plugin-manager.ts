@@ -7,7 +7,7 @@ export interface Plugin {
   enabled?: boolean;
 }
 
-export class PluginManager {
+class PluginManager {
   plugins: Array<Plugin>;
   pluginListContainer: HTMLElement | null;
   pluginsPath: string | null;
@@ -703,3 +703,5 @@ if (typeof window !== 'undefined') {
   window.pluginManager = new PluginManager();
   console.log('Plugin Manager initialized');
 }
+
+export { type PluginManager };

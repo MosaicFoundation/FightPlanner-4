@@ -1,4 +1,4 @@
-export class ModDragDropHandler {
+class ModDragDropHandler {
   dragOverlay: HTMLElement | null;
   isDragging: boolean;
   dragAnimation: gsap.core.Timeline | null;
@@ -311,3 +311,5 @@ export class ModDragDropHandler {
 }
 
 window.modDragDropHandler = new ModDragDropHandler();
+
+export { type ModDragDropHandler };

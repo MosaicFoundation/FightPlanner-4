@@ -1,4 +1,4 @@
-export class AnimationManager {
+class AnimationManager {
   isReducedMotion: boolean;
   initialized: boolean;
 
@@ -179,3 +179,5 @@ export class AnimationManager {
 }
 
 window.animationManager = new AnimationManager();
+
+export { type AnimationManager };

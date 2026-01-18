@@ -1,4 +1,4 @@
-export class LanguageSelector {
+class LanguageSelector {
   containerId: string;
   languages: {
     [code: string]: { name: string; flag: string };
@@ -179,3 +179,5 @@ export class LanguageSelector {
 if (typeof window !== 'undefined') {
   window.LanguageSelector = LanguageSelector;
 }
+
+export { type LanguageSelector };

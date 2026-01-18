@@ -1,4 +1,4 @@
-export class ProtocolListener {
+class ProtocolListener {
   idMap: Map<string, string>;
 
   constructor() {
@@ -110,3 +110,5 @@ if (typeof window !== 'undefined') {
   window.protocolListener = new ProtocolListener();
   console.log('Protocol Listener initialized');
 }
+
+export { type ProtocolListener };

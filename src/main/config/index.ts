@@ -21,7 +21,7 @@ export const TEMP_FOLDERS = ['fightplanner-downloads', 'fightplanner-extract'];
 export const PATHS = {
   logsDir: () => path.join(app.getPath('userData'), 'logs'),
   tempDir: () => app.getPath('temp'),
-  localesDir: () => path.join(__dirname, '..', '..', 'locales'),
+  localesDir: () => path.join(app.getAppPath(), 'assets', 'locales'),
 };
 
 export const ENV = {

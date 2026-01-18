@@ -1,4 +1,4 @@
-import { MarketplacePlugin } from '../mods/plugin-marketplace';
+import type { MarketplacePlugin } from '../mods/plugin-marketplace';
 
 interface Changes {
   modifications: Array<{
@@ -11,7 +11,7 @@ interface Changes {
   deletions: Array<number>;
 }
 
-export class ModalManager {
+class ModalManager {
   currentMod: any | null;
   renameCallback: ((newName: string) => void) | null;
   uninstallCallback: (() => void) | null;
@@ -1535,3 +1535,5 @@ if (typeof window !== 'undefined') {
     });
   });
 }
+
+export { type ModalManager };

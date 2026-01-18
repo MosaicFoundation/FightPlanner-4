@@ -6,7 +6,7 @@ interface Log {
   source: 'main' | 'renderer';
 }
 
-export class LogsManager {
+class LogsManager {
   logs: Array<Log>;
   maxLogs: number;
   currentFilter: string;
@@ -311,3 +311,5 @@ if (typeof window !== 'undefined') {
   window.logsManager = new LogsManager();
   console.log('Logs Manager initialized');
 }
+
+export { type LogsManager };

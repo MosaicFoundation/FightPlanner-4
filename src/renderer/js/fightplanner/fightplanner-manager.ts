@@ -1,4 +1,4 @@
-export class FightPlannerManager {
+class FightPlannerManager {
   initialized: boolean;
 
   constructor() {
@@ -67,3 +67,5 @@ if (typeof window !== 'undefined') {
   window.fightPlannerManager = new FightPlannerManager();
   console.log('FightPlanner Manager initialized globally');
 }
+
+export { type FightPlannerManager };

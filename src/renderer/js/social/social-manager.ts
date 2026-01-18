@@ -11,7 +11,7 @@ interface UserFields {
   };
 }
 
-export class SocialManager {
+class SocialManager {
   API_URL: string;
   authToken: string | null;
   userData: any;
@@ -2921,3 +2921,5 @@ export class SocialManager {
 if (typeof window !== 'undefined') {
   window.socialManager = new SocialManager();
 }
+
+export { type SocialManager };
