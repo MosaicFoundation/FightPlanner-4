@@ -1,5 +1,6 @@
 {
   "tabWidth": 2,
   "singleQuote": true,
-  "arrowParens": "always"
+  "arrowParens": "always",
+  "endOfLine": "crlf"
 }
