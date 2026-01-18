@@ -43,7 +43,7 @@ import {
 } from '../js/characters/characters-data';
 
 declare global {
-  interface window {
+  interface Window {
     electronAPI: ElectronAPI;
     tutorialAPI: TutorialAPI;
 
