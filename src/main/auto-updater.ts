@@ -123,7 +123,7 @@ class AutoUpdater {
 
   sendToRenderer(channel: string, data: Record<string, any> = {}) {
     if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-      this.mainWindow.webContents.send(channel, data || {});
+      this.mainWindow.webContents.send(channel, data);
     }
   }
 
@@ -176,12 +176,11 @@ class AutoUpdater {
             clearInterval(interval);
             this.isDownloading = false;
             this.updateDownloaded = true;
-            if (this.updateInfo) {
-              this.sendToRenderer('update-downloaded', {
-                version: this.updateInfo.version,
-                releaseDate: this.updateInfo.releaseDate,
-              });
-            }
+
+            this.sendToRenderer('update-downloaded', {
+              version: this.updateInfo!.version,
+              releaseDate: this.updateInfo!.releaseDate,
+            });
           } else {
             this.sendToRenderer('update-download-progress', {
               percent: progress,
