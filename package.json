@@ -16,7 +16,7 @@
     "build:test": "npm run ts:build && electron-builder --win portable --config",
     "build:win": "npm run ts:build && electron-builder --win --config",
     "build:all": "npm run ts:build && electron-builder -wml --config",
-    "dist": "electron-builder",
+    "dist": "npm run ts:build && electron-builder",
     "i18n:upload": "crowdin upload sources",
     "i18n:download": "crowdin download",
     "i18n:status": "crowdin status",
