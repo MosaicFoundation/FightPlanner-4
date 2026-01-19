@@ -551,12 +551,10 @@ export default class ProtocolHandler {
       let receivedBytes = 0;
       let totalBytes = 0;
 
-      const requestOptions: RequestOptions = {
-        ...new URL(url),
-        headers: {
-          'User-Agent': USER_AGENT,
-          Accept: '*/*',
-        },
+      const requestOptions: RequestOptions = new URL(url);
+      requestOptions.headers = {
+        'User-Agent': USER_AGENT,
+        Accept: '*/*',
       };
 
       // Store download info for cancel
@@ -1491,12 +1489,11 @@ export default class ProtocolHandler {
   fetchWithTimeout(url: string, timeout: number): Promise<string> {
     return new Promise((resolve, reject) => {
       const protocol = url.startsWith('https') ? https : http;
-      const requestOptions: RequestOptions = {
-        ...new URL(url),
-        headers: {
-          'User-Agent': USER_AGENT,
-          Accept: 'application/json, */*;q=0.1',
-        },
+
+      const requestOptions: RequestOptions = new URL(url);
+      requestOptions.headers = {
+        'User-Agent': USER_AGENT,
+        Accept: 'application/json, */*;q=0.1',
       };
 
       const req = protocol.get(requestOptions, (res) => {
@@ -1529,12 +1526,10 @@ export default class ProtocolHandler {
       const previewPath = path.join(modFolderPath, 'preview.webp');
       const file = fs.createWriteStream(previewPath);
 
-      const requestOptions: RequestOptions = {
-        ...new URL(imageUrl),
-        headers: {
-          'User-Agent': USER_AGENT,
-          Accept: 'image/webp,image/*;q=0.8,*/*;q=0.5',
-        },
+      const requestOptions: RequestOptions = new URL(imageUrl);
+      requestOptions.headers = {
+        'User-Agent': USER_AGENT,
+        Accept: 'image/webp,image/*;q=0.8,*/*;q=0.5',
       };
 
       const request = protocol.get(requestOptions, (response) => {
