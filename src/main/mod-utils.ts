@@ -7,6 +7,7 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 import { CONFLICT_WHITELIST_PATTERNS } from './config';
 import { ModInstallResult } from './plugin-update-installer';
+import _7z from '7zip-min';
 
 export interface Slot {
   path: string;
@@ -767,15 +768,13 @@ export default class ModUtils {
       let extracted = false;
       let lastError = null;
 
-      if (process.platform === 'win32') {
-        try {
-          await this.extract7Zip(archivePath, targetPath);
-          console.log('✓ Extracted using 7-Zip');
-          extracted = true;
-        } catch (err) {
-          console.warn('7-Zip extraction failed:', err.message);
-          lastError = err;
-        }
+      try {
+        await this.extract7Zip(archivePath, targetPath);
+        console.log('✓ Extracted using 7-Zip');
+        extracted = true;
+      } catch (err) {
+        console.warn('7-Zip extraction failed:', err.message);
+        lastError = err;
       }
 
       if (!extracted && process.platform !== 'win32' && ext === '.zip') {
@@ -817,46 +816,9 @@ export default class ModUtils {
     }
   }
 
-  static async extract7Zip(archivePath, targetPath) {
-    let command;
-
-    const candidate7zPaths = [
-      path.join(__dirname, '../../tools/7za.exe'),
-      process.resourcesPath
-        ? path.join(process.resourcesPath, 'tools', '7za.exe')
-        : null,
-      process.resourcesPath
-        ? path.join(
-            process.resourcesPath,
-            '..',
-            'app.asar.unpacked',
-            'tools',
-            '7za.exe',
-          )
-        : null,
-    ].filter(Boolean) as string[];
-
-    const existing7z = candidate7zPaths.find((p) => fs.existsSync(p));
-
-    if (process.platform === 'win32') {
-      if (existing7z) {
-        command = `"${existing7z}" x "${archivePath}" -o"${targetPath}" -y`;
-      } else {
-        throw new Error(
-          '7za.exe not found. Please place 7za.exe in the tools folder or install 7-Zip in PATH.',
-        );
-      }
-    } else {
-      command = `7z x "${archivePath}" -o"${targetPath}" -y`;
-    }
-
-    console.log('[extract] 7z command:', command);
-    const { stdout, stderr } = await execAsync(command);
-
-    if (stderr && !stderr.includes('Everything is Ok')) {
-      console.warn('7z stderr:', stderr);
-    }
-
+  static async extract7Zip(archivePath: string, targetPath: string) {
+    console.log('[extract] 7z extracting');
+    const stdout = await _7z.unpack(archivePath, targetPath);
     console.log('[extract] 7z output:', stdout);
   }
 
