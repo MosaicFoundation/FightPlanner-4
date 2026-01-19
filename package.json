@@ -23,6 +23,7 @@
     "i18n:sync": "npm run i18n:upload && npm run i18n:download"
   },
   "dependencies": {
+    "7zip-min": "^2.1.0",
     "adm-zip": "^0.5.10",
     "basic-ftp": "^5.0.5",
     "discord-rpc": "^4.0.1",
@@ -48,16 +49,6 @@
         "provider": "github",
         "owner": "FIREXDF",
         "repo": "FightPlanner-4"
-      }
-    ],
-    "extraResources": [
-      {
-        "from": "tools",
-        "to": "tools",
-        "filter": [
-          "7za.exe",
-          "7z.dll"
-        ]
       }
     ],
     "protocols": [
