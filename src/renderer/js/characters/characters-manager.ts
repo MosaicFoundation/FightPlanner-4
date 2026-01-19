@@ -37,7 +37,7 @@ class CharactersManager {
       document.querySelector<HTMLInputElement>('#characters-search');
 
     if (searchInput) {
-      searchInput.addEventListener('input', () => {
+      searchInput.addEventListener('input', (e) => {
         this.searchQuery = searchInput.value.toLowerCase();
         this.filterCharacters();
       });

@@ -451,19 +451,20 @@ ${step.content}
 }
 
 if (typeof window !== 'undefined') {
-  const tutorialManager = (window.tutorialManager = new TutorialManager());
+  window.tutorialManager = new TutorialManager();
+
   window.tutorial = {
-    show: () => tutorialManager.show(),
-    reset: () => tutorialManager.reset(),
-    resetFirstLaunch: () => tutorialManager.resetToTestFirstLaunch(),
+    show: () => window.tutorialManager.show(),
+    reset: () => window.tutorialManager.reset(),
+    resetFirstLaunch: () => window.tutorialManager.resetToTestFirstLaunch(),
   };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      tutorialManager.initialize();
+      window.tutorialManager.initialize();
     });
   } else {
-    tutorialManager.initialize();
+    window.tutorialManager.initialize();
   }
 
   console.log('📚 Tutorial Manager loaded.');

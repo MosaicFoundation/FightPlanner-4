@@ -26,9 +26,12 @@ class ModContextMenuHandler {
 
     const contextMenu =
       document.querySelector<HTMLElement>('#mod-context-menu');
+
     if (contextMenu) {
       contextMenu.addEventListener('click', async (e) => {
-        const item = contextMenu.closest('.context-menu-item') as HTMLElement;
+        const target = e.target as HTMLElement;
+        const item = target.closest('.context-menu-item') as HTMLElement;
+
         if (!item) return;
 
         const action = item.dataset.action;

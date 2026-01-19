@@ -43,6 +43,7 @@ class PluginManager {
   setupEventListeners() {
     const searchInput =
       document.querySelector<HTMLInputElement>('#plugin-search');
+
     if (searchInput && !searchInput.dataset.listenerAttached) {
       searchInput.addEventListener('input', (e) =>
         this.filterPlugins(searchInput.value),
