@@ -117,9 +117,9 @@ export async function migrateFromV3() {
 }
 
 export async function getMigrationStatus() {
-  const migrationCompleted = store.get('migrationCompleted');
-  const migratedFrom = store.get('migratedFrom');
-  const migrationDate = store.get('migrationDate');
+  const migrationCompleted = store.get('migrationCompleted') as boolean | null;
+  const migratedFrom = store.get('migratedFrom') as string | null;
+  const migrationDate = store.get('migrationDate') as string | null;
 
   return {
     completed: migrationCompleted || false,

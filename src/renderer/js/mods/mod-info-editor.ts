@@ -64,7 +64,7 @@ class ModInfoEditor {
   async saveInfo(info) {
     try {
       const result = await window.electronAPI.saveModInfo(
-        this.currentModPath,
+        this.currentModPath!,
         info,
       );
 

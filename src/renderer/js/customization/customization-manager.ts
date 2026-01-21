@@ -73,9 +73,9 @@ class CustomizationManager {
 
     try {
       const customCssPaths =
-        (await window.electronAPI.store.get('customCssPaths')) || [];
+        (await window.electronAPI.store.get<string[]>('customCssPaths')) || [];
       const customJsPaths =
-        (await window.electronAPI.store.get('customJsPaths')) || [];
+        (await window.electronAPI.store.get<string[]>('customJsPaths')) || [];
 
       console.log('Saved CSS paths:', customCssPaths);
       console.log('Saved JS paths:', customJsPaths);
@@ -106,7 +106,7 @@ class CustomizationManager {
     try {
       const result = await window.electronAPI.selectCustomFile('css');
 
-      if (result.canceled || !result.filePath) {
+      if (!result.success) {
         return;
       }
 
@@ -143,7 +143,7 @@ class CustomizationManager {
     try {
       const result = await window.electronAPI.selectCustomFile('js');
 
-      if (result.canceled || !result.filePath) {
+      if (!result.success) {
         return;
       }
 
@@ -174,7 +174,7 @@ class CustomizationManager {
     try {
       const result = await window.electronAPI.selectCustomFile('css');
 
-      if (result.canceled || !result.filePath) {
+      if (!result.success) {
         return;
       }
 
@@ -203,7 +203,7 @@ class CustomizationManager {
     try {
       const result = await window.electronAPI.selectCustomFile('js');
 
-      if (result.canceled || !result.filePath) {
+      if (!result.success) {
         return;
       }
 

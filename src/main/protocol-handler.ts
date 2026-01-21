@@ -8,11 +8,12 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 import * as crypto from 'crypto';
 import AdmZip from 'adm-zip';
-
-import packageJson from '../../package.json';
-import sharedStore from './store';
-import ModUtils from './mod-utils';
 import { RequestOptions } from 'https';
+
+import ModUtils from './mod-utils';
+import sharedStore from './store';
+
+const packageJson: { version: string } = require('../../package.json');
 
 const USER_AGENT = `FightPlanner/${packageJson.version} (Electron ${process.versions.electron}; Node ${process.versions.node}; ${process.platform})`;
 

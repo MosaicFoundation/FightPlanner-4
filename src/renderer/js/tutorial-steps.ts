@@ -120,7 +120,7 @@ let steps = [
       // Load saved answer
       if (window.tutorialAPI) {
         try {
-          const hardwareType = await window.tutorialAPI.getSetting(
+          const hardwareType = await window.tutorialAPI.store.get(
             'tutorial.hardwareType',
           );
           if (hardwareType) {
@@ -151,7 +151,7 @@ let steps = [
 
         if (hardwareSelected && window.tutorialAPI) {
           const hardwareType = hardwareSelected.value;
-          await window.tutorialAPI.saveSetting(
+          await window.tutorialAPI.store.set(
             'tutorial.hardwareType',
             hardwareType,
           );
@@ -276,7 +276,7 @@ let steps = [
       // Load saved answer
       if (window.tutorialAPI) {
         try {
-          const arcropolisInstalled = await window.tutorialAPI.getSetting(
+          const arcropolisInstalled = await window.tutorialAPI.store.get(
             'tutorial.arcropolisInstalled',
           );
           if (
@@ -311,7 +311,7 @@ let steps = [
 
         if (arcropolisSelected && window.tutorialAPI) {
           const arcropolisInstalled = arcropolisSelected.value === 'yes';
-          await window.tutorialAPI.saveSetting(
+          await window.tutorialAPI.store.set(
             'tutorial.arcropolisInstalled',
             arcropolisInstalled,
           );
@@ -357,10 +357,10 @@ let steps = [
 `,
     onRender: async () => {
       // Check if this step should be shown
-      const hardwareType = await window.tutorialAPI.getSetting(
+      const hardwareType = await window.tutorialAPI.store.get(
         'tutorial.hardwareType',
       );
-      const arcropolisInstalled = await window.tutorialAPI.getSetting(
+      const arcropolisInstalled = await window.tutorialAPI.store.get(
         'tutorial.arcropolisInstalled',
       );
 
@@ -408,7 +408,7 @@ let steps = [
             } else if (drives.length === 1) {
               const drive = drives[0];
               const sdPath = drive.path;
-              await window.tutorialAPI.saveSetting('tutorial.sdDrive', sdPath);
+              await window.tutorialAPI.store.set('tutorial.sdDrive', sdPath);
 
               statusDiv!.innerHTML = `
                             <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
@@ -432,7 +432,7 @@ let steps = [
                 ?.addEventListener('click', async () => {
                   const result = await window.tutorialAPI.selectDrive();
                   if (result.success && !result.canceled) {
-                    await window.tutorialAPI.saveSetting(
+                    await window.tutorialAPI.store.set(
                       'tutorial.sdDrive',
                       result.path,
                     );
@@ -456,7 +456,7 @@ let steps = [
                       ?.addEventListener('click', async () => {
                         const result2 = await window.tutorialAPI.selectDrive();
                         if (result2.success && !result2.canceled) {
-                          await window.tutorialAPI.saveSetting(
+                          await window.tutorialAPI.store.set(
                             'tutorial.sdDrive',
                             result2.path,
                           );
@@ -506,7 +506,7 @@ let steps = [
                 .forEach((btn) => {
                   btn.addEventListener('click', async () => {
                     const path = btn.dataset.path;
-                    await window.tutorialAPI.saveSetting(
+                    await window.tutorialAPI.store.set(
                       'tutorial.sdDrive',
                       path,
                     );
@@ -532,7 +532,7 @@ let steps = [
                 ?.addEventListener('click', async () => {
                   const result = await window.tutorialAPI.selectDrive();
                   if (result.success && !result.canceled) {
-                    await window.tutorialAPI.saveSetting(
+                    await window.tutorialAPI.store.set(
                       'tutorial.sdDrive',
                       result.path,
                     );
@@ -569,7 +569,7 @@ let steps = [
             ?.addEventListener('click', async () => {
               const result = await window.tutorialAPI.selectDrive();
               if (result.success && !result.canceled) {
-                await window.tutorialAPI.saveSetting(
+                await window.tutorialAPI.store.set(
                   'tutorial.sdDrive',
                   result.path,
                 );
@@ -615,10 +615,10 @@ let steps = [
 </div>
 `,
     onRender: async () => {
-      const hardwareType = await window.tutorialAPI?.getSetting(
+      const hardwareType = await window.tutorialAPI?.store.get(
         'tutorial.hardwareType',
       );
-      const arcropolisInstalled = await window.tutorialAPI?.getSetting(
+      const arcropolisInstalled = await window.tutorialAPI?.store.get(
         'tutorial.arcropolisInstalled',
       );
 
@@ -642,7 +642,10 @@ let steps = [
       }
 
       try {
-        const sdDrive = await window.tutorialAPI.getSetting('tutorial.sdDrive');
+        const sdDrive = (await window.tutorialAPI.store.get(
+          'tutorial.sdDrive',
+        )) as string | null;
+
         if (!sdDrive) {
           statusDiv!.innerHTML =
             '<div style="color: #ff4d4d;">Error: SD card path not found. Please go back and select your SD card.</div>';
@@ -849,10 +852,10 @@ let steps = [
 </div>
 `,
     onRender: async () => {
-      const hardwareType = await window.tutorialAPI?.getSetting(
+      const hardwareType = await window.tutorialAPI?.store.get(
         'tutorial.hardwareType',
       );
-      const arcropolisInstalled = await window.tutorialAPI?.getSetting(
+      const arcropolisInstalled = await window.tutorialAPI?.store.get(
         'tutorial.arcropolisInstalled',
       );
 
@@ -895,10 +898,7 @@ let steps = [
       }
 
       verifyYesBtn?.addEventListener('click', async () => {
-        await window.tutorialAPI.saveSetting(
-          'tutorial.arcropolisVerified',
-          true,
-        );
+        await window.tutorialAPI.store.set('tutorial.arcropolisVerified', true);
         const statusDiv = document.querySelector<HTMLElement>(
           '#verification-status',
         );
@@ -970,10 +970,10 @@ let steps = [
 </div>
 `,
     onRender: async () => {
-      const hardwareType = await window.tutorialAPI?.getSetting(
+      const hardwareType = await window.tutorialAPI?.store.get(
         'tutorial.hardwareType',
       );
-      const arcropolisInstalled = await window.tutorialAPI?.getSetting(
+      const arcropolisInstalled = await window.tutorialAPI?.store.get(
         'tutorial.arcropolisInstalled',
       );
 
@@ -997,7 +997,7 @@ let steps = [
       }
 
       yuzuBtn!.addEventListener('click', async () => {
-        await window.tutorialAPI.saveSetting('tutorial.emulatorType', 'yuzu');
+        await window.tutorialAPI.store.set('tutorial.emulatorType', 'yuzu');
         yuzuBtn!.style.background = 'rgba(76, 175, 80, 0.2)';
         yuzuBtn!.style.borderColor = 'rgba(76, 175, 80, 0.5)';
         ryujinxBtn!.style.background = 'rgba(122, 155, 255, 0.1)';
@@ -1011,10 +1011,7 @@ let steps = [
       });
 
       ryujinxBtn!.addEventListener('click', async () => {
-        await window.tutorialAPI.saveSetting(
-          'tutorial.emulatorType',
-          'ryujinx',
-        );
+        await window.tutorialAPI.store.set('tutorial.emulatorType', 'ryujinx');
         ryujinxBtn!.style.background = 'rgba(76, 175, 80, 0.2)';
         ryujinxBtn!.style.borderColor = 'rgba(76, 175, 80, 0.5)';
         yuzuBtn!.style.background = 'rgba(122, 155, 255, 0.1)';
@@ -1028,7 +1025,7 @@ let steps = [
       });
 
       // Load saved selection
-      const emulatorType = await window.tutorialAPI?.getSetting(
+      const emulatorType = await window.tutorialAPI?.store.get(
         'tutorial.emulatorType',
       );
       if (emulatorType === 'yuzu') {
@@ -1058,13 +1055,13 @@ let steps = [
 </div>
 `,
     onRender: async () => {
-      const hardwareType = await window.tutorialAPI?.getSetting(
+      const hardwareType = await window.tutorialAPI?.store.get(
         'tutorial.hardwareType',
       );
-      const emulatorType = await window.tutorialAPI?.getSetting(
+      const emulatorType = await window.tutorialAPI?.store.get(
         'tutorial.emulatorType',
       );
-      const arcropolisInstalled = await window.tutorialAPI?.getSetting(
+      const arcropolisInstalled = await window.tutorialAPI?.store.get(
         'tutorial.arcropolisInstalled',
       );
 
@@ -1093,10 +1090,7 @@ let steps = [
       try {
         const result = await window.tutorialAPI.detectYuzuPath();
         if (result.success && result.path) {
-          await window.tutorialAPI.saveSetting(
-            'tutorial.yuzuPath',
-            result.path,
-          );
+          await window.tutorialAPI.store.set('tutorial.yuzuPath', result.path);
           statusDiv!.innerHTML = `
                     <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
@@ -1119,7 +1113,7 @@ let steps = [
             ?.addEventListener('click', async () => {
               const path = await window.tutorialAPI.selectFolder();
               if (path) {
-                await window.tutorialAPI.saveSetting('tutorial.yuzuPath', path);
+                await window.tutorialAPI.store.set('tutorial.yuzuPath', path);
                 statusDiv!.innerHTML = `
                             <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                                 <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -1140,7 +1134,7 @@ let steps = [
                   ?.addEventListener('click', async () => {
                     const path2 = await window.tutorialAPI.selectFolder();
                     if (path2) {
-                      await window.tutorialAPI.saveSetting(
+                      await window.tutorialAPI.store.set(
                         'tutorial.yuzuPath',
                         path2,
                       );
@@ -1178,7 +1172,7 @@ let steps = [
             ?.addEventListener('click', async () => {
               const path = await window.tutorialAPI.selectFolder();
               if (path) {
-                await window.tutorialAPI.saveSetting('tutorial.yuzuPath', path);
+                await window.tutorialAPI.store.set('tutorial.yuzuPath', path);
                 statusDiv!.innerHTML = `
                             <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                                 <div style="display: flex; align-items: center; gap: 12px;">
@@ -1219,13 +1213,13 @@ let steps = [
 </div>
 `,
     onRender: async () => {
-      const hardwareType = await window.tutorialAPI?.getSetting(
+      const hardwareType = await window.tutorialAPI?.store.get(
         'tutorial.hardwareType',
       );
-      const emulatorType = await window.tutorialAPI?.getSetting(
+      const emulatorType = await window.tutorialAPI?.store.get(
         'tutorial.emulatorType',
       );
-      const arcropolisInstalled = await window.tutorialAPI?.getSetting(
+      const arcropolisInstalled = await window.tutorialAPI?.store.get(
         'tutorial.arcropolisInstalled',
       );
 
@@ -1254,8 +1248,10 @@ let steps = [
       }
 
       try {
-        const yuzuPath =
-          await window.tutorialAPI.getSetting('tutorial.yuzuPath');
+        const yuzuPath = (await window.tutorialAPI.store.get(
+          'tutorial.yuzuPath',
+        )) as string | null;
+
         if (!yuzuPath) {
           statusDiv!.innerHTML =
             '<div style="color: #ff4d4d;">Error: Yuzu path not found. Please go back and select your Yuzu folder.</div>';
@@ -1420,13 +1416,13 @@ let steps = [
 </div>
 `,
     onRender: async () => {
-      const hardwareType = await window.tutorialAPI?.getSetting(
+      const hardwareType = await window.tutorialAPI?.store.get(
         'tutorial.hardwareType',
       );
-      const emulatorType = await window.tutorialAPI?.getSetting(
+      const emulatorType = await window.tutorialAPI?.store.get(
         'tutorial.emulatorType',
       );
-      const arcropolisInstalled = await window.tutorialAPI?.getSetting(
+      const arcropolisInstalled = await window.tutorialAPI?.store.get(
         'tutorial.arcropolisInstalled',
       );
 
@@ -1476,21 +1472,22 @@ let steps = [
       }
 
       verifyYesBtn?.addEventListener('click', async () => {
-        await window.tutorialAPI.saveSetting(
-          'tutorial.arcropolisVerified',
-          true,
-        );
+        await window.tutorialAPI.store.set('tutorial.arcropolisVerified', true);
 
         // Check for arcropolis folder
-        const yuzuPath =
-          await window.tutorialAPI.getSetting('tutorial.yuzuPath');
+        const yuzuPath = (await window.tutorialAPI.store.get(
+          'tutorial.yuzuPath',
+        )) as string;
+
         const ultimatePathResult = await window.tutorialAPI.joinPath(
           yuzuPath,
           'sdmc',
           'ultimate',
         );
+
         if (!ultimatePathResult.success)
           throw new Error('Failed to construct ultimate path');
+
         const ultimatePath = ultimatePathResult.path;
         const arcropolisExists =
           await window.tutorialAPI.checkArcropolisFolder(ultimatePath);
@@ -1526,8 +1523,8 @@ let steps = [
         );
         if (!pluginsPathResult.success)
           throw new Error('Failed to construct plugins path');
-        await window.tutorialAPI.saveSetting('modsPath', modsPathResult.path);
-        await window.tutorialAPI.saveSetting(
+        await window.tutorialAPI.store.set('modsPath', modsPathResult.path);
+        await window.tutorialAPI.store.set(
           'pluginsPath',
           pluginsPathResult.path,
         );
@@ -1599,13 +1596,13 @@ let steps = [
 </div>
 `,
     onRender: async () => {
-      const hardwareType = await window.tutorialAPI?.getSetting(
+      const hardwareType = await window.tutorialAPI?.store.get(
         'tutorial.hardwareType',
       );
-      const emulatorType = await window.tutorialAPI?.getSetting(
+      const emulatorType = await window.tutorialAPI?.store.get(
         'tutorial.emulatorType',
       );
-      const arcropolisInstalled = await window.tutorialAPI?.getSetting(
+      const arcropolisInstalled = await window.tutorialAPI?.store.get(
         'tutorial.arcropolisInstalled',
       );
 
@@ -1634,7 +1631,7 @@ let steps = [
       try {
         const result = await window.tutorialAPI.detectRyujinxPath();
         if (result.success && result.path) {
-          await window.tutorialAPI.saveSetting(
+          await window.tutorialAPI.store.set(
             'tutorial.ryujinxPath',
             result.path,
           );
@@ -1660,7 +1657,7 @@ let steps = [
             ?.addEventListener('click', async () => {
               const path = await window.tutorialAPI.selectFolder();
               if (path) {
-                await window.tutorialAPI.saveSetting(
+                await window.tutorialAPI.store.set(
                   'tutorial.ryujinxPath',
                   path,
                 );
@@ -1684,7 +1681,7 @@ let steps = [
                   ?.addEventListener('click', async () => {
                     const path2 = await window.tutorialAPI.selectFolder();
                     if (path2) {
-                      await window.tutorialAPI.saveSetting(
+                      await window.tutorialAPI.store.set(
                         'tutorial.ryujinxPath',
                         path2,
                       );
@@ -1722,7 +1719,7 @@ let steps = [
             ?.addEventListener('click', async () => {
               const path = await window.tutorialAPI.selectFolder();
               if (path) {
-                await window.tutorialAPI.saveSetting(
+                await window.tutorialAPI.store.set(
                   'tutorial.ryujinxPath',
                   path,
                 );
@@ -1766,13 +1763,13 @@ let steps = [
 </div>
 `,
     onRender: async () => {
-      const hardwareType = await window.tutorialAPI.getSetting(
+      const hardwareType = await window.tutorialAPI.store.get(
         'tutorial.hardwareType',
       );
-      const emulatorType = await window.tutorialAPI.getSetting(
+      const emulatorType = await window.tutorialAPI.store.get(
         'tutorial.emulatorType',
       );
-      const arcropolisInstalled = await window.tutorialAPI.getSetting(
+      const arcropolisInstalled = await window.tutorialAPI.store.get(
         'tutorial.arcropolisInstalled',
       );
 
@@ -1801,9 +1798,10 @@ let steps = [
       }
 
       try {
-        const ryujinxPath = await window.tutorialAPI.getSetting(
+        const ryujinxPath = (await window.tutorialAPI.store.get(
           'tutorial.ryujinxPath',
-        );
+        )) as string | null;
+
         if (!ryujinxPath) {
           statusDiv!.innerHTML =
             '<div style="color: #ff4d4d;">Error: Ryujinx path not found. Please go back and select your Ryujinx folder.</div>';
@@ -1813,9 +1811,12 @@ let steps = [
         // Get latest releases (Skyline for exefs, ARCropolis for romfs)
         statusDiv!.innerHTML =
           '<div style="color: #fff;">Fetching latest releases...</div>';
+
         const skylineRelease = await window.tutorialAPI.getSkylineRelease();
+
         if (!skylineRelease.success)
           throw new Error('Failed to get Skyline release');
+
         const arcropolisRelease = await window.tutorialAPI.getGithubRelease();
         if (!arcropolisRelease.success)
           throw new Error('Failed to get ARCropolis release');
@@ -1823,20 +1824,25 @@ let steps = [
         // Download Skyline
         statusDiv!.innerHTML =
           '<div style="color: #fff;">Downloading Skyline (exefs)...</div>';
+
         const tempDirResult = await window.tutorialAPI.getTempDir();
         if (!tempDirResult.success)
           throw new Error('Failed to get temp directory');
+
         const skylineTempPathResult = await window.tutorialAPI.joinPath(
-          tempDirResult.path,
+          tempDirResult.path!,
           `skyline-${Date.now()}.zip`,
         );
+
         if (!skylineTempPathResult.success)
           throw new Error('Failed to construct temp path');
+
         const skylineTempPath = skylineTempPathResult.path;
+
         const skylineDownloadResult =
           await window.tutorialAPI.downloadArcropolis(
-            skylineRelease.downloadUrl,
-            skylineTempPath,
+            skylineRelease.downloadUrl!,
+            skylineTempPath!,
           );
         if (!skylineDownloadResult.success)
           throw new Error('Skyline download failed');
@@ -1851,11 +1857,13 @@ let steps = [
         if (!arcropolisTempPathResult.success)
           throw new Error('Failed to construct temp path');
         const arcropolisTempPath = arcropolisTempPathResult.path;
+
         const arcropolisDownloadResult =
           await window.tutorialAPI.downloadArcropolis(
             arcropolisRelease.downloadUrl,
             arcropolisTempPath,
           );
+
         if (!arcropolisDownloadResult.success)
           throw new Error('ARCropolis download failed');
 
@@ -1972,13 +1980,13 @@ let steps = [
 </div>
 `,
     onRender: async () => {
-      const hardwareType = await window.tutorialAPI?.getSetting(
+      const hardwareType = await window.tutorialAPI?.store.get(
         'tutorial.hardwareType',
       );
-      const emulatorType = await window.tutorialAPI?.getSetting(
+      const emulatorType = await window.tutorialAPI?.store.get(
         'tutorial.emulatorType',
       );
-      const arcropolisInstalled = await window.tutorialAPI?.getSetting(
+      const arcropolisInstalled = await window.tutorialAPI?.store.get(
         'tutorial.arcropolisInstalled',
       );
 
@@ -2028,23 +2036,23 @@ let steps = [
       }
 
       verifyYesBtn?.addEventListener('click', async () => {
-        await window.tutorialAPI.saveSetting(
-          'tutorial.arcropolisVerified',
-          true,
-        );
+        await window.tutorialAPI.store.set('tutorial.arcropolisVerified', true);
 
         // Auto-configure paths
-        const ryujinxPath = await window.tutorialAPI.getSetting(
+        const ryujinxPath = (await window.tutorialAPI.store.get(
           'tutorial.ryujinxPath',
-        );
+        )) as string;
+
         const modsPathResult = await window.tutorialAPI.joinPath(
           ryujinxPath,
           'sdcard',
           'ultimate',
           'mods',
         );
+
         if (!modsPathResult.success)
           throw new Error('Failed to construct mods path');
+
         const pluginsPathResult = await window.tutorialAPI.joinPath(
           ryujinxPath,
           'sdcard',
@@ -2057,8 +2065,8 @@ let steps = [
         );
         if (!pluginsPathResult.success)
           throw new Error('Failed to construct plugins path');
-        await window.tutorialAPI.saveSetting('modsPath', modsPathResult.path);
-        await window.tutorialAPI.saveSetting(
+        await window.tutorialAPI.store.set('modsPath', modsPathResult.path);
+        await window.tutorialAPI.store.set(
           'pluginsPath',
           pluginsPathResult.path,
         );
@@ -2155,7 +2163,7 @@ let steps = [
       // Update description based on hardware type
       if (description && window.tutorialAPI) {
         try {
-          const hardwareType = await window.tutorialAPI.getSetting(
+          const hardwareType = await window.tutorialAPI.store.get(
             'tutorial.hardwareType',
           );
           if (hardwareType === 'hardware') {
@@ -2177,11 +2185,14 @@ let steps = [
         nextBtn.style.cursor = 'not-allowed';
       }
 
-      if (!window.tutorialAPI || !window.tutorialAPI.getSetting) return;
+      if (!window.tutorialAPI || !window.tutorialAPI.store.get) return;
 
       // Load existing setting
       try {
-        const currentPath = await window.tutorialAPI.getSetting('modsPath');
+        const currentPath = (await window.tutorialAPI.store.get('modsPath')) as
+          | string
+          | null;
+
         if (currentPath) {
           display!.textContent = currentPath;
           display!.style.color = '#fff';
@@ -2212,7 +2223,7 @@ let steps = [
             const path = await window.tutorialAPI.selectFolder();
             if (path) {
               // Save setting
-              await window.tutorialAPI.saveSetting('modsPath', path);
+              await window.tutorialAPI.store.set('modsPath', path);
 
               // Update UI
               display!.textContent = path;
@@ -2383,10 +2394,10 @@ async function getNextRelevantStep(currentIndex) {
   }
 
   try {
-    const hardwareType = await window.tutorialAPI.getSetting(
+    const hardwareType = await window.tutorialAPI.store.get(
       'tutorial.hardwareType',
     );
-    const arcropolisInstalled = await window.tutorialAPI.getSetting(
+    const arcropolisInstalled = await window.tutorialAPI.store.get(
       'tutorial.arcropolisInstalled',
     );
 
@@ -2415,7 +2426,7 @@ async function getNextRelevantStep(currentIndex) {
 
     // If on emulator and ARCropolis not installed
     if (hardwareType === 'emulator' && arcropolisInstalled === false) {
-      const emulatorType = await window.tutorialAPI.getSetting(
+      const emulatorType = await window.tutorialAPI.store.get(
         'tutorial.emulatorType',
       );
 
@@ -2507,7 +2518,10 @@ async function initializeTutorial() {
       } else {
         console.log('ℹ️ No migration detected or already processed');
         console.log('   - success:', migrationStatus.success);
-        console.log('   - completed:', migrationStatus.completed);
+        console.log(
+          '   - completed:',
+          'completed' in migrationStatus && migrationStatus.completed,
+        );
       }
     } catch (error) {
       console.error('❌ Error checking migration status:', error);
@@ -2610,10 +2624,10 @@ async function renderProgressDots() {
 
   if (window.tutorialAPI) {
     try {
-      const hardwareType = await window.tutorialAPI.getSetting(
+      const hardwareType = await window.tutorialAPI.store.get(
         'tutorial.hardwareType',
       );
-      const arcropolisInstalled = await window.tutorialAPI.getSetting(
+      const arcropolisInstalled = await window.tutorialAPI.store.get(
         'tutorial.arcropolisInstalled',
       );
 
@@ -2628,14 +2642,15 @@ async function renderProgressDots() {
           // Emulator flow - only show emulator selection first
           visibleSteps.push(6); // Emulator Selection
 
-          const emulatorType = await window.tutorialAPI.getSetting(
+          const emulatorTypeResponse = await window.tutorialAPI.store.get(
             'tutorial.emulatorType',
           );
-          if (emulatorType === 'yuzu') {
+
+          if (emulatorTypeResponse === 'yuzu') {
             visibleSteps.push(7); // Yuzu Setup
             visibleSteps.push(8); // Installing Skyline & ARCropolis (Yuzu)
             visibleSteps.push(9); // Verify ARCropolis (Yuzu)
-          } else if (emulatorType === 'ryujinx') {
+          } else if (emulatorTypeResponse === 'ryujinx') {
             visibleSteps.push(10); // Ryujinx Setup
             visibleSteps.push(11); // Installing Skyline & ARCropolis (Ryujinx)
             visibleSteps.push(12); // Verify ARCropolis (Ryujinx)
@@ -2964,7 +2979,8 @@ function setupDiscordLinks(container: HTMLElement) {
 
     newLink.addEventListener('click', async (e) => {
       e.preventDefault();
-      const url = newLink.getAttribute('href');
+      const url = newLink.getAttribute('href')!;
+
       if (window.tutorialAPI && window.tutorialAPI.openUrl) {
         try {
           await window.tutorialAPI.openUrl(url);

@@ -9,6 +9,16 @@ import { CONFLICT_WHITELIST_PATTERNS } from './config';
 import { ModInstallResult } from './plugin-update-installer';
 import _7z from '7zip-min';
 
+interface ModInfo {
+  display_name: string;
+  description: string;
+  s_name?: string;
+  authors?: string;
+  version?: string;
+  category?: string;
+  url?: string;
+}
+
 export interface Slot {
   path: string;
   type: 'file' | 'directory';
@@ -107,7 +117,7 @@ export default class ModUtils {
    * @param {string} modFolderPath - Path to the mod folder
    * @returns {Object|null} Mod info object or null if not found/error
    */
-  static readModInfo(modFolderPath: string) {
+  static readModInfo(modFolderPath: string): ModInfo | null {
     try {
       const infoPath = path.join(modFolderPath, 'info.toml');
 
@@ -117,7 +127,7 @@ export default class ModUtils {
 
       const content = fs.readFileSync(infoPath, 'utf8');
 
-      const info: Record<string, string> = {};
+      const info: Partial<ModInfo> = {};
       const lines = content.split('\n');
 
       let currentKey: string | null = null;
@@ -183,7 +193,7 @@ export default class ModUtils {
         }
       });
 
-      return info;
+      return info as ModInfo;
     } catch (error) {
       console.error('Error reading mod info:', error);
       return null;
@@ -215,7 +225,10 @@ export default class ModUtils {
    * @param {string} modFolderPath - Path to the mod folder
    * @returns {Array<Object>} Array of slot objects with slot number and files
    */
-  static scanModForSlots(modFolderPath: string) {
+  static scanModForSlots(modFolderPath: string): {
+    slot: number;
+    files: Slot[];
+  }[] {
     const slots: Record<number, Slot[]> = {};
 
     try {
@@ -252,6 +265,7 @@ export default class ModUtils {
                 const exists = slots[slotNum].some(
                   (item) => item.path === relPath,
                 );
+
                 if (!exists) {
                   slots[slotNum].push({
                     path: relPath,
@@ -311,6 +325,7 @@ export default class ModUtils {
             if (a.type !== b.type) {
               return a.type === 'directory' ? -1 : 1;
             }
+
             return a.path.localeCompare(b.path);
           }),
         }))
@@ -337,7 +352,11 @@ export default class ModUtils {
    * @param {string|null} excludeModPath - Optional mod path to exclude from check
    * @returns {Array<number>} Array of used slot numbers (0-7)
    */
-  static getUsedSlotsForFighter(modsPath, fighterId, excludeModPath = null) {
+  static getUsedSlotsForFighter(
+    modsPath,
+    fighterId,
+    excludeModPath: string | null = null,
+  ) {
     const usedSlots: Set<number> = new Set();
     const slotPattern = /c0[0-7]/gi;
 
@@ -423,7 +442,7 @@ export default class ModUtils {
    * @param {string} fighterId - Fighter ID to scan
    * @returns {Array<number>} Array of slot numbers used by this fighter
    */
-  static scanModForSlotsByFighter(modFolderPath, fighterId) {
+  static scanModForSlotsByFighter(modFolderPath: string, fighterId: string) {
     const slots: Set<number> = new Set();
     const slotPattern = /c0[0-7]/gi;
 
@@ -658,7 +677,10 @@ export default class ModUtils {
    * @param {Array<string>} whitelistPatterns - Patterns to exclude from conflict detection
    * @returns {Promise<Array<Object>>} Array of conflict objects with filePath and mods
    */
-  static async detectConflicts(activeMods, whitelistPatterns = []) {
+  static async detectConflicts(
+    activeMods: Mod[],
+    whitelistPatterns: string[] = [],
+  ) {
     const conflicts: {
       filePath: string;
       mods: { name: string; path: string }[];

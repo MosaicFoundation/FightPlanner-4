@@ -275,7 +275,7 @@ ${
     }
   }
 
-  async togglePlugin(pluginId) {
+  async togglePlugin(pluginId: string) {
     const plugin = this.plugins.find((p) => p.id === pluginId);
     if (!plugin) return;
 
@@ -294,7 +294,7 @@ ${
     try {
       const result = await window.electronAPI.togglePlugin(
         plugin.filePath,
-        this.pluginsPath,
+        this.pluginsPath!,
       );
 
       if (result.success) {
@@ -415,7 +415,7 @@ ${
     try {
       const result = await window.electronAPI.readPluginsFolder(pluginsPath);
 
-      if (result.error) {
+      if (!result.success) {
         console.error('Error reading plugins:', result.error);
         this.loadPlugins([]);
         return;

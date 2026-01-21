@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { IpcMain } from 'electron';
 import * as https from 'https';
 import { getProtocolHandler } from '../../main-protocol-setup';
 import {
@@ -6,9 +6,16 @@ import {
   createErrorResponse,
   ErrorCodes,
 } from '../../utils/error-handler';
+import { HandlerResponse } from '../../types/common';
 
-export function registerProtocolHandlers(ipcMain) {
-  ipcMain.handle('confirm-protocol-install', async (event, url, downloadId) => {
+export const protocolHandlerMap = {
+  'confirm-protocol-install': 'confirmProtocolInstall',
+  'cancel-protocol-install': 'cancelProtocolInstall',
+  'fetch-gamebanana-preview': 'fetchGameBananaPreview',
+} as const;
+
+export const ProtocolHandlers = {
+  confirmProtocolInstall: async (url: string, downloadId: string) => {
     try {
       const protocolHandler = getProtocolHandler();
       if (protocolHandler) {
@@ -23,9 +30,9 @@ export function registerProtocolHandlers(ipcMain) {
       handleError(error, 'confirm-protocol-install');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('cancel-protocol-install', async (event, downloadId) => {
+  cancelProtocolInstall: async (downloadId: string) => {
     try {
       const protocolHandler = getProtocolHandler();
       if (protocolHandler && protocolHandler.pendingInstalls) {
@@ -37,9 +44,13 @@ export function registerProtocolHandlers(ipcMain) {
       handleError(error, 'cancel-protocol-install');
       return { success: false };
     }
-  });
+  },
 
-  ipcMain.handle('fetch-gamebanana-preview', async (event, modId) => {
+  fetchGameBananaPreview: async (
+    modId: string,
+  ): HandlerResponse<{
+    imageUrl: string;
+  }> => {
     try {
       const apiUrl = `https://gamebanana.com/apiv11/Mod/${modId}?_csvProperties=%40gbprofile`;
 
@@ -91,5 +102,17 @@ export function registerProtocolHandlers(ipcMain) {
       handleError(error, 'fetch-gamebanana-preview');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
+};
+
+/**
+ * Register all IPC handlers related to protocol operations
+ * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
+ */
+export function registerProtocolHandlers(ipcMain: IpcMain) {
+  for (const channel of Object.keys(protocolHandlerMap)) {
+    ipcMain.handle(channel, (event, ...args) => {
+      return ProtocolHandlers[protocolHandlerMap[channel]].call(event, ...args);
+    });
+  }
 }

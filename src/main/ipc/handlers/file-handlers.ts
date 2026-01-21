@@ -1,22 +1,36 @@
-import { BrowserWindow, dialog, shell, ipcMain } from 'electron';
+import { BrowserWindow, dialog, shell, IpcMain } from 'electron';
 import * as fs from 'fs';
 import {
   handleError,
   createErrorResponse,
   ErrorCodes,
 } from '../../utils/error-handler';
+import { HandlerResponse } from '../../types/common';
 
-export function registerFileHandlers(ipcMain) {
-  ipcMain.handle('select-folder', async (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender)!;
+export const fileHandlerMap = {
+  'select-folder': 'selectFolder',
+  'select-emulator-file': 'selectEmulatorFile',
+  'select-game-file': 'selectGameFile',
+  'select-mod-file': 'selectModFile',
+  'select-custom-file': 'selectCustomFile',
+  'open-folder': 'openFolder',
+  'open-file': 'openFile',
+  'read-custom-file': 'readCustomFile',
+  'save-file-dialog': 'saveFileDialog',
+  'write-file': 'writeFile',
+} as const;
+
+export const FileHandlers = {
+  async selectFolder() {
+    const win = BrowserWindow.fromWebContents(this.sender)!;
     const result = await dialog.showOpenDialog(win, {
       properties: ['openDirectory'],
     });
     return result.canceled ? null : result.filePaths[0];
-  });
+  },
 
-  ipcMain.handle('select-emulator-file', async (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender)!;
+  async selectEmulatorFile() {
+    const win = BrowserWindow.fromWebContents(this.sender)!;
     const result = await dialog.showOpenDialog(win, {
       properties: ['openFile'],
       filters: [
@@ -25,10 +39,10 @@ export function registerFileHandlers(ipcMain) {
       ],
     });
     return result.canceled ? null : result.filePaths[0];
-  });
+  },
 
-  ipcMain.handle('select-game-file', async (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender)!;
+  async selectGameFile() {
+    const win = BrowserWindow.fromWebContents(this.sender)!;
     const result = await dialog.showOpenDialog(win, {
       properties: ['openFile'],
       filters: [
@@ -40,11 +54,13 @@ export function registerFileHandlers(ipcMain) {
       ],
     });
     return result.canceled ? null : result.filePaths[0];
-  });
+  },
 
-  ipcMain.handle('select-mod-file', async (event) => {
+  async selectModFile(): HandlerResponse<{
+    filePath: string;
+  }> {
     try {
-      const win = BrowserWindow.fromWebContents(event.sender)!;
+      const win = BrowserWindow.fromWebContents(this.sender)!;
       const result = await dialog.showOpenDialog(win, {
         properties: ['openFile'],
         filters: [
@@ -68,9 +84,11 @@ export function registerFileHandlers(ipcMain) {
       handleError(error, 'select-mod-file');
       return createErrorResponse(ErrorCodes.FILE_READ_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('select-custom-file', async (event, fileType) => {
+  async selectCustomFile(fileType: string): HandlerResponse<{
+    filePath: string;
+  }> {
     try {
       const filters =
         fileType === 'css'
@@ -84,21 +102,20 @@ export function registerFileHandlers(ipcMain) {
       });
 
       if (result.canceled) {
-        return { canceled: true };
+        return { success: false, canceled: true };
       }
 
       return {
         success: true,
         filePath: result.filePaths[0],
-        canceled: false,
       };
     } catch (error) {
       handleError(error, 'select-custom-file');
       return createErrorResponse(ErrorCodes.FILE_READ_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('open-folder', async (event, folderPath) => {
+  async openFolder(folderPath: string): HandlerResponse {
     try {
       if (fs.existsSync(folderPath)) {
         await shell.openPath(folderPath);
@@ -113,9 +130,9 @@ export function registerFileHandlers(ipcMain) {
       handleError(error, 'open-folder');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('open-file', async (event, filePath) => {
+  async openFile(filePath: string) {
     try {
       if (fs.existsSync(filePath)) {
         await shell.openPath(filePath);
@@ -130,9 +147,11 @@ export function registerFileHandlers(ipcMain) {
       handleError(error, 'open-file');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('read-custom-file', async (event, filePath) => {
+  async readCustomFile(filePath: string): HandlerResponse<{
+    content: string;
+  }> {
     try {
       if (!fs.existsSync(filePath)) {
         return createErrorResponse(
@@ -147,11 +166,11 @@ export function registerFileHandlers(ipcMain) {
       handleError(error, 'read-custom-file');
       return createErrorResponse(ErrorCodes.FILE_READ_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('save-file-dialog', async (event, defaultPath, filters) => {
+  async saveFileDialog(defaultPath: string, filters: any) {
     try {
-      const win = BrowserWindow.fromWebContents(event.sender)!;
+      const win = BrowserWindow.fromWebContents(this.sender)!;
       const result = await dialog.showSaveDialog(win, {
         defaultPath: defaultPath,
         filters: filters || [
@@ -169,9 +188,9 @@ export function registerFileHandlers(ipcMain) {
       handleError(error, 'save-file-dialog');
       return createErrorResponse(ErrorCodes.FILE_WRITE_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('write-file', async (event, filePath, content) => {
+  async writeFile(filePath: string, content: string) {
     try {
       fs.writeFileSync(filePath, content, 'utf8');
       return { success: true };
@@ -179,5 +198,17 @@ export function registerFileHandlers(ipcMain) {
       handleError(error, 'write-file');
       return createErrorResponse(ErrorCodes.FILE_WRITE_ERROR, error.message);
     }
-  });
+  },
+};
+
+/**
+ * Register all IPC handlers related to file operations
+ * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
+ */
+export function registerFileHandlers(ipcMain: IpcMain) {
+  for (const channel of Object.keys(fileHandlerMap)) {
+    ipcMain.handle(channel, (event, ...args) => {
+      return FileHandlers[fileHandlerMap[channel]].call(event, ...args);
+    });
+  }
 }

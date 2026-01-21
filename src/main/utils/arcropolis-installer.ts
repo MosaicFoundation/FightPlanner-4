@@ -9,7 +9,12 @@ import PluginUpdateInstaller from '../plugin-update-installer';
  * @param {string} repo - Repository in format "owner/repo"
  * @returns {Promise<{tag: string, downloadUrl: string, version: string, name: string}>}
  */
-async function getLatestGitHubRelease(repo) {
+async function getLatestGitHubRelease(repo: string): Promise<{
+  tag: string;
+  downloadUrl: string;
+  version: string;
+  name: string;
+}> {
   return new Promise((resolve, reject) => {
     const options = {
       hostname: 'api.github.com',
@@ -95,7 +100,7 @@ export function downloadArcropolis(
     | ((receivedBytes: number, totalBytes: number) => void)
     | null = null,
 ) {
-  return new Promise((resolve, reject) => {
+  return new Promise<string>((resolve, reject) => {
     const file = fs.createWriteStream(targetPath);
 
     https

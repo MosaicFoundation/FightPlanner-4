@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { IpcMain } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import FTPClient from '../../ftp-client';
@@ -7,6 +7,7 @@ import {
   createErrorResponse,
   ErrorCodes,
 } from '../../utils/error-handler';
+import { HandlerResponse } from '../../types/common';
 
 /**
  * Copy directory recursively
@@ -185,8 +186,16 @@ async function sendModsToDrive(config) {
   }
 }
 
-export function registerFtpHandlers(ipcMain) {
-  ipcMain.handle('send-mods-to-switch', async (event, config) => {
+export const ftpHandlerMap = {
+  'send-mods-to-switch': 'sendModsToSwitch',
+} as const;
+
+export const FtpHandlers = {
+  sendModsToSwitch: async (
+    config: any,
+  ): HandlerResponse<{
+    transferredCount: number;
+  }> => {
     const transferMethod = config.switchTransferMethod || 'ftp';
 
     if (transferMethod === 'drive') {
@@ -275,5 +284,17 @@ export function registerFtpHandlers(ipcMain) {
       } catch (disconnectError) {}
       return createErrorResponse(ErrorCodes.FTP_TRANSFER_ERROR, error.message);
     }
-  });
+  },
+};
+
+/**
+ * Register all IPC handlers related to FTP operations
+ * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
+ */
+export function registerFtpHandlers(ipcMain: IpcMain) {
+  for (const channel of Object.keys(ftpHandlerMap)) {
+    ipcMain.handle(channel, (event, ...args) => {
+      return FtpHandlers[ftpHandlerMap[channel]].call(event, ...args);
+    });
+  }
 }

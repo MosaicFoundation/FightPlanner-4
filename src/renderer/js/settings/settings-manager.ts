@@ -417,7 +417,7 @@ class SettingsManager {
 
       options.forEach((option) => {
         option.addEventListener('click', async () => {
-          const value = option.dataset.value;
+          const value = option.dataset.value!;
           const text = option.querySelector<HTMLElement>('span')!.textContent;
 
           if (selectedValue) {
@@ -652,7 +652,7 @@ class SettingsManager {
       // Load current fake version
       window.electronAPI.store
         .get('developer.fakeVersion')
-        .then((fakeVersion) => {
+        .then((fakeVersion: string | null) => {
           if (fakeVersion) {
             fakeVersionInput.value = fakeVersion;
           }
@@ -1352,8 +1352,9 @@ ${t('settings.okUnderstand')}
       window.electronAPI.getAppVersion
     ) {
       try {
-        const version = await window.electronAPI.getAppVersion();
-        appVersionEl.textContent = version;
+        appVersionEl.textContent = (
+          await window.electronAPI.getAppVersion()
+        ).version;
       } catch (error) {
         console.error('Failed to get app version:', error);
       }

@@ -1,10 +1,15 @@
-import { ipcMain } from 'electron';
+import { IpcMain } from 'electron';
+import DiscordRPCManager from '../../discord-rpc';
 
-export function registerDiscordHandlers(ipcMain, discordRPC) {
-  ipcMain.on('discord-rpc-update', (event, data) => {
+export const discordEventMap = {
+  'discord-rpc-update': 'updateDiscordRPC',
+} as const;
+
+export const DiscordHandlers = {
+  async updateDiscordRPC(data: any) {
     console.log('Received discord-rpc-update:', data);
 
-    if (!discordRPC) {
+    if (!this.discordRPC) {
       console.warn('Discord RPC manager not initialized');
       return;
     }
@@ -14,32 +19,57 @@ export function registerDiscordHandlers(ipcMain, discordRPC) {
     switch (tab) {
       case 'tools':
         console.log(`Setting Mods tab with ${modCount} mods`);
-        discordRPC.setModsTab(modCount || 0);
+        this.discordRPC.setModsTab(modCount || 0);
         break;
+
       case 'plugins':
         console.log('Setting Plugins tab');
-        discordRPC.setPluginsTab();
+        this.discordRPC.setPluginsTab();
         break;
+
       case 'characters':
         console.log('Setting Characters tab');
-        discordRPC.setCharactersTab();
+        this.discordRPC.setCharactersTab();
         break;
+
       case 'downloads':
         console.log('Setting Downloads tab');
-        discordRPC.setDownloadsTab();
+        this.discordRPC.setDownloadsTab();
         break;
+
       case 'social':
         console.log('Setting Social tab');
-        discordRPC.setSocialTab();
+        this.discordRPC.setSocialTab();
         break;
+
       case 'settings':
         console.log('Setting Settings tab');
-        discordRPC.setSettingsTab();
+        this.discordRPC.setSettingsTab();
         break;
+
       default:
         console.log('Setting Idle state');
-        discordRPC.setIdleState();
+        this.discordRPC.setIdleState();
         break;
     }
-  });
+  },
+};
+
+/**
+ * Register all IPC event handlers related to Discord RPC operations
+ * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
+ * @param discordRPC - Discord RPC manager instance
+ */
+export function registerDiscordHandlers(
+  ipcMain: IpcMain,
+  discordRPC: DiscordRPCManager | null,
+) {
+  for (const channel of Object.keys(discordEventMap)) {
+    ipcMain.on(channel, (event, ...args) => {
+      DiscordHandlers[discordEventMap[channel]].call(
+        { event, discordRPC },
+        ...args,
+      );
+    });
+  }
 }
