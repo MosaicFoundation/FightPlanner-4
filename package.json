@@ -9,7 +9,7 @@
   },
   "license": "MIT",
   "scripts": {
-    "start": "npx nodemon --watch out --exec \"electron .\"",
+    "start": "npx nodemon --watch out --delay 1 --exec \"electron .\"",
     "ts:build": "tsc --build",
     "ts:watch": "tsc --build --watch",
     "dev:reload": "concurrently \"npm run ts:watch\" \"npm run start\"",

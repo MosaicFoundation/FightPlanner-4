@@ -1,15 +1,19 @@
 import { IpcMain } from 'electron';
 import DiscordRPCManager from '../../discord-rpc';
+import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
-export const discordEventMap = {
-  'discord-rpc-update': 'updateDiscordRPC',
-} as const;
+export type DiscordHandlers = typeof DiscordHandlers;
 
-export const DiscordHandlers = {
-  async updateDiscordRPC(data: any) {
+const DiscordHandlers = {
+  ['discord-rpc-update']: async (
+    common: BaseHandlerArg<{
+      discordRPC: DiscordRPCManager | null;
+    }>,
+    data: { tab: string; modCount?: number },
+  ) => {
     console.log('Received discord-rpc-update:', data);
 
-    if (!this.discordRPC) {
+    if (!common.discordRPC) {
       console.warn('Discord RPC manager not initialized');
       return;
     }
@@ -19,41 +23,41 @@ export const DiscordHandlers = {
     switch (tab) {
       case 'tools':
         console.log(`Setting Mods tab with ${modCount} mods`);
-        this.discordRPC.setModsTab(modCount || 0);
+        common.discordRPC.setModsTab(modCount || 0);
         break;
 
       case 'plugins':
         console.log('Setting Plugins tab');
-        this.discordRPC.setPluginsTab();
+        common.discordRPC.setPluginsTab();
         break;
 
       case 'characters':
         console.log('Setting Characters tab');
-        this.discordRPC.setCharactersTab();
+        common.discordRPC.setCharactersTab();
         break;
 
       case 'downloads':
         console.log('Setting Downloads tab');
-        this.discordRPC.setDownloadsTab();
+        common.discordRPC.setDownloadsTab();
         break;
 
       case 'social':
         console.log('Setting Social tab');
-        this.discordRPC.setSocialTab();
+        common.discordRPC.setSocialTab();
         break;
 
       case 'settings':
         console.log('Setting Settings tab');
-        this.discordRPC.setSettingsTab();
+        common.discordRPC.setSettingsTab();
         break;
 
       default:
         console.log('Setting Idle state');
-        this.discordRPC.setIdleState();
+        common.discordRPC.setIdleState();
         break;
     }
   },
-};
+} as const;
 
 /**
  * Register all IPC event handlers related to Discord RPC operations
@@ -64,12 +68,15 @@ export function registerDiscordHandlers(
   ipcMain: IpcMain,
   discordRPC: DiscordRPCManager | null,
 ) {
-  for (const channel of Object.keys(discordEventMap)) {
-    ipcMain.on(channel, (event, ...args) => {
-      DiscordHandlers[discordEventMap[channel]].call(
-        { event, discordRPC },
-        ...args,
-      );
+  for (const channel of Object.keys(DiscordHandlers) as Array<
+    keyof typeof DiscordHandlers
+  >) {
+    const handler = DiscordHandlers[channel] as GenericHandler<{
+      discordRPC: DiscordRPCManager | null;
+    }>;
+
+    ipcMain.on(channel, (event, ...rest: unknown[]) => {
+      handler({ event, discordRPC }, ...rest);
     });
   }
 }

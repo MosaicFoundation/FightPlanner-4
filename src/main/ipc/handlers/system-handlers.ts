@@ -10,21 +10,12 @@ import {
 } from '../../utils/error-handler';
 import { PATHS, TEMP_FOLDERS } from '../../config';
 import { HandlerResponse } from '../../types/common';
+import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
-export const systemHandlerMap = {
-  'open-url': 'openUrl',
-  'open-fightplanner-link': 'openFightPlannerLink',
-  'cancel-download': 'cancelDownload',
-  'get-logs-path': 'getLogsPath',
-  'read-log-file': 'readLogFile',
-  'clear-temp-files': 'clearTempFiles',
-  'launch-emulator': 'launchEmulator',
-  'load-locale': 'loadLocale',
-  'get-available-drives': 'getAvailableDrives',
-} as const;
+export type SystemHandlers = typeof SystemHandlers;
 
-export const SystemHandlers = {
-  openUrl: async (url: string) => {
+const SystemHandlers = {
+  ['open-url']: async (common: BaseHandlerArg, url: string) => {
     try {
       await shell.openExternal(url);
       return { success: true };
@@ -34,7 +25,7 @@ export const SystemHandlers = {
     }
   },
 
-  openFightPlannerLink: async (url: string) => {
+  ['open-fightplanner-link']: async (common: BaseHandlerArg, url: string) => {
     try {
       if (!url || !url.startsWith('fightplanner:')) {
         return createErrorResponse(
@@ -58,7 +49,7 @@ export const SystemHandlers = {
     }
   },
 
-  cancelDownload: async (downloadId: string) => {
+  ['cancel-download']: async (common: BaseHandlerArg, downloadId: string) => {
     try {
       const handler = getProtocolHandler();
       if (handler) {
@@ -75,11 +66,11 @@ export const SystemHandlers = {
     }
   },
 
-  getLogsPath: async () => {
+  ['get-logs-path']: async (common: BaseHandlerArg) => {
     return PATHS.logsDir();
   },
 
-  readLogFile: async (filePath: string) => {
+  ['read-log-file']: async (common: BaseHandlerArg, filePath: string) => {
     try {
       const logsDir = PATHS.logsDir();
       if (!filePath.startsWith(logsDir)) {
@@ -93,11 +84,15 @@ export const SystemHandlers = {
     }
   },
 
-  clearTempFiles: async (): HandlerResponse<{
-    deletedFiles: number;
-    deletedFolders: number;
-    totalSize: string;
-  }> => {
+  ['clear-temp-files']: async (
+    common: BaseHandlerArg,
+  ): Promise<
+    HandlerResponse<{
+      deletedFiles: number;
+      deletedFolders: number;
+      totalSize: string;
+    }>
+  > => {
     try {
       const tempPath = PATHS.tempDir();
       const foldersToClean = TEMP_FOLDERS;
@@ -156,12 +151,13 @@ export const SystemHandlers = {
     }
   },
 
-  launchEmulator: async (
+  ['launch-emulator']: async (
+    common: BaseHandlerArg,
     emulatorType: string,
     emulatorPath: string,
     gamePath: string,
     fullscreen: boolean,
-  ): HandlerResponse => {
+  ): Promise<HandlerResponse> => {
     try {
       if (!fs.existsSync(emulatorPath)) {
         return createErrorResponse(
@@ -207,11 +203,14 @@ export const SystemHandlers = {
     }
   },
 
-  loadLocale: async (
+  ['load-locale']: async (
+    common: BaseHandlerArg,
     locale: string,
-  ): HandlerResponse<{
-    translations: Record<string, string>;
-  }> => {
+  ): Promise<
+    HandlerResponse<{
+      translations: Record<string, string>;
+    }>
+  > => {
     try {
       const localesPath = PATHS.localesDir();
       const localePath = path.join(localesPath, `${locale}.json`);
@@ -241,7 +240,7 @@ export const SystemHandlers = {
     }
   },
 
-  getAvailableDrives: async () => {
+  ['get-available-drives']: async (common: BaseHandlerArg) => {
     try {
       const { detectDrives } = require('../../utils/drive-detector');
       const drives = await detectDrives();
@@ -251,16 +250,18 @@ export const SystemHandlers = {
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
   },
-};
+} as const;
 
 /**
  * Register all IPC handlers related to system operations
  * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
  */
 export function registerSystemHandlers(ipcMain: IpcMain) {
-  for (const channel of Object.keys(systemHandlerMap)) {
-    ipcMain.handle(channel, (event, ...args) => {
-      return SystemHandlers[systemHandlerMap[channel]].call(event, ...args);
+  for (const channel of Object.keys(SystemHandlers)) {
+    const handler = SystemHandlers[channel] as GenericHandler;
+
+    ipcMain.handle(channel, (event, ...rest: unknown[]) => {
+      return handler({ event }, ...rest);
     });
   }
 }

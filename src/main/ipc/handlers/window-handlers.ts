@@ -1,20 +1,16 @@
 import { BrowserWindow, IpcMain } from 'electron';
 import IpcMainEvent = Electron.IpcMainEvent;
+import { BaseHandlerArg, GenericHandler } from '../../types/common';
+import { UpdateHandlers } from './update-handlers';
 
-export const windowEventMap = {
-  'minimize-window': 'minimizeWindow',
-  'maximize-window': 'maximizeWindow',
-  'close-window': 'closeWindow',
-} as const;
-
-export const WindowEvents = {
-  minimizeWindow: (event: IpcMainEvent) => {
-    const win = BrowserWindow.fromWebContents(event.sender)!;
+const WindowEventHandlers = {
+  ['minimize-window']: (common: BaseHandlerArg) => {
+    const win = BrowserWindow.fromWebContents(common.event.sender)!;
     if (win) win.minimize();
   },
 
-  maximizeWindow: (event: IpcMainEvent) => {
-    const win = BrowserWindow.fromWebContents(event.sender)!;
+  ['maximize-window']: (common: BaseHandlerArg) => {
+    const win = BrowserWindow.fromWebContents(common.event.sender)!;
     if (win) {
       if (win.isMaximized()) {
         win.unmaximize();
@@ -24,20 +20,24 @@ export const WindowEvents = {
     }
   },
 
-  closeWindow: (event: IpcMainEvent) => {
-    const win = BrowserWindow.fromWebContents(event.sender)!;
+  ['close-window']: (common: BaseHandlerArg) => {
+    const win = BrowserWindow.fromWebContents(common.event.sender)!;
     if (win) win.close();
   },
-};
+} as const;
 
 /**
  * Register all IPC event handlers related to window operations
  * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
  */
 export function registerWindowHandlers(ipcMain: IpcMain) {
-  for (const channel of Object.keys(windowEventMap)) {
-    ipcMain.on(channel, (event) => {
-      WindowEvents[windowEventMap[channel]](event);
+  for (const channel of Object.keys(WindowEventHandlers) as Array<
+    keyof typeof WindowEventHandlers
+  >) {
+    const handler = WindowEventHandlers[channel] as GenericHandler;
+
+    ipcMain.handle(channel, (event, ...rest: unknown[]) => {
+      return handler({ event }, ...rest);
     });
   }
 }

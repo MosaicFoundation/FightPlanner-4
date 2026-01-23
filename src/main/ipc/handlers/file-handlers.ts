@@ -6,31 +6,22 @@ import {
   ErrorCodes,
 } from '../../utils/error-handler';
 import { HandlerResponse } from '../../types/common';
+import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
-export const fileHandlerMap = {
-  'select-folder': 'selectFolder',
-  'select-emulator-file': 'selectEmulatorFile',
-  'select-game-file': 'selectGameFile',
-  'select-mod-file': 'selectModFile',
-  'select-custom-file': 'selectCustomFile',
-  'open-folder': 'openFolder',
-  'open-file': 'openFile',
-  'read-custom-file': 'readCustomFile',
-  'save-file-dialog': 'saveFileDialog',
-  'write-file': 'writeFile',
-} as const;
+export type FileHandlers = typeof FileHandlers;
 
-export const FileHandlers = {
-  async selectFolder() {
-    const win = BrowserWindow.fromWebContents(this.sender)!;
+const FileHandlers = {
+  ['select-folder']: async (common: BaseHandlerArg) => {
+    const win = BrowserWindow.fromWebContents(common.event.sender)!;
     const result = await dialog.showOpenDialog(win, {
       properties: ['openDirectory'],
     });
+
     return result.canceled ? null : result.filePaths[0];
   },
 
-  async selectEmulatorFile() {
-    const win = BrowserWindow.fromWebContents(this.sender)!;
+  ['select-emulator-file']: async (common: BaseHandlerArg) => {
+    const win = BrowserWindow.fromWebContents(common.event.sender)!;
     const result = await dialog.showOpenDialog(win, {
       properties: ['openFile'],
       filters: [
@@ -41,8 +32,8 @@ export const FileHandlers = {
     return result.canceled ? null : result.filePaths[0];
   },
 
-  async selectGameFile() {
-    const win = BrowserWindow.fromWebContents(this.sender)!;
+  ['select-game-file']: async (common: BaseHandlerArg) => {
+    const win = BrowserWindow.fromWebContents(common.event.sender)!;
     const result = await dialog.showOpenDialog(win, {
       properties: ['openFile'],
       filters: [
@@ -56,11 +47,15 @@ export const FileHandlers = {
     return result.canceled ? null : result.filePaths[0];
   },
 
-  async selectModFile(): HandlerResponse<{
-    filePath: string;
-  }> {
+  ['select-mod-file']: async (
+    common: BaseHandlerArg,
+  ): Promise<
+    HandlerResponse<{
+      filePath: string;
+    }>
+  > => {
     try {
-      const win = BrowserWindow.fromWebContents(this.sender)!;
+      const win = BrowserWindow.fromWebContents(common.event.sender)!;
       const result = await dialog.showOpenDialog(win, {
         properties: ['openFile'],
         filters: [
@@ -86,9 +81,14 @@ export const FileHandlers = {
     }
   },
 
-  async selectCustomFile(fileType: string): HandlerResponse<{
-    filePath: string;
-  }> {
+  ['select-custom-file']: async (
+    common: BaseHandlerArg,
+    fileType: string,
+  ): Promise<
+    HandlerResponse<{
+      filePath: string;
+    }>
+  > => {
     try {
       const filters =
         fileType === 'css'
@@ -115,7 +115,10 @@ export const FileHandlers = {
     }
   },
 
-  async openFolder(folderPath: string): HandlerResponse {
+  ['open-folder']: async (
+    common: BaseHandlerArg,
+    folderPath: string,
+  ): Promise<HandlerResponse> => {
     try {
       if (fs.existsSync(folderPath)) {
         await shell.openPath(folderPath);
@@ -132,7 +135,7 @@ export const FileHandlers = {
     }
   },
 
-  async openFile(filePath: string) {
+  ['open-file']: async (common: BaseHandlerArg, filePath: string) => {
     try {
       if (fs.existsSync(filePath)) {
         await shell.openPath(filePath);
@@ -149,9 +152,14 @@ export const FileHandlers = {
     }
   },
 
-  async readCustomFile(filePath: string): HandlerResponse<{
-    content: string;
-  }> {
+  ['read-custom-file']: async (
+    common: BaseHandlerArg,
+    filePath: string,
+  ): Promise<
+    HandlerResponse<{
+      content: string;
+    }>
+  > => {
     try {
       if (!fs.existsSync(filePath)) {
         return createErrorResponse(
@@ -168,9 +176,13 @@ export const FileHandlers = {
     }
   },
 
-  async saveFileDialog(defaultPath: string, filters: any) {
+  ['save-file-dialog']: async (
+    common: BaseHandlerArg,
+    defaultPath: string,
+    filters: any,
+  ) => {
     try {
-      const win = BrowserWindow.fromWebContents(this.sender)!;
+      const win = BrowserWindow.fromWebContents(common.event.sender)!;
       const result = await dialog.showSaveDialog(win, {
         defaultPath: defaultPath,
         filters: filters || [
@@ -190,7 +202,11 @@ export const FileHandlers = {
     }
   },
 
-  async writeFile(filePath: string, content: string) {
+  ['write-file']: async (
+    common: BaseHandlerArg,
+    filePath: string,
+    content: string,
+  ) => {
     try {
       fs.writeFileSync(filePath, content, 'utf8');
       return { success: true };
@@ -199,16 +215,20 @@ export const FileHandlers = {
       return createErrorResponse(ErrorCodes.FILE_WRITE_ERROR, error.message);
     }
   },
-};
+} as const;
 
 /**
  * Register all IPC handlers related to file operations
  * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
  */
 export function registerFileHandlers(ipcMain: IpcMain) {
-  for (const channel of Object.keys(fileHandlerMap)) {
-    ipcMain.handle(channel, (event, ...args) => {
-      return FileHandlers[fileHandlerMap[channel]].call(event, ...args);
+  for (const channel of Object.keys(FileHandlers) as Array<
+    keyof typeof FileHandlers
+  >) {
+    const handler = FileHandlers[channel] as GenericHandler;
+
+    ipcMain.handle(channel, (event, ...rest: unknown[]) => {
+      return handler({ event }, ...rest);
     });
   }
 }

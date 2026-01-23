@@ -26,34 +26,13 @@ import {
   createDirectory,
 } from '../../utils/arcropolis-installer';
 
-import IpcMainEvent = Electron.IpcMainEvent;
 import { HandlerResponse } from '../../types/common';
+import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
-export const tutorialHandlerMap = {
-  'open-tutorial-window': 'openTutorialWindow',
-  'detect-sd-drives': 'detectSdDrives',
-  'detect-yuzu-path': 'detectYuzuPath',
-  'detect-ryujinx-path': 'detectRyujinxPath',
-  'get-github-release': 'getGithubRelease',
-  'get-skyline-release': 'getSkylineRelease',
-  'extract-skyline': 'extractSkyline',
-  'download-arcropolis': 'downloadArcropolis',
-  'extract-arcropolis': 'extractArcropolis',
-  'create-directory': 'createDirectory',
-  'check-arcropolis-installed': 'checkArcropolisInstalled',
-  'check-arcropolis-folder': 'checkArcropolisFolder',
-  'join-path': 'joinPath',
-  'get-temp-dir': 'getTempDir',
-  'select-drive': 'selectDrive',
-} as const;
+export type TutorialHandlers = typeof TutorialHandlers;
 
-export const tutorialEventMap = {
-  'close-tutorial-window': 'closeTutorialWindow',
-  'skip-tutorial': 'skipTutorial',
-} as const;
-
-export const TutorialHandlers = {
-  async openTutorialWindow() {
+const TutorialHandlers = {
+  ['open-tutorial-window']: async (common: BaseHandlerArg) => {
     try {
       const windows = BrowserWindow.getAllWindows();
       const mainWindow = windows[0];
@@ -68,7 +47,17 @@ export const TutorialHandlers = {
     }
   },
 
-  async detectSdDrives() {
+  ['close-tutorial-window']: async (common: BaseHandlerArg) => {
+    console.log('Received close-tutorial-window event');
+    closeTutorialWindow();
+  },
+
+  ['skip-tutorial']: async (common: BaseHandlerArg) => {
+    console.log('Received skip-tutorial event');
+    closeTutorialWindow();
+  },
+
+  ['detect-sd-drives']: async (common: BaseHandlerArg) => {
     try {
       const drives = await detectWindowsDrives();
       return { success: true, drives };
@@ -78,7 +67,7 @@ export const TutorialHandlers = {
     }
   },
 
-  async detectYuzuPath() {
+  ['detect-yuzu-path']: async (common: BaseHandlerArg) => {
     try {
       const homeDir = os.homedir();
       const yuzuPath = path.join(homeDir, 'AppData', 'Roaming', 'yuzu');
@@ -94,7 +83,7 @@ export const TutorialHandlers = {
     }
   },
 
-  async detectRyujinxPath() {
+  ['detect-ryujinx-path']: async (common: BaseHandlerArg) => {
     try {
       const homeDir = os.homedir();
       const ryujinxPath = path.join(homeDir, 'AppData', 'Roaming', 'Ryujinx');
@@ -110,7 +99,10 @@ export const TutorialHandlers = {
     }
   },
 
-  async getGithubRelease(repo = 'Raytwo/ARCropolis') {
+  ['get-github-release']: async (
+    common: BaseHandlerArg,
+    repo = 'Raytwo/ARCropolis',
+  ) => {
     try {
       let release;
       if (repo === 'skyline-dev/skyline') {
@@ -125,12 +117,16 @@ export const TutorialHandlers = {
     }
   },
 
-  async getSkylineRelease(): HandlerResponse<{
-    tag: string;
-    downloadUrl: string;
-    version: string;
-    name: string;
-  }> {
+  ['get-skyline-release']: async (
+    common: BaseHandlerArg,
+  ): Promise<
+    HandlerResponse<{
+      tag: string;
+      downloadUrl: string;
+      version: string;
+      name: string;
+    }>
+  > => {
     try {
       return { success: true, ...(await getLatestSkylineRelease()) };
     } catch (error) {
@@ -139,7 +135,11 @@ export const TutorialHandlers = {
     }
   },
 
-  async extractSkyline(zipPath: string, targetDir: string) {
+  ['extract-skyline']: async (
+    common: BaseHandlerArg,
+    zipPath: string,
+    targetDir: string,
+  ) => {
     try {
       return await extractAndInstallSkyline(zipPath, targetDir);
     } catch (error) {
@@ -148,10 +148,11 @@ export const TutorialHandlers = {
     }
   },
 
-  async downloadArcropolis(
+  ['download-arcropolis']: async (
+    common: BaseHandlerArg,
     downloadUrl: string,
     targetPath: string,
-  ): HandlerResponse<{ path: string }> {
+  ): Promise<HandlerResponse<{ path: string }>> => {
     try {
       const downloadedPath = await downloadArcropolis(downloadUrl, targetPath);
       return { success: true, path: downloadedPath };
@@ -161,7 +162,11 @@ export const TutorialHandlers = {
     }
   },
 
-  async extractArcropolis(zipPath: string, targetDir: string) {
+  ['extract-arcropolis']: async (
+    common: BaseHandlerArg,
+    zipPath: string,
+    targetDir: string,
+  ) => {
     try {
       return await extractAndInstallArcropolis(zipPath, targetDir);
     } catch (error) {
@@ -170,7 +175,10 @@ export const TutorialHandlers = {
     }
   },
 
-  async createDirectory(dirPath: string): HandlerResponse {
+  ['create-directory']: async (
+    common: BaseHandlerArg,
+    dirPath: string,
+  ): Promise<HandlerResponse> => {
     try {
       await createDirectory(dirPath);
       return { success: true };
@@ -180,7 +188,10 @@ export const TutorialHandlers = {
     }
   },
 
-  async checkArcropolisInstalled(targetDir: string) {
+  ['check-arcropolis-installed']: async (
+    common: BaseHandlerArg,
+    targetDir: string,
+  ) => {
     try {
       const installed = checkArcropolisInstalled(targetDir);
       return { success: true, installed };
@@ -190,7 +201,10 @@ export const TutorialHandlers = {
     }
   },
 
-  async checkArcropolisFolder(ultimatePath: string) {
+  ['check-arcropolis-folder']: async (
+    common: BaseHandlerArg,
+    ultimatePath: string,
+  ) => {
     try {
       const exists = checkArcropolisFolder(ultimatePath);
       return { success: true, exists };
@@ -200,9 +214,14 @@ export const TutorialHandlers = {
     }
   },
 
-  async joinPath(...parts: string[]): HandlerResponse<{
-    path: string;
-  }> {
+  ['join-path']: async (
+    common: BaseHandlerArg,
+    ...parts: string[]
+  ): Promise<
+    HandlerResponse<{
+      path: string;
+    }>
+  > => {
     try {
       const path = require('path');
       return { success: true, path: path.join(...parts) };
@@ -212,9 +231,13 @@ export const TutorialHandlers = {
     }
   },
 
-  async getTempDir(): HandlerResponse<{
-    path: string;
-  }> {
+  ['get-temp-dir']: async (
+    common: BaseHandlerArg,
+  ): Promise<
+    HandlerResponse<{
+      path: string;
+    }>
+  > => {
     try {
       const os = require('os');
       return { success: true, path: os.tmpdir() };
@@ -224,9 +247,9 @@ export const TutorialHandlers = {
     }
   },
 
-  async selectDrive() {
+  ['select-drive']: async (common: BaseHandlerArg) => {
     try {
-      const win = BrowserWindow.fromWebContents(this.sender)!;
+      const win = BrowserWindow.fromWebContents(common.event.sender)!;
 
       // Show custom dialog or use file picker
       const result = await dialog.showOpenDialog(win, {
@@ -252,34 +275,20 @@ export const TutorialHandlers = {
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
   },
-};
-
-export const TutorialEvents = {
-  closeTutorialWindow: (_event: IpcMainEvent) => {
-    console.log('Received close-tutorial-window event');
-    closeTutorialWindow();
-  },
-
-  skipTutorial: (_event: IpcMainEvent) => {
-    console.log('Received skip-tutorial event');
-    closeTutorialWindow();
-  },
-};
+} as const;
 
 /**
  * Register all IPC handlers related to tutorial operations
  * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
  */
 export function registerTutorialHandlers(ipcMain: IpcMain) {
-  for (const channel of Object.keys(tutorialHandlerMap)) {
-    ipcMain.handle(channel, (event, ...args) => {
-      return TutorialHandlers[tutorialHandlerMap[channel]](event, ...args);
-    });
-  }
+  for (const channel of Object.keys(TutorialHandlers) as Array<
+    keyof typeof TutorialHandlers
+  >) {
+    const handler = TutorialHandlers[channel] as GenericHandler;
 
-  for (const channel of Object.keys(tutorialEventMap)) {
-    ipcMain.on(channel, (event, ...args) => {
-      TutorialEvents[tutorialEventMap[channel]].call(event, ...args);
+    ipcMain.handle(channel, (event, ...rest: unknown[]) => {
+      return handler({ event }, ...rest);
     });
   }
 }

@@ -1,8 +1,7 @@
 import { LottiePlayer } from 'lottie-web';
 import * as gsap from 'gsap';
 
-import { ElectronAPI } from '../../main/preload';
-import { TutorialAPI } from '../../main/tutorial-preload';
+import { ElectronAPI, TutorialAPI } from '../../main/preload';
 
 import { ToastManager } from '../js/ui/toast-manager';
 import { ModManager } from '../js/mods/mod-manager';

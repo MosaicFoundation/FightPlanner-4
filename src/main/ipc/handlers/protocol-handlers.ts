@@ -7,15 +7,16 @@ import {
   ErrorCodes,
 } from '../../utils/error-handler';
 import { HandlerResponse } from '../../types/common';
+import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
-export const protocolHandlerMap = {
-  'confirm-protocol-install': 'confirmProtocolInstall',
-  'cancel-protocol-install': 'cancelProtocolInstall',
-  'fetch-gamebanana-preview': 'fetchGameBananaPreview',
-} as const;
+export type ProtocolHandlers = typeof ProtocolHandlers;
 
-export const ProtocolHandlers = {
-  confirmProtocolInstall: async (url: string, downloadId: string) => {
+const ProtocolHandlers = {
+  ['confirm-protocol-install']: async (
+    common: BaseHandlerArg,
+    url: string,
+    downloadId: string,
+  ) => {
     try {
       const protocolHandler = getProtocolHandler();
       if (protocolHandler) {
@@ -32,7 +33,10 @@ export const ProtocolHandlers = {
     }
   },
 
-  cancelProtocolInstall: async (downloadId: string) => {
+  ['cancel-protocol-install']: async (
+    common: BaseHandlerArg,
+    downloadId: string,
+  ) => {
     try {
       const protocolHandler = getProtocolHandler();
       if (protocolHandler && protocolHandler.pendingInstalls) {
@@ -46,11 +50,14 @@ export const ProtocolHandlers = {
     }
   },
 
-  fetchGameBananaPreview: async (
+  ['fetch-gamebanana-preview']: async (
+    common: BaseHandlerArg,
     modId: string,
-  ): HandlerResponse<{
-    imageUrl: string;
-  }> => {
+  ): Promise<
+    HandlerResponse<{
+      imageUrl: string;
+    }>
+  > => {
     try {
       const apiUrl = `https://gamebanana.com/apiv11/Mod/${modId}?_csvProperties=%40gbprofile`;
 
@@ -103,16 +110,20 @@ export const ProtocolHandlers = {
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
   },
-};
+} as const;
 
 /**
  * Register all IPC handlers related to protocol operations
  * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
  */
 export function registerProtocolHandlers(ipcMain: IpcMain) {
-  for (const channel of Object.keys(protocolHandlerMap)) {
-    ipcMain.handle(channel, (event, ...args) => {
-      return ProtocolHandlers[protocolHandlerMap[channel]].call(event, ...args);
+  for (const channel of Object.keys(ProtocolHandlers) as Array<
+    keyof typeof ProtocolHandlers
+  >) {
+    const handler = ProtocolHandlers[channel] as GenericHandler;
+
+    ipcMain.handle(channel, (event, ...rest: unknown[]) => {
+      return handler({ event }, ...rest);
     });
   }
 }

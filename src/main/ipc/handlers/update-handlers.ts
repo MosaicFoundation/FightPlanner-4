@@ -1,73 +1,70 @@
 import { IpcMain } from 'electron';
 import autoUpdater from '../../auto-updater';
+import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
-export const updateHandlerMap = {
-  'check-for-updates': 'checkForUpdates',
-  'download-update': 'downloadUpdate',
-  'install-update': 'installUpdate',
-  'get-update-info': 'getUpdateInfo',
-  'set-auto-check-enabled': 'setAutoCheckEnabled',
-  'set-update-channel': 'setUpdateChannel',
-  'get-update-channel': 'getUpdateChannel',
-  'set-force-update': 'setForceUpdate',
-  'get-force-update': 'getForceUpdate',
-  'simulate-update': 'simulateUpdate',
-} as const;
+export type UpdateHandlers = typeof UpdateHandlers;
 
-export const UpdateHandlers = {
-  checkForUpdates: async () => {
+const UpdateHandlers = {
+  ['check-for-updates']: async (common: BaseHandlerArg) => {
     return await autoUpdater.checkForUpdates();
   },
 
-  downloadUpdate: async () => {
+  ['download-update']: async (common: BaseHandlerArg) => {
     return await autoUpdater.downloadUpdate();
   },
 
-  installUpdate: async () => {
+  ['install-update']: async (common: BaseHandlerArg) => {
     autoUpdater.quitAndInstall();
     return { success: true };
   },
 
-  getUpdateInfo: async () => {
+  ['get-update-info']: async (common: BaseHandlerArg) => {
     return autoUpdater.getUpdateInfo();
   },
 
-  setAutoCheckEnabled: async (enabled: boolean) => {
+  ['set-auto-check-enabled']: async (
+    common: BaseHandlerArg,
+    enabled: boolean,
+  ) => {
     autoUpdater.setAutoCheckEnabled(enabled);
     return { success: true };
   },
 
-  setUpdateChannel: async (channel: string) => {
+  ['set-update-channel']: async (common: BaseHandlerArg, channel: string) => {
     autoUpdater.setUpdateChannel(channel);
     return { success: true };
   },
 
-  getUpdateChannel: async () => {
+  ['get-update-channel']: async (common: BaseHandlerArg) => {
     return autoUpdater.getUpdateChannel();
   },
 
-  setForceUpdate: async (enabled: boolean) => {
+  ['set-force-update']: async (common: BaseHandlerArg, enabled: boolean) => {
     autoUpdater.setForceUpdateAvailable(enabled);
     return { success: true };
   },
 
-  getForceUpdate: async () => {
+  ['get-force-update']: async (common: BaseHandlerArg) => {
     return autoUpdater.getForceUpdateAvailable();
   },
 
-  simulateUpdate: async () => {
+  ['simulate-update']: async (common: BaseHandlerArg) => {
     return autoUpdater.simulateUpdate();
   },
-};
+} as const;
 
 /**
  * Register all IPC handlers related to update operations
  * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
  */
 export function registerUpdateHandlers(ipcMain: IpcMain) {
-  for (const channel of Object.keys(updateHandlerMap)) {
-    ipcMain.handle(channel, (event, ...args) => {
-      return UpdateHandlers[updateHandlerMap[channel]].call(event, ...args);
+  for (const channel of Object.keys(UpdateHandlers) as Array<
+    keyof typeof UpdateHandlers
+  >) {
+    const handler = UpdateHandlers[channel] as GenericHandler;
+
+    ipcMain.handle(channel, (event, ...rest: unknown[]) => {
+      return handler({ event }, ...rest);
     });
   }
 }

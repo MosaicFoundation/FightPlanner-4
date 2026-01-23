@@ -73,9 +73,11 @@ class CustomizationManager {
 
     try {
       const customCssPaths =
-        (await window.electronAPI.store.get<string[]>('customCssPaths')) || [];
+        ((await window.electronAPI.store.get('customCssPaths')) as [] | null) ||
+        [];
       const customJsPaths =
-        (await window.electronAPI.store.get<string[]>('customJsPaths')) || [];
+        ((await window.electronAPI.store.get('customJsPaths')) as [] | null) ||
+        [];
 
       console.log('Saved CSS paths:', customCssPaths);
       console.log('Saved JS paths:', customJsPaths);

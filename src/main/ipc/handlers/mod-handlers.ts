@@ -10,34 +10,20 @@ import {
 } from '../../utils/error-handler';
 import { ModInstallResult } from '../../plugin-update-installer';
 import { HandlerResponse } from '../../types/common';
+import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
-export const modHandlerMap = {
-  'read-mods-folder': 'readModsFolder',
-  'get-preview-image': 'getPreviewImage',
-  'get-mod-info': 'getModInfo',
-  'save-mod-info': 'saveModInfo',
-  'read-mod-info-raw': 'readModInfoRaw',
-  'save-mod-info-raw': 'saveModInfoRaw',
-  'scan-mod-for-fighters': 'scanModForFighters',
-  'rename-mod': 'renameMod',
-  'delete-mod': 'deleteMod',
-  'toggle-mod': 'toggleMod',
-  'scan-mod-slots': 'scanModSlots',
-  'get-used-slots-for-fighter': 'getUsedSlotsForFighter',
-  'scan-mod-slots-by-fighter': 'scanModSlotsByFighter',
-  'apply-slot-changes': 'applySlotChanges',
-  'detect-conflicts': 'detectConflicts',
-  'install-mod-from-path': 'installModFromPath',
-  'handle-files-dropped': 'handleFilesDropped',
-} as const;
+export type ModHandlers = typeof ModHandlers;
 
-export const ModHandlers = {
-  readModsFolder: async (
+const ModHandlers = {
+  ['read-mods-folder']: async (
+    common: BaseHandlerArg,
     modsPath: string,
-  ): HandlerResponse<{
-    activeMods: Mod[];
-    disabledMods: Mod[];
-  }> => {
+  ): Promise<
+    HandlerResponse<{
+      activeMods: Mod[];
+      disabledMods: Mod[];
+    }>
+  > => {
     try {
       return {
         success: true,
@@ -52,7 +38,7 @@ export const ModHandlers = {
     }
   },
 
-  getPreviewImage: async (modPath: string) => {
+  ['get-preview-image']: async (common: BaseHandlerArg, modPath: string) => {
     try {
       const previewPath = ModUtils.getPreviewImagePath(modPath);
       if (previewPath) {
@@ -65,7 +51,7 @@ export const ModHandlers = {
     }
   },
 
-  getModInfo: async (modPath: string) => {
+  ['get-mod-info']: async (common: BaseHandlerArg, modPath: string) => {
     try {
       return ModUtils.readModInfo(modPath);
     } catch (error) {
@@ -74,7 +60,11 @@ export const ModHandlers = {
     }
   },
 
-  saveModInfo: async (modPath: string, infoData): HandlerResponse => {
+  ['save-mod-info']: async (
+    common: BaseHandlerArg,
+    modPath: string,
+    infoData,
+  ): Promise<HandlerResponse> => {
     try {
       const infoPath = path.join(modPath, 'info.toml');
       let tomlContent = '';
@@ -97,7 +87,7 @@ export const ModHandlers = {
     }
   },
 
-  readModInfoRaw: async (modPath: string) => {
+  ['read-mod-info-raw']: async (common: BaseHandlerArg, modPath: string) => {
     try {
       const infoPath = path.join(modPath, 'info.toml');
       if (!fs.existsSync(infoPath)) return '';
@@ -109,7 +99,11 @@ export const ModHandlers = {
     }
   },
 
-  saveModInfoRaw: async (modPath, tomlContent): Promise<HandlerResponse> => {
+  ['save-mod-info-raw']: async (
+    common: BaseHandlerArg,
+    modPath,
+    tomlContent,
+  ): Promise<HandlerResponse> => {
     try {
       const infoPath = path.join(modPath, 'info.toml');
       fs.writeFileSync(infoPath, tomlContent, 'utf8');
@@ -120,7 +114,10 @@ export const ModHandlers = {
     }
   },
 
-  scanModForFighters: async (modPath: string) => {
+  ['scan-mod-for-fighters']: async (
+    common: BaseHandlerArg,
+    modPath: string,
+  ) => {
     try {
       const fighters: string[] = [];
       const fighterPath = path.join(modPath, 'fighter');
@@ -141,12 +138,15 @@ export const ModHandlers = {
     }
   },
 
-  renameMod: async (
+  ['rename-mod']: async (
+    common: BaseHandlerArg,
     modPath: string,
     newName: string,
-  ): HandlerResponse<{
-    newPath: string;
-  }> => {
+  ): Promise<
+    HandlerResponse<{
+      newPath: string;
+    }>
+  > => {
     try {
       const parentDir = path.dirname(modPath);
       const newPath = path.join(parentDir, newName);
@@ -164,7 +164,10 @@ export const ModHandlers = {
     }
   },
 
-  deleteMod: async (modPath: string): HandlerResponse => {
+  ['delete-mod']: async (
+    common: BaseHandlerArg,
+    modPath: string,
+  ): Promise<HandlerResponse> => {
     try {
       if (!fs.existsSync(modPath)) {
         return createErrorResponse(
@@ -180,13 +183,16 @@ export const ModHandlers = {
     }
   },
 
-  toggleMod: async (
+  ['toggle-mod']: async (
+    common: BaseHandlerArg,
     modPath: string,
     modsBasePath: string,
-  ): HandlerResponse<{
-    newPath: string;
-    isNowActive: boolean;
-  }> => {
+  ): Promise<
+    HandlerResponse<{
+      newPath: string;
+      isNowActive: boolean;
+    }>
+  > => {
     try {
       const modName = path.basename(modPath);
       const parentDir = path.dirname(modsBasePath);
@@ -224,14 +230,17 @@ export const ModHandlers = {
     }
   },
 
-  scanModSlots: async (
+  ['scan-mod-slots']: async (
+    common: BaseHandlerArg,
     modPath: string,
-  ): HandlerResponse<{
-    slots: {
-      slot: number;
-      files: Slot[];
-    }[];
-  }> => {
+  ): Promise<
+    HandlerResponse<{
+      slots: {
+        slot: number;
+        files: Slot[];
+      }[];
+    }>
+  > => {
     try {
       const slots = ModUtils.scanModForSlots(modPath);
       return { success: true, slots };
@@ -241,13 +250,16 @@ export const ModHandlers = {
     }
   },
 
-  getUsedSlotsForFighter: async (
+  ['get-used-slots-for-fighter']: async (
+    common: BaseHandlerArg,
     modsPath: string,
     fighterId: string,
     excludeModPath: string | null = null,
-  ): HandlerResponse<{
-    usedSlots: number[];
-  }> => {
+  ): Promise<
+    HandlerResponse<{
+      usedSlots: number[];
+    }>
+  > => {
     try {
       const usedSlots = ModUtils.getUsedSlotsForFighter(
         modsPath,
@@ -262,12 +274,15 @@ export const ModHandlers = {
     }
   },
 
-  scanModSlotsByFighter: async (
+  ['scan-mod-slots-by-fighter']: async (
+    common: BaseHandlerArg,
     modPath: string,
     fighterId: string,
-  ): HandlerResponse<{
-    slots: number[];
-  }> => {
+  ): Promise<
+    HandlerResponse<{
+      slots: number[];
+    }>
+  > => {
     try {
       const slots = ModUtils.scanModForSlotsByFighter(modPath, fighterId);
       return { success: true, slots };
@@ -277,7 +292,7 @@ export const ModHandlers = {
     }
   },
 
-  applySlotChanges: async (modPath, changes) => {
+  ['apply-slot-changes']: async (common: BaseHandlerArg, modPath, changes) => {
     try {
       return ModUtils.applySlotChanges(modPath, changes);
     } catch (error) {
@@ -286,20 +301,23 @@ export const ModHandlers = {
     }
   },
 
-  detectConflicts: async (
+  ['detect-conflicts']: async (
+    common: BaseHandlerArg,
     modsPath: string,
     whitelistPatterns: string[] = [],
-  ): HandlerResponse<{
-    conflicts: {
-      filePath: string;
-      mods: {
-        name: string;
-        path: string;
+  ): Promise<
+    HandlerResponse<{
+      conflicts: {
+        filePath: string;
+        mods: {
+          name: string;
+          path: string;
+        }[];
       }[];
-    }[];
-    totalConflicts: number;
-    activeModsCount: number;
-  }> => {
+      totalConflicts: number;
+      activeModsCount: number;
+    }>
+  > => {
     try {
       const result = ModUtils.readAllMods(modsPath);
       const conflicts = await ModUtils.detectConflicts(
@@ -319,7 +337,11 @@ export const ModHandlers = {
     }
   },
 
-  installModFromPath: async (sourcePath, modsPath) => {
+  ['install-mod-from-path']: async (
+    common: BaseHandlerArg,
+    sourcePath,
+    modsPath,
+  ) => {
     try {
       const result = await ModUtils.installModFromPath(sourcePath, modsPath);
 
@@ -358,7 +380,7 @@ export const ModHandlers = {
     }
   },
 
-  handleFilesDropped: async (filePaths) => {
+  ['handle-files-dropped']: async (common: BaseHandlerArg, filePaths) => {
     try {
       const modsPath = store.get('modsPath') as string | null;
       if (!modsPath) {
@@ -423,16 +445,20 @@ export const ModHandlers = {
       return createErrorResponse(ErrorCodes.MOD_INSTALL_ERROR, error.message);
     }
   },
-};
+} as const;
 
 /**
  * Register all IPC handlers related to mod operations
  * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
  */
 export function registerModHandlers(ipcMain: IpcMain) {
-  for (const channel of Object.keys(modHandlerMap)) {
-    ipcMain.handle(channel, (event, ...args) => {
-      return ModHandlers[modHandlerMap[channel]].call(event, ...args);
+  for (const channel of Object.keys(ModHandlers) as Array<
+    keyof typeof ModHandlers
+  >) {
+    const handler = ModHandlers[channel] as GenericHandler;
+
+    ipcMain.handle(channel, (event, ...rest: unknown[]) => {
+      return handler({ event }, ...rest);
     });
   }
 }

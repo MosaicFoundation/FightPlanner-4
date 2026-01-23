@@ -13,7 +13,7 @@ import { RequestOptions } from 'https';
 import ModUtils from './mod-utils';
 import sharedStore from './store';
 
-const packageJson: { version: string } = require('../../package.json');
+import packageJson from '../../package.json';
 
 const USER_AGENT = `FightPlanner/${packageJson.version} (Electron ${process.versions.electron}; Node ${process.versions.node}; ${process.platform})`;
 

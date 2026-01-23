@@ -5,25 +5,28 @@ import {
   ErrorCodes,
   handleError,
 } from '../../utils/error-handler';
+import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
-export const storeHandlerMap = {
-  'store-get': 'get',
-  'store-set': 'set',
-  'store-delete': 'delete',
-  'store-clear': 'clear',
-} as const;
+export type StoreHandlers = typeof StoreHandlers;
 
-export const StoreHandlers = {
-  async get<T = unknown>(key: string): Promise<T | null> {
+const StoreHandlers = {
+  ['store-get']: async (
+    common: BaseHandlerArg,
+    key: string,
+  ): Promise<unknown | null> => {
     try {
-      return store.get(key) as T;
+      return store.get(key);
     } catch (error) {
       handleError(error, 'store-get');
       return null;
     }
   },
 
-  set: async (key: string, value: unknown) => {
+  ['store-set']: async (
+    common: BaseHandlerArg,
+    key: string,
+    value: unknown,
+  ) => {
     try {
       store.set(key, value);
       return { success: true };
@@ -35,7 +38,7 @@ export const StoreHandlers = {
     }
   },
 
-  delete: async (key: string) => {
+  ['store-delete']: async (common: BaseHandlerArg, key: string) => {
     try {
       store.delete(key);
       return { success: true };
@@ -47,7 +50,7 @@ export const StoreHandlers = {
     }
   },
 
-  clear: async () => {
+  ['store-clear']: async (common: BaseHandlerArg) => {
     try {
       store.clear();
       return { success: true };
@@ -58,16 +61,20 @@ export const StoreHandlers = {
       );
     }
   },
-};
+} as const;
 
 /**
  * Register all IPC handlers related to store operations
  * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
  */
 export function registerStoreHandlers(ipcMain: IpcMain) {
-  for (const channel of Object.keys(storeHandlerMap)) {
-    ipcMain.handle(channel, (event, ...args) => {
-      return StoreHandlers[storeHandlerMap[channel]].call(event, ...args);
+  for (const channel of Object.keys(StoreHandlers) as Array<
+    keyof typeof StoreHandlers
+  >) {
+    const handler = StoreHandlers[channel] as GenericHandler;
+
+    ipcMain.handle(channel, (event, ...rest: unknown[]) => {
+      return handler({ event }, ...rest);
     });
   }
 }

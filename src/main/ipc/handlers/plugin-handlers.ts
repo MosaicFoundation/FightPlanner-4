@@ -12,25 +12,20 @@ import {
   ErrorCodes,
 } from '../../utils/error-handler';
 import { HandlerResponse } from '../../types/common';
+import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
-export const pluginHandlerMap = {
-  'read-plugins-folder': 'readPluginsFolder',
-  'select-plugin-file': 'selectPluginFile',
-  'toggle-plugin': 'togglePlugin',
-  'delete-plugin': 'deletePlugin',
-  'check-plugin-updates': 'checkPluginUpdates',
-  'update-plugin': 'updatePlugin',
-  'get-plugin-repo-mapping': 'getPluginRepoMapping',
-  'set-plugin-repo-mapping': 'setPluginRepoMapping',
-} as const;
+export type PluginHandlers = typeof PluginHandlers;
 
-export const PluginHandlers = {
-  readPluginsFolder: async (
+const PluginHandlers = {
+  ['read-plugins-folder']: async (
+    common: BaseHandlerArg,
     pluginsPath: string,
-  ): HandlerResponse<{
-    activePlugins: SimplePlugin[];
-    disabledPlugins: SimplePlugin[];
-  }> => {
+  ): Promise<
+    HandlerResponse<{
+      activePlugins: SimplePlugin[];
+      disabledPlugins: SimplePlugin[];
+    }>
+  > => {
     try {
       return { success: true, ...PluginUtils.readAllPlugins(pluginsPath) };
     } catch (error) {
@@ -42,9 +37,12 @@ export const PluginHandlers = {
     }
   },
 
-  async selectPluginFile(pluginsPath: string): HandlerResponse {
+  ['select-plugin-file']: async (
+    common: BaseHandlerArg,
+    pluginsPath: string,
+  ): Promise<HandlerResponse> => {
     try {
-      const win = BrowserWindow.fromWebContents(this.sender)!;
+      const win = BrowserWindow.fromWebContents(common.event.sender)!;
       const result = await dialog.showOpenDialog(win, {
         properties: ['openFile'],
         filters: [
@@ -68,7 +66,11 @@ export const PluginHandlers = {
     }
   },
 
-  async togglePlugin(pluginPath: string, pluginsBasePath: string) {
+  ['toggle-plugin']: async (
+    common: BaseHandlerArg,
+    pluginPath: string,
+    pluginsBasePath: string,
+  ) => {
     try {
       return PluginUtils.togglePlugin(pluginPath, pluginsBasePath);
     } catch (error) {
@@ -77,7 +79,7 @@ export const PluginHandlers = {
     }
   },
 
-  async deletePlugin(pluginPath: string) {
+  ['delete-plugin']: async (common: BaseHandlerArg, pluginPath: string) => {
     try {
       return PluginUtils.deletePlugin(pluginPath);
     } catch (error) {
@@ -86,11 +88,15 @@ export const PluginHandlers = {
     }
   },
 
-  async checkPluginUpdates(): HandlerResponse<{
-    results: (PluginUpdateResult & {
-      pluginName: string;
-    })[];
-  }> {
+  ['check-plugin-updates']: async (
+    common: BaseHandlerArg,
+  ): Promise<
+    HandlerResponse<{
+      results: (PluginUpdateResult & {
+        pluginName: string;
+      })[];
+    }>
+  > => {
     try {
       const pluginMappings = (store.get('pluginRepoMappings') || {}) as Record<
         string,
@@ -116,12 +122,13 @@ export const PluginHandlers = {
     }
   },
 
-  async updatePlugin(
+  ['update-plugin']: async (
+    common: BaseHandlerArg,
     pluginName: string,
     downloadUrl: string,
     pluginPath: string,
     targetVersion: string | null,
-  ) {
+  ) => {
     try {
       const result = await PluginUpdateInstaller.installUpdate(
         downloadUrl,
@@ -180,7 +187,7 @@ export const PluginHandlers = {
     }
   },
 
-  async getPluginRepoMapping() {
+  ['get-plugin-repo-mapping']: async (common: BaseHandlerArg) => {
     try {
       const mappings = store.get('pluginRepoMappings') || {};
       return { success: true, mappings };
@@ -193,7 +200,11 @@ export const PluginHandlers = {
     }
   },
 
-  async setPluginRepoMapping(pluginName: string, repoInput: string) {
+  ['set-plugin-repo-mapping']: async (
+    common: BaseHandlerArg,
+    pluginName: string,
+    repoInput: string,
+  ) => {
     try {
       const mappings = store.get('pluginRepoMappings') || {};
 
@@ -221,16 +232,20 @@ export const PluginHandlers = {
       );
     }
   },
-};
+} as const;
 
 /**
  * Register all IPC handlers related to plugin operations
  * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
  */
 export function registerPluginHandlers(ipcMain: IpcMain) {
-  for (const channel of Object.keys(pluginHandlerMap)) {
-    ipcMain.handle(channel, (event, ...args) => {
-      return PluginHandlers[pluginHandlerMap[channel]](event, ...args);
+  for (const channel of Object.keys(PluginHandlers) as Array<
+    keyof typeof PluginHandlers
+  >) {
+    const handler = PluginHandlers[channel] as GenericHandler;
+
+    ipcMain.handle(channel, (event, ...rest: unknown[]) => {
+      return handler({ event }, ...rest);
     });
   }
 }

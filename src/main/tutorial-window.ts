@@ -26,9 +26,10 @@ export function createTutorialWindow(parentWindow) {
     maximizable: false,
     skipTaskbar: true,
     webPreferences: {
-      preload: path.join(__dirname, 'tutorial-preload.js'),
+      preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
+      additionalArguments: ['--window-type=tutorial'],
     },
   });
 

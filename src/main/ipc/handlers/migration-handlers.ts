@@ -6,17 +6,20 @@ import {
   ErrorCodes,
 } from '../../utils/error-handler';
 import { HandlerResponse } from '../../types/common';
+import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
-export const migrationHandlerMap = {
-  'get-migration-status': 'getMigrationStatus',
-} as const;
+export type MigrationHandlers = typeof MigrationHandlers;
 
-export const MigrationHandlers = {
-  getMigrationStatus: async (): HandlerResponse<{
-    completed: boolean | null;
-    from: string | null;
-    date: string | null;
-  }> => {
+const MigrationHandlers = {
+  ['get-migration-status']: async (
+    common: BaseHandlerArg,
+  ): Promise<
+    HandlerResponse<{
+      completed: boolean | null;
+      from: string | null;
+      date: string | null;
+    }>
+  > => {
     try {
       const status = await getMigrationStatus();
       return { success: true, ...status };
@@ -25,18 +28,20 @@ export const MigrationHandlers = {
       return createErrorResponse(ErrorCodes.MIGRATION_ERROR, error.message);
     }
   },
-};
+} as const;
 
 /**
  * Register all IPC handlers related to migration operations
  * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
  */
 export function registerMigrationHandlers(ipcMain: IpcMain) {
-  for (const channel of Object.keys(migrationHandlerMap)) {
-    ipcMain.handle(channel, (event, ...args) => {
-      return MigrationHandlers[migrationHandlerMap[channel]].bind(event)(
-        ...args,
-      );
+  for (const channel of Object.keys(MigrationHandlers) as Array<
+    keyof typeof MigrationHandlers
+  >) {
+    const handler: GenericHandler = MigrationHandlers[channel];
+
+    ipcMain.handle(channel, (event, ...rest: unknown[]) => {
+      return handler({ event }, ...rest);
     });
   }
 }
