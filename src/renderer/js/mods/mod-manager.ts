@@ -475,7 +475,7 @@ class ModManager {
     try {
       const result = await window.electronAPI.readModsFolder(modsPath);
 
-      if (result.error) {
+      if (!result.success) {
         console.error('Error reading mods:', result.error);
         this.loadExampleMods();
         return;
@@ -635,11 +635,11 @@ class ModManager {
         this.modsPath,
         whitelistPatterns,
       );
-      this.conflicts = result.conflicts || [];
+      this.conflicts = (result.success && result.conflicts) || [];
       this.isCheckingConflicts = false;
 
       if (window.statusBarManager) {
-        if (result.totalConflicts > 0) {
+        if (result.success && result.totalConflicts > 0) {
           window.statusBarManager.updateConflictStatus(result.totalConflicts);
         } else {
           const statusRight =

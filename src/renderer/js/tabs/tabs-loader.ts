@@ -97,11 +97,11 @@ function initializeTabFeatures(tabName) {
 
             const result = await window.electronAPI.selectModFile();
 
-            if (result.canceled) {
+            if (!result.success && result.canceled) {
               return;
             }
 
-            if (!result.success || !result.filePath) {
+            if (!result.success) {
               if (window.toastManager) {
                 window.toastManager.error(
                   result.error || 'Failed to select file',

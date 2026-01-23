@@ -1,4 +1,4 @@
-import { app, shell, ipcMain } from 'electron';
+import { shell, IpcMain } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { spawn } from 'child_process';
@@ -9,9 +9,13 @@ import {
   ErrorCodes,
 } from '../../utils/error-handler';
 import { PATHS, TEMP_FOLDERS } from '../../config';
+import { HandlerResponse } from '../../types/common';
+import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
-export function registerSystemHandlers(ipcMain) {
-  ipcMain.handle('open-url', async (event, url) => {
+export type SystemHandlers = typeof SystemHandlers;
+
+const SystemHandlers = {
+  ['open-url']: async (common: BaseHandlerArg, url: string) => {
     try {
       await shell.openExternal(url);
       return { success: true };
@@ -19,9 +23,9 @@ export function registerSystemHandlers(ipcMain) {
       handleError(error, 'open-url');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('open-fightplanner-link', async (event, url) => {
+  ['open-fightplanner-link']: async (common: BaseHandlerArg, url: string) => {
     try {
       if (!url || !url.startsWith('fightplanner:')) {
         return createErrorResponse(
@@ -43,9 +47,9 @@ export function registerSystemHandlers(ipcMain) {
       handleError(error, 'open-fightplanner-link');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('cancel-download', async (event, downloadId) => {
+  ['cancel-download']: async (common: BaseHandlerArg, downloadId: string) => {
     try {
       const handler = getProtocolHandler();
       if (handler) {
@@ -60,13 +64,13 @@ export function registerSystemHandlers(ipcMain) {
       handleError(error, 'cancel-download');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('get-logs-path', () => {
+  ['get-logs-path']: async (common: BaseHandlerArg) => {
     return PATHS.logsDir();
-  });
+  },
 
-  ipcMain.handle('read-log-file', async (event, filePath) => {
+  ['read-log-file']: async (common: BaseHandlerArg, filePath: string) => {
     try {
       const logsDir = PATHS.logsDir();
       if (!filePath.startsWith(logsDir)) {
@@ -78,9 +82,17 @@ export function registerSystemHandlers(ipcMain) {
       handleError(error, 'read-log-file');
       return createErrorResponse(ErrorCodes.FILE_READ_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('clear-temp-files', async () => {
+  ['clear-temp-files']: async (
+    common: BaseHandlerArg,
+  ): Promise<
+    HandlerResponse<{
+      deletedFiles: number;
+      deletedFolders: number;
+      totalSize: string;
+    }>
+  > => {
     try {
       const tempPath = PATHS.tempDir();
       const foldersToClean = TEMP_FOLDERS;
@@ -137,58 +149,68 @@ export function registerSystemHandlers(ipcMain) {
       handleError(error, 'clear-temp-files');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle(
-    'launch-emulator',
-    async (event, emulatorType, emulatorPath, gamePath, fullscreen) => {
-      try {
-        if (!fs.existsSync(emulatorPath)) {
-          return createErrorResponse(
-            ErrorCodes.FILE_NOT_FOUND,
-            'Emulator not found at specified path',
-          );
-        }
-
-        if (!fs.existsSync(gamePath)) {
-          return createErrorResponse(
-            ErrorCodes.FILE_NOT_FOUND,
-            'Game file not found at specified path',
-          );
-        }
-
-        console.log('Launching emulator:', emulatorType);
-        console.log('Emulator path:', emulatorPath);
-        console.log('With game:', gamePath);
-        console.log('Fullscreen:', fullscreen);
-
-        let args;
-        if (emulatorType === 'yuzu') {
-          args = fullscreen ? ['-f', '-g', gamePath] : ['-g', gamePath];
-        } else {
-          args = ['-g', gamePath];
-        }
-
-        const emulatorProcess = spawn(emulatorPath, args, {
-          detached: true,
-          stdio: 'ignore',
-        });
-
-        emulatorProcess.unref();
-
-        console.log('Emulator launched successfully with args:', args);
-        return { success: true };
-      } catch (error) {
-        handleError(error, 'launch-emulator');
+  ['launch-emulator']: async (
+    common: BaseHandlerArg,
+    emulatorType: string,
+    emulatorPath: string,
+    gamePath: string,
+    fullscreen: boolean,
+  ): Promise<HandlerResponse> => {
+    try {
+      if (!fs.existsSync(emulatorPath)) {
         return createErrorResponse(
-          ErrorCodes.EMULATOR_LAUNCH_ERROR,
-          error.message,
+          ErrorCodes.FILE_NOT_FOUND,
+          'Emulator not found at specified path',
         );
       }
-    },
-  );
 
-  ipcMain.handle('load-locale', async (event, locale) => {
+      if (!fs.existsSync(gamePath)) {
+        return createErrorResponse(
+          ErrorCodes.FILE_NOT_FOUND,
+          'Game file not found at specified path',
+        );
+      }
+
+      console.log('Launching emulator:', emulatorType);
+      console.log('Emulator path:', emulatorPath);
+      console.log('With game:', gamePath);
+      console.log('Fullscreen:', fullscreen);
+
+      let args;
+      if (emulatorType === 'yuzu') {
+        args = fullscreen ? ['-f', '-g', gamePath] : ['-g', gamePath];
+      } else {
+        args = ['-g', gamePath];
+      }
+
+      const emulatorProcess = spawn(emulatorPath, args, {
+        detached: true,
+        stdio: 'ignore',
+      });
+
+      emulatorProcess.unref();
+
+      console.log('Emulator launched successfully with args:', args);
+      return { success: true };
+    } catch (error) {
+      handleError(error, 'launch-emulator');
+      return createErrorResponse(
+        ErrorCodes.EMULATOR_LAUNCH_ERROR,
+        error.message,
+      );
+    }
+  },
+
+  ['load-locale']: async (
+    common: BaseHandlerArg,
+    locale: string,
+  ): Promise<
+    HandlerResponse<{
+      translations: Record<string, string>;
+    }>
+  > => {
     try {
       const localesPath = PATHS.localesDir();
       const localePath = path.join(localesPath, `${locale}.json`);
@@ -216,9 +238,9 @@ export function registerSystemHandlers(ipcMain) {
       handleError(error, 'load-locale');
       return createErrorResponse(ErrorCodes.LOCALE_LOAD_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('get-available-drives', async () => {
+  ['get-available-drives']: async (common: BaseHandlerArg) => {
     try {
       const { detectDrives } = require('../../utils/drive-detector');
       const drives = await detectDrives();
@@ -227,5 +249,19 @@ export function registerSystemHandlers(ipcMain) {
       handleError(error, 'get-available-drives');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
+} as const;
+
+/**
+ * Register all IPC handlers related to system operations
+ * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
+ */
+export function registerSystemHandlers(ipcMain: IpcMain) {
+  for (const channel of Object.keys(SystemHandlers)) {
+    const handler = SystemHandlers[channel] as GenericHandler;
+
+    ipcMain.handle(channel, (event, ...rest: unknown[]) => {
+      return handler({ event }, ...rest);
+    });
+  }
 }

@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, dialog } from 'electron';
+import { BrowserWindow, IpcMain, dialog } from 'electron';
 import {
   createTutorialWindow,
   closeTutorialWindow,
@@ -26,8 +26,13 @@ import {
   createDirectory,
 } from '../../utils/arcropolis-installer';
 
-export function registerTutorialHandlers(ipcMain) {
-  ipcMain.handle('open-tutorial-window', async () => {
+import { HandlerResponse } from '../../types/common';
+import { BaseHandlerArg, GenericHandler } from '../../types/common';
+
+export type TutorialHandlers = typeof TutorialHandlers;
+
+const TutorialHandlers = {
+  ['open-tutorial-window']: async (common: BaseHandlerArg) => {
     try {
       const windows = BrowserWindow.getAllWindows();
       const mainWindow = windows[0];
@@ -40,20 +45,19 @@ export function registerTutorialHandlers(ipcMain) {
         error.message,
       );
     }
-  });
+  },
 
-  ipcMain.on('close-tutorial-window', () => {
+  ['close-tutorial-window']: async (common: BaseHandlerArg) => {
     console.log('Received close-tutorial-window event');
     closeTutorialWindow();
-  });
+  },
 
-  ipcMain.on('skip-tutorial', () => {
+  ['skip-tutorial']: async (common: BaseHandlerArg) => {
     console.log('Received skip-tutorial event');
     closeTutorialWindow();
-  });
+  },
 
-  // ARCropolis installation handlers
-  ipcMain.handle('detect-sd-drives', async () => {
+  ['detect-sd-drives']: async (common: BaseHandlerArg) => {
     try {
       const drives = await detectWindowsDrives();
       return { success: true, drives };
@@ -61,9 +65,9 @@ export function registerTutorialHandlers(ipcMain) {
       handleError(error, 'detect-sd-drives');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('detect-yuzu-path', async () => {
+  ['detect-yuzu-path']: async (common: BaseHandlerArg) => {
     try {
       const homeDir = os.homedir();
       const yuzuPath = path.join(homeDir, 'AppData', 'Roaming', 'yuzu');
@@ -77,9 +81,9 @@ export function registerTutorialHandlers(ipcMain) {
       handleError(error, 'detect-yuzu-path');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('detect-ryujinx-path', async () => {
+  ['detect-ryujinx-path']: async (common: BaseHandlerArg) => {
     try {
       const homeDir = os.homedir();
       const ryujinxPath = path.join(homeDir, 'AppData', 'Roaming', 'Ryujinx');
@@ -93,70 +97,88 @@ export function registerTutorialHandlers(ipcMain) {
       handleError(error, 'detect-ryujinx-path');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle(
-    'get-github-release',
-    async (event, repo = 'Raytwo/ARCropolis') => {
-      try {
-        let release;
-        if (repo === 'skyline-dev/skyline') {
-          release = await getLatestSkylineRelease();
-        } else {
-          release = await getLatestArcropolisRelease();
-        }
-        return { success: true, ...release };
-      } catch (error) {
-        handleError(error, 'get-github-release');
-        return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
-      }
-    },
-  );
-
-  ipcMain.handle('get-skyline-release', async () => {
+  ['get-github-release']: async (
+    common: BaseHandlerArg,
+    repo = 'Raytwo/ARCropolis',
+  ) => {
     try {
-      return await getLatestSkylineRelease();
+      let release;
+      if (repo === 'skyline-dev/skyline') {
+        release = await getLatestSkylineRelease();
+      } else {
+        release = await getLatestArcropolisRelease();
+      }
+      return { success: true, ...release };
+    } catch (error) {
+      handleError(error, 'get-github-release');
+      return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
+    }
+  },
+
+  ['get-skyline-release']: async (
+    common: BaseHandlerArg,
+  ): Promise<
+    HandlerResponse<{
+      tag: string;
+      downloadUrl: string;
+      version: string;
+      name: string;
+    }>
+  > => {
+    try {
+      return { success: true, ...(await getLatestSkylineRelease()) };
     } catch (error) {
       handleError(error, 'get-skyline-release');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('extract-skyline', async (event, zipPath, targetDir) => {
+  ['extract-skyline']: async (
+    common: BaseHandlerArg,
+    zipPath: string,
+    targetDir: string,
+  ) => {
     try {
       return await extractAndInstallSkyline(zipPath, targetDir);
     } catch (error) {
       handleError(error, 'extract-skyline');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle(
-    'download-arcropolis',
-    async (event, downloadUrl, targetPath) => {
-      try {
-        const downloadedPath = await downloadArcropolis(
-          downloadUrl,
-          targetPath,
-        );
-        return { success: true, path: downloadedPath };
-      } catch (error) {
-        handleError(error, 'download-arcropolis');
-        return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
-      }
-    },
-  );
+  ['download-arcropolis']: async (
+    common: BaseHandlerArg,
+    downloadUrl: string,
+    targetPath: string,
+  ): Promise<HandlerResponse<{ path: string }>> => {
+    try {
+      const downloadedPath = await downloadArcropolis(downloadUrl, targetPath);
+      return { success: true, path: downloadedPath };
+    } catch (error) {
+      handleError(error, 'download-arcropolis');
+      return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
+    }
+  },
 
-  ipcMain.handle('extract-arcropolis', async (event, zipPath, targetDir) => {
+  ['extract-arcropolis']: async (
+    common: BaseHandlerArg,
+    zipPath: string,
+    targetDir: string,
+  ) => {
     try {
       return await extractAndInstallArcropolis(zipPath, targetDir);
     } catch (error) {
       handleError(error, 'extract-arcropolis');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('create-directory', async (event, dirPath) => {
+  ['create-directory']: async (
+    common: BaseHandlerArg,
+    dirPath: string,
+  ): Promise<HandlerResponse> => {
     try {
       await createDirectory(dirPath);
       return { success: true };
@@ -164,9 +186,12 @@ export function registerTutorialHandlers(ipcMain) {
       handleError(error, 'create-directory');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('check-arcropolis-installed', async (event, targetDir) => {
+  ['check-arcropolis-installed']: async (
+    common: BaseHandlerArg,
+    targetDir: string,
+  ) => {
     try {
       const installed = checkArcropolisInstalled(targetDir);
       return { success: true, installed };
@@ -174,9 +199,12 @@ export function registerTutorialHandlers(ipcMain) {
       handleError(error, 'check-arcropolis-installed');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('check-arcropolis-folder', async (event, ultimatePath) => {
+  ['check-arcropolis-folder']: async (
+    common: BaseHandlerArg,
+    ultimatePath: string,
+  ) => {
     try {
       const exists = checkArcropolisFolder(ultimatePath);
       return { success: true, exists };
@@ -184,9 +212,16 @@ export function registerTutorialHandlers(ipcMain) {
       handleError(error, 'check-arcropolis-folder');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('join-path', async (event, ...parts) => {
+  ['join-path']: async (
+    common: BaseHandlerArg,
+    ...parts: string[]
+  ): Promise<
+    HandlerResponse<{
+      path: string;
+    }>
+  > => {
     try {
       const path = require('path');
       return { success: true, path: path.join(...parts) };
@@ -194,9 +229,15 @@ export function registerTutorialHandlers(ipcMain) {
       handleError(error, 'join-path');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('get-temp-dir', async () => {
+  ['get-temp-dir']: async (
+    common: BaseHandlerArg,
+  ): Promise<
+    HandlerResponse<{
+      path: string;
+    }>
+  > => {
     try {
       const os = require('os');
       return { success: true, path: os.tmpdir() };
@@ -204,12 +245,11 @@ export function registerTutorialHandlers(ipcMain) {
       handleError(error, 'get-temp-dir');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
 
-  ipcMain.handle('select-drive', async (event) => {
+  ['select-drive']: async (common: BaseHandlerArg) => {
     try {
-      const win = BrowserWindow.fromWebContents(event.sender)!;
-      const drives = await detectWindowsDrives();
+      const win = BrowserWindow.fromWebContents(common.event.sender)!;
 
       // Show custom dialog or use file picker
       const result = await dialog.showOpenDialog(win, {
@@ -234,5 +274,21 @@ export function registerTutorialHandlers(ipcMain) {
       handleError(error, 'select-drive');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
-  });
+  },
+} as const;
+
+/**
+ * Register all IPC handlers related to tutorial operations
+ * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
+ */
+export function registerTutorialHandlers(ipcMain: IpcMain) {
+  for (const channel of Object.keys(TutorialHandlers) as Array<
+    keyof typeof TutorialHandlers
+  >) {
+    const handler = TutorialHandlers[channel] as GenericHandler;
+
+    ipcMain.handle(channel, (event, ...rest: unknown[]) => {
+      return handler({ event }, ...rest);
+    });
+  }
 }

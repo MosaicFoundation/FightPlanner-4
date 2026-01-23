@@ -54,6 +54,7 @@ class DiscordRPCClient {
         tab: this.currentTab,
         modCount: this.modCount,
       });
+
       window.electronAPI.updateDiscordRPC({
         tab: this.currentTab,
         modCount: this.modCount,

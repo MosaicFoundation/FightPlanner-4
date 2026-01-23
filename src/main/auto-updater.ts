@@ -154,7 +154,10 @@ class AutoUpdater {
     }
   }
 
-  async downloadUpdate() {
+  async downloadUpdate(): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
     try {
       if (!this.updateInfo) {
         const checkResult = await this.checkForUpdates();

@@ -106,7 +106,7 @@ class CharactersManager {
     try {
       const result = await window.electronAPI.readModsFolder(modsPath);
 
-      if (result.error) {
+      if (!result.success) {
         console.error('Error reading mods:', result.error);
         return;
       }

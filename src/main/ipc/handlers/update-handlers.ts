@@ -1,47 +1,70 @@
+import { IpcMain } from 'electron';
 import autoUpdater from '../../auto-updater';
+import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
-export function registerUpdateHandlers(ipcMain) {
-  ipcMain.handle('check-for-updates', async () => {
+export type UpdateHandlers = typeof UpdateHandlers;
+
+const UpdateHandlers = {
+  ['check-for-updates']: async (common: BaseHandlerArg) => {
     return await autoUpdater.checkForUpdates();
-  });
+  },
 
-  ipcMain.handle('download-update', async () => {
+  ['download-update']: async (common: BaseHandlerArg) => {
     return await autoUpdater.downloadUpdate();
-  });
+  },
 
-  ipcMain.handle('install-update', () => {
+  ['install-update']: async (common: BaseHandlerArg) => {
     autoUpdater.quitAndInstall();
     return { success: true };
-  });
+  },
 
-  ipcMain.handle('get-update-info', () => {
+  ['get-update-info']: async (common: BaseHandlerArg) => {
     return autoUpdater.getUpdateInfo();
-  });
+  },
 
-  ipcMain.handle('set-auto-check-enabled', (event, enabled) => {
+  ['set-auto-check-enabled']: async (
+    common: BaseHandlerArg,
+    enabled: boolean,
+  ) => {
     autoUpdater.setAutoCheckEnabled(enabled);
     return { success: true };
-  });
+  },
 
-  ipcMain.handle('set-update-channel', (event, channel) => {
+  ['set-update-channel']: async (common: BaseHandlerArg, channel: string) => {
     autoUpdater.setUpdateChannel(channel);
     return { success: true };
-  });
+  },
 
-  ipcMain.handle('get-update-channel', () => {
+  ['get-update-channel']: async (common: BaseHandlerArg) => {
     return autoUpdater.getUpdateChannel();
-  });
+  },
 
-  ipcMain.handle('set-force-update', (event, enabled) => {
+  ['set-force-update']: async (common: BaseHandlerArg, enabled: boolean) => {
     autoUpdater.setForceUpdateAvailable(enabled);
     return { success: true };
-  });
+  },
 
-  ipcMain.handle('get-force-update', () => {
+  ['get-force-update']: async (common: BaseHandlerArg) => {
     return autoUpdater.getForceUpdateAvailable();
-  });
+  },
 
-  ipcMain.handle('simulate-update', () => {
+  ['simulate-update']: async (common: BaseHandlerArg) => {
     return autoUpdater.simulateUpdate();
-  });
+  },
+} as const;
+
+/**
+ * Register all IPC handlers related to update operations
+ * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
+ */
+export function registerUpdateHandlers(ipcMain: IpcMain) {
+  for (const channel of Object.keys(UpdateHandlers) as Array<
+    keyof typeof UpdateHandlers
+  >) {
+    const handler = UpdateHandlers[channel] as GenericHandler;
+
+    ipcMain.handle(channel, (event, ...rest: unknown[]) => {
+      return handler({ event }, ...rest);
+    });
+  }
 }

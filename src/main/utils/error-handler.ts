@@ -45,7 +45,12 @@ export function createErrorResponse(
   code: string,
   message: string,
   details = {},
-) {
+): {
+  success: false;
+  error: string;
+  code: string;
+  details: Record<string, unknown>;
+} {
   return {
     success: false,
     error: message,

@@ -86,6 +86,7 @@ function createWindow(options: CreateWindowOptions = {}) {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
+      additionalArguments: ['--window-type=main'],
     },
     backgroundColor: '#1a1a1a',
     frame: false,

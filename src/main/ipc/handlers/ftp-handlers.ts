@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { IpcMain } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import FTPClient from '../../ftp-client';
@@ -7,11 +7,14 @@ import {
   createErrorResponse,
   ErrorCodes,
 } from '../../utils/error-handler';
+import { HandlerResponse } from '../../types/common';
+import { BaseHandlerArg, GenericHandler } from '../../types/common';
+import { AppHandlers } from './app-handlers';
 
 /**
  * Copy directory recursively
  */
-function copyRecursiveSync(src, dest) {
+function _copyRecursiveSync(src, dest) {
   const exists = fs.existsSync(src);
   const stats = exists && fs.statSync(src);
   const isDirectory = stats && stats.isDirectory();
@@ -22,7 +25,7 @@ function copyRecursiveSync(src, dest) {
     }
 
     fs.readdirSync(src).forEach((childItemName) => {
-      copyRecursiveSync(
+      _copyRecursiveSync(
         path.join(src, childItemName),
         path.join(dest, childItemName),
       );
@@ -35,7 +38,7 @@ function copyRecursiveSync(src, dest) {
 /**
  * Send mods to Switch via local drive.
  */
-async function sendModsToDrive(config) {
+async function _sendModsToDrive(config) {
   try {
     const driveIdentifier = config.switchDriveLetter;
     if (!driveIdentifier) {
@@ -105,7 +108,7 @@ async function sendModsToDrive(config) {
               });
             }
 
-            copyRecursiveSync(localModPath, targetModPath);
+            _copyRecursiveSync(localModPath, targetModPath);
 
             // Count files transferred
             const countFiles = (dir) => {
@@ -149,7 +152,7 @@ async function sendModsToDrive(config) {
               });
             }
 
-            copyRecursiveSync(localModPath, targetModPath);
+            _copyRecursiveSync(localModPath, targetModPath);
 
             const countFiles = (dir) => {
               let count = 0;
@@ -185,12 +188,33 @@ async function sendModsToDrive(config) {
   }
 }
 
-export function registerFtpHandlers(ipcMain) {
-  ipcMain.handle('send-mods-to-switch', async (event, config) => {
+export type FtpHandlers = typeof FtpHandlers;
+
+const FtpHandlers = {
+  ['send-mods-to-switch']: async (
+    common: BaseHandlerArg,
+    config: {
+      switchIp: string;
+      switchPort: number;
+      switchFtpPath: string;
+      switchDriveLetter: string;
+      switchTransferMethod: 'ftp' | 'drive';
+      modsPath: string;
+      recentMods: Array<{
+        id: string;
+        modName?: string;
+        folderPath?: string;
+      }>;
+    },
+  ): Promise<
+    HandlerResponse<{
+      transferredCount: number;
+    }>
+  > => {
     const transferMethod = config.switchTransferMethod || 'ftp';
 
     if (transferMethod === 'drive') {
-      return await sendModsToDrive(config);
+      return await _sendModsToDrive(config);
     }
 
     const ftpClient = new FTPClient();
@@ -275,5 +299,21 @@ export function registerFtpHandlers(ipcMain) {
       } catch (disconnectError) {}
       return createErrorResponse(ErrorCodes.FTP_TRANSFER_ERROR, error.message);
     }
-  });
+  },
+} as const;
+
+/**
+ * Register all IPC handlers related to FTP operations
+ * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
+ */
+export function registerFtpHandlers(ipcMain: IpcMain) {
+  for (const channel of Object.keys(FtpHandlers) as Array<
+    keyof typeof FtpHandlers
+  >) {
+    const handler = FtpHandlers[channel] as GenericHandler;
+
+    ipcMain.handle(channel, (event, ...rest: unknown[]) => {
+      return handler({ event }, ...rest);
+    });
+  }
 }

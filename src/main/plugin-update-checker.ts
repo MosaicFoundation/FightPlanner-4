@@ -259,12 +259,13 @@ export default class PluginUpdateChecker {
 
   static async checkAllPlugins(
     pluginMappings: Record<string, string>,
-    pluginVersions,
+    pluginVersions: Record<string, string>,
   ) {
     const results: (PluginUpdateResult & { pluginName: string })[] = [];
 
     for (const [pluginName, repoInput] of Object.entries(pluginMappings)) {
       const currentVersion = pluginVersions[pluginName] || null;
+
       const result = await this.checkPluginUpdate(
         pluginName,
         repoInput,

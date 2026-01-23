@@ -162,7 +162,7 @@ class ModOperations {
     if (window.electronAPI && window.electronAPI.scanModSlots) {
       const result = await window.electronAPI.scanModSlots(mod.folderPath);
 
-      if (result.success && result.slots) {
+      if (result.success) {
         if (window.modalManager) {
           window.modalManager.openChangeSlotModal(
             mod,

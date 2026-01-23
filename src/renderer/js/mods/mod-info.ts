@@ -1,6 +1,7 @@
-export interface CurrentModData {
+interface ModInfo {
   display_name: string;
   description: string;
+  s_name?: string;
   authors?: string;
   version?: string;
   category?: string;
@@ -9,7 +10,7 @@ export interface CurrentModData {
 
 class ModInfoManager {
   currentModPath: string | null;
-  currentModData: CurrentModData | null;
+  currentModData: ModInfo | null;
 
   constructor() {
     this.currentModPath = null;
@@ -20,7 +21,7 @@ class ModInfoManager {
     return document.querySelector<HTMLElement>('#mod-info-content');
   }
 
-  displayModInfo(modData: CurrentModData, modPath: string | null = null) {
+  displayModInfo(modData: ModInfo, modPath: string | null = null) {
     this.currentModData = modData;
     this.currentModPath = modPath;
 

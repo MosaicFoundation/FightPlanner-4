@@ -1,20 +1,32 @@
-import { ipcMain } from 'electron';
+import { IpcMain } from 'electron';
 import store from '../../store';
-import { createErrorResponse, ErrorCodes } from '../../utils/error-handler';
+import {
+  createErrorResponse,
+  ErrorCodes,
+  handleError,
+} from '../../utils/error-handler';
+import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
-export function registerStoreHandlers(ipcMain) {
-  ipcMain.handle('store-get', (event, key) => {
+export type StoreHandlers = typeof StoreHandlers;
+
+const StoreHandlers = {
+  ['store-get']: async (
+    common: BaseHandlerArg,
+    key: string,
+  ): Promise<unknown | null> => {
     try {
       return store.get(key);
     } catch (error) {
-      return createErrorResponse(
-        ErrorCodes.STORE_OPERATION_ERROR,
-        error.message,
-      );
+      handleError(error, 'store-get');
+      return null;
     }
-  });
+  },
 
-  ipcMain.handle('store-set', (event, key, value) => {
+  ['store-set']: async (
+    common: BaseHandlerArg,
+    key: string,
+    value: unknown,
+  ) => {
     try {
       store.set(key, value);
       return { success: true };
@@ -24,9 +36,9 @@ export function registerStoreHandlers(ipcMain) {
         error.message,
       );
     }
-  });
+  },
 
-  ipcMain.handle('store-delete', (event, key) => {
+  ['store-delete']: async (common: BaseHandlerArg, key: string) => {
     try {
       store.delete(key);
       return { success: true };
@@ -36,9 +48,9 @@ export function registerStoreHandlers(ipcMain) {
         error.message,
       );
     }
-  });
+  },
 
-  ipcMain.handle('store-clear', () => {
+  ['store-clear']: async (common: BaseHandlerArg) => {
     try {
       store.clear();
       return { success: true };
@@ -48,5 +60,21 @@ export function registerStoreHandlers(ipcMain) {
         error.message,
       );
     }
-  });
+  },
+} as const;
+
+/**
+ * Register all IPC handlers related to store operations
+ * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
+ */
+export function registerStoreHandlers(ipcMain: IpcMain) {
+  for (const channel of Object.keys(StoreHandlers) as Array<
+    keyof typeof StoreHandlers
+  >) {
+    const handler = StoreHandlers[channel] as GenericHandler;
+
+    ipcMain.handle(channel, (event, ...rest: unknown[]) => {
+      return handler({ event }, ...rest);
+    });
+  }
 }

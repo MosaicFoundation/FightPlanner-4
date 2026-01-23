@@ -14,7 +14,12 @@ interface UserFields {
 class SocialManager {
   API_URL: string;
   authToken: string | null;
-  userData: any;
+  userData: {
+    localId: string;
+    email: string;
+    displayName: string;
+    refreshToken: string;
+  } | null;
   autoDownloadInterval: ReturnType<typeof setInterval> | null;
   autoDownloadEnabled: boolean;
   autoDownloadIntervalMs: number;
@@ -139,10 +144,13 @@ class SocialManager {
       }, 10);
 
       if (window.electronAPI && window.electronAPI.store) {
-        const storedToken =
-          await window.electronAPI.store.get('social.authToken');
-        const storedUserData =
-          await window.electronAPI.store.get('social.userData');
+        const storedToken = (await window.electronAPI.store.get(
+          'social.authToken',
+        )) as string | null;
+
+        const storedUserData = (await window.electronAPI.store.get(
+          'social.userData',
+        )) as typeof this.userData | null;
 
         if (storedToken && storedUserData) {
           this.authToken = storedToken;
@@ -490,10 +498,13 @@ class SocialManager {
     const form = document.querySelector<HTMLElement>('#social-login-form');
     const emailInput =
       document.querySelector<HTMLInputElement>('#social-email');
+
     const passInput =
       document.querySelector<HTMLInputElement>('#social-password');
+
     const remember =
       document.querySelector<HTMLInputElement>('#social-remember');
+
     const forgot = document.querySelector<HTMLElement>('#social-forgot');
     const create = document.querySelector<HTMLElement>('#social-create');
     const submitButton = form
@@ -508,7 +519,7 @@ class SocialManager {
       ) {
         window.electronAPI.store
           .get('social.rememberEmail')
-          .then((val) => {
+          .then((val: string | null) => {
             if (val && !emailInput.value) emailInput.value = val;
           })
           .catch(() => {});
@@ -1806,7 +1817,8 @@ class SocialManager {
       );
 
       if (data.friends && Array.isArray(data.friends)) {
-        const currentUserId = this.userData.localId;
+        const currentUserId = this.userData!.localId;
+
         const existingRelation = data.friends.find((f) => {
           const user1 = f.user_1 || f.user1;
           const user2 = f.user_2 || f.user2;
@@ -2643,12 +2655,13 @@ class SocialManager {
   async loadAutoDownloadSettings() {
     try {
       if (window.electronAPI && window.electronAPI.store) {
-        const enabled = await window.electronAPI.store.get(
+        const enabled = (await window.electronAPI.store.get(
           'social.autoDownloadEnabled',
-        );
-        const intervalMinutes = await window.electronAPI.store.get(
+        )) as boolean | undefined;
+
+        const intervalMinutes = (await window.electronAPI.store.get(
           'social.autoDownloadIntervalMinutes',
-        );
+        )) as number;
 
         if (enabled !== undefined) {
           this.autoDownloadEnabled = enabled;

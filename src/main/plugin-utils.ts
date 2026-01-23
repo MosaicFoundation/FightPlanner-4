@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-interface Plugin {
+export interface SimplePlugin {
   name: string;
   path: string;
   size: string;
@@ -13,10 +13,10 @@ export default class PluginUtils {
    * @param {string} pluginsPath - Path to the plugins folder
    * @returns {object} Object with activePlugins and disabledPlugins arrays
    */
-  static readAllPlugins(pluginsPath) {
+  static readAllPlugins(pluginsPath: string) {
     const result: {
-      activePlugins: Plugin[];
-      disabledPlugins: Plugin[];
+      activePlugins: SimplePlugin[];
+      disabledPlugins: SimplePlugin[];
     } = {
       activePlugins: [],
       disabledPlugins: [],
@@ -88,7 +88,7 @@ export default class PluginUtils {
    * @param {string} pluginsBasePath - Base path of the plugins folder
    * @returns {object} Result with success status
    */
-  static togglePlugin(pluginPath, pluginsBasePath) {
+  static togglePlugin(pluginPath: string, pluginsBasePath: string) {
     try {
       const pluginName = path.basename(pluginPath);
       const parentDir = path.dirname(pluginsBasePath);

@@ -1,7 +1,10 @@
-import { app, ipcMain } from 'electron';
+import { app, IpcMain } from 'electron';
+import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
-export function registerAppHandlers(ipcMain) {
-  ipcMain.handle('get-app-version', () => {
+export type AppHandlers = typeof AppHandlers;
+
+const AppHandlers = {
+  ['get-app-version']: async (common: BaseHandlerArg) => {
     return {
       version: app.getVersion(),
       name: app.getName(),
@@ -9,5 +12,21 @@ export function registerAppHandlers(ipcMain) {
       nodeVersion: process.versions.node,
       chromeVersion: process.versions.chrome,
     };
-  });
+  },
+} as const;
+
+/**
+ * Register all IPC handlers related to app operations
+ * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
+ */
+export function registerAppHandlers(ipcMain: IpcMain) {
+  for (const channel of Object.keys(AppHandlers) as Array<
+    keyof typeof AppHandlers
+  >) {
+    const handler = AppHandlers[channel] as GenericHandler;
+
+    ipcMain.handle(channel, (event, ...rest: unknown[]) => {
+      return handler({ event }, ...rest);
+    });
+  }
 }
