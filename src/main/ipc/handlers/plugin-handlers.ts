@@ -102,6 +102,7 @@ const PluginHandlers = {
         string,
         string
       >;
+
       const pluginVersions = (store.get('pluginVersions') || {}) as Record<
         string,
         string

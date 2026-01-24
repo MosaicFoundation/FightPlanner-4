@@ -1,12 +1,10 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { app } from 'electron';
-import AdmZip from 'adm-zip';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-const execAsync = promisify(exec);
+
 import { CONFLICT_WHITELIST_PATTERNS } from './config';
 import { ModInstallResult } from './plugin-update-installer';
+import { FileExtractor } from './utils/file-extractor';
 
 interface ModInfo {
   display_name: string;
@@ -765,136 +763,6 @@ export default class ModUtils {
     return conflicts;
   }
 
-  /**
-   * Extract an archive file to a target directory
-   * @param {string} archivePath - Path to the archive file
-   * @param {string} targetPath - Target directory for extraction
-   * @throws {Error} If extraction fails
-   */
-  static async extractArchive(archivePath, targetPath) {
-    try {
-      console.log('Extracting archive file...');
-      console.log('Source:', archivePath);
-      console.log('Destination:', targetPath);
-
-      if (!fs.existsSync(archivePath)) {
-        throw new Error('Archive file does not exist: ' + archivePath);
-      }
-
-      if (!fs.existsSync(targetPath)) {
-        fs.mkdirSync(targetPath, { recursive: true });
-      }
-
-      const ext = path.extname(archivePath).toLowerCase();
-      let extracted = false;
-      let lastError = null;
-
-      if (process.platform === 'win32') {
-        try {
-          await this.extract7Zip(archivePath, targetPath);
-          console.log('✓ Extracted using 7-Zip');
-          extracted = true;
-        } catch (err) {
-          console.warn('7-Zip extraction failed:', err.message);
-          lastError = err;
-        }
-      }
-
-      if (!extracted && process.platform !== 'win32' && ext === '.zip') {
-        try {
-          await this.extractUnzip(archivePath, targetPath);
-          console.log('✓ Extracted using system unzip');
-          extracted = true;
-        } catch (err) {
-          console.warn('System unzip failed:', err.message);
-          lastError = err;
-        }
-      }
-
-      if (!extracted && ext === '.zip') {
-        try {
-          const zip = new AdmZip(archivePath);
-          zip.extractAllTo(targetPath, true);
-          console.log('✓ Extracted using adm-zip (fallback)');
-          extracted = true;
-        } catch (err) {
-          console.error('adm-zip extraction failed:', err.message);
-          lastError = err;
-        }
-      }
-
-      if (!extracted) {
-        throw lastError || new Error('All extraction methods failed');
-      }
-
-      const extractedFiles = fs.readdirSync(targetPath);
-      console.log('Extracted files/folders:', extractedFiles);
-
-      if (extractedFiles.length === 0) {
-        throw new Error('Archive extraction resulted in no files');
-      }
-    } catch (error) {
-      console.error('Archive extraction failed:', error);
-      throw new Error(`Failed to extract archive: ${error.message}`);
-    }
-  }
-
-  static async extract7Zip(archivePath, targetPath) {
-    let command;
-
-    const candidate7zPaths = [
-      path.join(__dirname, '../../tools/7za.exe'),
-      process.resourcesPath
-        ? path.join(process.resourcesPath, 'tools', '7za.exe')
-        : null,
-      process.resourcesPath
-        ? path.join(
-            process.resourcesPath,
-            '..',
-            'app.asar.unpacked',
-            'tools',
-            '7za.exe',
-          )
-        : null,
-    ].filter(Boolean) as string[];
-
-    const existing7z = candidate7zPaths.find((p) => fs.existsSync(p));
-
-    if (process.platform === 'win32') {
-      if (existing7z) {
-        command = `"${existing7z}" x "${archivePath}" -o"${targetPath}" -y`;
-      } else {
-        throw new Error(
-          '7za.exe not found. Please place 7za.exe in the tools folder or install 7-Zip in PATH.',
-        );
-      }
-    } else {
-      command = `7z x "${archivePath}" -o"${targetPath}" -y`;
-    }
-
-    console.log('[extract] 7z command:', command);
-    const { stdout, stderr } = await execAsync(command);
-
-    if (stderr && !stderr.includes('Everything is Ok')) {
-      console.warn('7z stderr:', stderr);
-    }
-
-    console.log('[extract] 7z output:', stdout);
-  }
-
-  static async extractUnzip(archivePath, targetPath) {
-    const command = `unzip -o "${archivePath}" -d "${targetPath}"`;
-    console.log('[extract] unzip command:', command);
-
-    const { stdout, stderr } = await execAsync(command);
-
-    if (stderr) {
-      console.warn('unzip stderr:', stderr);
-    }
-
-    console.log('[extract] unzip output:', stdout);
-  }
-
   static copyRecursiveSync(src, dest) {
     const exists = fs.existsSync(src);
     const stats = exists && fs.statSync(src);
@@ -952,16 +820,18 @@ export default class ModUtils {
 
       if (isArchive) {
         console.log('Installing mod from archive:', sourcePath);
+
         tempExtractDir = path.join(
           app.getPath('temp'),
           'fightplanner-extract',
           `mod-${Date.now()}`,
         );
+
         if (!fs.existsSync(tempExtractDir)) {
           fs.mkdirSync(tempExtractDir, { recursive: true });
         }
 
-        await this.extractArchive(sourcePath, tempExtractDir);
+        await FileExtractor.extractArchive(sourcePath, tempExtractDir);
         extractedItems = fs.readdirSync(tempExtractDir);
         console.log('Extracted items:', extractedItems);
 

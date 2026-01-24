@@ -2,9 +2,9 @@ import * as https from 'https';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import AdmZip from 'adm-zip';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { FileExtractor } from './utils/file-extractor';
 
 const execAsync = promisify(exec);
 
@@ -100,70 +100,6 @@ export default class PluginUpdateInstaller {
     return null;
   }
 
-  static async extractZip(zipPath, targetPath) {
-    try {
-      if (!fs.existsSync(zipPath)) {
-        throw new Error('ZIP file does not exist: ' + zipPath);
-      }
-
-      if (!fs.existsSync(targetPath)) {
-        fs.mkdirSync(targetPath, { recursive: true });
-      }
-
-      let extracted = false;
-      let lastError = null;
-
-      const bundled7z = path.join(__dirname, '..', '..', 'tools', '7za.exe');
-      const has7z = fs.existsSync(bundled7z);
-
-      if (has7z || process.platform === 'win32') {
-        try {
-          const command = has7z
-            ? `"${bundled7z}" x "${zipPath}" -o"${targetPath}" -y`
-            : `7z x "${zipPath}" -o"${targetPath}" -y`;
-
-          await execAsync(command);
-          extracted = true;
-        } catch (err) {
-          lastError = err;
-        }
-      }
-
-      if (!extracted && process.platform !== 'win32') {
-        try {
-          const command = `unzip -o "${zipPath}" -d "${targetPath}"`;
-          await execAsync(command);
-          extracted = true;
-        } catch (err) {
-          lastError = err;
-        }
-      }
-
-      if (!extracted) {
-        try {
-          const zip = new AdmZip(zipPath);
-          zip.extractAllTo(targetPath, true);
-          extracted = true;
-        } catch (err) {
-          lastError = err;
-        }
-      }
-
-      if (!extracted) {
-        throw lastError || new Error('All extraction methods failed');
-      }
-
-      const extractedFiles = fs.readdirSync(targetPath);
-      if (extractedFiles.length === 0) {
-        throw new Error('ZIP extraction resulted in no files');
-      }
-
-      return true;
-    } catch (error) {
-      throw new Error(`Failed to extract ZIP: ${error.message}`);
-    }
-  }
-
   static async installUpdate(
     downloadUrl: string,
     pluginPath: string,
@@ -200,7 +136,7 @@ export default class PluginUpdateInstaller {
         }
 
         const extractDir = path.join(tempDir, `plugin-extract-${Date.now()}`);
-        await this.extractZip(downloadedFilePath, extractDir);
+        await FileExtractor.extractArchive(downloadedFilePath, extractDir);
 
         nroFilePath = this.findNroFile(extractDir);
 
