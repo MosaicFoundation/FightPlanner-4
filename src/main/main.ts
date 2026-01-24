@@ -95,20 +95,8 @@ function createWindow(options: CreateWindowOptions = {}) {
     show: false,
   });
 
-  let isToolsTabActive = false;
-
-  mainWindow.webContents.on('console-message', (event, level, message) => {
-    if (message.includes('tools-tab-active')) {
-      isToolsTabActive = message.includes('true');
-    }
-  });
-
   mainWindow.webContents.on('will-navigate', (event, _url) => {
     event.preventDefault();
-  });
-
-  ipcMain.on('update-tools-tab-status', (event, status) => {
-    isToolsTabActive = status;
   });
 
   mainWindow.webContents.setWindowOpenHandler(() => {

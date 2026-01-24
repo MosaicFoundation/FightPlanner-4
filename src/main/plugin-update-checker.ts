@@ -171,9 +171,9 @@ export default class PluginUpdateChecker {
   }
 
   static async checkPluginUpdate(
-    pluginName,
-    repoInput,
-    currentVersion,
+    pluginName: string,
+    repoInput: string,
+    currentVersion: string | null,
   ): Promise<PluginUpdateResult> {
     try {
       const repo = this.normalizeRepoUrl(repoInput);

@@ -12,6 +12,7 @@ import { UpdateHandlers } from './ipc/handlers/update-handlers';
 import { TutorialHandlers } from './ipc/handlers/tutorial-handlers';
 import { MigrationHandlers } from './ipc/handlers/migration-handlers';
 import { ParamsWithoutFirstArg } from './types/common';
+import { WindowHandlers } from './ipc/handlers/window-handlers';
 
 /**
  * Wraps an IPC invoke call for a specific channel and handler, ensuring the
@@ -46,6 +47,7 @@ const invokeFtpHandler = wrapInvoke<FtpHandlers>();
 const invokeUpdateHandler = wrapInvoke<UpdateHandlers>();
 const invokeTutorialHandler = wrapInvoke<TutorialHandlers>();
 const invokeMigrationHandler = wrapInvoke<MigrationHandlers>();
+const invokeWindowHandler = wrapInvoke<WindowHandlers>();
 
 const windowType = process.argv
   .find((arg) => arg.startsWith('--window-type='))
@@ -112,6 +114,10 @@ const electronAPI = {
   setForceUpdate: invokeUpdateHandler('set-force-update'),
   getForceUpdate: invokeUpdateHandler('get-force-update'),
   simulateUpdate: invokeUpdateHandler('simulate-update'),
+  minimize: invokeWindowHandler('minimize-window'),
+  maximize: invokeWindowHandler('maximize-window'),
+  close: invokeWindowHandler('close-window'),
+
   store: {
     get: invokeStoreHandler('store-get'),
     set: invokeStoreHandler('store-set'),
@@ -120,10 +126,6 @@ const electronAPI = {
   },
 
   getPathForFile: (file) => webUtils.getPathForFile(file),
-
-  minimize: () => ipcRenderer.send('minimize-window'),
-  maximize: () => ipcRenderer.send('maximize-window'),
-  close: () => ipcRenderer.send('close-window'),
 
   onModInstallStart: (callback) =>
     ipcRenderer.on('mod-install-start', (event, data) => callback(data)),
@@ -137,9 +139,6 @@ const electronAPI = {
     ipcRenderer.on('mod-install-success', (event, data) => callback(data)),
   onModInstallError: (callback) =>
     ipcRenderer.on('mod-install-error', (event, data) => callback(data)),
-
-  updateToolsTabStatus: (status) =>
-    ipcRenderer.send('update-tools-tab-status', status),
 
   onWindowDropFiles: (callback) =>
     ipcRenderer.on('window-drop-files', (event, filePaths) =>

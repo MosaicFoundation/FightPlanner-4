@@ -19,6 +19,7 @@ class ModDragDropHandler {
   setupTabStatusUpdater() {
     const updateStatus = () => {
       const isActive = this.isToolsTabActive();
+
       if (window.electronAPI && window.electronAPI.updateToolsTabStatus) {
         window.electronAPI.updateToolsTabStatus(isActive);
       }
@@ -43,6 +44,7 @@ class ModDragDropHandler {
     const activeTab = document.querySelector<HTMLElement>(
       '.tab-content.active',
     );
+
     return activeTab && activeTab.id === 'tab-tools';
   }
 

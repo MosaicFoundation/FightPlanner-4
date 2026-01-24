@@ -4,14 +4,12 @@ import * as fs from 'fs';
 import * as https from 'https';
 import * as http from 'http';
 import { exec, execSync } from 'child_process';
-import { promisify } from 'util';
-const execAsync = promisify(exec);
 import * as crypto from 'crypto';
-import AdmZip from 'adm-zip';
 import { RequestOptions } from 'https';
 
 import ModUtils from './mod-utils';
 import sharedStore from './store';
+import { FileExtractor } from './utils/file-extractor';
 
 const packageJson = require('../../package.json');
 
@@ -737,7 +735,7 @@ export default class ProtocolHandler {
     }
 
     this.sendToRenderer('mod-extract-start', { downloadId });
-    await ModUtils.extractArchive(zipPath, tempExtractDir);
+    await FileExtractor.extractArchive(zipPath, tempExtractDir);
     this.sendToRenderer('mod-extract-complete', { downloadId });
 
     await this.verifyFptStructure(tempExtractDir);
@@ -838,127 +836,6 @@ export default class ProtocolHandler {
     } else {
       fs.copyFileSync(src, dest);
     }
-  }
-
-  async extractZip(zipPath, targetPath) {
-    try {
-      console.log('Extracting ZIP file...');
-      console.log('Source:', zipPath);
-      console.log('Destination:', targetPath);
-
-      if (!fs.existsSync(zipPath)) {
-        throw new Error('ZIP file does not exist: ' + zipPath);
-      }
-
-      if (!fs.existsSync(targetPath)) {
-        fs.mkdirSync(targetPath, { recursive: true });
-      }
-
-      let extracted = false;
-      let lastError = null;
-
-      try {
-        await this.extract7Zip(zipPath, targetPath);
-        console.log('✓ Extracted using 7-Zip');
-        extracted = true;
-      } catch (err) {
-        console.warn('7-Zip extraction failed:', err.message);
-        lastError = err;
-      }
-
-      if (!extracted && process.platform !== 'win32') {
-        try {
-          await this.extractUnzip(zipPath, targetPath);
-          console.log('✓ Extracted using system unzip');
-          extracted = true;
-        } catch (err) {
-          console.warn('System unzip failed:', err.message);
-          lastError = err;
-        }
-      }
-
-      if (!extracted) {
-        try {
-          const zip = new AdmZip(zipPath);
-          zip.extractAllTo(targetPath, true);
-          console.log('✓ Extracted using adm-zip (fallback)');
-          extracted = true;
-        } catch (err) {
-          console.error('adm-zip extraction failed:', err.message);
-          lastError = err;
-        }
-      }
-
-      if (!extracted) {
-        throw lastError || new Error('All extraction methods failed');
-      }
-
-      const extractedFiles = fs.readdirSync(targetPath);
-      console.log('Extracted files/folders:', extractedFiles);
-
-      if (extractedFiles.length === 0) {
-        throw new Error('ZIP extraction resulted in no files');
-      }
-    } catch (error) {
-      console.error('ZIP extraction failed:', error);
-      throw new Error(`Failed to extract ZIP: ${error.message}`);
-    }
-  }
-
-  async extract7Zip(zipPath, targetPath) {
-    let command;
-
-    const candidate7zPaths = [
-      path.join(__dirname, '..', '..', 'tools', '7za.exe'),
-      process.resourcesPath
-        ? path.join(process.resourcesPath, 'tools', '7za.exe')
-        : null,
-      process.resourcesPath
-        ? path.join(
-            process.resourcesPath,
-            '..',
-            'app.asar.unpacked',
-            'tools',
-            '7za.exe',
-          )
-        : null,
-    ].filter(Boolean) as string[];
-
-    const existing7z = candidate7zPaths.find((p) => fs.existsSync(p));
-
-    if (process.platform === 'win32') {
-      if (existing7z) {
-        command = `"${existing7z}" x "${zipPath}" -o"${targetPath}" -y`;
-      } else {
-        throw new Error(
-          '7za.exe not found. Please place 7za.exe in the tools folder or install 7-Zip in PATH.',
-        );
-      }
-    } else {
-      command = `7z x "${zipPath}" -o"${targetPath}" -y`;
-    }
-
-    console.log('[protocol][extract] 7z command:', command);
-    const { stdout, stderr } = await execAsync(command);
-
-    if (stderr && !stderr.includes('Everything is Ok')) {
-      console.warn('7z stderr:', stderr);
-    }
-
-    console.log('[protocol][extract] 7z output:', stdout);
-  }
-
-  async extractUnzip(zipPath, targetPath) {
-    const command = `unzip -o "${zipPath}" -d "${targetPath}"`;
-    console.log('[protocol][extract] unzip command:', command);
-
-    const { stdout, stderr } = await execAsync(command);
-
-    if (stderr) {
-      console.warn('unzip stderr:', stderr);
-    }
-
-    console.log('[protocol][extract] unzip output:', stdout);
   }
 
   findFptFile(dirPath) {
