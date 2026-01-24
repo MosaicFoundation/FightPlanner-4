@@ -15,6 +15,48 @@ const packageJson = require('../../package.json');
 
 const USER_AGENT = `FightPlanner/${packageJson.version} (Electron ${process.versions.electron}; Node ${process.versions.node}; ${process.platform})`;
 
+export interface ProtocolHandlerEvents {
+  'mod-install-confirm-request': {
+    url: string;
+    downloadId: string;
+    modId: string | null;
+    modType: string;
+  };
+
+  'mod-download-progress': {
+    downloadId: string;
+    progress: number;
+    receivedBytes: number;
+    totalBytes: number;
+  };
+
+  'mod-install-start': {
+    url: string;
+    downloadId: string;
+    modName: string | null;
+  };
+
+  'mod-extract-start': {
+    downloadId: string;
+  };
+
+  'mod-extract-complete': {
+    downloadId: string;
+  };
+
+  'mod-install-success': {
+    url: string;
+    modName: string | null;
+    downloadId: string;
+    folderPath: string | null;
+  };
+
+  'mod-install-error': {
+    downloadId?: string;
+    error: string;
+  };
+}
+
 export default class ProtocolHandler {
   mainWindow: Electron.BrowserWindow;
   downloadInProgress: boolean;
@@ -361,8 +403,9 @@ export default class ProtocolHandler {
     }
   }
 
-  async proceedWithInstall(downloadId) {
+  async proceedWithInstall(downloadId: string) {
     const installData = this.pendingInstalls?.get(downloadId);
+
     if (!installData) {
       console.error('No pending install found for:', downloadId);
       return;
@@ -640,6 +683,7 @@ export default class ProtocolHandler {
 
           if (totalBytes > 0) {
             const progress = Math.round((receivedBytes / totalBytes) * 100);
+
             this.sendToRenderer('mod-download-progress', {
               downloadId,
               progress,
@@ -1453,7 +1497,10 @@ export default class ProtocolHandler {
     console.log('✓ info.toml created');
   }
 
-  sendToRenderer(channel, data) {
+  sendToRenderer(
+    channel: keyof ProtocolHandlerEvents,
+    data: ProtocolHandlerEvents[typeof channel],
+  ) {
     if (this.mainWindow && !this.mainWindow.isDestroyed()) {
       this.mainWindow.webContents.send(channel, data);
     }

@@ -13,23 +13,6 @@ class ModDragDropHandler {
   init() {
     this.setupEventListeners();
     this.setupWindowDropListener();
-    this.setupTabStatusUpdater();
-  }
-
-  setupTabStatusUpdater() {
-    const updateStatus = () => {
-      const isActive = this.isToolsTabActive();
-
-      if (window.electronAPI && window.electronAPI.updateToolsTabStatus) {
-        window.electronAPI.updateToolsTabStatus(isActive);
-      }
-    };
-
-    const observer = new MutationObserver(updateStatus);
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    setInterval(updateStatus, 500);
-    updateStatus();
   }
 
   setupWindowDropListener() {}
@@ -228,7 +211,7 @@ class ModDragDropHandler {
     this.isDragging = false;
     this.hideDragOverlay();
 
-    const files = Array.from(e.dataTransfer.files);
+    const files: File[] = Array.from(e.dataTransfer.files);
 
     if (files.length === 0) {
       return;
@@ -239,6 +222,7 @@ class ModDragDropHandler {
     for (const file of files) {
       try {
         const filePath = window.electronAPI.getPathForFile(file);
+
         if (filePath) {
           filePaths.push(filePath);
         }

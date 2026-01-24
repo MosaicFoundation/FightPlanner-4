@@ -19,10 +19,12 @@ const ProtocolHandlers = {
   ) => {
     try {
       const protocolHandler = getProtocolHandler();
+
       if (protocolHandler) {
         await protocolHandler.proceedWithInstall(downloadId);
         return { success: true };
       }
+
       return createErrorResponse(
         ErrorCodes.PROTOCOL_HANDLER_NOT_INITIALIZED,
         'Protocol handler not available',

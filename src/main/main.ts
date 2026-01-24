@@ -32,6 +32,19 @@ let discordRPC: DiscordRPCManager | null = null;
 
 const animationHandler = new AnimationHandler();
 
+export interface MainEvents {
+  'main-log': { level: string; message: string; timestamp: string };
+}
+
+function sendToRenderer(
+  channel: keyof MainEvents,
+  data: MainEvents[typeof channel],
+) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send(channel, data);
+  }
+}
+
 function writeLog(level, args) {
   const timestamp = new Date().toISOString();
   const message = args
@@ -51,7 +64,7 @@ function writeLog(level, args) {
   logStream.write(logLine);
 
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('main-log', {
+    sendToRenderer('main-log', {
       level,
       message,
       timestamp: new Date().toISOString(),

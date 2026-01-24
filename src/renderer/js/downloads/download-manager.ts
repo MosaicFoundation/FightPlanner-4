@@ -209,14 +209,21 @@ class DownloadManager {
   /**
    * Complete a download
    */
-  completeDownload(downloadId, modName, folderPath = null) {
+  completeDownload(
+    downloadId: string,
+    modName: string | null,
+    folderPath: string | null = null,
+  ) {
     const download = this.activeDownloads.get(downloadId);
+
     if (!download) {
       const downloads = Array.from(this.activeDownloads.values());
+
       if (downloads.length > 0) {
         const latestDownload = downloads[downloads.length - 1];
         this.completeDownload(latestDownload.id, modName, folderPath);
       }
+
       return;
     }
 

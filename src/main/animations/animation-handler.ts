@@ -1,5 +1,9 @@
 import { ipcMain, BrowserWindow } from 'electron';
 
+export interface AnimationEvents {
+  'start-intro-animation': {};
+}
+
 export default class AnimationHandler {
   mainWindow: BrowserWindow | null;
 

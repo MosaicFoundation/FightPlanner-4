@@ -4,6 +4,41 @@ import Store from 'electron-store';
 import { UpdateInfo } from 'electron-updater';
 const store = new Store();
 
+export interface UpdateEvents {
+  'update-checking': {};
+
+  'update-available': {
+    version: string;
+    releaseNotes: string | string[];
+    releaseDate: string;
+    files: Array<{
+      url: string;
+      sha512: string;
+    }>;
+  };
+
+  'update-not-available': {
+    version: string;
+    latestVersion?: string;
+  };
+
+  'update-error': {
+    message: string;
+  };
+
+  'update-download-progress': {
+    percent: number;
+    transferred: number;
+    total: number;
+    bytesPerSecond: number;
+  };
+
+  'update-downloaded': {
+    version: string;
+    releaseDate: string;
+  };
+}
+
 class AutoUpdater {
   mainWindow: BrowserWindow | null;
   updateInfo: UpdateInfo | null;
@@ -121,7 +156,10 @@ class AutoUpdater {
     this.mainWindow = window;
   }
 
-  sendToRenderer(channel: string, data: Record<string, any> = {}) {
+  sendToRenderer(
+    channel: keyof UpdateEvents,
+    data: UpdateEvents[typeof channel] = {},
+  ) {
     if (this.mainWindow && !this.mainWindow.isDestroyed()) {
       this.mainWindow.webContents.send(channel, data);
     }

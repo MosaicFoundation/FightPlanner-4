@@ -13,10 +13,16 @@ import { TutorialHandlers } from './ipc/handlers/tutorial-handlers';
 import { MigrationHandlers } from './ipc/handlers/migration-handlers';
 import { ParamsWithoutFirstArg } from './types/common';
 import { WindowHandlers } from './ipc/handlers/window-handlers';
+import { DiscordHandlers } from './ipc/handlers/discord-handlers';
+import { ProtocolHandlerEvents } from './protocol-handler';
+import { MainEvents } from './main';
+import { AnimationEvents } from './animations/animation-handler';
+import { UpdateEvents } from './auto-updater';
 
 /**
  * Wraps an IPC invoke call for a specific channel and handler, ensuring the
- * resulting function matches the expected handler signature (minus the first BaseHandlerArg parameter).
+ * resulting function matches the expected handler signature.
+ *
  * @returns A curried function that first accepts a channel, then returns a function
  * that invokes the IPC channel with the correct parameters and return type as defined by the handler.
  *
@@ -25,7 +31,7 @@ import { WindowHandlers } from './ipc/handlers/window-handlers';
  * const myHandler = invoke('my-channel');
  * const result = await myHandler(arg1, arg2);
  */
-export function wrapInvoke<
+function wrapInvoke<
   Handlers extends Record<string, (...args: any[]) => any>,
 >() {
   return <K extends keyof Handlers>(channel: K) => {
@@ -33,6 +39,27 @@ export function wrapInvoke<
       ipcRenderer.invoke(channel as string, ...args)) as (
       ...args: ParamsWithoutFirstArg<Handlers[K]>
     ) => ReturnType<Handlers[K]>;
+  };
+}
+
+/**
+ * Wraps an IPC on call for a specific channel and handler, ensuring the
+ * resulting function matches the expected handler signature.
+ *
+ * @returns A curried function that first accepts a channel, then returns a function
+ * that sets up an IPC listener for that channel with the correct parameters as defined by the handler.
+ *
+ * @example
+ * const wrap = wrapEventCallback<MyHandlers>();
+ * const myHandler = wrap('my-channel');
+ * myHandler((arg1, arg2) => { ... });
+ */
+function wrapEventCallback<Events extends Record<string, any>>() {
+  return <K extends keyof Events>(channel: K) => {
+    return (callback: (data: Events[typeof channel]) => any) =>
+      ipcRenderer.on(channel as string, (event, data: Events[typeof channel]) =>
+        callback(data),
+      );
   };
 }
 
@@ -48,10 +75,12 @@ const invokeUpdateHandler = wrapInvoke<UpdateHandlers>();
 const invokeTutorialHandler = wrapInvoke<TutorialHandlers>();
 const invokeMigrationHandler = wrapInvoke<MigrationHandlers>();
 const invokeWindowHandler = wrapInvoke<WindowHandlers>();
+const invokeDiscordHandler = wrapInvoke<DiscordHandlers>();
 
-const windowType = process.argv
-  .find((arg) => arg.startsWith('--window-type='))
-  ?.split('=')[1];
+const registerProtocolCallback = wrapEventCallback<ProtocolHandlerEvents>();
+const registerMainCallback = wrapEventCallback<MainEvents>();
+const registerAnimationCallback = wrapEventCallback<AnimationEvents>();
+const registerRendererCallback = wrapEventCallback<UpdateEvents>();
 
 const electronAPI = {
   selectGameFile: invokeFileHandler('select-game-file'),
@@ -117,6 +146,7 @@ const electronAPI = {
   minimize: invokeWindowHandler('minimize-window'),
   maximize: invokeWindowHandler('maximize-window'),
   close: invokeWindowHandler('close-window'),
+  updateDiscordRPC: invokeDiscordHandler('discord-rpc-update'),
 
   store: {
     get: invokeStoreHandler('store-get'),
@@ -125,56 +155,35 @@ const electronAPI = {
     clear: invokeStoreHandler('store-clear'),
   },
 
-  getPathForFile: (file) => webUtils.getPathForFile(file),
-
-  onModInstallStart: (callback) =>
-    ipcRenderer.on('mod-install-start', (event, data) => callback(data)),
-  onModDownloadProgress: (callback) =>
-    ipcRenderer.on('mod-download-progress', (event, data) => callback(data)),
-  onModExtractStart: (callback) =>
-    ipcRenderer.on('mod-extract-start', (event, data) => callback(data)),
-  onModExtractComplete: (callback) =>
-    ipcRenderer.on('mod-extract-complete', (event, data) => callback(data)),
-  onModInstallSuccess: (callback) =>
-    ipcRenderer.on('mod-install-success', (event, data) => callback(data)),
-  onModInstallError: (callback) =>
-    ipcRenderer.on('mod-install-error', (event, data) => callback(data)),
-
-  onWindowDropFiles: (callback) =>
-    ipcRenderer.on('window-drop-files', (event, filePaths) =>
-      callback(filePaths),
-    ),
-  onDropResult: (callback) =>
-    ipcRenderer.on('drop-result', (event, data) => callback(data)),
-  onDropError: (callback) =>
-    ipcRenderer.on('drop-error', (event, error) => callback(error)),
-
-  onMainLog: (callback) =>
-    ipcRenderer.on('main-log', (event, logData) => callback(logData)),
-  updateDiscordRPC: (data) => ipcRenderer.send('discord-rpc-update', data),
-
-  onModInstallConfirmRequest: (callback) => {
-    ipcRenderer.on('mod-install-confirm-request', (event, data) =>
-      callback(data),
-    );
+  getPathForFile(file: File) {
+    return webUtils.getPathForFile(file);
   },
 
-  onStartIntroAnimation: (callback) =>
-    ipcRenderer.on('start-intro-animation', (event, data) => callback(data)),
+  onModInstallStart: registerProtocolCallback('mod-install-start'),
+  onModDownloadProgress: registerProtocolCallback('mod-download-progress'),
+  onModExtractStart: registerProtocolCallback('mod-extract-start'),
+  onModExtractComplete: registerProtocolCallback('mod-extract-complete'),
+  onModInstallSuccess: registerProtocolCallback('mod-install-success'),
+  onModInstallError: registerProtocolCallback('mod-install-error'),
 
-  onUpdateChecking: (callback) =>
-    ipcRenderer.on('update-checking', (event, data) => callback(data)),
-  onUpdateAvailable: (callback) =>
-    ipcRenderer.on('update-available', (event, data) => callback(data)),
-  onUpdateNotAvailable: (callback) =>
-    ipcRenderer.on('update-not-available', (event, data) => callback(data)),
-  onUpdateDownloadProgress: (callback) =>
-    ipcRenderer.on('update-download-progress', (event, data) => callback(data)),
-  onUpdateDownloaded: (callback) =>
-    ipcRenderer.on('update-downloaded', (event, data) => callback(data)),
-  onUpdateError: (callback) =>
-    ipcRenderer.on('update-error', (event, data) => callback(data)),
-};
+  onMainLog: registerMainCallback('main-log'),
+
+  onModInstallConfirmRequest: registerProtocolCallback(
+    'mod-install-confirm-request',
+  ),
+
+  onStartIntroAnimation: registerAnimationCallback('start-intro-animation'),
+
+  onUpdateChecking: registerRendererCallback('update-checking'),
+  onUpdateAvailable: registerRendererCallback('update-available'),
+  onUpdateNotAvailable: registerRendererCallback('update-not-available'),
+  onUpdateDownloadProgress: registerRendererCallback(
+    'update-download-progress',
+  ),
+
+  onUpdateDownloaded: registerRendererCallback('update-downloaded'),
+  onUpdateError: registerRendererCallback('update-error'),
+} as const;
 
 const tutorialAPI = {
   // Settings & File System
@@ -206,25 +215,17 @@ const tutorialAPI = {
     clear: invokeStoreHandler('store-clear'),
   },
 
-  closeTutorial: () => {
-    console.log('tutorialAPI.closeTutorial() called from renderer');
-    ipcRenderer.send('close-tutorial-window');
-    console.log('IPC event "close-tutorial-window" sent');
-  },
-
-  skipTutorial: () => {
-    console.log('tutorialAPI.skipTutorial() called from renderer');
-    ipcRenderer.send('skip-tutorial');
-    console.log('IPC event "skip-tutorial" sent');
-  },
-
+  closeTutorial: invokeTutorialHandler('close-tutorial-window'),
+  skipTutorial: invokeTutorialHandler('skip-tutorial'),
   getMigrationStatus: invokeMigrationHandler('get-migration-status'),
-  onAnimationComplete: (callback) =>
-    ipcRenderer.on('animation-complete', callback),
-};
+} as const;
 
 export type ElectronAPI = typeof electronAPI;
 export type TutorialAPI = typeof tutorialAPI;
+
+const windowType = process.argv
+  .find((arg) => arg.startsWith('--window-type='))
+  ?.split('=')[1];
 
 if (windowType === 'main') {
   contextBridge.exposeInMainWorld('electronAPI', electronAPI);

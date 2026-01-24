@@ -9,7 +9,7 @@ const DiscordHandlers = {
     common: BaseHandlerArg<{
       discordRPC: DiscordRPCManager | null;
     }>,
-    data: { tab: string; modCount?: number },
+    data: { tab: string | null; modCount?: number },
   ) => {
     console.log('Received discord-rpc-update:', data);
 
@@ -75,8 +75,8 @@ export function registerDiscordHandlers(
       discordRPC: DiscordRPCManager | null;
     }>;
 
-    ipcMain.on(channel, (event, ...rest: unknown[]) => {
-      handler({ event, discordRPC }, ...rest);
+    ipcMain.handle(channel, (event, ...rest: unknown[]) => {
+      return handler({ event, discordRPC }, ...rest);
     });
   }
 }

@@ -1,7 +1,7 @@
 import { BrowserWindow, IpcMain } from 'electron';
-import IpcMainEvent = Electron.IpcMainEvent;
 import { BaseHandlerArg, GenericHandler } from '../../types/common';
-import { UpdateHandlers } from './update-handlers';
+
+export type WindowHandlers = typeof WindowEventHandlers;
 
 const WindowEventHandlers = {
   ['minimize-window']: (common: BaseHandlerArg) => {
@@ -28,8 +28,6 @@ const WindowEventHandlers = {
     if (win) win.close();
   },
 } as const;
-
-export type WindowHandlers = typeof WindowEventHandlers;
 
 /**
  * Register all IPC event handlers related to window operations

@@ -1,4 +1,4 @@
-import { BrowserWindow, IpcMain, dialog } from 'electron';
+import { BrowserWindow, IpcMain, dialog, ipcMain, ipcRenderer } from 'electron';
 import {
   createTutorialWindow,
   closeTutorialWindow,
@@ -36,7 +36,9 @@ const TutorialHandlers = {
     try {
       const windows = BrowserWindow.getAllWindows();
       const mainWindow = windows[0];
+
       createTutorialWindow(mainWindow || null);
+
       return { success: true };
     } catch (error) {
       handleError(error, 'open-tutorial-window');
@@ -49,6 +51,10 @@ const TutorialHandlers = {
 
   ['close-tutorial-window']: async (common: BaseHandlerArg) => {
     console.log('Received close-tutorial-window event');
+
+    // We re-emit the event to ensure any other listeners are notified
+    ipcRenderer.send('close-tutorial-window');
+
     closeTutorialWindow();
   },
 
