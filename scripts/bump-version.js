@@ -17,11 +17,11 @@ if (type === 'custom' && custom) {
     try {
         const tags = execSync('git tag -l', { encoding: 'utf8' })
             .split('\n')
-            .filter(t => t.startsWith(`v${baseVersion}-${type}`));
+            .filter(t => t.includes(`-${type}`));
         
         let maxNum = 0;
         tags.forEach(tag => {
-            const match = tag.match(new RegExp(`${type}(\\d+)`));
+            const match = tag.match(new RegExp(`-${type}(\\d+)$`));
             if (match) {
                 const num = parseInt(match[1], 10);
                 if (num > maxNum) maxNum = num;
