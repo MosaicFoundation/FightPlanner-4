@@ -489,10 +489,10 @@ class ModManager {
     }
   }
 
-  async loadCategoriesInBackground(mods) {
+  async loadCategoriesInBackground(mods: Mod[]) {
     for (const mod of mods) {
       try {
-        const modInfo = await window.electronAPI.getModInfo(mod.folderPath);
+        const modInfo = await window.electronAPI.getModInfo(mod.path);
 
         if (modInfo && modInfo.category) {
           let category = modInfo.category;

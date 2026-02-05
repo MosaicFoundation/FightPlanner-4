@@ -5,6 +5,7 @@ import { app } from 'electron';
 import { ModInstallResult } from './plugin-update-installer';
 import { FileExtractor } from './utils/file-extractor';
 import { ModScanner } from './utils/mod-scanner';
+import { CONFLICT_WHITELIST_PATTERNS } from './config';
 
 interface ModInfo {
   display_name: string;
@@ -669,9 +670,6 @@ export default class ModUtils {
     }
   }
 
-  /**
-   * @param {Array<Object>} activeMods - Array of active mod objects
-   */
   static async detectConflicts(
     activeMods: Mod[],
     whitelistPatterns: string[] = [],
@@ -682,6 +680,7 @@ export default class ModUtils {
     }[] = [];
     const fileToMods = new Map();
 
+    const allPatterns = [...CONFLICT_WHITELIST_PATTERNS, ...whitelistPatterns];
     const scanResults = await Promise.all(
       activeMods.map(async (mod, modIndex) => {
         if (mod.path && fs.existsSync(mod.path)) {
@@ -697,6 +696,15 @@ export default class ModUtils {
             const slotData = scanResult.pathData[fighter][slot];
 
             for (const fileEntry of slotData.filesToBeModified) {
+              if (
+                allPatterns.some((pattern) => {
+                  const regex = new RegExp(pattern);
+                  return regex.test(fileEntry.original);
+                })
+              ) {
+                continue;
+              }
+
               if (!fileToMods.has(fileEntry.original)) {
                 fileToMods.set(fileEntry.original, []);
               }

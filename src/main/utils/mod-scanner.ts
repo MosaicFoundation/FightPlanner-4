@@ -15,6 +15,36 @@ export interface PathDataEntry {
 }
 
 export const ModScanner = {
+  /**
+   * Scans the mod directory for files and folders to be modified.
+   * If a fighter name is detected, it organizes the data accordingly.
+   *
+   * Sample structure of returned pathData:
+   * {
+   *   "mario": {
+   *     "c01": {
+   *       pathsToBeModified: [ { original: 'fighter/mario/c01', normalized: 'fighter/mario/c###' } ],
+   *       filesToBeModified: [ { original: 'fighter/mario/tex_mario_c01.nutexb', normalized: 'fighter/mario/tex_mario_c###.nutexb' } ]
+   *     },
+   *     "c02": {
+   *       pathsToBeModified: [ ... ],
+   *       filesToBeModified: [ ... ]
+   *     }
+   *   },
+   *   "link": {
+   *     "c01": { ... },
+   *     ...
+   *   },
+   *   "unknown": {
+   *     "unknown": {
+   *       pathsToBeModified: [ ... ],
+   *       filesToBeModified: [ ... ],
+   *     }
+   *   }
+   * }
+   *
+   * @param modPath
+   */
   async scanModFiles(modPath: string) {
     try {
       const files = await fs.promises.readdir(modPath, {
@@ -79,6 +109,20 @@ export const ModScanner = {
             original: relativePath,
             normalized: normalizedPath,
           });
+        } else {
+          pathData['unknown'] = pathData['unknown'] || {};
+
+          pathData['unknown']['unknown'] = pathData['unknown']['unknown'] || {
+            pathsToBeModified: [],
+            filesToBeModified: [],
+          };
+
+          if (relativePath.includes('.')) {
+            pathData['unknown']['unknown'].filesToBeModified.push({
+              original: relativePath,
+              normalized: normalizedPath,
+            });
+          }
         }
       });
 
