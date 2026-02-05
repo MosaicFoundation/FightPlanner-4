@@ -38,7 +38,7 @@ function _copyRecursiveSync(src, dest) {
 /**
  * Send mods to Switch via local drive.
  */
-async function _sendModsToDrive(config) {
+async function _sendModsToDrive(config: Config) {
   try {
     const driveIdentifier = config.switchDriveLetter;
     if (!driveIdentifier) {
@@ -80,14 +80,15 @@ async function _sendModsToDrive(config) {
 
     let transferredCount = 0;
 
-    if (config.recentMods && config.recentMods.length > 0) {
-      for (const mod of config.recentMods) {
+    if (config.recentDownloads && config.recentDownloads.length > 0) {
+      for (const download of config.recentDownloads) {
         try {
           let localModPath: string | null = null;
-          if (mod.folderPath && fs.existsSync(mod.folderPath)) {
-            localModPath = mod.folderPath;
+
+          if (download.folderPath && fs.existsSync(download.folderPath)) {
+            localModPath = download.folderPath;
           } else {
-            const modFolderName = mod.modName || mod.id;
+            const modFolderName = download.modName || download.id;
             localModPath = path.join(config.modsPath, modFolderName);
           }
 
@@ -134,14 +135,16 @@ async function _sendModsToDrive(config) {
             console.warn(`Mod folder not found: ${localModPath}`);
           }
         } catch (modError) {
-          console.error(`Error copying mod ${mod.modName}:`, modError);
+          console.error(`Error copying mod ${download.modName}:`, modError);
         }
       }
     } else {
       if (fs.existsSync(config.modsPath)) {
         const files = fs.readdirSync(config.modsPath);
+
         for (const file of files) {
           const localModPath = path.join(config.modsPath, file);
+
           if (fs.statSync(localModPath).isDirectory()) {
             const targetModPath = path.join(targetBasePath, file);
 
@@ -190,22 +193,24 @@ async function _sendModsToDrive(config) {
 
 export type FtpHandlers = typeof FtpHandlers;
 
+export interface Config {
+  switchIp: string;
+  switchPort: number;
+  switchFtpPath: string;
+  switchDriveLetter: string;
+  switchTransferMethod: 'ftp' | 'drive';
+  modsPath: string;
+  recentDownloads: Array<{
+    id: string;
+    modName?: string;
+    folderPath?: string | null;
+  }>;
+}
+
 const FtpHandlers = {
   ['send-mods-to-switch']: async (
     common: BaseHandlerArg,
-    config: {
-      switchIp: string;
-      switchPort: number;
-      switchFtpPath: string;
-      switchDriveLetter: string;
-      switchTransferMethod: 'ftp' | 'drive';
-      modsPath: string;
-      recentMods: Array<{
-        id: string;
-        modName?: string;
-        folderPath?: string;
-      }>;
-    },
+    config: Config,
   ): Promise<
     HandlerResponse<{
       transferredCount: number;
@@ -237,14 +242,15 @@ const FtpHandlers = {
 
       await ftpClient.connect(config.switchIp, config.switchPort);
 
-      if (config.recentMods && config.recentMods.length > 0) {
-        for (const mod of config.recentMods) {
+      if (config.recentDownloads && config.recentDownloads.length > 0) {
+        for (const download of config.recentDownloads) {
           try {
             let localModPath: string | null = null;
-            if (mod.folderPath && fs.existsSync(mod.folderPath)) {
-              localModPath = mod.folderPath;
+
+            if (download.folderPath && fs.existsSync(download.folderPath)) {
+              localModPath = download.folderPath;
             } else {
-              const modFolderName = mod.modName || mod.id;
+              const modFolderName = download.modName || download.id;
               localModPath = path.join(config.modsPath, modFolderName);
             }
 
@@ -266,7 +272,7 @@ const FtpHandlers = {
               console.warn(`Mod folder not found: ${localModPath}`);
             }
           } catch (modError) {
-            console.error(`Error sending mod ${mod.modName}:`, modError);
+            console.error(`Error sending mod ${download.modName}:`, modError);
           }
         }
       } else {

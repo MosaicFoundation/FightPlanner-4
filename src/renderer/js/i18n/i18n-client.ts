@@ -107,7 +107,7 @@ class I18nClient {
     return true;
   }
 
-  t(key, params = {}) {
+  t(key: string, params: Record<string, string> = {}) {
     if (!key) {
       console.warn('Translation key is empty');
       return '';
@@ -140,8 +140,8 @@ class I18nClient {
     return this.interpolate(value, params);
   }
 
-  interpolate(text, params) {
-    return text.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+  interpolate(text: string, params: Record<string, string>) {
+    return text.replace(/\{\{(\w+)}}/g, (match, key) => {
       return params[key] !== undefined ? params[key] : match;
     });
   }

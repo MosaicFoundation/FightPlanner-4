@@ -15,7 +15,7 @@ interface Download {
 
 class DownloadManager {
   activeDownloads: Map<string, Download>;
-  completedDownloads: any[];
+  completedDownloads: Download[];
   activeDownloadsList: HTMLElement | null;
   completedDownloadsList: HTMLElement | null;
   downloadsEmpty: HTMLElement | null;
@@ -579,13 +579,13 @@ class DownloadManager {
     const modsPath = window.settingsManager.getModsPath();
 
     // Get all recently completed downloads (newly installed mods)
-    const recentMods = this.completedDownloads.filter((download) => {
+    const recentDownloads = this.completedDownloads.filter((download) => {
       // Only include downloads completed in the last 24 hours
       const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
       return download.endTime && download.endTime > oneDayAgo;
     });
 
-    if (recentMods.length === 0) {
+    if (recentDownloads.length === 0) {
       if (window.toastManager) {
         window.toastManager.info('toasts.noRecentDownloads');
       }
@@ -616,7 +616,7 @@ class DownloadManager {
       this.ftpTransfer = {
         status: 'uploading',
         currentMod: 0,
-        totalMods: recentMods.length || 0,
+        totalMods: recentDownloads.length || 0,
         transferredCount: 0,
       };
 
@@ -635,7 +635,7 @@ class DownloadManager {
         switchFtpPath,
         switchDriveLetter,
         modsPath,
-        recentMods: recentMods.map((m) => ({
+        recentDownloads: recentDownloads.map((m) => ({
           id: m.id,
           modName: m.modName || m.fileName,
           folderPath: m.folderPath || null,

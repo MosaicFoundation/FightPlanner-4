@@ -377,9 +377,8 @@ ${char.mods
 
     setTimeout(() => {
       if (window.modManager && window.modManager.mods) {
-        const mod = window.modManager.mods.find(
-          (m) => m.folderPath === modPath,
-        );
+        const mod = window.modManager.mods.find((m) => m.path === modPath);
+
         if (mod) {
           window.modManager.selectMod(mod.id);
 

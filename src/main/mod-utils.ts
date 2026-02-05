@@ -2,9 +2,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { app } from 'electron';
 
-import { CONFLICT_WHITELIST_PATTERNS } from './config';
 import { ModInstallResult } from './plugin-update-installer';
 import { FileExtractor } from './utils/file-extractor';
+import { ModScanner } from './utils/mod-scanner';
 
 interface ModInfo {
   display_name: string;
@@ -671,8 +671,6 @@ export default class ModUtils {
 
   /**
    * @param {Array<Object>} activeMods - Array of active mod objects
-   * @param {Array<string>} whitelistPatterns - Patterns to exclude from conflict detection
-   * @returns {Promise<Array<Object>>} Array of conflict objects with filePath and mods
    */
   static async detectConflicts(
     activeMods: Mod[],
@@ -684,69 +682,36 @@ export default class ModUtils {
     }[] = [];
     const fileToMods = new Map();
 
-    const allPatterns = [...CONFLICT_WHITELIST_PATTERNS, ...whitelistPatterns];
-
-    const scanMod = async (
-      dirPath,
-      relativePath = '',
-      modIndex,
-      modName,
-      modPath,
-    ) => {
-      if (!fs.existsSync(dirPath)) return;
-
-      try {
-        const entries = await fs.promises.readdir(dirPath, {
-          withFileTypes: true,
-        });
-
-        const tasks = entries.map(async (entry) => {
-          const fullPath = path.join(dirPath, entry.name);
-          const relPath = relativePath
-            ? path.join(relativePath, entry.name)
-            : entry.name;
-
-          if (
-            allPatterns.some((pattern) => {
-              if (typeof pattern === 'string') {
-                return relPath.includes(pattern);
-              }
-              return false;
-            })
-          ) {
-            return;
-          }
-
-          if (entry.isDirectory()) {
-            await scanMod(fullPath, relPath, modIndex, modName, modPath);
-          } else if (entry.isFile()) {
-            const normalizedPath = relPath.replace(/\\/g, '/');
-
-            if (!fileToMods.has(normalizedPath)) {
-              fileToMods.set(normalizedPath, []);
-            }
-            fileToMods.get(normalizedPath).push({
-              modIndex,
-              modName,
-              modPath,
-              filePath: normalizedPath,
-            });
-          }
-        });
-
-        await Promise.all(tasks);
-      } catch (error) {
-        console.warn(`Error scanning directory ${dirPath}:`, error.message);
-      }
-    };
-
-    await Promise.all(
+    const scanResults = await Promise.all(
       activeMods.map(async (mod, modIndex) => {
         if (mod.path && fs.existsSync(mod.path)) {
-          await scanMod(mod.path, '', modIndex, mod.name, mod.path);
+          return ModScanner.scanModFiles(mod.path);
         }
       }),
     );
+
+    for (const [index, scanResult] of scanResults.entries()) {
+      if (scanResult) {
+        for (const fighter of Object.keys(scanResult.pathData)) {
+          for (const slot of Object.keys(scanResult.pathData[fighter])) {
+            const slotData = scanResult.pathData[fighter][slot];
+
+            for (const fileEntry of slotData.filesToBeModified) {
+              if (!fileToMods.has(fileEntry.original)) {
+                fileToMods.set(fileEntry.original, []);
+              }
+
+              fileToMods.get(fileEntry.original).push({
+                modIndex: index,
+                modName: activeMods[index].name,
+                modPath: activeMods[index].path,
+                filePath: fileEntry.original,
+              });
+            }
+          }
+        }
+      }
+    }
 
     fileToMods.forEach((modsList, filePath) => {
       if (modsList.length > 1) {

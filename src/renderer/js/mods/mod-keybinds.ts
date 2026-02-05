@@ -1,4 +1,4 @@
-import type { ModManager } from './mod-manager';
+import type { Mod, ModManager } from './mod-manager';
 
 class ModKeybindsHandler {
   modManager: ModManager;
@@ -36,6 +36,7 @@ class ModKeybindsHandler {
       }
 
       const selectedMod = this.modManager.selectedMod;
+
       if (!selectedMod) {
         return;
       }
@@ -89,32 +90,32 @@ class ModKeybindsHandler {
     });
   }
 
-  async handleDelete(selectedMod) {
+  async handleDelete(selectedMod: Mod) {
     if (this.modManager.operations) {
       await this.modManager.operations.uninstallMod(selectedMod);
     }
   }
 
-  async handleToggle(selectedMod) {
+  async handleToggle(selectedMod: Mod) {
     if (this.modManager.operations) {
       await this.modManager.operations.toggleModStatus(selectedMod);
     }
   }
 
-  async handleRename(selectedMod) {
+  async handleRename(selectedMod: Mod) {
     if (this.modManager.operations) {
       await this.modManager.operations.renameMod(selectedMod);
     }
   }
 
-  async handleOpenFolder(selectedMod) {
+  async handleOpenFolder(selectedMod: Mod) {
     if (this.modManager.operations) {
       await this.modManager.operations.openModFolder(selectedMod);
     }
   }
 
-  async handleOpenModFile(selectedMod) {
-    if (!selectedMod.folderPath) {
+  async handleOpenModFile(selectedMod: Mod) {
+    if (!selectedMod.path) {
       if (window.toastManager) {
         window.toastManager.error('toasts.cannotOpenFile');
       }
@@ -142,7 +143,7 @@ class ModKeybindsHandler {
     ];
 
     for (const fileName of commonFiles) {
-      const filePath = `${selectedMod.folderPath}/${fileName}`;
+      const filePath = `${selectedMod.path}/${fileName}`;
       const result = await window.electronAPI.openFile(filePath);
       if (result && result.success) {
         return;

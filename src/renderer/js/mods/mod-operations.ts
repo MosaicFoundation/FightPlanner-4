@@ -1,4 +1,4 @@
-import type { ModManager } from './mod-manager';
+import { Mod, ModManager } from './mod-manager';
 
 class ModOperations {
   modManager: ModManager;
@@ -7,8 +7,8 @@ class ModOperations {
     this.modManager = modManager;
   }
 
-  async renameMod(mod) {
-    if (!mod.folderPath) {
+  async renameMod(mod: Mod) {
+    if (!mod.path) {
       if (window.toastManager) {
         window.toastManager.error(
           'Cannot rename this mod - folder path not found',
@@ -20,10 +20,7 @@ class ModOperations {
     if (window.modalManager) {
       window.modalManager.openRenameModal(mod, async (newName) => {
         if (window.electronAPI && window.electronAPI.renameMod) {
-          const result = await window.electronAPI.renameMod(
-            mod.folderPath,
-            newName,
-          );
+          const result = await window.electronAPI.renameMod(mod.path, newName);
 
           if (result.success) {
             console.log('Mod renamed successfully');
@@ -46,8 +43,8 @@ class ModOperations {
     }
   }
 
-  async toggleModStatus(mod) {
-    if (!mod.folderPath || !this.modManager.modsPath) {
+  async toggleModStatus(mod: Mod) {
+    if (!mod.path || !this.modManager.modsPath) {
       if (window.toastManager) {
         window.toastManager.error('toasts.cannotToggleModStatus');
       }
@@ -56,7 +53,7 @@ class ModOperations {
 
     if (window.electronAPI && window.electronAPI.toggleMod) {
       const result = await window.electronAPI.toggleMod(
-        mod.folderPath,
+        mod.path,
         this.modManager.modsPath,
       );
 
@@ -81,8 +78,8 @@ class ModOperations {
     }
   }
 
-  async openModFolder(mod) {
-    if (!mod.folderPath) {
+  async openModFolder(mod: Mod) {
+    if (!mod.path) {
       if (window.toastManager) {
         window.toastManager.error('toasts.cannotOpenFolder');
       }
@@ -90,7 +87,7 @@ class ModOperations {
     }
 
     if (window.electronAPI && window.electronAPI.openFolder) {
-      const result = await window.electronAPI.openFolder(mod.folderPath);
+      const result = await window.electronAPI.openFolder(mod.path);
 
       if (!result.success) {
         if (window.toastManager) {
@@ -102,8 +99,8 @@ class ModOperations {
     }
   }
 
-  async uninstallMod(mod) {
-    if (!mod.folderPath) {
+  async uninstallMod(mod: Mod) {
+    if (!mod.path) {
       if (window.toastManager) {
         window.toastManager.error('toasts.cannotUninstallMod');
       }
@@ -113,7 +110,7 @@ class ModOperations {
     if (window.modalManager) {
       window.modalManager.openUninstallModal(mod, async () => {
         if (window.electronAPI && window.electronAPI.deleteMod) {
-          const result = await window.electronAPI.deleteMod(mod.folderPath);
+          const result = await window.electronAPI.deleteMod(mod.path);
 
           if (result.success) {
             console.log('Mod uninstalled successfully');
@@ -151,8 +148,8 @@ class ModOperations {
     }
   }
 
-  async changeSlot(mod) {
-    if (!mod.folderPath) {
+  async changeSlot(mod: Mod) {
+    if (!mod.path) {
       if (window.toastManager) {
         window.toastManager.error('toasts.cannotChangeSlot');
       }
@@ -160,7 +157,7 @@ class ModOperations {
     }
 
     if (window.electronAPI && window.electronAPI.scanModSlots) {
-      const result = await window.electronAPI.scanModSlots(mod.folderPath);
+      const result = await window.electronAPI.scanModSlots(mod.path);
 
       if (result.success) {
         if (window.modalManager) {
@@ -170,7 +167,7 @@ class ModOperations {
             async (changes) => {
               if (window.electronAPI && window.electronAPI.applySlotChanges) {
                 const applyResult = await window.electronAPI.applySlotChanges(
-                  mod.folderPath,
+                  mod.path,
                   changes,
                 );
 

@@ -3,22 +3,22 @@ import type { ModContextMenuHandler } from './mod-context-menu';
 import type { ModOperations } from './mod-operations';
 import type { ModKeybindsHandler } from './mod-keybinds';
 
-interface Mod {
+export interface Mod {
   id: string;
   name: string;
   version: string;
   author: string;
   description: string;
   size: string;
-  category: string | null;
-  folderPath?: string | null;
-  path?: string;
+  category?: string | null;
+  path: string;
   status: 'active' | 'disabled' | 'conflict';
 }
 
-interface SimpleMod {
-  name: string;
-  url: string;
+export interface SimpleMod {
+  name: Mod['name'];
+  category?: Mod['category'];
+  path: Mod['path'];
 }
 
 class ModManager {
@@ -135,7 +135,7 @@ class ModManager {
     }
   }
 
-  async loadMods(modsData) {
+  async loadMods(modsData: Mod[]) {
     this.mods = modsData;
     this.renderModList(true);
 
@@ -229,19 +229,15 @@ class ModManager {
     if (window.modInfoManager) {
       window.modInfoManager.showLoading();
 
-      if (
-        mod.folderPath &&
-        window.electronAPI &&
-        window.electronAPI.getModInfo
-      ) {
+      if (mod.path && window.electronAPI && window.electronAPI.getModInfo) {
         try {
-          console.log('Loading mod info for:', mod.folderPath);
-          const modInfo = await window.electronAPI.getModInfo(mod.folderPath);
+          console.log('Loading mod info for:', mod.path);
+          const modInfo = await window.electronAPI.getModInfo(mod.path);
           console.log('Received mod info from main process:', modInfo);
 
           if (modInfo) {
             console.log('Displaying mod info:', modInfo);
-            window.modInfoManager.displayModInfo(modInfo, mod.folderPath);
+            window.modInfoManager.displayModInfo(modInfo, mod.path);
           } else {
             console.log('No mod info found, showing fallback');
 
@@ -253,7 +249,7 @@ class ModManager {
                 display_name: mod.name,
                 description: t('tools.modInfo.noInfoToml'),
               },
-              mod.folderPath,
+              mod.path,
             );
           }
         } catch (error) {
@@ -279,25 +275,20 @@ class ModManager {
     }
   }
 
-  async updatePreview(mod) {
+  async updatePreview(mod: Mod) {
     const previewArea = document.querySelector<HTMLElement>('.preview-area');
     if (!previewArea) return;
 
     previewArea.classList.add('loading');
 
-    if (
-      mod.folderPath &&
-      window.electronAPI &&
-      window.electronAPI.getPreviewImage
-    ) {
+    if (mod.path && window.electronAPI && window.electronAPI.getPreviewImage) {
       try {
-        const previewPath = await window.electronAPI.getPreviewImage(
-          mod.folderPath,
-        );
+        const previewPath = await window.electronAPI.getPreviewImage(mod.path);
 
         if (previewPath) {
           // Animate out existing image if present
           const existingImg = previewArea.querySelector<HTMLElement>('img');
+
           if (existingImg) {
             existingImg.style.opacity = '0';
             await new Promise((resolve) => setTimeout(resolve, 200));
@@ -341,69 +332,27 @@ class ModManager {
       }
     }
 
-    if (mod.previewImage) {
-      // Animate out existing image if present
-      const existingImg = previewArea.querySelector<HTMLElement>('img');
-      if (existingImg) {
-        existingImg.style.opacity = '0';
-        await new Promise((resolve) => setTimeout(resolve, 200));
-      }
+    // Animate out existing image if present before showing "No preview"
+    const existingImg = previewArea.querySelector<HTMLElement>('img');
+    if (existingImg) {
+      existingImg.classList.add('preview-exit');
 
-      previewArea.classList.remove('no-preview');
+      // Shrink immediately while image fades out
+      previewArea.classList.add('no-preview');
 
-      const img = document.createElement('img');
-      img.style.opacity = '0';
-      img.alt = 'Preview';
-
-      await new Promise<void>((resolve) => {
-        img.onload = () => {
-          // Calculate optimal height based on image aspect ratio
-          const aspectRatio = img.naturalHeight / img.naturalWidth;
-          const containerWidth = previewArea.offsetWidth;
-          let optimalHeight = containerWidth * aspectRatio;
-
-          // Clamp between min and max
-          optimalHeight = Math.max(150, Math.min(400, optimalHeight));
-
-          previewArea.style.height = `${optimalHeight}px`;
-          resolve();
-        };
-        img.onerror = () => {
-          resolve();
-        };
-        img.src = mod.previewImage;
-      });
-
-      previewArea.innerHTML = '';
-      previewArea.appendChild(img);
-
-      setTimeout(() => {
-        img.style.opacity = '1';
-        previewArea.classList.remove('loading');
-      }, 10);
+      await new Promise((resolve) => setTimeout(resolve, 150));
     } else {
-      // Animate out existing image if present before showing "No preview"
-      const existingImg = previewArea.querySelector<HTMLElement>('img');
-      if (existingImg) {
-        existingImg.classList.add('preview-exit');
-
-        // Shrink immediately while image fades out
-        previewArea.classList.add('no-preview');
-
-        await new Promise((resolve) => setTimeout(resolve, 150));
-      } else {
-        // No existing image, just shrink
-        previewArea.classList.add('no-preview');
-      }
-
-      previewArea.innerHTML =
-        '<p style="color: #666; text-align: center;">No preview available</p>';
-      previewArea.classList.remove('loading');
+      // No existing image, just shrink
+      previewArea.classList.add('no-preview');
     }
+
+    previewArea.innerHTML =
+      '<p style="color: #666; text-align: center;">No preview available</p>';
+    previewArea.classList.remove('loading');
   }
 
   loadExampleMods() {
-    const exampleMods = [
+    return this.loadMods([
       {
         id: '1',
         name: 'Fighter Pack v2',
@@ -412,6 +361,7 @@ class ModManager {
         description: 'Collection de nouveaux combattants',
         size: '15.2 MB',
         status: 'active',
+        path: 'fighter_pack_v2',
       },
       {
         id: '2',
@@ -421,6 +371,7 @@ class ModManager {
         description: 'Stages en haute définition',
         size: '8.7 MB',
         status: 'active',
+        path: 'stage_hd_remaster',
       },
       {
         id: '3',
@@ -430,6 +381,7 @@ class ModManager {
         description: 'Sons et musiques améliorés',
         size: '22.4 MB',
         status: 'conflict',
+        path: 'sound_pack_deluxe',
       },
       {
         id: '4',
@@ -439,6 +391,7 @@ class ModManager {
         description: 'Interface utilisateur améliorée',
         size: '4.1 MB',
         status: 'disabled',
+        path: 'ui_enhancement',
       },
       {
         id: '5',
@@ -448,6 +401,7 @@ class ModManager {
         description: 'Nouvelles animations de combat',
         size: '12.6 MB',
         status: 'active',
+        path: 'custom_animations',
       },
       {
         id: '6',
@@ -457,13 +411,12 @@ class ModManager {
         description: 'Équilibrage des personnages',
         size: '0.8 MB',
         status: 'active',
+        path: 'balance_patch',
       },
-    ];
-
-    return this.loadMods(exampleMods);
+    ]);
   }
 
-  async loadModsFromFolder(modsPath) {
+  async loadModsFromFolder(modsPath: string) {
     if (!window.electronAPI || !window.electronAPI.readModsFolder) {
       console.error('Electron API not available');
       this.loadExampleMods();
@@ -493,7 +446,7 @@ class ModManager {
           description: 'Active mod',
           size: 'Unknown',
           status: 'active',
-          folderPath: mod.path,
+          path: mod.path,
           category: null,
         };
 
@@ -509,7 +462,7 @@ class ModManager {
           description: 'Disabled mod',
           size: 'Unknown',
           status: 'disabled',
-          folderPath: mod.path,
+          path: mod.path,
           category: null,
         };
 
@@ -601,6 +554,7 @@ class ModManager {
       window.settingsManager
     ) {
       const modsPath = window.settingsManager.getModsPath();
+
       if (modsPath) {
         console.log('Loading mods from saved path:', modsPath);
         this.loadModsFromFolder(modsPath);
@@ -612,7 +566,7 @@ class ModManager {
     this.loadExampleMods();
   }
 
-  async checkConflicts(whitelistPatterns = []) {
+  async checkConflicts(whitelistPatterns: string[] = []) {
     if (
       !this.modsPath ||
       !window.electronAPI ||
@@ -635,6 +589,7 @@ class ModManager {
         this.modsPath,
         whitelistPatterns,
       );
+
       this.conflicts = (result.success && result.conflicts) || [];
       this.isCheckingConflicts = false;
 
@@ -777,23 +732,27 @@ class ModManager {
     }
 
     // Group mods by character
-    const modsByCharacter: Map<string, SimpleMod[]> = new Map();
+    const modsByCharacter: Map<
+      string,
+      {
+        name: string;
+        url: string;
+      }[]
+    > = new Map();
 
     for (const mod of enabledMods) {
-      if (!mod.folderPath) {
+      if (!mod.path) {
         continue;
       }
 
       try {
         // Get mod info
-        const modInfo = await window.electronAPI.getModInfo(mod.folderPath);
+        const modInfo = await window.electronAPI.getModInfo(mod.path);
         const modName = modInfo?.display_name || mod.name;
         const modUrl = modInfo?.url || '';
 
         // Scan for characters
-        const fighters = await window.electronAPI.scanModForFighters(
-          mod.folderPath,
-        );
+        const fighters = await window.electronAPI.scanModForFighters(mod.path);
 
         if (fighters && fighters.length > 0) {
           fighters.forEach((rawFighterId) => {
@@ -864,7 +823,11 @@ class ModManager {
       }
 
       // Remove duplicates (same mod name)
-      const uniqueMods: SimpleMod[] = [];
+      const uniqueMods: {
+        name: string;
+        url: string;
+      }[] = [];
+
       const seenNames: Set<string> = new Set();
 
       for (const mod of mods) {

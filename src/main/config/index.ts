@@ -14,6 +14,7 @@ export const CONFLICT_WHITELIST_PATTERNS = [
   'README.txt',
   'READ ME.txt',
   'Preview.webp',
+  '.DS_Store',
 ];
 
 export const TEMP_FOLDERS = ['fightplanner-downloads', 'fightplanner-extract'];

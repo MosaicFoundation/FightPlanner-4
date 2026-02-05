@@ -1,12 +1,9 @@
+import { SimpleMod } from '../mods/mod-manager';
+
 export class ConflictModalManager {
   currentConflictFile: string | null;
   currentConflictingMods: Array<{ name: string; path: string }>;
-  autoSlotChangeMods: Array<{
-    name: string;
-    category: string | null;
-    path: string;
-    folderPath: string;
-  }>;
+  autoSlotChangeMods: Array<SimpleMod>;
 
   constructor() {
     this.currentConflictFile = null;
@@ -160,50 +157,6 @@ export class ConflictModalManager {
     }
   }
 
-  openSlotChangeModal(filePath, conflictingMods) {
-    this.currentConflictFile = filePath;
-    this.currentConflictingMods = conflictingMods;
-
-    const modal = document.querySelector<HTMLElement>('#conflict-slot-modal');
-    const container = document.querySelector<HTMLElement>(
-      '#conflict-mod-select-container',
-    );
-
-    if (!modal || !container) return;
-
-    container.innerHTML = '';
-
-    conflictingMods.forEach((mod) => {
-      const selectItem = document.createElement('div');
-      selectItem.className = 'conflict-mod-select-item';
-      selectItem.addEventListener('click', () => {
-        this.selectModForSlotChange(mod);
-      });
-
-      const icon = document.createElement('i');
-      icon.className = 'bi bi-folder-fill';
-
-      const name = document.createElement('div');
-      name.className = 'conflict-mod-select-item-name';
-      name.textContent = mod.name;
-
-      selectItem.appendChild(icon);
-      selectItem.appendChild(name);
-      container.appendChild(selectItem);
-    });
-
-    this.closeConflictModal();
-    modal.classList.remove('closing');
-    if (window.modalManager) {
-      window.modalManager.showOverlay();
-    }
-    modal.style.display = 'block';
-
-    if (window.i18n && window.i18n.updateDOM) {
-      window.i18n.updateDOM();
-    }
-  }
-
   closeSlotChangeModal() {
     const modal = document.querySelector<HTMLElement>('#conflict-slot-modal');
     if (modal) {
@@ -233,6 +186,28 @@ export class ConflictModalManager {
     await window.modManager.operations.changeSlot(selectedMod);
   }
 
+  _getModsMap() {
+    const modsMap: Map<string, SimpleMod> = new Map();
+
+    window.modManager.conflicts.forEach((conflict) => {
+      conflict.mods.forEach((mod) => {
+        if (!modsMap.has(mod.path)) {
+          const fullMod = window.modManager.mods.find(
+            (m) => m.path === mod.path,
+          );
+
+          modsMap.set(mod.path, {
+            name: mod.name,
+            path: mod.path,
+            category: fullMod ? fullMod.category : null,
+          });
+        }
+      });
+    });
+
+    return modsMap;
+  }
+
   openGlobalSlotChange() {
     if (
       !window.modManager ||
@@ -252,18 +227,7 @@ export class ConflictModalManager {
 
     if (!modal || !container) return;
 
-    const modsMap = new Map();
-    window.modManager.conflicts.forEach((conflict) => {
-      conflict.mods.forEach((mod) => {
-        if (!modsMap.has(mod.path)) {
-          modsMap.set(mod.path, {
-            name: mod.name,
-            path: mod.path,
-          });
-        }
-      });
-    });
-
+    const modsMap = this._getModsMap();
     const uniqueMods = Array.from(modsMap.values());
 
     if (uniqueMods.length === 0) {
@@ -331,22 +295,7 @@ export class ConflictModalManager {
 
     if (!modal || !container) return;
 
-    const modsMap = new Map();
-    window.modManager.conflicts.forEach((conflict) => {
-      conflict.mods.forEach((mod) => {
-        if (!modsMap.has(mod.path)) {
-          const fullMod = window.modManager.mods.find(
-            (m) => m.folderPath === mod.path || m.path === mod.path,
-          );
-          modsMap.set(mod.path, {
-            name: mod.name,
-            path: mod.path,
-            folderPath: mod.path,
-            category: fullMod ? fullMod.category : null,
-          });
-        }
-      });
-    });
+    const modsMap = this._getModsMap();
 
     this.autoSlotChangeMods = Array.from(modsMap.values());
 
@@ -489,9 +438,7 @@ export class ConflictModalManager {
           continue;
         }
 
-        const fighters = await window.electronAPI.scanModForFighters(
-          mod.path || mod.folderPath,
-        );
+        const fighters = await window.electronAPI.scanModForFighters(mod.path);
 
         if (!fighters || fighters.length === 0) {
           continue;
@@ -503,9 +450,7 @@ export class ConflictModalManager {
           continue;
         }
 
-        const slotResult = await window.electronAPI.scanModSlots(
-          mod.path || mod.folderPath,
-        );
+        const slotResult = await window.electronAPI.scanModSlots(mod.path);
         if (
           !slotResult.success ||
           !slotResult.slots ||
@@ -527,7 +472,7 @@ export class ConflictModalManager {
           }
 
           const modSlotsResult = await window.electronAPI.scanModSlotsByFighter(
-            mod.path || mod.folderPath,
+            mod.path,
             fighterId,
           );
 
@@ -562,7 +507,7 @@ export class ConflictModalManager {
               await window.electronAPI.getUsedSlotsForFighter(
                 window.modManager.modsPath,
                 fighterId,
-                mod.path || mod.folderPath,
+                mod.path,
               );
 
             if (!usedSlotsResult.success) {
@@ -608,7 +553,7 @@ export class ConflictModalManager {
 
           if (window.electronAPI && window.electronAPI.applySlotChanges) {
             const applyResult = await window.electronAPI.applySlotChanges(
-              mod.path || mod.folderPath,
+              mod.path,
               changes,
             );
 
