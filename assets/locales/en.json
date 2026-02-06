@@ -245,7 +245,7 @@
     "socialAccountHint": "Connect via the Social tab to sync your mods and connect with friends",
     "socialQuickActions": "Quick Actions",
     "goToSocialTab": "Open Social Tab",
-    "goToSocialTabDesc": "Manage your account, friends and mods"
+    "goToSocialTabDesc": "Manage your account, friends and mods",
     "channelPrerelease": "Prerelease"
   },
   "modals": {
