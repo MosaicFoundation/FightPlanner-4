@@ -11,6 +11,7 @@ import {
 import { ModInstallResult } from '../../plugin-update-installer';
 import { HandlerResponse } from '../../types/common';
 import { BaseHandlerArg, GenericHandler } from '../../types/common';
+import { ModScanner, PathData, ScanModResult } from '../../utils/mod-scanner';
 
 export type ModHandlers = typeof ModHandlers;
 
@@ -230,20 +231,17 @@ const ModHandlers = {
     }
   },
 
-  ['scan-mod-slots']: async (
+  ['scan-mod']: async (
     common: BaseHandlerArg,
     modPath: string,
   ): Promise<
     HandlerResponse<{
-      slots: {
-        slot: number;
-        files: Slot[];
-      }[];
+      data: ScanModResult;
     }>
   > => {
     try {
-      const slots = ModUtils.scanModForSlots(modPath);
-      return { success: true, slots };
+      const data = await ModScanner.scanModFiles(modPath);
+      return { success: true, data };
     } catch (error) {
       handleError(error, 'scan-mod-slots');
       return createErrorResponse(ErrorCodes.MOD_READ_ERROR, error.message);

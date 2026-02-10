@@ -1,12 +1,17 @@
 import type { MarketplacePlugin } from '../mods/plugin-marketplace';
+import { Mod } from '../mods/mod-manager';
+import {
+  PathDataForSlot,
+  ScanModResult,
+} from '../../../main/utils/mod-scanner';
 
 interface Changes {
   modifications: Array<{
     type: string;
-    originalSlot?: number | null;
-    newSlot?: number;
+    originalSlot?: string | null;
+    newSlot?: string;
     files?: Array<any>;
-    targetSlot?: number;
+    targetSlot?: string;
   }>;
   deletions: Array<number>;
 }
@@ -30,9 +35,9 @@ class ModalManager {
   changeSlotCallback?: ((changes: Changes) => void) | null;
 
   slotData: Array<{
-    originalSlot: number | null;
-    newSlot: number;
-    files: Array<any>;
+    originalSlot: string | null;
+    newSlot: string;
+    pathDataForSlot: PathDataForSlot;
     isNew: boolean;
   }> | null;
 
@@ -250,16 +255,16 @@ class ModalManager {
 
     const translatedTitle =
       title &&
-        (title.startsWith('modals.') ||
-          title.startsWith('common.') ||
-          title.startsWith('toasts.'))
+      (title.startsWith('modals.') ||
+        title.startsWith('common.') ||
+        title.startsWith('toasts.'))
         ? t(title, params)
         : title || '';
     const translatedMessage =
       message &&
-        (message.startsWith('modals.') ||
-          message.startsWith('common.') ||
-          message.startsWith('toasts.'))
+      (message.startsWith('modals.') ||
+        message.startsWith('common.') ||
+        message.startsWith('toasts.'))
         ? t(message, params)
         : message || '';
 
@@ -340,16 +345,30 @@ class ModalManager {
     this.closeDeletePluginModal();
   }
 
-  openChangeSlotModal(mod, detectedSlots, callback) {
+  openChangeSlotModal(mod: Mod, modData: ScanModResult, callback) {
     this.currentMod = mod;
     this.changeSlotCallback = callback;
 
-    this.slotData = detectedSlots.map((slot) => ({
-      originalSlot: slot.slot,
-      newSlot: slot.slot,
-      files: slot.files,
-      isNew: false,
-    }));
+    const fightersInMod = Object.keys(modData.pathData).filter(
+      (fighterName) => fighterName !== 'unknown',
+    );
+
+    const fighterName = fightersInMod.length === 1 ? fightersInMod[0] : null;
+
+    if (!fighterName) {
+      throw new Error(
+        'Cannot change slots for mods with multiple or unknown fighters.',
+      );
+    }
+
+    this.slotData = modData.currentSlots.map((slot) => {
+      return {
+        originalSlot: slot,
+        newSlot: slot,
+        pathDataForSlot: modData.pathData[fighterName][slot],
+        isNew: false,
+      };
+    });
 
     const modal = document.querySelector<HTMLElement>('#change-slot-modal');
     const container = document.querySelector<HTMLElement>(
@@ -370,6 +389,7 @@ class ModalManager {
 
   closeChangeSlotModal() {
     const modal = document.querySelector<HTMLElement>('#change-slot-modal');
+
     if (modal) {
       modal.classList.add('closing');
       setTimeout(() => {
@@ -377,7 +397,9 @@ class ModalManager {
         modal.classList.remove('closing');
       }, 300);
     }
+
     this.hideOverlay();
+
     this.currentMod = null;
     this.changeSlotCallback = null;
     this.slotData = null;
@@ -412,8 +434,8 @@ class ModalManager {
       label.textContent = slot.isNew
         ? t('modals.changeSlot.newSlot')
         : t('modals.changeSlot.currentSlot', {
-          slot: slot.originalSlot,
-        });
+            slot: slot.originalSlot,
+          });
 
       const arrow = document.createElement('i');
       arrow.className = 'bi bi-arrow-right slot-arrow';
@@ -441,17 +463,23 @@ class ModalManager {
       const selectDropdown = document.createElement('div');
       selectDropdown.className = 'custom-select-dropdown';
 
-      for (let i = 0; i <= 7; i++) {
+      for (let i = 0; i <= 255; i++) {
         const option = document.createElement('div');
         option.className = 'custom-select-option';
-        if (i === slot.newSlot) {
+
+        const slotNumber = parseInt(slot.newSlot.substring(1));
+
+        if (i === slotNumber) {
           option.classList.add('active');
         }
+
         option.dataset.value = `${i}`;
 
         const optionText = document.createElement('span');
+        const slotWithPrefix = `c${i.toString().padStart(2, '0')}`;
+
         optionText.textContent = t('modals.changeSlot.slotOption', {
-          slot: i,
+          slot: slotWithPrefix,
         });
 
         option.appendChild(optionText);
@@ -459,11 +487,11 @@ class ModalManager {
         option.addEventListener('click', (e) => {
           e.stopPropagation();
           // Update data
-          slot.newSlot = i;
+          slot.newSlot = slotWithPrefix;
 
           // Update UI
           selectedValueSpan.textContent = t('modals.changeSlot.slotOption', {
-            slot: i,
+            slot: slotWithPrefix,
           });
 
           // Close and restore
@@ -471,6 +499,7 @@ class ModalManager {
           selectDropdown.style.transition = 'none'; // Disable transition
           selectContainer.appendChild(selectDropdown);
           selectDropdown.style.cssText = '';
+
           void selectDropdown.offsetWidth; // Force reflow
           delete selectDropdown.dataset.parentId;
 
@@ -597,27 +626,28 @@ class ModalManager {
       const filesInfo = document.createElement('div');
       filesInfo.className = 'slot-item-files';
 
-      if (slot.files.length > 0) {
+      if (slot.pathDataForSlot.pathsToBeModified.length > 0) {
         const filesList = document.createElement('details');
 
         const summary = document.createElement('summary');
         summary.textContent = t('modals.changeSlot.filesWillBeModified', {
-          count: slot.files.length,
+          count: slot.pathDataForSlot.pathsToBeModified.length,
         });
 
         const fileListContainer = document.createElement('div');
         fileListContainer.className = 'slot-file-list';
 
-        slot.files.forEach((file) => {
+        slot.pathDataForSlot.pathsToBeModified.forEach((pathDataEntry) => {
           const fileItem = document.createElement('div');
           fileItem.className = 'slot-file-item';
 
-          const icon = file.type === 'directory' ? '📁' : '📄';
+          const icon = pathDataEntry.type === 'directory' ? '📁' : '📄';
           const typeLabel =
-            file.type === 'directory'
+            pathDataEntry.type === 'directory'
               ? t('modals.changeSlot.directory')
               : t('modals.changeSlot.file');
-          fileItem.textContent = `${icon} ${typeLabel} ${file.path}`;
+
+          fileItem.textContent = `${icon} ${typeLabel} ${pathDataEntry.original}`;
           fileListContainer.appendChild(fileItem);
         });
 
@@ -650,19 +680,6 @@ class ModalManager {
     }
   }
 
-  addNewSlot() {
-    if (!this.slotData) return;
-
-    this.slotData.push({
-      originalSlot: null,
-      newSlot: 0,
-      files: [],
-      isNew: true,
-    });
-
-    this.renderSlotList();
-  }
-
   deleteSlot(index) {
     if (!this.slotData) return;
 
@@ -689,7 +706,7 @@ class ModalManager {
           type: 'change',
           originalSlot: slot.originalSlot,
           newSlot: slot.newSlot,
-          files: slot.files,
+          files: slot.pathDataForSlot.pathsToBeModified.map((f) => f.original),
         });
       }
     });
@@ -1272,19 +1289,25 @@ class ModalManager {
     }
 
     const pluginsGrid = plugins
-      .map(
-        (plugin) => {
-          // Check if plugin is already installed by comparing repo
-          const isInstalled = installedRepos.some(
-            installedRepo => installedRepo.toLowerCase() === plugin.repo.toLowerCase()
-          );
-          const buttonClass = isInstalled ? 'marketplace-card-install-btn installed' : 'marketplace-card-install-btn';
-          const buttonIcon = isInstalled ? 'bi-arrow-clockwise' : 'bi-download';
-          const buttonTextKey = isInstalled ? 'plugins.reinstall' : 'plugins.install';
-          const buttonDefaultText = isInstalled ? 'Reinstall' : 'Install';
-          const cardClass = isInstalled ? 'marketplace-plugin-card installed' : 'marketplace-plugin-card';
+      .map((plugin) => {
+        // Check if plugin is already installed by comparing repo
+        const isInstalled = installedRepos.some(
+          (installedRepo) =>
+            installedRepo.toLowerCase() === plugin.repo.toLowerCase(),
+        );
+        const buttonClass = isInstalled
+          ? 'marketplace-card-install-btn installed'
+          : 'marketplace-card-install-btn';
+        const buttonIcon = isInstalled ? 'bi-arrow-clockwise' : 'bi-download';
+        const buttonTextKey = isInstalled
+          ? 'plugins.reinstall'
+          : 'plugins.install';
+        const buttonDefaultText = isInstalled ? 'Reinstall' : 'Install';
+        const cardClass = isInstalled
+          ? 'marketplace-plugin-card installed'
+          : 'marketplace-plugin-card';
 
-          return `
+        return `
       <div class="${cardClass}" data-installed="${isInstalled}">
         <div class="marketplace-card-header">
           <div class="marketplace-card-title-section">
@@ -1310,8 +1333,7 @@ class ModalManager {
         </div>
       </div>
     `;
-        }
-      )
+      })
       .join('');
 
     container.innerHTML = `<div class="marketplace-grid">${pluginsGrid}</div>`;

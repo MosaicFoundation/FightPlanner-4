@@ -219,131 +219,6 @@ export default class ModUtils {
   }
 
   /**
-   * Scan a mod folder for slot patterns (c00-c07)
-   * @param {string} modFolderPath - Path to the mod folder
-   * @returns {Array<Object>} Array of slot objects with slot number and files
-   */
-  static scanModForSlots(modFolderPath: string): {
-    slot: number;
-    files: Slot[];
-  }[] {
-    const slots: Record<number, Slot[]> = {};
-
-    try {
-      const slotPattern = /c0[0-7]/gi;
-
-      const scanDirectory = (dirPath, relativePath = '') => {
-        if (!fs.existsSync(dirPath)) return;
-
-        const entries = fs.readdirSync(dirPath, {
-          withFileTypes: true,
-        });
-
-        entries.forEach((entry) => {
-          const fullPath = path.join(dirPath, entry.name);
-          const relPath = relativePath
-            ? path.join(relativePath, entry.name)
-            : entry.name;
-
-          if (entry.isDirectory()) {
-            const matches = entry.name.match(slotPattern);
-            if (matches) {
-              const uniqueSlots: Set<number> = new Set();
-
-              matches.forEach((match) => {
-                const slotNum = parseInt(match.toLowerCase().charAt(2));
-                uniqueSlots.add(slotNum);
-              });
-
-              uniqueSlots.forEach((slotNum) => {
-                if (!slots[slotNum]) {
-                  slots[slotNum] = [];
-                }
-
-                const exists = slots[slotNum].some(
-                  (item) => item.path === relPath,
-                );
-
-                if (!exists) {
-                  slots[slotNum].push({
-                    path: relPath,
-                    type: 'directory',
-                    name: entry.name,
-                    parent: relativePath || '(root)',
-                  });
-                }
-              });
-            }
-
-            try {
-              scanDirectory(fullPath, relPath);
-            } catch (err) {
-              console.warn(`Cannot scan subdirectory ${relPath}:`, err.message);
-            }
-          } else if (entry.isFile()) {
-            const matches = entry.name.match(slotPattern);
-
-            if (matches) {
-              const uniqueSlots: Set<number> = new Set();
-
-              matches.forEach((match) => {
-                const slotNum = parseInt(match.toLowerCase().charAt(2));
-                uniqueSlots.add(slotNum);
-              });
-
-              uniqueSlots.forEach((slotNum) => {
-                if (!slots[slotNum]) {
-                  slots[slotNum] = [];
-                }
-                const exists = slots[slotNum].some(
-                  (item) => item.path === relPath,
-                );
-
-                if (!exists) {
-                  slots[slotNum].push({
-                    path: relPath,
-                    type: 'file',
-                    name: entry.name,
-                    parent: relativePath || '(root)',
-                  });
-                }
-              });
-            }
-          }
-        });
-      };
-
-      console.log(`Scanning mod folder for slots: ${modFolderPath}`);
-      scanDirectory(modFolderPath);
-
-      const slotsArray = Object.keys(slots)
-        .map((slotNum) => ({
-          slot: parseInt(slotNum),
-          files: slots[slotNum].sort((a, b) => {
-            if (a.type !== b.type) {
-              return a.type === 'directory' ? -1 : 1;
-            }
-
-            return a.path.localeCompare(b.path);
-          }),
-        }))
-        .sort((a, b) => a.slot - b.slot);
-
-      console.log(
-        `Found ${slotsArray.length} different slot(s):`,
-        slotsArray
-          .map((s) => `c0${s.slot} (${s.files.length} items)`)
-          .join(', '),
-      );
-
-      return slotsArray;
-    } catch (error) {
-      console.error('Error scanning mod for slots:', error);
-      return [];
-    }
-  }
-
-  /**
    * Get all used slots for a specific fighter across all active mods
    * @param {string} modsPath - Path to the mods directory
    * @param {string} fighterId - Fighter ID to check
@@ -680,7 +555,10 @@ export default class ModUtils {
     }[] = [];
     const fileToMods = new Map();
 
-    const allPatterns = [...CONFLICT_WHITELIST_PATTERNS, ...whitelistPatterns];
+    const allWhitelistPatterns = [
+      ...CONFLICT_WHITELIST_PATTERNS,
+      ...whitelistPatterns,
+    ];
     const scanResults = await Promise.all(
       activeMods.map(async (mod, modIndex) => {
         if (mod.path && fs.existsSync(mod.path)) {
@@ -689,32 +567,40 @@ export default class ModUtils {
       }),
     );
 
+    function _addToFileMap(modIndex: number, filePath: string) {
+      if (
+        allWhitelistPatterns.some((pattern) => {
+          const regex = new RegExp(pattern);
+          return regex.test(filePath);
+        })
+      ) {
+        return;
+      }
+
+      if (!fileToMods.has(filePath)) {
+        fileToMods.set(filePath, []);
+      }
+
+      fileToMods.get(filePath).push({
+        modIndex,
+        modName: activeMods[modIndex].name,
+        modPath: activeMods[modIndex].path,
+        filePath: filePath,
+      });
+    }
+
     for (const [index, scanResult] of scanResults.entries()) {
       if (scanResult) {
+        for (const unknownFile of scanResult.unknownFiles) {
+          _addToFileMap(index, unknownFile);
+        }
+
         for (const fighter of Object.keys(scanResult.pathData)) {
           for (const slot of Object.keys(scanResult.pathData[fighter])) {
             const slotData = scanResult.pathData[fighter][slot];
 
-            for (const fileEntry of slotData.filesToBeModified) {
-              if (
-                allPatterns.some((pattern) => {
-                  const regex = new RegExp(pattern);
-                  return regex.test(fileEntry.original);
-                })
-              ) {
-                continue;
-              }
-
-              if (!fileToMods.has(fileEntry.original)) {
-                fileToMods.set(fileEntry.original, []);
-              }
-
-              fileToMods.get(fileEntry.original).push({
-                modIndex: index,
-                modName: activeMods[index].name,
-                modPath: activeMods[index].path,
-                filePath: fileEntry.original,
-              });
+            for (const { original } of slotData.filesToBeModified) {
+              _addToFileMap(index, original);
             }
           }
         }

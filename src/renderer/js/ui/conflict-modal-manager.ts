@@ -444,17 +444,18 @@ export class ConflictModalManager {
           continue;
         }
 
-        if (!window.electronAPI.scanModSlots) {
+        if (!window.electronAPI.scanMod) {
           errors.push(`${mod.name}: Slot scanning not available`);
           errorCount++;
           continue;
         }
 
-        const slotResult = await window.electronAPI.scanModSlots(mod.path);
+        const scanResult = await window.electronAPI.scanMod(mod.path);
+
         if (
-          !slotResult.success ||
-          !slotResult.slots ||
-          slotResult.slots.length === 0
+          !scanResult.success ||
+          !scanResult.data.currentSlots ||
+          scanResult.data.currentSlots.length === 0
         ) {
           continue;
         }

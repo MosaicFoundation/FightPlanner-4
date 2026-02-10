@@ -1,17 +1,23 @@
 import fs from 'fs';
 import path from 'path';
 
-export type PathData = Record<
-  string,
-  Record<
-    string,
-    { pathsToBeModified: PathDataEntry[]; filesToBeModified: PathDataEntry[] }
-  >
->;
+export interface ScanModResult {
+  pathData: PathData;
+  currentSlots: string[];
+  unknownFiles: string[];
+}
+
+export interface PathDataForSlot {
+  pathsToBeModified: PathDataEntry[];
+  filesToBeModified: PathDataEntry[];
+}
+
+export type PathData = Record<string, Record<string, PathDataForSlot>>;
 
 export interface PathDataEntry {
   original: string;
   normalized: string | null;
+  type: 'file' | 'directory';
 }
 
 export const ModScanner = {
@@ -34,18 +40,12 @@ export const ModScanner = {
    *   "link": {
    *     "c01": { ... },
    *     ...
-   *   },
-   *   "unknown": {
-   *     "unknown": {
-   *       pathsToBeModified: [ ... ],
-   *       filesToBeModified: [ ... ],
-   *     }
    *   }
    * }
    *
    * @param modPath
    */
-  async scanModFiles(modPath: string) {
+  async scanModFiles(modPath: string): Promise<ScanModResult> {
     try {
       const files = await fs.promises.readdir(modPath, {
         recursive: true,
@@ -53,6 +53,8 @@ export const ModScanner = {
       });
 
       const pathData: PathData = {};
+      const unknownFiles: string[] = [];
+
       const slots = new Set<string>();
 
       files.forEach((fileOrDirectory) => {
@@ -77,6 +79,11 @@ export const ModScanner = {
 
         const relativePath = path.relative(modPath, absolutePath);
 
+        if (fileOrDirectory.name.startsWith('.')) {
+          // Ignore hidden files and folders (like .DS_Store or .git)
+          return;
+        }
+
         const {
           slot,
           fighterName,
@@ -87,15 +94,21 @@ export const ModScanner = {
 
         if (fighterName) {
           const slotKey = slot || 'unknown';
+          const isFile = fileOrDirectory.isFile();
+
+          // Ignore unknown slots unless we are working with the full file path
+          if (slotKey === 'unknown' && !isFile) {
+            return;
+          }
 
           slots.add(slotKey);
-
           _createPathDataEntry(fighterName, slotKey);
 
-          if (relativePath.includes('.')) {
+          if (isFile) {
             pathData[fighterName][slotKey].filesToBeModified.push({
               original: relativePath,
               normalized: normalizedPath,
+              type: 'file',
             });
           }
 
@@ -108,21 +121,10 @@ export const ModScanner = {
           pathData[fighterName][slotKey].pathsToBeModified.push({
             original: relativePath,
             normalized: normalizedPath,
+            type: isFile ? 'file' : 'directory',
           });
-        } else {
-          pathData['unknown'] = pathData['unknown'] || {};
-
-          pathData['unknown']['unknown'] = pathData['unknown']['unknown'] || {
-            pathsToBeModified: [],
-            filesToBeModified: [],
-          };
-
-          if (relativePath.includes('.')) {
-            pathData['unknown']['unknown'].filesToBeModified.push({
-              original: relativePath,
-              normalized: normalizedPath,
-            });
-          }
+        } else if (fileOrDirectory.isFile()) {
+          unknownFiles.push(relativePath);
         }
       });
 
@@ -133,7 +135,7 @@ export const ModScanner = {
         return numA - numB;
       });
 
-      return { pathData, currentSlots };
+      return { pathData, currentSlots, unknownFiles };
     } catch (error) {
       console.error('Error scanning for slots:', error);
       throw error;

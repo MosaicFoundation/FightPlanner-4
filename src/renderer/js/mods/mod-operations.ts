@@ -156,14 +156,14 @@ class ModOperations {
       return;
     }
 
-    if (window.electronAPI && window.electronAPI.scanModSlots) {
-      const result = await window.electronAPI.scanModSlots(mod.path);
+    if (window.electronAPI && window.electronAPI.scanMod) {
+      const scanResult = await window.electronAPI.scanMod(mod.path);
 
-      if (result.success) {
+      if (scanResult.success) {
         if (window.modalManager) {
           window.modalManager.openChangeSlotModal(
             mod,
-            result.slots,
+            scanResult.data,
             async (changes) => {
               if (window.electronAPI && window.electronAPI.applySlotChanges) {
                 const applyResult = await window.electronAPI.applySlotChanges(
@@ -193,7 +193,7 @@ class ModOperations {
       } else {
         if (window.toastManager) {
           window.toastManager.error('toasts.failedToChangeSlot', 3000, {
-            error: result.error || 'Unknown error',
+            error: scanResult.error || 'Unknown error',
           });
         }
       }
