@@ -344,6 +344,11 @@
   gap: 12px;
 }
 
+.slot-item:has(.slot-item-content.deleted) {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
 .slot-item-info {
   display: flex;
   align-items: center;
@@ -431,14 +436,6 @@
   background: rgba(239, 68, 68, 0.2);
   border-color: rgba(239, 68, 68, 0.5);
   transform: translateY(-2px);
-}
-
-.slot-item-new {
-  border-color: rgba(74, 222, 128, 0.3);
-}
-
-.slot-item-new .slot-item-label {
-  color: var(--success-color);
 }
 
 body.no-animations .modal,

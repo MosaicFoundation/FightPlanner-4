@@ -492,14 +492,6 @@
   transform: translateY(-2px);
 }
 
-.slot-item-new {
-  border-color: rgba(74, 222, 128, 0.3);
-}
-
-.slot-item-new .slot-item-label {
-  color: var(--success-color);
-}
-
 body.no-animations .modal,
 body.no-animations .modal-overlay,
 body.no-animations .context-menu {

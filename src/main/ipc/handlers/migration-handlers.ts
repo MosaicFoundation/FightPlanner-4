@@ -13,13 +13,11 @@ export type MigrationHandlers = typeof MigrationHandlers;
 const MigrationHandlers = {
   ['get-migration-status']: async (
     common: BaseHandlerArg,
-  ): Promise<
-    HandlerResponse<{
-      completed: boolean | null;
-      from: string | null;
-      date: string | null;
-    }>
-  > => {
+  ): HandlerResponse<{
+    completed: boolean | null;
+    from: string | null;
+    date: string | null;
+  }> => {
     try {
       const status = await getMigrationStatus();
       return { success: true, ...status };

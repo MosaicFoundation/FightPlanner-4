@@ -294,7 +294,6 @@
       "title": "Change Character Slot",
       "hint": "Detected slots in this mod:",
       "applyChanges": "Apply Changes",
-      "newSlot": "New Slot:",
       "currentSlot": "Current: {{slot}}",
       "slotOption": "{{slot}}",
       "filesWillBeModified": "{{count}} file(s) and folder(s) will be modified",

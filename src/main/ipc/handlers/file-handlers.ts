@@ -49,11 +49,9 @@ const FileHandlers = {
 
   ['select-mod-file']: async (
     common: BaseHandlerArg,
-  ): Promise<
-    HandlerResponse<{
-      filePath: string;
-    }>
-  > => {
+  ): HandlerResponse<{
+    filePath: string;
+  }> => {
     try {
       const win = BrowserWindow.fromWebContents(common.event.sender)!;
       const result = await dialog.showOpenDialog(win, {
@@ -84,11 +82,9 @@ const FileHandlers = {
   ['select-custom-file']: async (
     common: BaseHandlerArg,
     fileType: string,
-  ): Promise<
-    HandlerResponse<{
-      filePath: string;
-    }>
-  > => {
+  ): HandlerResponse<{
+    filePath: string;
+  }> => {
     try {
       const filters =
         fileType === 'css'
@@ -118,7 +114,7 @@ const FileHandlers = {
   ['open-folder']: async (
     common: BaseHandlerArg,
     folderPath: string,
-  ): Promise<HandlerResponse> => {
+  ): HandlerResponse => {
     try {
       if (fs.existsSync(folderPath)) {
         await shell.openPath(folderPath);
@@ -155,11 +151,9 @@ const FileHandlers = {
   ['read-custom-file']: async (
     common: BaseHandlerArg,
     filePath: string,
-  ): Promise<
-    HandlerResponse<{
-      content: string;
-    }>
-  > => {
+  ): HandlerResponse<{
+    content: string;
+  }> => {
     try {
       if (!fs.existsSync(filePath)) {
         return createErrorResponse(

@@ -48,7 +48,7 @@ class ModContextMenuHandler {
               await this.modManager.operations.renameMod(mod);
               break;
             case 'change-slot':
-              await this.modManager.operations.changeSlot(mod);
+              await this.modManager.operations.startChangeSlotsFlow(mod);
               break;
             case 'toggle':
               await this.modManager.operations.toggleModStatus(mod);

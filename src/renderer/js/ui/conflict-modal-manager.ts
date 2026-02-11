@@ -183,7 +183,7 @@ export class ConflictModalManager {
       return;
     }
 
-    await window.modManager.operations.changeSlot(selectedMod);
+    await window.modManager.operations.startChangeSlotsFlow(selectedMod);
   }
 
   _getModsMap() {
@@ -389,262 +389,262 @@ export class ConflictModalManager {
     this.autoSlotChangeMods = [];
   }
 
-  async applyAutoSlotChanges() {
-    if (!window.modManager || !window.modManager.modsPath) {
-      if (window.toastManager) {
-        window.toastManager.error('toasts.cannotChangeSlot');
-      }
-      return;
-    }
-
-    const t = (key, params = {}) => {
-      return window.i18n && window.i18n.t ? window.i18n.t(key, params) : key;
-    };
-
-    const excludedModPaths = new Set();
-    const checkboxes = document.querySelectorAll<HTMLInputElement>(
-      '.conflict-auto-slot-checkbox:checked',
-    );
-    checkboxes.forEach((checkbox) => {
-      excludedModPaths.add(checkbox.dataset.modPath);
-    });
-
-    const modsToChange = this.autoSlotChangeMods.filter(
-      (mod) => !excludedModPaths.has(mod.path),
-    );
-
-    if (modsToChange.length === 0) {
-      if (window.toastManager) {
-        window.toastManager.error('toasts.noModsToChange');
-      }
-      return;
-    }
-
-    this.closeAutoSlotChangeModal();
-
-    if (window.toastManager) {
-      window.toastManager.info('toasts.processingSlotChanges');
-    }
-
-    let successCount = 0;
-    let errorCount = 0;
-    const errors: string[] = [];
-
-    for (const mod of modsToChange) {
-      try {
-        if (!window.electronAPI || !window.electronAPI.scanModForFighters) {
-          errors.push(`${mod.name}: API not available`);
-          errorCount++;
-          continue;
-        }
-
-        const fighters = await window.electronAPI.scanModForFighters(mod.path);
-
-        if (!fighters || fighters.length === 0) {
-          continue;
-        }
-
-        if (!window.electronAPI.scanMod) {
-          errors.push(`${mod.name}: Slot scanning not available`);
-          errorCount++;
-          continue;
-        }
-
-        const scanResult = await window.electronAPI.scanMod(mod.path);
-
-        if (
-          !scanResult.success ||
-          !scanResult.data.currentSlots ||
-          scanResult.data.currentSlots.length === 0
-        ) {
-          continue;
-        }
-
-        const modSlotsByFighter = new Map();
-        const allModSlots = new Set();
-
-        for (const fighterId of fighters) {
-          if (!window.electronAPI.scanModSlotsByFighter) {
-            errors.push(
-              `${mod.name} (${fighterId}): Cannot scan slots by fighter`,
-            );
-            errorCount++;
-            continue;
-          }
-
-          const modSlotsResult = await window.electronAPI.scanModSlotsByFighter(
-            mod.path,
-            fighterId,
-          );
-
-          if (
-            !modSlotsResult.success ||
-            !modSlotsResult.slots ||
-            modSlotsResult.slots.length === 0
-          ) {
-            continue;
-          }
-
-          const modSlots = modSlotsResult.slots;
-          modSlotsByFighter.set(fighterId, modSlots);
-          modSlots.forEach((slot) => allModSlots.add(slot));
-        }
-
-        if (modSlotsByFighter.size === 0) {
-          continue;
-        }
-
-        let availableSlot: number | null = null;
-        for (let i = 0; i <= 7; i++) {
-          let isAvailableForAll = true;
-
-          for (const fighterId of modSlotsByFighter.keys()) {
-            if (!window.electronAPI.getUsedSlotsForFighter) {
-              isAvailableForAll = false;
-              break;
-            }
-
-            const usedSlotsResult =
-              await window.electronAPI.getUsedSlotsForFighter(
-                window.modManager.modsPath,
-                fighterId,
-                mod.path,
-              );
-
-            if (!usedSlotsResult.success) {
-              isAvailableForAll = false;
-              break;
-            }
-
-            const usedSlots = usedSlotsResult.usedSlots || [];
-
-            if (usedSlots.includes(i)) {
-              isAvailableForAll = false;
-              break;
-            }
-          }
-
-          if (isAvailableForAll) {
-            availableSlot = i;
-            break;
-          }
-        }
-
-        if (availableSlot === null) {
-          errors.push(`${mod.name}: No available slot for all fighters`);
-          errorCount++;
-          continue;
-        }
-
-        const slotChanges = new Map();
-        Array.from(allModSlots).forEach((originalSlot) => {
-          slotChanges.set(originalSlot, availableSlot);
-        });
-
-        if (slotChanges.size > 0) {
-          const modifications = Array.from(slotChanges.entries()).map(
-            ([originalSlot, newSlot]) => ({
-              type: 'change',
-              originalSlot: originalSlot,
-              newSlot: newSlot,
-            }),
-          );
-
-          const changes = { modifications };
-
-          if (window.electronAPI && window.electronAPI.applySlotChanges) {
-            const applyResult = await window.electronAPI.applySlotChanges(
-              mod.path,
-              changes,
-            );
-
-            if (applyResult.success) {
-              successCount++;
-            } else {
-              errors.push(
-                `${mod.name}: ${applyResult.error || 'Failed to apply changes'}`,
-              );
-              errorCount++;
-            }
-          } else {
-            errors.push(`${mod.name}: Cannot apply slot changes`);
-            errorCount++;
-          }
-        }
-      } catch (error) {
-        console.error(`Error processing mod ${mod.name}:`, error);
-        errors.push(`${mod.name}: ${error.message}`);
-        errorCount++;
-      }
-    }
-
-    if (successCount > 0) {
-      await window.modManager.fetchMods();
-      if (
-        window.settingsManager &&
-        window.settingsManager.settings.conflictDetectionEnabled
-      ) {
-        const whitelistPatterns =
-          window.settingsManager.settings.conflictWhitelistPatterns || [];
-        setTimeout(() => {
-          window.modManager.checkConflicts(whitelistPatterns);
-        }, 500);
-      }
-    }
-
-    if (window.toastManager) {
-      if (errorCount === 0) {
-        window.toastManager.success('toasts.slotChangesSuccess', 3000, {
-          count: successCount,
-        });
-      } else if (successCount > 0) {
-        window.toastManager.warning('toasts.slotChangesPartialSuccess', 5000, {
-          success: successCount,
-          error: errorCount,
-        });
-      } else {
-        const t = (key, params = {}) => {
-          return window.i18n && window.i18n.t
-            ? window.i18n.t(key, params)
-            : key;
-        };
-
-        window.toastManager.error(
-          'toasts.slotChangesFailed',
-          5000,
-          { count: errorCount },
-          {
-            actionButton: {
-              text: t('toasts.viewLogs'),
-              onClick: () => {
-                const settingsBtn = document.querySelector<HTMLElement>(
-                  '[data-tab="settings"]',
-                );
-                if (settingsBtn) {
-                  settingsBtn.click();
-                }
-
-                setTimeout(() => {
-                  if (window.settingsManager) {
-                    window.settingsManager.switchSettingsTab('logs');
-                    if (window.logsManager) {
-                      setTimeout(() => {
-                        window.logsManager.reinitialize();
-                      }, 250);
-                    }
-                  }
-                }, 500);
-              },
-            },
-          },
-        );
-      }
-    }
-
-    if (errors.length > 0) {
-      console.error('Auto slot change errors:', errors);
-    }
-  }
+  // async applyAutoSlotChanges() {
+  //   if (!window.modManager || !window.modManager.modsPath) {
+  //     if (window.toastManager) {
+  //       window.toastManager.error('toasts.cannotChangeSlot');
+  //     }
+  //     return;
+  //   }
+  //
+  //   const t = (key, params = {}) => {
+  //     return window.i18n && window.i18n.t ? window.i18n.t(key, params) : key;
+  //   };
+  //
+  //   const excludedModPaths = new Set();
+  //   const checkboxes = document.querySelectorAll<HTMLInputElement>(
+  //     '.conflict-auto-slot-checkbox:checked',
+  //   );
+  //   checkboxes.forEach((checkbox) => {
+  //     excludedModPaths.add(checkbox.dataset.modPath);
+  //   });
+  //
+  //   const modsToChange = this.autoSlotChangeMods.filter(
+  //     (mod) => !excludedModPaths.has(mod.path),
+  //   );
+  //
+  //   if (modsToChange.length === 0) {
+  //     if (window.toastManager) {
+  //       window.toastManager.error('toasts.noModsToChange');
+  //     }
+  //     return;
+  //   }
+  //
+  //   this.closeAutoSlotChangeModal();
+  //
+  //   if (window.toastManager) {
+  //     window.toastManager.info('toasts.processingSlotChanges');
+  //   }
+  //
+  //   let successCount = 0;
+  //   let errorCount = 0;
+  //   const errors: string[] = [];
+  //
+  //   for (const mod of modsToChange) {
+  //     try {
+  //       if (!window.electronAPI || !window.electronAPI.scanModForFighters) {
+  //         errors.push(`${mod.name}: API not available`);
+  //         errorCount++;
+  //         continue;
+  //       }
+  //
+  //       const fighters = await window.electronAPI.scanModForFighters(mod.path);
+  //
+  //       if (!fighters || fighters.length === 0) {
+  //         continue;
+  //       }
+  //
+  //       if (!window.electronAPI.scanMod) {
+  //         errors.push(`${mod.name}: Slot scanning not available`);
+  //         errorCount++;
+  //         continue;
+  //       }
+  //
+  //       const scanResult = await window.electronAPI.scanMod(mod.path);
+  //
+  //       if (
+  //         !scanResult.success ||
+  //         !scanResult.data.currentSlots ||
+  //         scanResult.data.currentSlots.length === 0
+  //       ) {
+  //         continue;
+  //       }
+  //
+  //       const modSlotsByFighter = new Map();
+  //       const allModSlots = new Set();
+  //
+  //       for (const fighterId of fighters) {
+  //         if (!window.electronAPI.scanModSlotsByFighter) {
+  //           errors.push(
+  //             `${mod.name} (${fighterId}): Cannot scan slots by fighter`,
+  //           );
+  //           errorCount++;
+  //           continue;
+  //         }
+  //
+  //         const modSlotsResult = await window.electronAPI.scanModSlotsByFighter(
+  //           mod.path,
+  //           fighterId,
+  //         );
+  //
+  //         if (
+  //           !modSlotsResult.success ||
+  //           !modSlotsResult.slots ||
+  //           modSlotsResult.slots.length === 0
+  //         ) {
+  //           continue;
+  //         }
+  //
+  //         const modSlots = modSlotsResult.slots;
+  //         modSlotsByFighter.set(fighterId, modSlots);
+  //         modSlots.forEach((slot) => allModSlots.add(slot));
+  //       }
+  //
+  //       if (modSlotsByFighter.size === 0) {
+  //         continue;
+  //       }
+  //
+  //       let availableSlot: number | null = null;
+  //       for (let i = 0; i <= 7; i++) {
+  //         let isAvailableForAll = true;
+  //
+  //         for (const fighterId of modSlotsByFighter.keys()) {
+  //           if (!window.electronAPI.getUsedSlotsForFighter) {
+  //             isAvailableForAll = false;
+  //             break;
+  //           }
+  //
+  //           const usedSlotsResult =
+  //             await window.electronAPI.getUsedSlotsForFighter(
+  //               window.modManager.modsPath,
+  //               fighterId,
+  //               mod.path,
+  //             );
+  //
+  //           if (!usedSlotsResult.success) {
+  //             isAvailableForAll = false;
+  //             break;
+  //           }
+  //
+  //           const usedSlots = usedSlotsResult.usedSlots || [];
+  //
+  //           if (usedSlots.includes(i)) {
+  //             isAvailableForAll = false;
+  //             break;
+  //           }
+  //         }
+  //
+  //         if (isAvailableForAll) {
+  //           availableSlot = i;
+  //           break;
+  //         }
+  //       }
+  //
+  //       if (availableSlot === null) {
+  //         errors.push(`${mod.name}: No available slot for all fighters`);
+  //         errorCount++;
+  //         continue;
+  //       }
+  //
+  //       const slotChanges = new Map();
+  //       Array.from(allModSlots).forEach((originalSlot) => {
+  //         slotChanges.set(originalSlot, availableSlot);
+  //       });
+  //
+  //       if (slotChanges.size > 0) {
+  //         const modifications = Array.from(slotChanges.entries()).map(
+  //           ([originalSlot, newSlot]) => ({
+  //             type: 'change',
+  //             originalSlot: originalSlot,
+  //             newSlot: newSlot,
+  //           }),
+  //         );
+  //
+  //         const changes = { modifications };
+  //
+  //         if (window.electronAPI && window.electronAPI.changeSlots) {
+  //           const applyResult = await window.electronAPI.changeSlots(
+  //             mod.path,
+  //             changes,
+  //           );
+  //
+  //           if (applyResult.success) {
+  //             successCount++;
+  //           } else {
+  //             errors.push(
+  //               `${mod.name}: ${applyResult.error || 'Failed to apply changes'}`,
+  //             );
+  //             errorCount++;
+  //           }
+  //         } else {
+  //           errors.push(`${mod.name}: Cannot apply slot changes`);
+  //           errorCount++;
+  //         }
+  //       }
+  //     } catch (error) {
+  //       console.error(`Error processing mod ${mod.name}:`, error);
+  //       errors.push(`${mod.name}: ${error.message}`);
+  //       errorCount++;
+  //     }
+  //   }
+  //
+  //   if (successCount > 0) {
+  //     await window.modManager.fetchMods();
+  //     if (
+  //       window.settingsManager &&
+  //       window.settingsManager.settings.conflictDetectionEnabled
+  //     ) {
+  //       const whitelistPatterns =
+  //         window.settingsManager.settings.conflictWhitelistPatterns || [];
+  //       setTimeout(() => {
+  //         window.modManager.checkConflicts(whitelistPatterns);
+  //       }, 500);
+  //     }
+  //   }
+  //
+  //   if (window.toastManager) {
+  //     if (errorCount === 0) {
+  //       window.toastManager.success('toasts.slotChangesSuccess', 3000, {
+  //         count: successCount,
+  //       });
+  //     } else if (successCount > 0) {
+  //       window.toastManager.warning('toasts.slotChangesPartialSuccess', 5000, {
+  //         success: successCount,
+  //         error: errorCount,
+  //       });
+  //     } else {
+  //       const t = (key, params = {}) => {
+  //         return window.i18n && window.i18n.t
+  //           ? window.i18n.t(key, params)
+  //           : key;
+  //       };
+  //
+  //       window.toastManager.error(
+  //         'toasts.slotChangesFailed',
+  //         5000,
+  //         { count: errorCount },
+  //         {
+  //           actionButton: {
+  //             text: t('toasts.viewLogs'),
+  //             onClick: () => {
+  //               const settingsBtn = document.querySelector<HTMLElement>(
+  //                 '[data-tab="settings"]',
+  //               );
+  //               if (settingsBtn) {
+  //                 settingsBtn.click();
+  //               }
+  //
+  //               setTimeout(() => {
+  //                 if (window.settingsManager) {
+  //                   window.settingsManager.switchSettingsTab('logs');
+  //                   if (window.logsManager) {
+  //                     setTimeout(() => {
+  //                       window.logsManager.reinitialize();
+  //                     }, 250);
+  //                   }
+  //                 }
+  //               }, 500);
+  //             },
+  //           },
+  //         },
+  //       );
+  //     }
+  //   }
+  //
+  //   if (errors.length > 0) {
+  //     console.error('Auto slot change errors:', errors);
+  //   }
+  // }
 }
 
 if (typeof window !== 'undefined') {

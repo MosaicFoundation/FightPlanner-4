@@ -86,13 +86,11 @@ const SystemHandlers = {
 
   ['clear-temp-files']: async (
     common: BaseHandlerArg,
-  ): Promise<
-    HandlerResponse<{
-      deletedFiles: number;
-      deletedFolders: number;
-      totalSize: string;
-    }>
-  > => {
+  ): HandlerResponse<{
+    deletedFiles: number;
+    deletedFolders: number;
+    totalSize: string;
+  }> => {
     try {
       const tempPath = PATHS.tempDir();
       const foldersToClean = TEMP_FOLDERS;
@@ -157,7 +155,7 @@ const SystemHandlers = {
     emulatorPath: string,
     gamePath: string,
     fullscreen: boolean,
-  ): Promise<HandlerResponse> => {
+  ): HandlerResponse => {
     try {
       if (!fs.existsSync(emulatorPath)) {
         return createErrorResponse(
@@ -206,11 +204,9 @@ const SystemHandlers = {
   ['load-locale']: async (
     common: BaseHandlerArg,
     locale: string,
-  ): Promise<
-    HandlerResponse<{
-      translations: Record<string, string>;
-    }>
-  > => {
+  ): HandlerResponse<{
+    translations: Record<string, string>;
+  }> => {
     try {
       const localesPath = PATHS.localesDir();
       const localePath = path.join(localesPath, `${locale}.json`);

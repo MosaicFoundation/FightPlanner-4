@@ -121,14 +121,12 @@ const TutorialHandlers = {
 
   ['get-skyline-release']: async (
     common: BaseHandlerArg,
-  ): Promise<
-    HandlerResponse<{
-      tag: string;
-      downloadUrl: string;
-      version: string;
-      name: string;
-    }>
-  > => {
+  ): HandlerResponse<{
+    tag: string;
+    downloadUrl: string;
+    version: string;
+    name: string;
+  }> => {
     try {
       return { success: true, ...(await getLatestSkylineRelease()) };
     } catch (error) {
@@ -180,7 +178,7 @@ const TutorialHandlers = {
   ['create-directory']: async (
     common: BaseHandlerArg,
     dirPath: string,
-  ): Promise<HandlerResponse> => {
+  ): HandlerResponse => {
     try {
       await createDirectory(dirPath);
       return { success: true };
@@ -219,11 +217,9 @@ const TutorialHandlers = {
   ['join-path']: async (
     common: BaseHandlerArg,
     ...parts: string[]
-  ): Promise<
-    HandlerResponse<{
-      path: string;
-    }>
-  > => {
+  ): HandlerResponse<{
+    path: string;
+  }> => {
     try {
       const path = require('path');
       return { success: true, path: path.join(...parts) };
@@ -235,11 +231,9 @@ const TutorialHandlers = {
 
   ['get-temp-dir']: async (
     common: BaseHandlerArg,
-  ): Promise<
-    HandlerResponse<{
-      path: string;
-    }>
-  > => {
+  ): HandlerResponse<{
+    path: string;
+  }> => {
     try {
       const os = require('os');
       return { success: true, path: os.tmpdir() };

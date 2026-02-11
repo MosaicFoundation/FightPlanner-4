@@ -148,11 +148,12 @@ class ModOperations {
     }
   }
 
-  async changeSlot(mod: Mod) {
+  async startChangeSlotsFlow(mod: Mod) {
     if (!mod.path) {
       if (window.toastManager) {
         window.toastManager.error('toasts.cannotChangeSlot');
       }
+
       return;
     }
 
@@ -164,27 +165,25 @@ class ModOperations {
           window.modalManager.openChangeSlotModal(
             mod,
             scanResult.data,
-            async (changes) => {
-              if (window.electronAPI && window.electronAPI.applySlotChanges) {
-                const applyResult = await window.electronAPI.applySlotChanges(
+            async (slotAssignments, deletedSlots) => {
+              if (window.electronAPI && window.electronAPI.changeSlots) {
+                const changeSlotsResult = await window.electronAPI.changeSlots(
                   mod.path,
-                  changes,
+                  scanResult.data.pathData,
+                  slotAssignments,
+                  deletedSlots,
                 );
 
-                if (applyResult.success) {
+                if (changeSlotsResult.success) {
                   if (window.toastManager) {
                     window.toastManager.success('toasts.slotChanged');
                   }
 
                   this.modManager.fetchMods();
                 } else {
-                  if (window.toastManager) {
-                    window.toastManager.error(
-                      'toasts.failedToChangeSlot',
-                      3000,
-                      { error: applyResult.error },
-                    );
-                  }
+                  window.toastManager.error('toasts.failedToChangeSlot', 3000, {
+                    error: changeSlotsResult.error,
+                  });
                 }
               }
             },

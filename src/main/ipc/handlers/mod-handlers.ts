@@ -1,7 +1,8 @@
 import { IpcMain } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import ModUtils, { Mod, Slot } from '../../mod-utils';
+
+import ModUtils, { Mod, SlotChanges } from '../../mod-utils';
 import store from '../../store';
 import {
   handleError,
@@ -11,7 +12,12 @@ import {
 import { ModInstallResult } from '../../plugin-update-installer';
 import { HandlerResponse } from '../../types/common';
 import { BaseHandlerArg, GenericHandler } from '../../types/common';
-import { ModScanner, PathData, ScanModResult } from '../../utils/mod-scanner';
+import {
+  ModScanner,
+  PathData,
+  ScanModResult,
+} from '../../mod-utils/mod-scanner';
+import { SlotChanger } from '../../mod-utils/slot-changer';
 
 export type ModHandlers = typeof ModHandlers;
 
@@ -19,12 +25,10 @@ const ModHandlers = {
   ['read-mods-folder']: async (
     common: BaseHandlerArg,
     modsPath: string,
-  ): Promise<
-    HandlerResponse<{
-      activeMods: Mod[];
-      disabledMods: Mod[];
-    }>
-  > => {
+  ): HandlerResponse<{
+    activeMods: Mod[];
+    disabledMods: Mod[];
+  }> => {
     try {
       return {
         success: true,
@@ -65,7 +69,7 @@ const ModHandlers = {
     common: BaseHandlerArg,
     modPath: string,
     infoData,
-  ): Promise<HandlerResponse> => {
+  ): HandlerResponse => {
     try {
       const infoPath = path.join(modPath, 'info.toml');
       let tomlContent = '';
@@ -104,7 +108,7 @@ const ModHandlers = {
     common: BaseHandlerArg,
     modPath,
     tomlContent,
-  ): Promise<HandlerResponse> => {
+  ): HandlerResponse => {
     try {
       const infoPath = path.join(modPath, 'info.toml');
       fs.writeFileSync(infoPath, tomlContent, 'utf8');
@@ -143,11 +147,9 @@ const ModHandlers = {
     common: BaseHandlerArg,
     modPath: string,
     newName: string,
-  ): Promise<
-    HandlerResponse<{
-      newPath: string;
-    }>
-  > => {
+  ): HandlerResponse<{
+    newPath: string;
+  }> => {
     try {
       const parentDir = path.dirname(modPath);
       const newPath = path.join(parentDir, newName);
@@ -168,7 +170,7 @@ const ModHandlers = {
   ['delete-mod']: async (
     common: BaseHandlerArg,
     modPath: string,
-  ): Promise<HandlerResponse> => {
+  ): HandlerResponse => {
     try {
       if (!fs.existsSync(modPath)) {
         return createErrorResponse(
@@ -188,12 +190,10 @@ const ModHandlers = {
     common: BaseHandlerArg,
     modPath: string,
     modsBasePath: string,
-  ): Promise<
-    HandlerResponse<{
-      newPath: string;
-      isNowActive: boolean;
-    }>
-  > => {
+  ): HandlerResponse<{
+    newPath: string;
+    isNowActive: boolean;
+  }> => {
     try {
       const modName = path.basename(modPath);
       const parentDir = path.dirname(modsBasePath);
@@ -234,11 +234,9 @@ const ModHandlers = {
   ['scan-mod']: async (
     common: BaseHandlerArg,
     modPath: string,
-  ): Promise<
-    HandlerResponse<{
-      data: ScanModResult;
-    }>
-  > => {
+  ): HandlerResponse<{
+    data: ScanModResult;
+  }> => {
     try {
       const data = await ModScanner.scanModFiles(modPath);
       return { success: true, data };
@@ -248,53 +246,29 @@ const ModHandlers = {
     }
   },
 
-  ['get-used-slots-for-fighter']: async (
-    common: BaseHandlerArg,
-    modsPath: string,
-    fighterId: string,
-    excludeModPath: string | null = null,
-  ): Promise<
-    HandlerResponse<{
-      usedSlots: number[];
-    }>
-  > => {
-    try {
-      const usedSlots = ModUtils.getUsedSlotsForFighter(
-        modsPath,
-        fighterId,
-        excludeModPath,
-      );
-
-      return { success: true, usedSlots };
-    } catch (error) {
-      handleError(error, 'get-used-slots-for-fighter');
-      return createErrorResponse(ErrorCodes.MOD_READ_ERROR, error.message);
-    }
-  },
-
-  ['scan-mod-slots-by-fighter']: async (
+  ['change-slots']: async (
     common: BaseHandlerArg,
     modPath: string,
-    fighterId: string,
-  ): Promise<
-    HandlerResponse<{
-      slots: number[];
-    }>
-  > => {
+    pathData: PathData,
+    slotAssignments: Map<string, string>,
+    deletedSlots: Set<string>,
+  ): HandlerResponse => {
     try {
-      const slots = ModUtils.scanModForSlotsByFighter(modPath, fighterId);
-      return { success: true, slots };
-    } catch (error) {
-      handleError(error, 'scan-mod-slots-by-fighter');
-      return createErrorResponse(ErrorCodes.MOD_READ_ERROR, error.message);
-    }
-  },
+      for (const slot of deletedSlots) {
+        await SlotChanger.removeSlot(modPath, slot, pathData);
+        slotAssignments.delete(slot);
+      }
 
-  ['apply-slot-changes']: async (common: BaseHandlerArg, modPath, changes) => {
-    try {
-      return ModUtils.applySlotChanges(modPath, changes);
+      await SlotChanger.changeSlots(
+        modPath,
+        slotAssignments,
+        pathData,
+        ModScanner.getInternalFighterName(pathData)!,
+      );
+
+      return { success: true };
     } catch (error) {
-      handleError(error, 'apply-slot-changes');
+      handleError(error, 'change-slots');
       return createErrorResponse(ErrorCodes.MOD_SAVE_ERROR, error.message);
     }
   },
@@ -303,19 +277,17 @@ const ModHandlers = {
     common: BaseHandlerArg,
     modsPath: string,
     whitelistPatterns: string[] = [],
-  ): Promise<
-    HandlerResponse<{
-      conflicts: {
-        filePath: string;
-        mods: {
-          name: string;
-          path: string;
-        }[];
+  ): HandlerResponse<{
+    conflicts: {
+      filePath: string;
+      mods: {
+        name: string;
+        path: string;
       }[];
-      totalConflicts: number;
-      activeModsCount: number;
-    }>
-  > => {
+    }[];
+    totalConflicts: number;
+    activeModsCount: number;
+  }> => {
     try {
       const result = ModUtils.readAllMods(modsPath);
       const conflicts = await ModUtils.detectConflicts(

@@ -211,11 +211,9 @@ const FtpHandlers = {
   ['send-mods-to-switch']: async (
     common: BaseHandlerArg,
     config: Config,
-  ): Promise<
-    HandlerResponse<{
-      transferredCount: number;
-    }>
-  > => {
+  ): HandlerResponse<{
+    transferredCount: number;
+  }> => {
     const transferMethod = config.switchTransferMethod || 'ftp';
 
     if (transferMethod === 'drive') {

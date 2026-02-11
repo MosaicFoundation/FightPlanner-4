@@ -20,12 +20,10 @@ const PluginHandlers = {
   ['read-plugins-folder']: async (
     common: BaseHandlerArg,
     pluginsPath: string,
-  ): Promise<
-    HandlerResponse<{
-      activePlugins: SimplePlugin[];
-      disabledPlugins: SimplePlugin[];
-    }>
-  > => {
+  ): HandlerResponse<{
+    activePlugins: SimplePlugin[];
+    disabledPlugins: SimplePlugin[];
+  }> => {
     try {
       return { success: true, ...PluginUtils.readAllPlugins(pluginsPath) };
     } catch (error) {
@@ -40,7 +38,7 @@ const PluginHandlers = {
   ['select-plugin-file']: async (
     common: BaseHandlerArg,
     pluginsPath: string,
-  ): Promise<HandlerResponse> => {
+  ): HandlerResponse => {
     try {
       const win = BrowserWindow.fromWebContents(common.event.sender)!;
       const result = await dialog.showOpenDialog(win, {
@@ -90,13 +88,11 @@ const PluginHandlers = {
 
   ['check-plugin-updates']: async (
     common: BaseHandlerArg,
-  ): Promise<
-    HandlerResponse<{
-      results: (PluginUpdateResult & {
-        pluginName: string;
-      })[];
-    }>
-  > => {
+  ): HandlerResponse<{
+    results: (PluginUpdateResult & {
+      pluginName: string;
+    })[];
+  }> => {
     try {
       const pluginMappings = (store.get('pluginRepoMappings') || {}) as Record<
         string,

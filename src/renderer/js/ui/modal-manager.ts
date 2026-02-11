@@ -1,20 +1,8 @@
 import type { MarketplacePlugin } from '../mods/plugin-marketplace';
 import { Mod } from '../mods/mod-manager';
-import {
-  PathDataForSlot,
-  ScanModResult,
-} from '../../../main/utils/mod-scanner';
+import { PathData, ScanModResult } from '../../../main/mod-utils/mod-scanner';
 
-interface Changes {
-  modifications: Array<{
-    type: string;
-    originalSlot?: string | null;
-    newSlot?: string;
-    files?: Array<any>;
-    targetSlot?: string;
-  }>;
-  deletions: Array<number>;
-}
+type SlotAssignments = Map<string, string>;
 
 class ModalManager {
   currentMod: any | null;
@@ -25,6 +13,7 @@ class ModalManager {
   editInfoCallback: ((info: any) => void) | null;
   advancedInfoCallback: (() => void) | null;
   currentModPath: string | null;
+  fighterPathData: PathData[string];
   pendingInstallData: {
     url: string;
     downloadId: string;
@@ -32,14 +21,12 @@ class ModalManager {
     modType: string;
   } | null;
 
-  changeSlotCallback?: ((changes: Changes) => void) | null;
+  slotAssignments: SlotAssignments;
+  deletedSlots: Set<string> = new Set();
 
-  slotData: Array<{
-    originalSlot: string | null;
-    newSlot: string;
-    pathDataForSlot: PathDataForSlot;
-    isNew: boolean;
-  }> | null;
+  changeSlotCallback?:
+    | ((slotAssignments: SlotAssignments, deletedSlots: Set<string>) => void)
+    | null;
 
   constructor() {
     this.currentMod = null;
@@ -51,6 +38,8 @@ class ModalManager {
     this.advancedInfoCallback = null;
     this.currentModPath = null;
     this.pendingInstallData = null;
+    this.slotAssignments = new Map();
+    this.fighterPathData = {};
   }
 
   showOverlay() {
@@ -345,7 +334,14 @@ class ModalManager {
     this.closeDeletePluginModal();
   }
 
-  openChangeSlotModal(mod: Mod, modData: ScanModResult, callback) {
+  openChangeSlotModal(
+    mod: Mod,
+    modData: ScanModResult,
+    callback: (
+      slotAssignments: SlotAssignments,
+      deletedSlots: Set<string>,
+    ) => void,
+  ) {
     this.currentMod = mod;
     this.changeSlotCallback = callback;
 
@@ -361,14 +357,15 @@ class ModalManager {
       );
     }
 
-    this.slotData = modData.currentSlots.map((slot) => {
-      return {
-        originalSlot: slot,
-        newSlot: slot,
-        pathDataForSlot: modData.pathData[fighterName][slot],
-        isNew: false,
-      };
-    });
+    this.slotAssignments = modData.currentSlots.reduce<SlotAssignments>(
+      (acc, slot) => {
+        acc.set(slot, slot);
+        return acc;
+      },
+      new Map(),
+    );
+
+    this.fighterPathData = modData.pathData[fighterName];
 
     const modal = document.querySelector<HTMLElement>('#change-slot-modal');
     const container = document.querySelector<HTMLElement>(
@@ -402,14 +399,15 @@ class ModalManager {
 
     this.currentMod = null;
     this.changeSlotCallback = null;
-    this.slotData = null;
+    this.slotAssignments = new Map();
   }
 
   renderSlotList() {
     const container = document.querySelector<HTMLElement>(
       '#slot-list-container',
     );
-    if (!container || !this.slotData) return;
+
+    if (!container || !this.slotAssignments) return;
 
     const t = (key, params = {}) => {
       return window.i18n && window.i18n.t ? window.i18n.t(key, params) : key;
@@ -417,10 +415,12 @@ class ModalManager {
 
     container.innerHTML = '';
 
-    for (const [index, slot] of this.slotData.entries()) {
+    for (const [index, [originalSlot, newSlot]] of Object.entries(
+      this.slotAssignments,
+    ).entries()) {
       const slotItem = document.createElement('div');
 
-      slotItem.className = `slot-item ${slot.isNew ? 'slot-item-new' : ''}`;
+      slotItem.className = 'slot-item';
       slotItem.dataset.index = `${index}`;
 
       const content = document.createElement('div');
@@ -430,12 +430,11 @@ class ModalManager {
       info.className = 'slot-item-info';
 
       const label = document.createElement('span');
+
       label.className = 'slot-item-label';
-      label.textContent = slot.isNew
-        ? t('modals.changeSlot.newSlot')
-        : t('modals.changeSlot.currentSlot', {
-            slot: slot.originalSlot,
-          });
+      label.textContent = t('modals.changeSlot.currentSlot', {
+        slot: originalSlot,
+      });
 
       const arrow = document.createElement('i');
       arrow.className = 'bi bi-arrow-right slot-arrow';
@@ -451,7 +450,7 @@ class ModalManager {
       const selectedValueSpan = document.createElement('span');
       selectedValueSpan.className = 'selected-value';
       selectedValueSpan.textContent = t('modals.changeSlot.slotOption', {
-        slot: slot.newSlot,
+        slot: newSlot,
       });
 
       const triggerIcon = document.createElement('i');
@@ -467,7 +466,7 @@ class ModalManager {
         const option = document.createElement('div');
         option.className = 'custom-select-option';
 
-        const slotNumber = parseInt(slot.newSlot.substring(1));
+        const slotNumber = newSlot && parseInt(newSlot.substring(1));
 
         if (i === slotNumber) {
           option.classList.add('active');
@@ -476,10 +475,9 @@ class ModalManager {
         option.dataset.value = `${i}`;
 
         const optionText = document.createElement('span');
-        const slotWithPrefix = `c${i.toString().padStart(2, '0')}`;
 
         optionText.textContent = t('modals.changeSlot.slotOption', {
-          slot: slotWithPrefix,
+          slot: newSlot,
         });
 
         option.appendChild(optionText);
@@ -487,11 +485,12 @@ class ModalManager {
         option.addEventListener('click', (e) => {
           e.stopPropagation();
           // Update data
-          slot.newSlot = slotWithPrefix;
+
+          this.slotAssignments.set(originalSlot, newSlot);
 
           // Update UI
           selectedValueSpan.textContent = t('modals.changeSlot.slotOption', {
-            slot: slotWithPrefix,
+            slot: newSlot,
           });
 
           // Close and restore
@@ -618,26 +617,26 @@ class ModalManager {
       });
 
       info.appendChild(label);
-      if (!slot.isNew) {
-        info.appendChild(arrow);
-      }
+      info.appendChild(arrow);
       info.appendChild(selectContainer);
 
       const filesInfo = document.createElement('div');
       filesInfo.className = 'slot-item-files';
 
-      if (slot.pathDataForSlot.pathsToBeModified.length > 0) {
+      const pathDataForSlot = this.fighterPathData[originalSlot];
+
+      if (pathDataForSlot.pathsToBeModified.length > 0) {
         const filesList = document.createElement('details');
 
         const summary = document.createElement('summary');
         summary.textContent = t('modals.changeSlot.filesWillBeModified', {
-          count: slot.pathDataForSlot.pathsToBeModified.length,
+          count: pathDataForSlot.pathsToBeModified.length,
         });
 
         const fileListContainer = document.createElement('div');
         fileListContainer.className = 'slot-file-list';
 
-        slot.pathDataForSlot.pathsToBeModified.forEach((pathDataEntry) => {
+        pathDataForSlot.pathsToBeModified.forEach((pathDataEntry) => {
           const fileItem = document.createElement('div');
           fileItem.className = 'slot-file-item';
 
@@ -665,10 +664,12 @@ class ModalManager {
       actions.className = 'slot-item-actions';
 
       const deleteBtn = document.createElement('button');
+
       deleteBtn.className = 'slot-action-btn slot-action-delete';
       deleteBtn.innerHTML = `<i class="bi bi-trash3"></i> ${t('modals.changeSlot.delete')}`;
+
       deleteBtn.addEventListener('click', () => {
-        this.deleteSlot(index);
+        this.toggleDeleteSlot(content, originalSlot);
       });
 
       actions.appendChild(deleteBtn);
@@ -680,42 +681,22 @@ class ModalManager {
     }
   }
 
-  deleteSlot(index) {
-    if (!this.slotData) return;
+  toggleDeleteSlot(content: HTMLDivElement, slot: string) {
+    if (!this.deletedSlots) return;
 
-    this.slotData.splice(index, 1);
-    this.renderSlotList();
+    if (this.deletedSlots.has(slot)) {
+      this.deletedSlots.delete(slot);
+      content.classList.remove('deleted');
+    } else {
+      this.deletedSlots.add(slot);
+      content.classList.add('deleted');
+    }
   }
 
-  confirmChangeSlot() {
-    if (!this.changeSlotCallback || !this.slotData) return;
+  confirmChangeSlots() {
+    if (!this.changeSlotCallback || !this.slotAssignments) return;
 
-    const changes: Changes = {
-      modifications: [],
-      deletions: [],
-    };
-
-    this.slotData.forEach((slot) => {
-      if (slot.isNew) {
-        changes.modifications.push({
-          type: 'add',
-          targetSlot: slot.newSlot,
-        });
-      } else if (slot.originalSlot !== slot.newSlot) {
-        changes.modifications.push({
-          type: 'change',
-          originalSlot: slot.originalSlot,
-          newSlot: slot.newSlot,
-          files: slot.pathDataForSlot.pathsToBeModified.map((f) => f.original),
-        });
-      }
-    });
-
-    const existingSlots = this.slotData
-      .filter((s) => !s.isNew)
-      .map((s) => s.originalSlot);
-
-    this.changeSlotCallback(changes);
+    this.changeSlotCallback(this.slotAssignments, this.deletedSlots);
     this.closeChangeSlotModal();
   }
 

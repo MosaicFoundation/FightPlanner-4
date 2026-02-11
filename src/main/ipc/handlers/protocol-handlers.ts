@@ -55,11 +55,9 @@ const ProtocolHandlers = {
   ['fetch-gamebanana-preview']: async (
     common: BaseHandlerArg,
     modId: string,
-  ): Promise<
-    HandlerResponse<{
-      imageUrl: string;
-    }>
-  > => {
+  ): HandlerResponse<{
+    imageUrl: string;
+  }> => {
     try {
       const apiUrl = `https://gamebanana.com/apiv11/Mod/${modId}?_csvProperties=%40gbprofile`;
 
