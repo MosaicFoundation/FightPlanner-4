@@ -74,10 +74,7 @@ export class ConfigGenerator {
     }
 
     const dataDirectory = PATHS.dataDir();
-    const vanillaJsonPath = path.join(
-      PATHS.dataDir(),
-      `${dataDirectory}/vanilla.json`,
-    );
+    const vanillaJsonPath = path.join(dataDirectory, 'vanilla.json');
 
     if (await ModFileOperations.fileExists(vanillaJsonPath)) {
       this.vanillaData = JSON.parse(
@@ -114,7 +111,7 @@ export class ConfigGenerator {
       return acc;
     }, []);
 
-    // Step 1: Generate `new-dir-infos` and `new-dir-infos-base`
+    // Generate `new-dir-infos` and `new-dir-infos-base`
     for (const slotNumber of extraSlots) {
       const slot = `c${slotNumber.toString().padStart(2, '0')}`;
 
@@ -141,7 +138,7 @@ export class ConfigGenerator {
         `fighter/${this.fighterName}/c${baseEchoSlot}/cmn`;
     }
 
-    // Step 2: Generate `new-dir-files` by duplicating vanilla c00 files for each extra slot
+    // Generate `new-dir-files` by duplicating vanilla c00 files for each extra slot
     for (const slotNumber of extraSlots) {
       const cValue = `c${slotNumber.toString().padStart(2, '0')}`;
 
@@ -219,7 +216,7 @@ export class ConfigGenerator {
       }
     }
 
-    // Step 3: Add custom mod files to `new-dir-files` by scanning the mod directory
+    // Add custom mod files to `new-dir-files` by scanning the mod directory
     // Also keep track of which custom files exist to avoid duplication in sharing
 
     const customModFilesSet = new Set<string>();
@@ -292,8 +289,7 @@ export class ConfigGenerator {
       });
     }
 
-    // Step 4: Process `share-to-vanilla` by adding all vanilla "model" and "sound" files
-    // that are not already present in custom mod files
+    // Process `share-to-vanilla` by adding all vanilla "model" and "sound" files that are not already present in custom mod files
     this.fighterData.allFiles.forEach((file) => {
       if (file.includes('dummy_fighter')) {
         return;
@@ -329,8 +325,7 @@ export class ConfigGenerator {
         ];
       }
 
-      // Step 5: Process `share-to-added` by adding all motion and camera files
-      // that are not already present in custom mod files
+      // Process `share-to-added` by adding all motion and camera files that are not already present in custom mod files
       if (
         extraSlots.length > 0 &&
         (file.startsWith(`camera/fighter/${this.fighterName}/`) ||
@@ -363,7 +358,7 @@ export class ConfigGenerator {
       }
     });
 
-    // Step 5: Sort `new-dir-files` by directory keys and file names
+    // Sort `new-dir-files` by directory keys and file names
     const sortedNewDirFiles = {};
     Object.keys(newDirFiles)
       .sort() // Sort directory keys alphabetically
@@ -374,7 +369,7 @@ export class ConfigGenerator {
     // Update the global resulting configuration
     this.resultingConfig['new-dir-files'] = sortedNewDirFiles;
 
-    // Step 4: Sort `share-to-vanilla` and `share-to-added`
+    // Sort `share-to-vanilla` and `share-to-added`
     const sortedShareToVanilla = {};
     Object.keys(shareToVanilla)
       .sort() // Sort keys alphabetically
@@ -389,20 +384,14 @@ export class ConfigGenerator {
         sortedShareToAdded[key] = shareToAdded[key].sort(); // Sort file paths within each key
       });
 
-    // Step 6: Update the global resulting configuration
+    // Update the global resulting configuration
     this.resultingConfig['new-dir-infos'] = newDirInfos;
     this.resultingConfig['new-dir-infos-base'] = newDirInfosBase;
     this.resultingConfig['share-to-vanilla'] = sortedShareToVanilla;
     this.resultingConfig['share-to-added'] = sortedShareToAdded;
     this.resultingConfig['new-dir-files'] = sortedNewDirFiles;
 
-    console.log('Generated new-dir-infos:', newDirInfos);
-    console.log('Generated new-dir-infos-base:', newDirInfosBase);
-    console.log('Generated share-to-vanilla (sorted):', sortedShareToVanilla);
-    console.log('Generated share-to-added (sorted):', sortedShareToAdded);
-    console.log('Generated new-dir-files (sorted):', sortedNewDirFiles);
-
-    // Step 7: Save the resulting configuration to a JSON file
+    // Save the resulting configuration to a JSON file
     const configPath = `${this.modDirectory}/config.json`;
 
     await ModFileOperations.writeModFile(
@@ -489,7 +478,5 @@ export class ConfigGenerator {
       'share-to-added': {},
       'new-dir-files': {},
     };
-
-    console.log('Initialized resultingConfig:', this.resultingConfig);
   }
 }

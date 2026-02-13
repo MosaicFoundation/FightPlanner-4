@@ -56,25 +56,44 @@
       {
         "from": "tools",
         "to": "tools",
-        "filter": ["7z.exe", "7z.dll"]
+        "filter": [
+          "7z.exe",
+          "7z.dll"
+        ]
       }
     ],
     "protocols": [
       {
         "name": "FightPlanner Protocol",
         "role": "Viewer",
-        "schemes": ["fightplanner"]
+        "schemes": [
+          "fightplanner"
+        ]
       }
     ],
-    "files": ["out/**/*", "assets/**/*", "package.json"],
+    "files": [
+      "out/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
     "directories": {
       "buildResources": "assets/app-icons",
       "output": "dist"
     },
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "icon": "assets/app-icons/icon.ico",
       "verifyUpdateCodeSignature": false
@@ -93,14 +112,29 @@
     },
     "mac": {
       "target": [
-        { "target": "dmg", "arch": ["arm64", "x64"] },
-        { "target": "zip", "arch": ["arm64", "x64"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
       ],
       "icon": "assets/app-icons/icon.icns",
       "category": "public.app-category.utilities"
     },
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "icon": "assets/app-icons/icon.png",
       "category": "Utility",
       "maintainer": "Shattered Chaos <noreply@fightplanner.app>"

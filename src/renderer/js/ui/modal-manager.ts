@@ -2,6 +2,14 @@ import type { MarketplacePlugin } from '../mods/plugin-marketplace';
 import { Mod } from '../mods/mod-manager';
 import { PathData, ScanModResult } from '../../../main/mod-utils/mod-scanner';
 
+function slotStringToNumber(slot: string): number {
+  return parseInt(slot.substring(1));
+}
+
+function slotNumberToString(slotNumber: number): string {
+  return `c${slotNumber.toString().padStart(2, '0')}`;
+}
+
 type SlotAssignments = Map<string, string>;
 
 class ModalManager {
@@ -415,7 +423,7 @@ class ModalManager {
 
     container.innerHTML = '';
 
-    for (const [index, [originalSlot, newSlot]] of Object.entries(
+    for (const [index, [originalSlotString, selectedSlotString]] of Array.from(
       this.slotAssignments,
     ).entries()) {
       const slotItem = document.createElement('div');
@@ -433,7 +441,7 @@ class ModalManager {
 
       label.className = 'slot-item-label';
       label.textContent = t('modals.changeSlot.currentSlot', {
-        slot: originalSlot,
+        slot: originalSlotString,
       });
 
       const arrow = document.createElement('i');
@@ -450,7 +458,7 @@ class ModalManager {
       const selectedValueSpan = document.createElement('span');
       selectedValueSpan.className = 'selected-value';
       selectedValueSpan.textContent = t('modals.changeSlot.slotOption', {
-        slot: newSlot,
+        slot: selectedSlotString,
       });
 
       const triggerIcon = document.createElement('i');
@@ -462,22 +470,23 @@ class ModalManager {
       const selectDropdown = document.createElement('div');
       selectDropdown.className = 'custom-select-dropdown';
 
-      for (let i = 0; i <= 255; i++) {
+      for (let slotNumber = 0; slotNumber <= 255; slotNumber++) {
+        const slotString = slotNumberToString(slotNumber);
         const option = document.createElement('div');
         option.className = 'custom-select-option';
 
-        const slotNumber = newSlot && parseInt(newSlot.substring(1));
+        const selectedSlotNumber = slotStringToNumber(selectedSlotString);
 
-        if (i === slotNumber) {
+        if (slotNumber === selectedSlotNumber) {
           option.classList.add('active');
         }
 
-        option.dataset.value = `${i}`;
+        option.dataset.value = `${slotNumber}`;
 
         const optionText = document.createElement('span');
 
         optionText.textContent = t('modals.changeSlot.slotOption', {
-          slot: newSlot,
+          slot: slotString,
         });
 
         option.appendChild(optionText);
@@ -486,11 +495,11 @@ class ModalManager {
           e.stopPropagation();
           // Update data
 
-          this.slotAssignments.set(originalSlot, newSlot);
+          this.slotAssignments.set(originalSlotString, slotString);
 
           // Update UI
           selectedValueSpan.textContent = t('modals.changeSlot.slotOption', {
-            slot: newSlot,
+            slot: slotString,
           });
 
           // Close and restore
@@ -623,7 +632,7 @@ class ModalManager {
       const filesInfo = document.createElement('div');
       filesInfo.className = 'slot-item-files';
 
-      const pathDataForSlot = this.fighterPathData[originalSlot];
+      const pathDataForSlot = this.fighterPathData[originalSlotString];
 
       if (pathDataForSlot.pathsToBeModified.length > 0) {
         const filesList = document.createElement('details');
@@ -669,7 +678,7 @@ class ModalManager {
       deleteBtn.innerHTML = `<i class="bi bi-trash3"></i> ${t('modals.changeSlot.delete')}`;
 
       deleteBtn.addEventListener('click', () => {
-        this.toggleDeleteSlot(content, originalSlot);
+        this.toggleDeleteSlot(content, originalSlotString);
       });
 
       actions.appendChild(deleteBtn);

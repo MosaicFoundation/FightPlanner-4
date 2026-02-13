@@ -32,45 +32,44 @@ export class SlotChanger {
     const defaultCustomNames = await this.getDefaultCustomNames(fighterName);
     const finalSlots = Array.from(slotAssignments.values());
 
-    Object.keys(pathData).forEach((fighter) => {
-      Object.keys(pathData[fighter]).forEach((currentSlot) => {
-        if (!slotAssignments[currentSlot]) {
+    Object.keys(pathData[fighterName]).forEach((currentSlot) => {
+      const newSlot = slotAssignments.get(currentSlot);
+
+      if (!newSlot) {
+        return;
+      }
+
+      Object.values(
+        pathData[fighterName][currentSlot].pathsToBeModified,
+      ).forEach(({ original, normalized }) => {
+        let newNum = newSlot.replace('c', '');
+        if (newNum.length === 1) newNum = '0' + newNum;
+
+        if (!normalized) {
+          console.warn(
+            '[changeSlots] Normalized path is null for original path:',
+            original,
+          );
           return;
         }
 
-        Object.values(pathData[fighter][currentSlot].pathsToBeModified).forEach(
-          ({ original, normalized }) => {
-            const newSlot = slotAssignments[currentSlot];
-            let newNum = newSlot.replace('c', '');
-            if (newNum.length === 1) newNum = '0' + newNum;
+        const newPath = normalized.replace('###', newNum);
 
-            if (!normalized) {
-              console.warn(
-                '[changeSlots] Normalized path is null for original path:',
-                original,
-              );
-              return;
-            }
+        // Create temporary path in a slot-specific temp directory
+        // This isolates temp files for each slot to prevent conflicts
+        const tempPathParts = normalized.split(/[/\\]/);
+        const lastPart = tempPathParts[tempPathParts.length - 1];
 
-            const newPath = normalized.replace('###', newNum);
+        tempPathParts[tempPathParts.length - 1] =
+          `.temp_${currentSlot}_${lastPart}`;
 
-            // Create temporary path in a slot-specific temp directory
-            // This isolates temp files for each slot to prevent conflicts
-            const tempPathParts = normalized.split(/[/\\]/);
-            const lastPart = tempPathParts[tempPathParts.length - 1];
+        const tempPath = tempPathParts.join('/');
 
-            tempPathParts[tempPathParts.length - 1] =
-              `.temp_${currentSlot}_${lastPart}`;
-
-            const tempPath = tempPathParts.join('/');
-
-            tempMappings.push({
-              originalPath: original,
-              tempPath: tempPath,
-              finalPath: newPath,
-            });
-          },
-        );
+        tempMappings.push({
+          originalPath: original,
+          tempPath: tempPath,
+          finalPath: newPath,
+        });
       });
     });
 
@@ -303,10 +302,10 @@ export class SlotChanger {
         const slotNum = parseInt(slot.replace('c', ''));
 
         if (
-          (!(slotNum > 7) && !slotCustomNames[slot]) ||
-          (!slotCustomNames[slot].cspName &&
-            !slotCustomNames[slot].vsName &&
-            !slotCustomNames[slot].boxingRing)
+          (slotNum <= 7 && !slotCustomNames[slot]) ||
+          (!slotCustomNames[slot]?.cspName &&
+            !slotCustomNames[slot]?.vsName &&
+            !slotCustomNames[slot]?.boxingRing)
         ) {
           continue;
         }
