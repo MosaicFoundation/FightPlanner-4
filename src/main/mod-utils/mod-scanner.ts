@@ -1,5 +1,7 @@
 import fs from 'fs';
 import path from 'path';
+import { PATHS } from '../config';
+import { ModFileOperations } from '../mod-file-operations';
 
 /**
  * The full scan mod result for a given mod path.
@@ -7,13 +9,13 @@ import path from 'path';
  * @property pathData - An object containing the paths and files to be modified, organized by fighter and slot.
  * @property currentSlots - An array of the current slots detected in the mod.
  * @property unknownFiles - An array of file paths that could not be categorized into a fighter or slot.
- * @property fighterName - The internal fighter name if exactly one is detected, otherwise null.
+ * @property fighterNames - All detected internal fighter names for the mod files.
  */
 export interface ScanModResult {
   pathData: PathData;
   currentSlots: string[];
   unknownFiles: string[];
-  fighterName: string | null;
+  fighterNames: string[];
 }
 
 export interface PathDataForSlot {
@@ -65,77 +67,82 @@ export const ModScanner = {
       const unknownFiles: string[] = [];
 
       const slots = new Set<string>();
+      const fighterNames = new Set<string>();
 
-      files.forEach((fileOrDirectory) => {
-        function _createPathDataEntry(fighterName: string, slot: string) {
-          if (!pathData[fighterName]) {
-            pathData[fighterName] = {};
+      await Promise.all(
+        files.map(async (fileOrDirectory) => {
+          function _createPathDataEntry(fighterName: string, slot: string) {
+            if (!pathData[fighterName]) {
+              pathData[fighterName] = {};
+            }
+
+            if (!pathData[fighterName][slot]) {
+              pathData[fighterName][slot] = {
+                pathsToBeModified: [],
+                filesToBeModified: [],
+              };
+            }
           }
 
-          if (!pathData[fighterName][slot]) {
-            pathData[fighterName][slot] = {
-              pathsToBeModified: [],
-              filesToBeModified: [],
-            };
-          }
-        }
+          // Construct the relative path from the mod folder
+          const absolutePath = path.join(
+            fileOrDirectory.parentPath,
+            fileOrDirectory.name,
+          );
 
-        // Construct the relative path from the mod folder
-        const absolutePath = path.join(
-          fileOrDirectory.parentPath,
-          fileOrDirectory.name,
-        );
+          const relativePath = path.relative(modPath, absolutePath);
 
-        const relativePath = path.relative(modPath, absolutePath);
-
-        if (fileOrDirectory.name.startsWith('.')) {
-          // Ignore hidden files and folders (like .DS_Store or .git)
-          return;
-        }
-
-        const {
-          slot,
-          fighterName,
-          normalizedPath,
-          isFighterSlotFolder,
-          includesFighterSlotFolder,
-        } = ModScanner.extractFighterAndSlotInfo(relativePath);
-
-        if (fighterName) {
-          const slotKey = slot || 'unknown';
-          const isFile = fileOrDirectory.isFile();
-
-          // Ignore unknown slots unless we are working with the full file path
-          if (slotKey === 'unknown' && !isFile) {
+          if (fileOrDirectory.name.startsWith('.')) {
+            // Ignore hidden files and folders (like .DS_Store or .git)
             return;
           }
 
-          slots.add(slotKey);
-          _createPathDataEntry(fighterName, slotKey);
+          const {
+            slot,
+            fighterName,
+            normalizedPath,
+            isFighterSlotFolder,
+            includesFighterSlotFolder,
+          } = await ModScanner.extractFighterAndSlotInfo(relativePath);
 
-          if (isFile) {
-            pathData[fighterName][slotKey].filesToBeModified.push({
+          if (fighterName) {
+            fighterNames.add(fighterName);
+
+            const slotKey = slot || 'unknown';
+            const isFile = fileOrDirectory.isFile();
+
+            // Ignore unknown slots unless we are working with the full file path
+            if (slotKey === 'unknown' && !isFile) {
+              return;
+            }
+
+            slots.add(slotKey);
+            _createPathDataEntry(fighterName, slotKey);
+
+            if (isFile) {
+              pathData[fighterName][slotKey].filesToBeModified.push({
+                original: relativePath,
+                normalized: normalizedPath,
+                type: 'file',
+              });
+            }
+
+            // Do not add any subfolders or files within a fighter slot folder to pathsToBeModified, only
+            // the fighter slot folder itself
+            if (includesFighterSlotFolder && !isFighterSlotFolder) {
+              return;
+            }
+
+            pathData[fighterName][slotKey].pathsToBeModified.push({
               original: relativePath,
               normalized: normalizedPath,
-              type: 'file',
+              type: isFile ? 'file' : 'directory',
             });
+          } else if (fileOrDirectory.isFile()) {
+            unknownFiles.push(relativePath);
           }
-
-          // Do not add any subfolders or files within a fighter slot folder to pathsToBeModified, only
-          // the fighter slot folder itself
-          if (includesFighterSlotFolder && !isFighterSlotFolder) {
-            return;
-          }
-
-          pathData[fighterName][slotKey].pathsToBeModified.push({
-            original: relativePath,
-            normalized: normalizedPath,
-            type: isFile ? 'file' : 'directory',
-          });
-        } else if (fileOrDirectory.isFile()) {
-          unknownFiles.push(relativePath);
-        }
-      });
+        }),
+      );
 
       const currentSlots = Array.from(slots).sort((a, b) => {
         const numA = parseInt(a.replace('c', ''));
@@ -148,7 +155,7 @@ export const ModScanner = {
         pathData,
         currentSlots,
         unknownFiles,
-        fighterName: this.getInternalFighterName(pathData),
+        fighterNames: Array.from(fighterNames),
       };
     } catch (error) {
       console.error('Error scanning for slots:', error);
@@ -159,14 +166,14 @@ export const ModScanner = {
   /**
    * Extracts fighter name and slot information from a given file path.
    */
-  extractFighterAndSlotInfo(filePath: string): {
+  async extractFighterAndSlotInfo(filePath: string): Promise<{
     slot: string | null;
     fighterName: string | null;
     normalizedPath: string | null;
     isFighterSlotFolder: boolean;
     includesFighterSlotFolder: boolean;
-  } {
-    let fighterName: string | null = null;
+  }> {
+    let detectedFighterName: string | null = null;
     let isFighterSlotFolder = false;
     let includesFighterSlotFolder = false;
 
@@ -175,7 +182,7 @@ export const ModScanner = {
     const includesFighterFolder = fighterIndex !== -1;
 
     if (includesFighterFolder && pathParts.length > fighterIndex + 1) {
-      fighterName = pathParts[fighterIndex + 1];
+      detectedFighterName = pathParts[fighterIndex + 1];
 
       // Search for slot folder at any position after 'fighter'
       for (let i = fighterIndex + 1; i < pathParts.length; i++) {
@@ -198,8 +205,8 @@ export const ModScanner = {
     const cMatch = filePath.match(cXXMatchRegex);
     const dotMatch = filePath.match(dotXXMatchRegex);
 
-    if (!fighterName && dotMatch) {
-      fighterName = dotMatch[1];
+    if (!detectedFighterName && dotMatch) {
+      detectedFighterName = dotMatch[1];
     }
 
     const slot = cMatch
@@ -213,10 +220,6 @@ export const ModScanner = {
       : dotMatch
         ? filePath.replace(dotXXMatchRegex, `_$1_${dotMatch[2] || ''}###$4`)
         : null;
-
-    if (fighterName === 'common') {
-      fighterName = null;
-    }
 
     // Useful for debugging specific files
     // if (filePath.includes('tex_ganon_sword1.nutexb')) {
@@ -245,63 +248,43 @@ export const ModScanner = {
 
     return {
       slot,
-      fighterName,
       normalizedPath,
       isFighterSlotFolder,
       includesFighterSlotFolder,
+      fighterName: await ModScanner.getAccurateFighterName(
+        detectedFighterName,
+        normalizedPath,
+      ),
     };
   },
 
-  getInternalFighterName(pathData: PathData) {
-    if (!pathData || typeof pathData !== 'object') {
+  async getAccurateFighterName(
+    detectedFighterName: string | null,
+    filePath: string | null,
+  ) {
+    if (!detectedFighterName || !filePath) {
       return null;
     }
 
-    // Filter out kirby if it only has copy files
-    const fighterNames = Object.keys(pathData).filter((fighterName) => {
-      // If it's not kirby, keep it
-      if (fighterName !== 'kirby') {
-        return true;
-      }
+    const namesDataPath = path.join(PATHS.dataDir(), 'names.data');
+    const namesData = await ModFileOperations.readModFile(namesDataPath);
+    const validFighterNames = namesData.split('\n').map((s) => s.split(',')[0]);
 
-      // For kirby, check if any files are NOT copy files
-      const kirbySlots = pathData[fighterName];
+    if (!validFighterNames.includes(detectedFighterName)) {
+      return null;
+    }
 
-      for (const slot in kirbySlots) {
-        const slotData = kirbySlots[slot];
+    if (detectedFighterName !== 'kirby') {
+      return detectedFighterName;
+    }
 
-        // Check original files
-        if (slotData.filesToBeModified?.length > 0) {
-          const hasNonCopyFiles = slotData.filesToBeModified.some(
-            (file) =>
-              !file.original.includes('kirby\\model\\copy_') &&
-              !file.original.includes('kirby/model/copy_'),
-          );
+    // Check original files
+    const kirbyCopyMatch = /kirby[\/\\]model[\/\\]copy_(\w+)_/.exec(filePath);
 
-          if (hasNonCopyFiles) {
-            return true; // Keep kirby since it has non-copy files
-          }
-        }
+    if (!kirbyCopyMatch) {
+      return 'kirby';
+    }
 
-        // Check pathsToBeModified
-        if (slotData.pathsToBeModified) {
-          const hasNonCopyPaths = slotData.pathsToBeModified.some(
-            (path) =>
-              !path.original.includes('kirby\\model\\copy_') &&
-              !path.original.includes('kirby/model/copy_'),
-          );
-
-          if (hasNonCopyPaths) {
-            return true; // Keep kirby since it has non-copy paths
-          }
-        }
-      }
-
-      // All kirby files are copy files, filter it out
-      return false;
-    });
-
-    // Return the fighter name only if there's exactly one
-    return fighterNames.length === 1 ? fighterNames[0] : null;
+    return kirbyCopyMatch[1];
   },
 };

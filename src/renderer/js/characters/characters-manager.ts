@@ -1,3 +1,5 @@
+import { Mod } from '../../../main/mod-utils';
+
 interface Character {
   id: string;
   info: { name: string; number: string };
@@ -127,16 +129,16 @@ class CharactersManager {
     }
   }
 
-  async scanModForCharacters(mod, status) {
-    if (!window.electronAPI || !window.electronAPI.scanModForFighters) {
+  async scanModForCharacters(mod: Mod, status: 'active' | 'disabled') {
+    if (!window.electronAPI || !window.electronAPI.scanMod) {
       return;
     }
 
     try {
-      const fighters = await window.electronAPI.scanModForFighters(mod.path);
+      const scanModResult = await window.electronAPI.scanMod(mod.path);
 
-      if (fighters && fighters.length > 0) {
-        fighters.forEach((rawFighterId) => {
+      if (scanModResult.success && scanModResult.data.fighterNames.length > 0) {
+        scanModResult.data.fighterNames.forEach((rawFighterId: string) => {
           const fighterId = window.resolveFolderName
             ? window.resolveFolderName(rawFighterId)
             : rawFighterId.toLowerCase();

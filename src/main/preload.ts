@@ -108,7 +108,6 @@ const electronAPI = {
   getPluginRepoMapping: invokePluginHandler('get-plugin-repo-mapping'),
   setPluginRepoMapping: invokePluginHandler('set-plugin-repo-mapping'),
   getAppVersion: invokeAppHandler('get-app-version'),
-  scanModForFighters: invokeModHandler('scan-mod-for-fighters'),
   scanMod: invokeModHandler('scan-mod'),
   changeSlots: invokeModHandler('change-slots'),
   detectConflicts: invokeModHandler('detect-conflicts'),

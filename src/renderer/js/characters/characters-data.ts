@@ -296,7 +296,7 @@ const FOLDER_ALIASES = {
   sora: 'trail',
 };
 
-function resolveFolderName(folderName) {
+function resolveFolderName(folderName: string) {
   const normalized = folderName.toLowerCase().trim();
 
   if (FOLDER_ALIASES[normalized]) {

@@ -18,7 +18,6 @@ export class SlotChanger {
     modPath: string,
     slotAssignments: Map<string, string>,
     pathData: PathData,
-    fighterName: string,
     slotCustomNames: Record<string, CustomData> = {},
   ) {
     const changedPaths: string[] = [];
@@ -29,241 +28,246 @@ export class SlotChanger {
       finalPath: string;
     }[] = [];
 
-    const defaultCustomNames = await this.getDefaultCustomNames(fighterName);
-    const finalSlots = Array.from(slotAssignments.values());
+    for (const fighterName of Object.keys(pathData)) {
+      const defaultCustomNames = await this.getDefaultCustomNames(fighterName);
+      const finalSlots = Array.from(slotAssignments.values());
 
-    Object.keys(pathData[fighterName]).forEach((currentSlot) => {
-      const newSlot = slotAssignments.get(currentSlot);
+      Object.keys(pathData[fighterName]).forEach((currentSlot) => {
+        const newSlot = slotAssignments.get(currentSlot);
 
-      if (!newSlot) {
-        return;
-      }
-
-      Object.values(
-        pathData[fighterName][currentSlot].pathsToBeModified,
-      ).forEach(({ original, normalized }) => {
-        let newNum = newSlot.replace('c', '');
-        if (newNum.length === 1) newNum = '0' + newNum;
-
-        if (!normalized) {
-          console.warn(
-            '[changeSlots] Normalized path is null for original path:',
-            original,
-          );
+        if (!newSlot) {
           return;
         }
 
-        const newPath = normalized.replace('###', newNum);
+        Object.values(
+          pathData[fighterName][currentSlot].pathsToBeModified,
+        ).forEach(({ original, normalized }) => {
+          let newNum = newSlot.replace('c', '');
+          if (newNum.length === 1) newNum = '0' + newNum;
 
-        // Create temporary path in a slot-specific temp directory
-        // This isolates temp files for each slot to prevent conflicts
-        const tempPathParts = normalized.split(/[/\\]/);
-        const lastPart = tempPathParts[tempPathParts.length - 1];
+          if (!normalized) {
+            console.warn(
+              '[changeSlots] Normalized path is null for original path:',
+              original,
+            );
+            return;
+          }
 
-        tempPathParts[tempPathParts.length - 1] =
-          `.temp_${currentSlot}_${lastPart}`;
+          const newPath = normalized.replace('###', newNum);
 
-        const tempPath = tempPathParts.join('/');
+          // Create temporary path in a slot-specific temp directory
+          // This isolates temp files for each slot to prevent conflicts
+          const tempPathParts = normalized.split(/[/\\]/);
+          const lastPart = tempPathParts[tempPathParts.length - 1];
 
-        tempMappings.push({
-          originalPath: original,
-          tempPath: tempPath,
-          finalPath: newPath,
+          tempPathParts[tempPathParts.length - 1] =
+            `.temp_${currentSlot}_${lastPart}`;
+
+          const tempPath = tempPathParts.join('/');
+
+          tempMappings.push({
+            originalPath: original,
+            tempPath: tempPath,
+            finalPath: newPath,
+          });
         });
       });
-    });
 
-    for (const mapping of tempMappings) {
-      try {
-        await ModFileOperations.renameModFile(
-          modPath,
-          mapping.originalPath.replace(/\\/g, '/'),
-          mapping.tempPath.replace(/\\/g, '/'),
-        );
-      } catch (error) {
-        console.error(
-          `Error moving file to temp ${mapping.originalPath}:`,
-          error,
-        );
-        throw new Error(
-          `Failed to move file to temp ${mapping.originalPath}: ${error.message}`,
-        );
-      }
-    }
-
-    // Step 3: Move all files from temp paths to final paths
-    console.log('[changeSlots] Moving files from temporary to final paths...');
-
-    for (const mapping of tempMappings) {
-      try {
-        await ModFileOperations.renameModFile(
-          modPath,
-          mapping.tempPath.replace(/\\/g, '/'),
-          mapping.finalPath.replace(/\\/g, '/'),
-        );
-
-        changedPaths.push(mapping.finalPath);
-      } catch (error) {
-        console.error(
-          `Error moving file from temp ${mapping.tempPath}:`,
-          error,
-        );
-        throw new Error(
-          `Failed to move file from temp ${mapping.tempPath}: ${error.message}`,
-        );
-      }
-    }
-
-    const hasAnySlotAboveC07 = finalSlots.find(
-      (slot) => parseInt(slot.replace('c', '')) > 7,
-    );
-
-    if (
-      hasAnySlotAboveC07 ||
-      (slotCustomNames && Object.keys(slotCustomNames).length > 0)
-    ) {
-      try {
-        // 1. Get the fighter folder name
-        if (!fighterName) {
-          console.log(
-            '[changeSlots] Dossier fighter non trouvé, skip la partie Max Slots.',
+      for (const mapping of tempMappings) {
+        try {
+          await ModFileOperations.renameModFile(
+            modPath,
+            mapping.originalPath.replace(/\\/g, '/'),
+            mapping.tempPath.replace(/\\/g, '/'),
           );
-          // On skip, pas d'erreur bloquante
-        } else {
-          // 2. Read names.data to get fighter index
-          const namesDataPath = path.join(PATHS.dataDir(), 'names.data');
-          const namesData = await ModFileOperations.readModFile(namesDataPath);
-
-          // 3. Find the fighter by internal name and get the index from the third column
-          const lines = namesData.split(/\r?\n/);
-          let fighterIndex = -1;
-
-          for (const line of lines) {
-            const parts = line.split(',').map((p) => p.trim());
-            if (
-              parts.length >= 3 &&
-              parts[0].toLowerCase() === fighterName.trim().toLowerCase()
-            ) {
-              fighterIndex = parseInt(parts[2]);
-              break;
-            }
-          }
-
-          if (fighterIndex === -1)
-            throw new Error(
-              `Fighter name "${fighterName}" not found in names.data`,
-            );
-
-          // 4. Edit ui_chara_db.prcxml
-          const pathParts = modPath.replace(/\\/g, '/').split('/');
-          pathParts.pop();
-
-          const prcXmlTemplatePath = path.join(
-            PATHS.dataDir(),
-            'ui_chara_db.prcxml',
+        } catch (error) {
+          console.error(
+            `Error moving file to temp ${mapping.originalPath}:`,
+            error,
           );
-
-          let prcXmlContent =
-            await ModFileOperations.readModFile(prcXmlTemplatePath);
-
-          // Build all parameters for this fighter's struct
-          const structParams: string[] = [];
-
-          // Calculate the highest slot number for color_num
-          const maxSlotNum = Math.max(
-            ...finalSlots.map((slot) => parseInt(slot.replace('c', ''))),
-          );
-          const colorNum = maxSlotNum + 1;
-
-          // Add color_num if the highest slot is > 7
-          if (maxSlotNum > 7) {
-            structParams.push(`<byte hash="color_num">${colorNum}</byte>`);
-          }
-
-          for (const slot of finalSlots) {
-            const slotNum = parseInt(slot.replace('c', ''));
-
-            let announcer = '';
-            let customAnnouncer = '';
-
-            if (
-              slotCustomNames &&
-              slotCustomNames[slot] &&
-              slotCustomNames[slot].announcer
-            ) {
-              customAnnouncer = announcer = slotCustomNames[slot].announcer;
-            } else if (defaultCustomNames.announcer) {
-              announcer = defaultCustomNames.announcer;
-            }
-
-            if (slotNum > 7 || customAnnouncer) {
-              const nxyIndex = slotNum + 8;
-
-              // Add nXY_index parameter
-              structParams.push(
-                `<byte hash="n${String(slotNum).padStart(2, '0')}_index">${nxyIndex}</byte>`,
-              );
-
-              // Add custom announcer call if provided
-              if (customAnnouncer) {
-                structParams.push(
-                  `<hash40 hash="characall_label_c${String(nxyIndex).padStart(2, '0')}">${announcer}</hash40>`,
-                );
-              }
-            }
-          }
-
-          // Build a single struct with all parameters
-          if (structParams.length > 0) {
-            const structContent = `<struct index="${fighterIndex}">${structParams.join('')}</struct>`;
-            const hashLine = new RegExp(
-              `<hash40 index="${fighterIndex}">dummy<\\/hash40>`,
-              'g',
-            );
-
-            prcXmlContent = prcXmlContent.replace(hashLine, structContent);
-          }
-
-          // Ensure the directory exists before writing the file
-          const outputDir = `${modPath}/ui/param/database`;
-          if (!(await ModFileOperations.fileExists(outputDir))) {
-            await ModFileOperations.createDirectory(outputDir);
-          }
-
-          // Write the modified file to the mod folder
-          await ModFileOperations.writeModFile(
-            `${modPath}/ui/param/database/ui_chara_db.prcxml`,
-            prcXmlContent,
+          throw new Error(
+            `Failed to move file to temp ${mapping.originalPath}: ${error.message}`,
           );
         }
-      } catch (error) {
-        console.error('Error editing ui_chara_db.prcxml:', error);
-        throw new Error(`Error editing ui_chara_db.prcxml: ${error.message}`);
       }
-    }
 
-    // Update msg_name.xmsbt with custom names if provided (for all slots)
-    if (
-      (fighterName && hasAnySlotAboveC07) ||
-      (slotCustomNames && Object.keys(slotCustomNames).length > 0)
-    ) {
-      await SlotChanger.updateMsgName(
-        modPath,
-        fighterName,
-        finalSlots,
-        slotCustomNames,
-        defaultCustomNames,
+      // Step 3: Move all files from temp paths to final paths
+      console.log(
+        '[changeSlots] Moving files from temporary to final paths...',
       );
+
+      for (const mapping of tempMappings) {
+        try {
+          await ModFileOperations.renameModFile(
+            modPath,
+            mapping.tempPath.replace(/\\/g, '/'),
+            mapping.finalPath.replace(/\\/g, '/'),
+          );
+
+          changedPaths.push(mapping.finalPath);
+        } catch (error) {
+          console.error(
+            `Error moving file from temp ${mapping.tempPath}:`,
+            error,
+          );
+          throw new Error(
+            `Failed to move file from temp ${mapping.tempPath}: ${error.message}`,
+          );
+        }
+      }
+
+      const hasAnySlotAboveC07 = finalSlots.find(
+        (slot) => parseInt(slot.replace('c', '')) > 7,
+      );
+
+      if (
+        hasAnySlotAboveC07 ||
+        (slotCustomNames && Object.keys(slotCustomNames).length > 0)
+      ) {
+        try {
+          // 1. Get the fighter folder name
+          if (!fighterName) {
+            console.log(
+              '[changeSlots] Dossier fighter non trouvé, skip la partie Max Slots.',
+            );
+            // On skip, pas d'erreur bloquante
+          } else {
+            // 2. Read names.data to get fighter index
+            const namesDataPath = path.join(PATHS.dataDir(), 'names.data');
+            const namesData =
+              await ModFileOperations.readModFile(namesDataPath);
+
+            // 3. Find the fighter by internal name and get the index from the third column
+            const lines = namesData.split(/\r?\n/);
+            let fighterIndex = -1;
+
+            for (const line of lines) {
+              const parts = line.split(',').map((p) => p.trim());
+              if (
+                parts.length >= 3 &&
+                parts[0].toLowerCase() === fighterName.trim().toLowerCase()
+              ) {
+                fighterIndex = parseInt(parts[2]);
+                break;
+              }
+            }
+
+            if (fighterIndex === -1)
+              throw new Error(
+                `Fighter name "${fighterName}" not found in names.data`,
+              );
+
+            // 4. Edit ui_chara_db.prcxml
+            const pathParts = modPath.replace(/\\/g, '/').split('/');
+            pathParts.pop();
+
+            const prcXmlTemplatePath = path.join(
+              PATHS.dataDir(),
+              'ui_chara_db.prcxml',
+            );
+
+            let prcXmlContent =
+              await ModFileOperations.readModFile(prcXmlTemplatePath);
+
+            // Build all parameters for this fighter's struct
+            const structParams: string[] = [];
+
+            // Calculate the highest slot number for color_num
+            const maxSlotNum = Math.max(
+              ...finalSlots.map((slot) => parseInt(slot.replace('c', ''))),
+            );
+            const colorNum = maxSlotNum + 1;
+
+            // Add color_num if the highest slot is > 7
+            if (maxSlotNum > 7) {
+              structParams.push(`<byte hash="color_num">${colorNum}</byte>`);
+            }
+
+            for (const slot of finalSlots) {
+              const slotNum = parseInt(slot.replace('c', ''));
+
+              let announcer = '';
+              let customAnnouncer = '';
+
+              if (
+                slotCustomNames &&
+                slotCustomNames[slot] &&
+                slotCustomNames[slot].announcer
+              ) {
+                customAnnouncer = announcer = slotCustomNames[slot].announcer;
+              } else if (defaultCustomNames.announcer) {
+                announcer = defaultCustomNames.announcer;
+              }
+
+              if (slotNum > 7 || customAnnouncer) {
+                const nxyIndex = slotNum + 8;
+
+                // Add nXY_index parameter
+                structParams.push(
+                  `<byte hash="n${String(slotNum).padStart(2, '0')}_index">${nxyIndex}</byte>`,
+                );
+
+                // Add custom announcer call if provided
+                if (customAnnouncer) {
+                  structParams.push(
+                    `<hash40 hash="characall_label_c${String(nxyIndex).padStart(2, '0')}">${announcer}</hash40>`,
+                  );
+                }
+              }
+            }
+
+            // Build a single struct with all parameters
+            if (structParams.length > 0) {
+              const structContent = `<struct index="${fighterIndex}">${structParams.join('')}</struct>`;
+              const hashLine = new RegExp(
+                `<hash40 index="${fighterIndex}">dummy<\\/hash40>`,
+                'g',
+              );
+
+              prcXmlContent = prcXmlContent.replace(hashLine, structContent);
+            }
+
+            // Ensure the directory exists before writing the file
+            const outputDir = `${modPath}/ui/param/database`;
+            if (!(await ModFileOperations.fileExists(outputDir))) {
+              await ModFileOperations.createDirectory(outputDir);
+            }
+
+            // Write the modified file to the mod folder
+            await ModFileOperations.writeModFile(
+              `${modPath}/ui/param/database/ui_chara_db.prcxml`,
+              prcXmlContent,
+            );
+          }
+        } catch (error) {
+          console.error('Error editing ui_chara_db.prcxml:', error);
+          throw new Error(`Error editing ui_chara_db.prcxml: ${error.message}`);
+        }
+      }
+
+      // Update msg_name.xmsbt with custom names if provided (for all slots)
+      if (
+        (fighterName && hasAnySlotAboveC07) ||
+        (slotCustomNames && Object.keys(slotCustomNames).length > 0)
+      ) {
+        await SlotChanger.updateMsgName(
+          modPath,
+          fighterName,
+          finalSlots,
+          slotCustomNames,
+          defaultCustomNames,
+        );
+      }
+
+      if (fighterName) {
+        await ConfigGenerator.init();
+        const jsonCreator = new ConfigGenerator(modPath, fighterName);
+
+        await jsonCreator.generateConfig(finalSlots);
+      }
+
+      return changedPaths.length;
     }
-
-    if (fighterName) {
-      await ConfigGenerator.init();
-      const jsonCreator = new ConfigGenerator(modPath, fighterName);
-
-      await jsonCreator.generateConfig(finalSlots);
-    }
-
-    return changedPaths.length;
   }
 
   static async removeSlot(modPath: string, slot: string, pathData: PathData) {

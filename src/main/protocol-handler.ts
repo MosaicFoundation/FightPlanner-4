@@ -412,6 +412,18 @@ export default class ProtocolHandler {
 
     const { url: downloadUrl, modId, modType = 'Mod' } = installData;
 
+    const _handleSaveError = (error: Error) => {
+      console.error('Error during installation:', error);
+
+      this.showError(`Installation failed: ${error.message}`);
+      this.sendToRenderer('mod-install-error', {
+        downloadId,
+        error: error.message,
+      });
+
+      this.pendingInstalls.delete(downloadId);
+    };
+
     try {
       let modName = null;
 
@@ -492,17 +504,11 @@ export default class ProtocolHandler {
         });
 
         this.pendingInstalls.delete(downloadId);
+      } else {
+        _handleSaveError(new Error(modInstallResult.error));
       }
     } catch (error) {
-      console.error('Error during installation:', error);
-
-      this.showError(`Installation failed: ${error.message}`);
-      this.sendToRenderer('mod-install-error', {
-        downloadId,
-        error: error.message,
-      });
-
-      this.pendingInstalls.delete(downloadId);
+      _handleSaveError(error);
     }
   }
   extractModId(url) {

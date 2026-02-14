@@ -2,7 +2,7 @@ import { IpcMain } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 
-import ModUtils, { Mod, SlotChanges } from '../../mod-utils';
+import ModUtils, { Mod } from '../../mod-utils';
 import store from '../../store';
 import {
   handleError,
@@ -116,30 +116,6 @@ const ModHandlers = {
     } catch (error) {
       handleError(error, 'save-mod-info-raw');
       return createErrorResponse(ErrorCodes.MOD_SAVE_ERROR, error.message);
-    }
-  },
-
-  ['scan-mod-for-fighters']: async (
-    common: BaseHandlerArg,
-    modPath: string,
-  ) => {
-    try {
-      const fighters: string[] = [];
-      const fighterPath = path.join(modPath, 'fighter');
-      if (fs.existsSync(fighterPath)) {
-        const fighterDirs = fs.readdirSync(fighterPath, {
-          withFileTypes: true,
-        });
-        for (const dirent of fighterDirs) {
-          if (dirent.isDirectory()) {
-            fighters.push(dirent.name);
-          }
-        }
-      }
-      return fighters;
-    } catch (error) {
-      handleError(error, 'scan-mod-for-fighters');
-      return [];
     }
   },
 
@@ -259,12 +235,7 @@ const ModHandlers = {
         slotAssignments.delete(slot);
       }
 
-      await SlotChanger.changeSlots(
-        modPath,
-        slotAssignments,
-        pathData,
-        ModScanner.getInternalFighterName(pathData)!,
-      );
+      await SlotChanger.changeSlots(modPath, slotAssignments, pathData);
 
       return { success: true };
     } catch (error) {

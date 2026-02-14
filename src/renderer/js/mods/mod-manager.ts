@@ -766,10 +766,13 @@ class ModManager {
         const modUrl = modInfo?.url || '';
 
         // Scan for characters
-        const fighters = await window.electronAPI.scanModForFighters(mod.path);
+        const scanModResult = await window.electronAPI.scanMod(mod.path);
 
-        if (fighters && fighters.length > 0) {
-          fighters.forEach((rawFighterId) => {
+        if (
+          scanModResult.success &&
+          scanModResult.data.fighterNames.length > 0
+        ) {
+          scanModResult.data.fighterNames.forEach((rawFighterId: string) => {
             const fighterId = window.resolveFolderName
               ? window.resolveFolderName(rawFighterId)
               : rawFighterId.toLowerCase();
@@ -777,6 +780,7 @@ class ModManager {
             const charInfo = window.SSBU_CHARACTERS
               ? window.SSBU_CHARACTERS[fighterId]
               : null;
+
             const charName = charInfo ? charInfo.name : rawFighterId;
 
             if (!modsByCharacter.has(charName)) {

@@ -226,67 +226,70 @@ export class ConfigGenerator {
         this.modDirectory,
       );
 
-      modFiles.forEach((file: string) => {
-        const fixedFile = fixWindowsPath(file);
-        const fileInfo = ModScanner.extractFighterAndSlotInfo(fixedFile);
-
-        if (
-          fileInfo.slot &&
-          fileInfo.normalizedPath &&
-          /\.[^/\\]+$/.test(fileInfo.normalizedPath)
-        ) {
-          customModFilesSet.add(fixedFile);
-
-          const cValue = fileInfo.slot;
-          let dirPath = '';
-
-          // Determine the directory based on the fixedFile type
-          if (fixedFile.startsWith(`camera/fighter/${this.fighterName}/`)) {
-            dirPath = `fighter/${this.fighterName}/camera/${cValue}`;
-          } else if (
-            fixedFile.startsWith(
-              `fighter/kirby/model/copy_${this.fighterName}_`,
-            )
-          ) {
-            dirPath = `fighter/${this.fighterName}/kirbycopy/${cValue}`;
-          } else if (
-            fixedFile.startsWith(`fighter/${this.fighterName}/movie/`)
-          ) {
-            dirPath = `fighter/${this.fighterName}/movie/${cValue}`;
-          } else if (
-            fixedFile.startsWith(`fighter/${this.fighterName}/result/`)
-          ) {
-            dirPath = `fighter/${this.fighterName}/result/${cValue}`;
-          } else if (
-            fixedFile.startsWith(`fighter/${this.fighterName}/model/`) ||
-            fixedFile.startsWith(`fighter/${this.fighterName}/motion/`) ||
-            fixedFile.startsWith(`fighter/${this.fighterName}/sound/`) ||
-            fixedFile.startsWith(`fighter/${this.fighterName}/effect/`) ||
-            fixedFile.startsWith(`effect/fighter/${this.fighterName}/`)
-          ) {
-            dirPath = `fighter/${this.fighterName}/${cValue}`;
-          }
+      await Promise.all(
+        modFiles.map(async (file: string) => {
+          const fixedFile = fixWindowsPath(file);
+          const fileInfo =
+            await ModScanner.extractFighterAndSlotInfo(fixedFile);
 
           if (
-            this.fighterData.allFiles.includes(
-              fixedFile.replace(slotDetectionRegex, `$1c00$3`),
-            )
+            fileInfo.slot &&
+            fileInfo.normalizedPath &&
+            /\.[^/\\]+$/.test(fileInfo.normalizedPath)
           ) {
-            return;
-          }
+            customModFilesSet.add(fixedFile);
 
-          // Add the fixedFile to the appropriate directory in `newDirFiles`
-          if (dirPath) {
-            if (!newDirFiles[dirPath]) {
-              newDirFiles[dirPath] = [];
+            const cValue = fileInfo.slot;
+            let dirPath = '';
+
+            // Determine the directory based on the fixedFile type
+            if (fixedFile.startsWith(`camera/fighter/${this.fighterName}/`)) {
+              dirPath = `fighter/${this.fighterName}/camera/${cValue}`;
+            } else if (
+              fixedFile.startsWith(
+                `fighter/kirby/model/copy_${this.fighterName}_`,
+              )
+            ) {
+              dirPath = `fighter/${this.fighterName}/kirbycopy/${cValue}`;
+            } else if (
+              fixedFile.startsWith(`fighter/${this.fighterName}/movie/`)
+            ) {
+              dirPath = `fighter/${this.fighterName}/movie/${cValue}`;
+            } else if (
+              fixedFile.startsWith(`fighter/${this.fighterName}/result/`)
+            ) {
+              dirPath = `fighter/${this.fighterName}/result/${cValue}`;
+            } else if (
+              fixedFile.startsWith(`fighter/${this.fighterName}/model/`) ||
+              fixedFile.startsWith(`fighter/${this.fighterName}/motion/`) ||
+              fixedFile.startsWith(`fighter/${this.fighterName}/sound/`) ||
+              fixedFile.startsWith(`fighter/${this.fighterName}/effect/`) ||
+              fixedFile.startsWith(`effect/fighter/${this.fighterName}/`)
+            ) {
+              dirPath = `fighter/${this.fighterName}/${cValue}`;
             }
 
-            if (!newDirFiles[dirPath].includes(fixedFile)) {
-              newDirFiles[dirPath].push(fixedFile);
+            if (
+              this.fighterData.allFiles.includes(
+                fixedFile.replace(slotDetectionRegex, `$1c00$3`),
+              )
+            ) {
+              return;
+            }
+
+            // Add the fixedFile to the appropriate directory in `newDirFiles`
+            if (dirPath) {
+              if (!newDirFiles[dirPath]) {
+                newDirFiles[dirPath] = [];
+              }
+
+              if (!newDirFiles[dirPath].includes(fixedFile)) {
+                newDirFiles[dirPath].push(fixedFile);
+              }
             }
           }
-        }
-      });
+        }),
+      );
     }
 
     // Process `share-to-vanilla` by adding all vanilla "model" and "sound" files that are not already present in custom mod files
