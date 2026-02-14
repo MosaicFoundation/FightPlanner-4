@@ -309,41 +309,11 @@ const ModHandlers = {
 
   ['install-mod-from-path']: async (
     common: BaseHandlerArg,
-    sourcePath,
-    modsPath,
+    sourcePath: string,
+    modsPath: string,
   ) => {
     try {
-      const result = await ModUtils.installModFromPath(sourcePath, modsPath);
-
-      if (result.success && store.get('autoDisableNewMods')) {
-        try {
-          const modName = path.basename(result.modPath);
-          const parentDir = path.dirname(modsPath);
-          const disabledModsPath = path.join(parentDir, '{disabled_mod}');
-
-          if (!fs.existsSync(disabledModsPath)) {
-            fs.mkdirSync(disabledModsPath, { recursive: true });
-          }
-
-          const targetPath = path.join(disabledModsPath, modName);
-          if (!fs.existsSync(targetPath)) {
-            fs.renameSync(result.modPath, targetPath);
-            console.log(
-              `[AutoDisable] Moved ${modName} to disabled mods folder`,
-            );
-            result.modPath = targetPath;
-            result.autoDisabled = true;
-          } else {
-            console.warn(
-              `[AutoDisable] Cannot move ${modName}, target already exists`,
-            );
-          }
-        } catch (disableError) {
-          console.error('[AutoDisable] Failed to disable mod:', disableError);
-        }
-      }
-
-      return result;
+      return await ModUtils.installModFromPath(sourcePath, modsPath);
     } catch (error) {
       handleError(error, 'install-mod-from-path');
       return createErrorResponse(ErrorCodes.MOD_INSTALL_ERROR, error.message);
@@ -371,35 +341,6 @@ const ModHandlers = {
             filePath,
             modsPath,
           );
-
-          if (installResult.success && store.get('autoDisableNewMods')) {
-            try {
-              const modName = path.basename(installResult.modPath);
-              const parentDir = path.dirname(modsPath);
-              const disabledModsPath = path.join(parentDir, '{disabled_mod}');
-
-              if (!fs.existsSync(disabledModsPath)) {
-                fs.mkdirSync(disabledModsPath, {
-                  recursive: true,
-                });
-              }
-
-              const targetPath = path.join(disabledModsPath, modName);
-              if (!fs.existsSync(targetPath)) {
-                fs.renameSync(installResult.modPath, targetPath);
-                console.log(
-                  `[AutoDisable] Moved ${modName} to disabled mods folder (drag-drop)`,
-                );
-                installResult.modPath = targetPath;
-                installResult.autoDisabled = true;
-              }
-            } catch (disableError) {
-              console.error(
-                '[AutoDisable] Failed to disable mod in drag-drop:',
-                disableError,
-              );
-            }
-          }
 
           results.push({ filePath, result: installResult });
         } catch (error) {

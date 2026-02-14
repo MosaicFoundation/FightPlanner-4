@@ -1,10 +1,19 @@
 import fs from 'fs';
 import path from 'path';
 
+/**
+ * The full scan mod result for a given mod path.
+ *
+ * @property pathData - An object containing the paths and files to be modified, organized by fighter and slot.
+ * @property currentSlots - An array of the current slots detected in the mod.
+ * @property unknownFiles - An array of file paths that could not be categorized into a fighter or slot.
+ * @property fighterName - The internal fighter name if exactly one is detected, otherwise null.
+ */
 export interface ScanModResult {
   pathData: PathData;
   currentSlots: string[];
   unknownFiles: string[];
+  fighterName: string | null;
 }
 
 export interface PathDataForSlot {
@@ -135,7 +144,12 @@ export const ModScanner = {
         return numA - numB;
       });
 
-      return { pathData, currentSlots, unknownFiles };
+      return {
+        pathData,
+        currentSlots,
+        unknownFiles,
+        fighterName: this.getInternalFighterName(pathData),
+      };
     } catch (error) {
       console.error('Error scanning for slots:', error);
       throw error;
@@ -199,6 +213,10 @@ export const ModScanner = {
       : dotMatch
         ? filePath.replace(dotXXMatchRegex, `_$1_${dotMatch[2] || ''}###$4`)
         : null;
+
+    if (fighterName === 'common') {
+      fighterName = null;
+    }
 
     // Useful for debugging specific files
     // if (filePath.includes('tex_ganon_sword1.nutexb')) {

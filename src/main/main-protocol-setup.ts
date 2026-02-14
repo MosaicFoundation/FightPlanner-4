@@ -19,15 +19,15 @@ ProtocolHandler.registerProtocol().catch((err) => {
 
 app.on('open-url', (event, url) => {
   event.preventDefault();
-  console.log('[protocol][macOS] app.open-url received:', url);
-  if (typeof url === 'string' && url.startsWith('fightplanner:')) {
-    if (protocolHandler) {
-      console.log('[protocol][macOS] handler present, forwarding now');
-      protocolHandler.handleDeepLink(url);
-    } else {
-      console.log('[protocol][macOS] handler not ready, queueing URL');
-      pendingProtocolUrl = url;
+  console.log('🔗 Received protocol URL (open-url):', url);
+
+  if (protocolHandler && url.startsWith('fightplanner:')) {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
     }
+
+    protocolHandler.handleDeepLink(url);
   }
 });
 
@@ -67,19 +67,6 @@ export function initializeProtocol(window) {
       );
     }
   }
-
-  app.on('open-url', (event, url) => {
-    event.preventDefault();
-    console.log('🔗 Received protocol URL (open-url):', url);
-
-    if (protocolHandler && url.startsWith('fightplanner:')) {
-      if (mainWindow) {
-        if (mainWindow.isMinimized()) mainWindow.restore();
-        mainWindow.focus();
-      }
-      protocolHandler.handleDeepLink(url);
-    }
-  });
 
   app.on('second-instance', (event, commandLine) => {
     console.log('[protocol] second-instance with argv:', commandLine);

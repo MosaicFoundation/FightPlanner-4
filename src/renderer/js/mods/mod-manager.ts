@@ -591,11 +591,25 @@ class ModManager {
       );
 
       this.conflicts = (result.success && result.conflicts) || [];
+
       this.isCheckingConflicts = false;
 
       if (window.statusBarManager) {
         if (result.success && result.totalConflicts > 0) {
-          window.statusBarManager.updateConflictStatus(result.totalConflicts);
+          const modsWithConflicts = this.conflicts.reduce<Set<string>>(
+            (mods, nextConflict) => {
+              return new Set([
+                ...Array.from(mods),
+                ...nextConflict.mods.map((mod) => mod.name),
+              ]);
+            },
+            new Set(),
+          );
+
+          window.statusBarManager.updateConflictStatus(
+            result.totalConflicts,
+            modsWithConflicts.size,
+          );
         } else {
           const statusRight =
             document.querySelector<HTMLElement>('.bottom-text-right');

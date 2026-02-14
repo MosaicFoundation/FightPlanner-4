@@ -24,7 +24,6 @@ export type ModInstallResult =
       success: true;
       modPath: string;
       modName: string;
-      autoDisabled?: boolean;
     }
   | {
       success: false;

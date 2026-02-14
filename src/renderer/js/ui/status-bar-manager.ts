@@ -1,3 +1,25 @@
+interface NoneUpdate {
+  type: 'none';
+}
+
+interface SuccessUpdate {
+  type: 'success';
+  fileName: string;
+}
+
+interface ConflictUpdate {
+  type: 'conflict';
+  conflictCount: number;
+  modsWithConflictsCount: number;
+}
+
+interface DownloadUpdate {
+  type: 'download';
+  fileName: string;
+  progress: number;
+  speedText: string;
+}
+
 export class StatusBarManager {
   updateInterval: ReturnType<typeof setTimeout> | null;
   currentTab: string | null;
@@ -96,7 +118,7 @@ export class StatusBarManager {
       // Ensure we're not stuck in 'downloading' state visual
       const bottomBar = document.getElementById('main-status-bar');
       if (bottomBar && bottomBar.classList.contains('expanded')) {
-        this.updateExtendedBar('none');
+        this.updateExtendedBar({ type: 'none' });
       }
 
       this.animateStatusChange(statusText, () => {
@@ -276,7 +298,9 @@ export class StatusBarManager {
     return false;
   }
 
-  updateExtendedBar(type: 'download' | 'conflict' | 'success' | 'none', data: any = null) {
+  updateExtendedBar(
+    update: NoneUpdate | SuccessUpdate | ConflictUpdate | DownloadUpdate,
+  ) {
     const bottomBar = document.getElementById('main-status-bar');
     if (!bottomBar) return;
 
@@ -284,10 +308,11 @@ export class StatusBarManager {
     const enabled =
       window.settingsManager?.settings.enhancedStatusBar !== false;
 
-    if (type === 'none' || !enabled || !content) {
-      if (type === 'none') {
+    if (update.type === 'none' || !enabled || !content) {
+      if (update.type === 'none') {
         this.userDismissedExtendedBar = true;
       }
+
       if (content) (content as HTMLElement).style.display = 'none';
 
       if (bottomBar.classList.contains('expanded')) {
@@ -301,7 +326,7 @@ export class StatusBarManager {
       return;
     }
 
-    if (type === 'download' && data) {
+    if (update.type === 'download') {
       if (!bottomBar.classList.contains('download-mode')) {
         bottomBar.classList.remove('conflict-mode');
         bottomBar.classList.add('download-mode');
@@ -314,8 +339,8 @@ export class StatusBarManager {
       // Ensure content is visible
       (content as HTMLElement).style.display = 'flex';
 
-      const progress = Math.round(data.progress || 0);
-      const speed = data.speedText || '';
+      const progress = Math.round(update.progress || 0);
+      const speed = update.speedText || '';
 
       content.innerHTML = `
         <div class="ext-download-card">
@@ -330,7 +355,7 @@ export class StatusBarManager {
             <div class="ext-card-details">
                 <div class="ext-card-header">
                     <span class="ext-status-badge">Downloading</span>
-                    <span class="ext-filename" title="${data.fileName}">${data.fileName || 'Unknown file'}</span>
+                    <span class="ext-filename" title="${update.fileName}">${update.fileName || 'Unknown file'}</span>
                 </div>
                 
                 <div class="ext-progress-container">
@@ -349,7 +374,7 @@ export class StatusBarManager {
             </div>
         </div>
       `;
-    } else if (type === 'success' && data) {
+    } else if (update.type === 'success') {
       if (!bottomBar.classList.contains('success-mode')) {
         bottomBar.classList.remove('download-mode', 'conflict-mode');
         bottomBar.classList.add('success-mode');
@@ -375,7 +400,7 @@ export class StatusBarManager {
                 <div class="ext-card-details">
                     <div class="ext-card-header">
                         <span class="ext-status-badge" style="background: #28a745; border-color: #28a745;">Completed</span>
-                        <span class="ext-filename" title="${data.fileName}">${data.fileName || 'Unknown file'}</span>
+                        <span class="ext-filename" title="${update.fileName}">${update.fileName || 'Unknown file'}</span>
                     </div>
                     
                     <div class="ext-card-meta">
@@ -384,7 +409,7 @@ export class StatusBarManager {
                 </div>
             </div>
         `;
-    } else if (type === 'conflict' && data) {
+    } else if (update.type === 'conflict') {
       if (!bottomBar.classList.contains('conflict-mode')) {
         bottomBar.classList.remove('download-mode', 'success-mode');
         bottomBar.classList.add('conflict-mode');
@@ -412,7 +437,7 @@ export class StatusBarManager {
                      <span class="ext-status-badge badge-warning">Conflicts Detected</span>
                 </div>
                 <div class="ext-conflict-message">
-                    ${data.count} mod${data.count !== 1 ? 's' : ''} have conflicting files.
+                    ${update.modsWithConflictsCount} mod${update.modsWithConflictsCount !== 1 ? 's' : ''} have ${update.conflictCount} conflicting files.
                 </div>
                 <button class="ext-action-btn" onclick="window.conflictModalManager.showConflictModal()">
                     Resolve Now
@@ -434,7 +459,9 @@ export class StatusBarManager {
         return true;
       }
 
-      const activeDownloadsMap = (window.downloadManager as any).activeDownloads;
+      const activeDownloadsMap = (window.downloadManager as any)
+        .activeDownloads;
+
       if (!activeDownloadsMap) {
         // If activeDownloads is missing, assume no downloads
         return false;
@@ -463,7 +490,7 @@ export class StatusBarManager {
 
         if (!this.userDismissedExtendedBar) {
           // Update extended bar
-          this.updateExtendedBar('download', active);
+          this.updateExtendedBar({ type: 'download', ...active });
         }
 
         // Also update standard status bar as fallback or complement
@@ -474,16 +501,15 @@ export class StatusBarManager {
         }
 
         if (this.currentTab !== 'downloads') {
-          let statusText = document.querySelector<HTMLElement>(
-            '.bottom-text-left',
-          );
+          let statusText =
+            document.querySelector<HTMLElement>('.bottom-text-left');
           if (!statusText) {
             statusText = document.querySelector<HTMLElement>('.bottom-text');
           }
 
           if (statusText) {
             statusText.classList.add('status-downloading');
-            statusText.textContent = this.t('statusBar.downloading', {
+            statusText.textContent = this.t('statusBar.downloadsDownloading', {
               count: activeDownloads.length,
               percent: Math.round(active.progress),
             });
@@ -510,13 +536,14 @@ export class StatusBarManager {
             // If finished within last 5 seconds
             if (Date.now() - (last.endTime || 0) < 5000) {
               this.userDismissedExtendedBar = false; // Always show success
-              this.updateExtendedBar('success', {
+              this.updateExtendedBar({
+                type: 'success',
                 fileName: last.modName || last.fileName,
               });
 
               // Wait 3 seconds then retract
               setTimeout(() => {
-                this.updateExtendedBar('none');
+                this.updateExtendedBar({ type: 'none' });
                 this.refreshStandardStatus();
               }, 3000);
 
@@ -529,6 +556,17 @@ export class StatusBarManager {
           // Only verify conflicts if we weren't just downloading (avoid flashing)
           if (window.modManager && window.modManager.conflicts) {
             const conflicts = window.modManager.conflicts;
+
+            const modsWithConflicts = conflicts.reduce<Set<string>>(
+              (mods, nextConflict) => {
+                return new Set([
+                  ...Array.from(mods),
+                  ...nextConflict.mods.map((mod) => mod.name),
+                ]);
+              },
+              new Set(),
+            );
+
             const conflictCount = conflicts.length;
 
             if (conflictCount > 0) {
@@ -539,7 +577,11 @@ export class StatusBarManager {
               }
 
               if (!this.userDismissedExtendedBar) {
-                this.updateExtendedBar('conflict', { count: conflictCount });
+                this.updateExtendedBar({
+                  type: 'conflict',
+                  conflictCount,
+                  modsWithConflictsCount: modsWithConflicts.size,
+                });
               }
               return false;
             } else {
@@ -554,7 +596,7 @@ export class StatusBarManager {
 
         if (wasActive) {
           // Immediate cleanup if no success state needed
-          this.updateExtendedBar('none');
+          this.updateExtendedBar({ type: 'none' });
           this.refreshStandardStatus();
         } else {
           // Routine cleanup
@@ -564,7 +606,7 @@ export class StatusBarManager {
             bottomBar.classList.contains('expanded') &&
             !bottomBar.classList.contains('conflict-mode')
           ) {
-            this.updateExtendedBar('none');
+            this.updateExtendedBar({ type: 'none' });
           }
         }
 
@@ -588,7 +630,9 @@ export class StatusBarManager {
     if (this.currentTab) {
       this.updateStatus(this.currentTab);
     } else {
-      const statusLeft = document.querySelector<HTMLElement>('#main-status-bar .bottom-text-left');
+      const statusLeft = document.querySelector<HTMLElement>(
+        '#main-status-bar .bottom-text-left',
+      );
       if (statusLeft) {
         statusLeft.classList.remove('status-downloading');
 
@@ -1185,9 +1229,23 @@ export class StatusBarManager {
         const conflicts = window.modManager.conflicts;
         const conflictCount = conflicts.length;
 
+        const modsWithConflicts = conflicts.reduce<Set<string>>(
+          (mods, nextConflict) => {
+            return new Set([
+              ...Array.from(mods),
+              ...nextConflict.mods.map((mod) => mod.name),
+            ]);
+          },
+          new Set(),
+        );
+
         if (conflictCount > 0) {
           // Update extended bar
-          this.updateExtendedBar('conflict', { count: conflictCount });
+          this.updateExtendedBar({
+            type: 'conflict',
+            conflictCount,
+            modsWithConflictsCount: modsWithConflicts.size,
+          });
 
           statusRight.innerHTML = '';
           const warning = document.createElement('span');
@@ -1203,7 +1261,7 @@ export class StatusBarManager {
         } else {
           // Clear extended bar if no downloads
           if (!this.hasActiveDownloads) {
-            this.updateExtendedBar('none');
+            this.updateExtendedBar({ type: 'none' });
           }
           statusRight.textContent = '';
         }
@@ -1211,7 +1269,7 @@ export class StatusBarManager {
     }, 500);
   }
 
-  updateConflictStatus(conflictCount) {
+  updateConflictStatus(conflictCount: number, modsWithConflictsCount: number) {
     const statusRight =
       document.querySelector<HTMLElement>('.bottom-text-right');
     if (!statusRight) return;
@@ -1219,24 +1277,34 @@ export class StatusBarManager {
     statusRight.innerHTML = '';
 
     if (conflictCount > 0) {
-      this.updateExtendedBar('conflict', { count: conflictCount }); // Update extended bar
+      this.updateExtendedBar({
+        type: 'conflict',
+        conflictCount,
+        modsWithConflictsCount,
+      }); // Update extended bar
+
       const conflictText = document.createElement('span');
+
       conflictText.className = 'conflict-link';
       conflictText.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
+
         if (window.statusBarManager) {
           window.statusBarManager.preserveCurrentStatus();
         }
+
         if (window.conflictModalManager) {
           window.conflictModalManager.showConflictModal();
         }
       });
+
       conflictText.textContent = this.t('statusBar.conflictsDetected', {
         count: conflictCount,
         plural: conflictCount !== 1 ? 's' : '',
       });
+
       statusRight.appendChild(conflictText);
     }
   }

@@ -110,7 +110,10 @@ function initializeTabFeatures(tabName) {
               return;
             }
 
-            const modsPath = await window.electronAPI.store.get('modsPath');
+            const modsPath = (await window.electronAPI.store.get(
+              'modsPath',
+            )) as string | null;
+
             if (!modsPath) {
               if (window.toastManager) {
                 window.toastManager.error('toasts.modsFolderNotConfigured');

@@ -353,13 +353,7 @@ class ModalManager {
     this.currentMod = mod;
     this.changeSlotCallback = callback;
 
-    const fightersInMod = Object.keys(modData.pathData).filter(
-      (fighterName) => fighterName !== 'unknown',
-    );
-
-    const fighterName = fightersInMod.length === 1 ? fightersInMod[0] : null;
-
-    if (!fighterName) {
+    if (!modData.fighterName) {
       throw new Error(
         'Cannot change slots for mods with multiple or unknown fighters.',
       );
@@ -373,7 +367,7 @@ class ModalManager {
       new Map(),
     );
 
-    this.fighterPathData = modData.pathData[fighterName];
+    this.fighterPathData = modData.pathData[modData.fighterName];
 
     const modal = document.querySelector<HTMLElement>('#change-slot-modal');
     const container = document.querySelector<HTMLElement>(

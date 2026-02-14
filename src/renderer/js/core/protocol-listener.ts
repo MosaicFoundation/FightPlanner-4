@@ -19,6 +19,7 @@ if (window.electronAPI && window.electronAPI.onModInstallConfirmRequest) {
 
     if (!installConfirmEnabled) {
       console.log('Install confirmation disabled, proceeding directly...');
+
       if (window.electronAPI) {
         await window.electronAPI.confirmProtocolInstall(
           data.url,
@@ -27,6 +28,7 @@ if (window.electronAPI && window.electronAPI.onModInstallConfirmRequest) {
       }
     } else {
       console.log('Showing install confirmation modal');
+
       if (window.modalManager) {
         window.modalManager.openInstallConfirmModal(
           data.url,

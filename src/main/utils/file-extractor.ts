@@ -18,7 +18,7 @@ export class FileExtractor {
         execSync(`${command} ${binaryName}`, { stdio: 'pipe' });
         console.log(`Found ${binaryName} in system PATH`);
         return binaryName;
-      } catch { }
+      } catch {}
     }
 
     // Fallback to bundled version
@@ -61,7 +61,6 @@ export class FileExtractor {
       });
 
       seven.on('error', (err) => {
-        console.error(`7-Zip extraction failed: ${err}`);
         reject(err);
       });
     });
@@ -117,7 +116,6 @@ export class FileExtractor {
     try {
       await this.extractWith7Zip(filePath, extractTo);
     } catch (error) {
-      console.error(`7-Zip extraction failed, trying tar fallback:`, error);
       await this.extractWithTar(filePath, extractTo);
     }
   }
