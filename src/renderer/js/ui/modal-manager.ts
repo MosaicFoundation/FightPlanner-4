@@ -464,7 +464,7 @@ class ModalManager {
       const selectDropdown = document.createElement('div');
       selectDropdown.className = 'custom-select-dropdown';
 
-      for (let slotNumber = 0; slotNumber <= 255; slotNumber++) {
+      for (let slotNumber = 0; slotNumber <= 16; slotNumber++) {
         const slotString = slotNumberToString(slotNumber);
         const option = document.createElement('div');
         option.className = 'custom-select-option';
