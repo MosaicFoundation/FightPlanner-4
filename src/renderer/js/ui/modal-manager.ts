@@ -1812,6 +1812,11 @@ if (typeof window !== 'undefined') {
         modalManager.closePluginUpdateModal();
         modalManager.closePluginMarketplaceModal();
 
+        if (window.smartRenameManager) {
+          window.smartRenameManager.closeSelectModal();
+          window.smartRenameManager.closePreviewModal();
+        }
+
         if (window.conflictModalManager) {
           window.conflictModalManager.closeConflictModal();
           window.conflictModalManager.closeSlotChangeModal();
@@ -1830,6 +1835,11 @@ if (typeof window !== 'undefined') {
         modalManager.closeEditInfoModal();
         modalManager.closeAdvancedInfoModal();
         modalManager.closeInstallConfirmModal();
+
+        if (window.smartRenameManager) {
+          window.smartRenameManager.closeSelectModal();
+          window.smartRenameManager.closePreviewModal();
+        }
 
         if (window.conflictModalManager) {
           window.conflictModalManager.closeConflictModal();

@@ -597,6 +597,89 @@
     </div>
   </div>
 
+  <!-- Smart Rename Select Modal -->
+  <div id="smart-rename-modal" class="modal modal-large" style="display: none">
+    <div class="modal-header">
+      <h3>
+        <i class="bi bi-magic"></i>
+        <span>Smart Rename</span>
+      </h3>
+      <button class="modal-close" onclick="window.smartRenameManager.closeSelectModal()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-hint">Select the mods you want to rename:</p>
+      <div class="smart-rename-filter-buttons">
+        <button class="smart-rename-filter-btn" onclick="window.smartRenameManager.selectAll()">
+          <i class="bi bi-check-all"></i> Select All
+        </button>
+        <button class="smart-rename-filter-btn" onclick="window.smartRenameManager.selectEnabledOnly()">
+          <i class="bi bi-check-circle"></i> Enabled Only
+        </button>
+        <button class="smart-rename-filter-btn" onclick="window.smartRenameManager.selectDisabledOnly()">
+          <i class="bi bi-dash-circle"></i> Disabled Only
+        </button>
+        <button class="smart-rename-filter-btn" onclick="window.smartRenameManager.deselectAll()">
+          <i class="bi bi-x-lg"></i> Deselect All
+        </button>
+      </div>
+      <div id="smart-rename-select-list" class="smart-rename-select-list">
+        <!-- Mod items populated dynamically -->
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn modal-btn-cancel" onclick="window.smartRenameManager.closeSelectModal()">
+        Cancel
+      </button>
+      <button class="modal-btn modal-btn-primary" onclick="window.smartRenameManager.openPreviewModal()">
+        <i class="bi bi-eye"></i>
+        <span>Preview Renames</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Smart Rename Preview Modal -->
+  <div id="smart-rename-preview-modal" class="modal modal-large smart-rename-preview-modal-size" style="display: none">
+    <div class="modal-header">
+      <h3>
+        <i class="bi bi-eye"></i>
+        <span>Preview Renames</span>
+      </h3>
+      <button class="modal-close" onclick="window.smartRenameManager.closePreviewModal()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="smart-rename-preview-table-wrapper">
+        <table class="smart-rename-preview-table">
+          <thead>
+            <tr>
+              <th class="smart-rename-th-cb">
+                <input type="checkbox" id="smart-rename-preview-select-all" checked />
+              </th>
+              <th>Base Mod Name</th>
+              <th>Original Name</th>
+              <th>New Name</th>
+            </tr>
+          </thead>
+          <tbody id="smart-rename-preview-tbody">
+            <!-- Rows populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn modal-btn-cancel" onclick="window.smartRenameManager.closePreviewModal()">
+        Cancel
+      </button>
+      <button class="modal-btn modal-btn-primary" onclick="window.smartRenameManager.applyRenames()">
+        <i class="bi bi-check-lg"></i>
+        <span>Apply Rename</span>
+      </button>
+    </div>
+  </div>
+
   <div id="update-modal" class="modal" style="display: none">
     <div class="modal-header">
       <h3>
@@ -703,6 +786,7 @@
   <script src="../../out/renderer/js/mods/mod-keybinds.js"></script>
   <script src="../../out/renderer/js/mods/mod-drag-drop.js"></script>
   <script src="../../out/renderer/js/mods/mod-manager.js"></script>
+  <script src="../../out/renderer/js/mods/smart-rename-manager.js"></script>
   <!-- End Mod Manager -->
   <!-- Plugin Manager -->
   <script src="../../out/renderer/js/mods/plugin-marketplace.js"></script>

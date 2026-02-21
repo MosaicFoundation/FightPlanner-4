@@ -58,6 +58,22 @@ function initializeTabFeatures(tabName) {
       });
     }
 
+    const smartRenameBtn =
+      document.querySelector<HTMLElement>('#smart-rename-btn');
+    if (smartRenameBtn) {
+      const newSmartRenameBtn = smartRenameBtn.cloneNode(true);
+      smartRenameBtn.parentNode!.replaceChild(
+        newSmartRenameBtn,
+        smartRenameBtn,
+      );
+
+      newSmartRenameBtn.addEventListener('click', () => {
+        if (window.smartRenameManager) {
+          window.smartRenameManager.openSelectModal();
+        }
+      });
+    }
+
     const openFolderBtn =
       document.querySelector<HTMLElement>('#open-folder-btn');
     if (openFolderBtn) {
