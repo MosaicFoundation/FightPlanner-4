@@ -255,7 +255,15 @@
     "sendTestEvent": "Envoyer un Événement Test",
     "sendTestEventDesc": "Envoyer un événement test à PostHog",
     "sendTestError": "Envoyer une Erreur Test",
-    "sendTestErrorDesc": "Envoyer une erreur test à PostHog"
+    "sendTestErrorDesc": "Envoyer une erreur test à PostHog",
+    "toastTests": "Tests des Toasts",
+    "toastTestsHint": "Tester les notifications toast et les animations de stacking.",
+    "testSuccess": "Succès",
+    "testError": "Erreur",
+    "testWarning": "Avertissement",
+    "testInfo": "Info",
+    "spamToasts": "Spam Toasts",
+    "spamToastsDesc": "Envoyer 5 toasts rapidement pour tester le stacking"
   },
   "modals": {
     "rename": {
@@ -509,6 +517,7 @@
     "communityManager": "Gestionnaire de Communauté",
     "soundDesigner": "Designer Sonore, Contributeur",
     "contributor": "Contributeur",
+    "oldContributor": "Ancien Contributeur de FightPlanner 3",
     "documentation": "Documentation",
     "translation": "Traduction",
     "loading": "Chargement..."
@@ -532,6 +541,12 @@
     "configureEmulatorPaths": "Veuillez configurer les chemins de l'émulateur et du jeu dans les paramètres",
     "launchingEmulator": "Lancement de l'émulateur...",
     "emulatorLaunchedSuccessfully": "Émulateur lancé avec succès",
+    "emulatorAlreadyRunning": "L'émulateur est déjà en cours d'exécution",
+    "rerunAnyway": "Relancer quand même",
+    "testToastSuccess": "Ceci est un toast de succès de test",
+    "testToastError": "Ceci est un toast d'erreur de test",
+    "testToastWarning": "Ceci est un toast d'avertissement de test",
+    "testToastInfo": "Ceci est un toast d'information de test",
     "failedToLaunchEmulator": "Échec du lancement de l'émulateur : {{error}}",
     "settingSaved": "Paramètre enregistré avec succès",
     "failedToSaveSetting": "Échec de l'enregistrement du paramètre",

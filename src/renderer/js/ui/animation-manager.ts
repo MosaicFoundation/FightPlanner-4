@@ -14,7 +14,6 @@ class AnimationManager {
     this.setupListeners();
     this.checkInitialAnimation();
     this.initialized = true;
-    console.log('✨ Animation Manager initialized');
   }
 
   checkReducedMotion() {
@@ -27,11 +26,11 @@ class AnimationManager {
   checkInitialAnimation() {
     // Check if class was added by inline script (from query param)
     if (document.body.classList.contains('app-entrance-animation')) {
-      console.log('🎬 Initial entrance animation detected');
+      console.log('Initial entrance animation detected');
       // Set cleanup timer
       setTimeout(() => {
         document.body.classList.remove('app-entrance-animation');
-        console.log('✅ Initial entrance animation sequence completed');
+        console.log('Initial entrance animation sequence completed');
       }, 2500); // 2s animation + buffer
     }
   }
@@ -48,7 +47,7 @@ class AnimationManager {
   playIntroAnimation() {
     if (this.isReducedMotion) return;
 
-    console.log('🎬 Playing entrance animation sequence (manual trigger)');
+    console.log('Playing entrance animation sequence (manual trigger)');
 
     // Force reflow to restart animation
     document.body.classList.remove('app-entrance-animation');
@@ -57,7 +56,7 @@ class AnimationManager {
 
     setTimeout(() => {
       document.body.classList.remove('app-entrance-animation');
-      console.log('✅ Entrance animation sequence completed');
+      console.log('Entrance animation sequence completed');
     }, 2500);
   }
 

@@ -161,7 +161,12 @@ function createWindow(options: CreateWindowOptions = {}) {
       animationHandler.initialize(mainWindow);
 
       if (options.animate) {
-        mainWindow.webContents.send('start-intro-animation');
+        // Give the renderer a moment to fully initialize before sending the animation signal
+        setTimeout(() => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('start-intro-animation');
+          }
+        }, 500);
       }
     }
   };

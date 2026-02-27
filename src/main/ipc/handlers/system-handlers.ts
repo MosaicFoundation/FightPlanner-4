@@ -11,6 +11,10 @@ import {
 import { PATHS, TEMP_FOLDERS } from '../../config';
 import { HandlerResponse } from '../../types/common';
 import { BaseHandlerArg, GenericHandler } from '../../types/common';
+import store from '../../store';
+import type { ChildProcess } from 'child_process';
+
+let emulatorProcess: ChildProcess | null = null;
 
 export type SystemHandlers = typeof SystemHandlers;
 
@@ -62,6 +66,19 @@ const SystemHandlers = {
       }
     } catch (error) {
       handleError(error, 'cancel-download');
+      return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
+    }
+  },
+
+  ['open-config-file']: async (common: BaseHandlerArg) => {
+    try {
+      if (store && store.path) {
+        await shell.openPath(store.path);
+        return { success: true };
+      }
+      return createErrorResponse(ErrorCodes.FILE_NOT_FOUND, 'Configuration file path not found');
+    } catch (error) {
+      handleError(error, 'open-config-file');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
   },
@@ -155,8 +172,22 @@ const SystemHandlers = {
     emulatorPath: string,
     gamePath: string,
     fullscreen: boolean,
+    force: boolean = false,
   ): HandlerResponse => {
     try {
+      if (!force && emulatorProcess && emulatorProcess.pid) {
+        try {
+          process.kill(emulatorProcess.pid, 0);
+          console.log('[launch-emulator] Emulator process is already running (PID:', emulatorProcess.pid, ')');
+          return createErrorResponse(
+            'EMULATOR_ALREADY_RUNNING' as any,
+            'emulator_already_running',
+          );
+        } catch {
+          emulatorProcess = null;
+        }
+      }
+
       if (!fs.existsSync(emulatorPath)) {
         return createErrorResponse(
           ErrorCodes.FILE_NOT_FOUND,
@@ -171,10 +202,10 @@ const SystemHandlers = {
         );
       }
 
-      console.log('Launching emulator:', emulatorType);
-      console.log('Emulator path:', emulatorPath);
-      console.log('With game:', gamePath);
-      console.log('Fullscreen:', fullscreen);
+      console.log('[launch-emulator] Launching emulator:', emulatorType);
+      console.log('[launch-emulator] Emulator path:', emulatorPath);
+      console.log('[launch-emulator] With game:', gamePath);
+      console.log('[launch-emulator] Fullscreen:', fullscreen);
 
       let args;
       if (emulatorType === 'yuzu') {
@@ -183,14 +214,24 @@ const SystemHandlers = {
         args = ['-g', gamePath];
       }
 
-      const emulatorProcess = spawn(emulatorPath, args, {
+      emulatorProcess = spawn(emulatorPath, args, {
         detached: true,
         stdio: 'ignore',
       });
 
+      emulatorProcess.on('exit', () => {
+        console.log('[launch-emulator] Emulator process exited');
+        emulatorProcess = null;
+      });
+
+      emulatorProcess.on('error', () => {
+        console.log('[launch-emulator] Emulator process error');
+        emulatorProcess = null;
+      });
+
       emulatorProcess.unref();
 
-      console.log('Emulator launched successfully with args:', args);
+      console.log('[launch-emulator] Emulator launched successfully with args:', args);
       return { success: true };
     } catch (error) {
       handleError(error, 'launch-emulator');

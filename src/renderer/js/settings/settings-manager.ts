@@ -741,6 +741,15 @@ class SettingsManager {
         });
       }
 
+      const openConfigBtn = document.querySelector<HTMLElement>('#open-config-btn');
+      if (openConfigBtn) {
+        openConfigBtn.addEventListener('click', async () => {
+          if (window.electronAPI && window.electronAPI.openConfigFile) {
+            await window.electronAPI.openConfigFile();
+          }
+        });
+      }
+
       const forceUpdateToggle = document.querySelector<HTMLInputElement>(
         '#force-update-enabled',
       );

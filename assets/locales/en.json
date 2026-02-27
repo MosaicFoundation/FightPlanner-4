@@ -256,7 +256,15 @@
     "sendTestEvent": "Send Test Event",
     "sendTestEventDesc": "Send a test_event to PostHog",
     "sendTestError": "Send Test Error",
-    "sendTestErrorDesc": "Send a test error to PostHog"
+    "sendTestErrorDesc": "Send a test error to PostHog",
+    "toastTests": "Toast Tests",
+    "toastTestsHint": "Test toast notifications and stacking animations.",
+    "testSuccess": "Success",
+    "testError": "Error",
+    "testWarning": "Warning",
+    "testInfo": "Info",
+    "spamToasts": "Spam Toasts",
+    "spamToastsDesc": "Send 5 toasts rapidly to test stacking"
   },
   "modals": {
     "rename": {
@@ -509,6 +517,7 @@
     "communityManager": "Community Manager",
     "soundDesigner": "Sound Designer, Contributor",
     "contributor": "Contributor",
+    "oldContributor": "Old Contributor of FightPlanner 3",
     "documentation": "Documentation",
     "translation": "Translation",
     "loading": "Loading..."
@@ -531,6 +540,12 @@
     "settingsManagerNotAvailable": "Settings manager not available",
     "configureEmulatorPaths": "Please configure emulator and game paths in settings",
     "launchingEmulator": "Launching emulator...",
+    "emulatorAlreadyRunning": "The emulator is already running",
+    "rerunAnyway": "Rerun anyway",
+    "testToastSuccess": "This is a test success toast",
+    "testToastError": "This is a test error toast",
+    "testToastWarning": "This is a test warning toast",
+    "testToastInfo": "This is a test info toast",
     "emulatorLaunchedSuccessfully": "Emulator launched successfully",
     "failedToLaunchEmulator": "Failed to launch emulator: {{error}}",
     "settingSaved": "Setting saved successfully",

@@ -139,7 +139,11 @@ class ModListRenderer {
 
     if (mods.length === 0) {
       container.innerHTML =
-        '<p style="color: var(--text-muted); text-align: center; padding: 20px;">No mods available</p>';
+        '<div class="no-results-message" style="color: var(--text-muted); text-align: center; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px;">' +
+        '<i class="bi bi-folder-x" style="font-size: 32px; opacity: 0.5;"></i>' +
+        '<span>No mods available.</span>' +
+        '<span style="font-size: 13px;">Go download some on <a href="#" onclick="window.electronAPI.openUrl(\'https://gamebanana.com/games/6498\'); return false;" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">GameBanana</a>!</span>' +
+        '</div>';
       return;
     }
 
@@ -167,7 +171,11 @@ class ModListRenderer {
 
     if (filteredMods.length === 0) {
       container.innerHTML =
-        '<p class="no-results-message" style="color: var(--text-muted); text-align: center; padding: 20px;">No mods found</p>';
+        '<div class="no-results-message" style="color: var(--text-muted); text-align: center; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px;">' +
+        '<i class="bi bi-search" style="font-size: 32px; opacity: 0.5;"></i>' +
+        '<span>No mods found for this search/filter.</span>' +
+        '<span style="font-size: 13px;">Looking for something new? Check <a href="#" onclick="window.electronAPI.openUrl(\'https://gamebanana.com/games/6498\'); return false;" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">GameBanana</a>!</span>' +
+        '</div>';
       return;
     }
 
@@ -249,11 +257,14 @@ class ModListRenderer {
       '.no-results-message',
     );
     if (visibleCount === 0 && !existingMessage) {
-      const message = document.createElement('p');
+      const message = document.createElement('div');
       message.className = 'no-results-message';
       message.style.cssText =
-        'color: var(--text-muted); text-align: center; padding: 20px;';
-      message.textContent = 'No mods found';
+        'color: var(--text-muted); text-align: center; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px;';
+      message.innerHTML =
+        '<i class="bi bi-search" style="font-size: 32px; opacity: 0.5;"></i>' +
+        '<span>No mods found.</span>' +
+        '<span style="font-size: 13px;">Looking for something new? Check <a href="#" onclick="window.electronAPI.openUrl(\'https://gamebanana.com/games/6498\'); return false;" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">GameBanana</a>!</span>';
       container.appendChild(message);
     } else if (visibleCount > 0 && existingMessage) {
       existingMessage.remove();

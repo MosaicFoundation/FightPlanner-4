@@ -5,6 +5,7 @@ class ToastManager {
   toastCooldown: number;
   groupedToasts: Map<string, any>;
   groupTimeout: number | null;
+  maxVisible: number;
 
   constructor() {
     this.container = null;
@@ -13,6 +14,7 @@ class ToastManager {
     this.toastCooldown = 2000;
     this.groupedToasts = new Map();
     this.groupTimeout = null;
+    this.maxVisible = 5;
 
     this.init();
   }
@@ -34,27 +36,17 @@ class ToastManager {
     }
   }
 
-  /**
-   * Translate message if it's a translation key, otherwise return as-is
-   * @param {string} message - Message or translation key
-   * @param {object} params - Parameters for translation
-   * @returns {string} Translated message
-   */
   translateMessage(message, params = {}) {
     if (!message) return '';
 
-    // Check if message is a translation key (starts with "toasts.")
     if (message.startsWith('toasts.')) {
       if (window.i18n && window.i18n.t) {
         let translated = window.i18n.t(message, params);
         return translated || message;
       }
-      // If i18n not available, return message as-is (fallback)
       return message;
     }
 
-    // If not a translation key, return message as-is
-    // But still replace params if they exist
     if (params && Object.keys(params).length > 0) {
       let result = message;
       for (const [key, value] of Object.entries(params)) {
@@ -66,13 +58,23 @@ class ToastManager {
     return message;
   }
 
-  /**
-   * @param {string} type - Type of toast: 'success', 'error', 'warning', 'info'
-   * @param {string} message - Message to display or translation key (e.g., "toasts.modInstalledSuccessfully")
-   * @param {number} duration - Duration in ms (default: 3000)
-   * @param {object} params - Parameters for translation (e.g., {name: "MyMod", error: "Error message"})
-   * @param {object} options - Additional options (e.g., {actionButton: {text: "View Logs", onClick: () => {}}})
-   */
+  updateStackState() {
+    const visibleToasts = this.toasts.filter(
+      (t) => t.parentElement && !t.classList.contains('toast-hide'),
+    );
+
+    for (let i = 0; i < visibleToasts.length; i++) {
+      const toast = visibleToasts[i];
+      const index = Math.min(i, 4);
+      toast.style.setProperty('--stack-index', String(index));
+      if (i === 0) {
+        toast.removeAttribute('data-stacked');
+      } else {
+        toast.setAttribute('data-stacked', 'true');
+      }
+    }
+  }
+
   show(
     type,
     message,
@@ -120,6 +122,10 @@ class ToastManager {
       }
     }
 
+    if (this.toasts.length >= this.maxVisible) {
+      this.hide(this.toasts[this.toasts.length - 1]);
+    }
+
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
 
@@ -154,8 +160,12 @@ ${actionButtonHtml}
 </button>
 `;
 
-    this.container.appendChild(toast);
-    this.toasts.push(toast);
+    if (this.container.firstChild) {
+      this.container.insertBefore(toast, this.container.firstChild);
+    } else {
+      this.container.appendChild(toast);
+    }
+    this.toasts.unshift(toast);
 
     const closeBtn = toast.querySelector<HTMLElement>('.toast-close');
     closeBtn!.addEventListener('click', () => this.hide(toast));
@@ -175,6 +185,7 @@ ${actionButtonHtml}
 
     setTimeout(() => {
       toast.classList.add('toast-show');
+      this.updateStackState();
     }, 10);
 
     setTimeout(() => {
@@ -186,6 +197,7 @@ ${actionButtonHtml}
     if (!toast || !toast.parentElement) return;
 
     toast.classList.remove('toast-show');
+    toast.removeAttribute('data-stacked');
     toast.classList.add('toast-hide');
 
     setTimeout(() => {
@@ -197,7 +209,9 @@ ${actionButtonHtml}
       if (index > -1) {
         this.toasts.splice(index, 1);
       }
-    }, 320);
+
+      this.updateStackState();
+    }, 400);
   }
 
   success(message, duration?, params?, options?) {
@@ -216,9 +230,6 @@ ${actionButtonHtml}
     this.show('info', message, duration, params, options);
   }
 
-  /**
-   * Clear all toasts
-   */
   clear() {
     this.toasts.forEach((toast) => {
       if (toast.parentElement) {
@@ -228,7 +239,7 @@ ${actionButtonHtml}
           if (toast.parentElement) {
             toast.parentElement.removeChild(toast);
           }
-        }, 300);
+        }, 400);
       }
     });
     this.toasts = [];

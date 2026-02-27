@@ -3,19 +3,17 @@
   top: 80px;
   right: 20px;
   z-index: 20000;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  max-width: 400px;
+  display: grid;
+  align-items: start;
+  justify-items: end;
   pointer-events: none;
 }
 
 .toast {
-  background: linear-gradient(
-    135deg,
-    var(--border-color) 0%,
-    var(--bg-tertiary) 100%
-  );
+  grid-area: 1 / 1;
+  background: linear-gradient(135deg,
+      var(--border-color) 0%,
+      var(--bg-tertiary) 100%);
   border: 1px solid var(--border-hover);
   border-radius: 12px;
   padding: 16px 20px;
@@ -24,13 +22,15 @@
   gap: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   opacity: 0;
-  transform: translateX(400px);
+  transform: translateX(80px) scale(0.92);
   transition:
-    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: auto;
   position: relative;
-  margin-bottom: 12px;
+  will-change: transform, opacity;
+  transform-origin: top right;
+  z-index: calc(100 - var(--stack-index, 0));
 }
 
 .toast i {
@@ -79,6 +79,18 @@
   color: var(--danger-color);
 }
 
+.toast-warning .toast-action-btn {
+  background: rgba(var(--warning-rgb, 255, 170, 0), 0.15);
+  border-color: rgba(var(--warning-rgb, 255, 170, 0), 0.3);
+  color: var(--warning-color);
+}
+
+.toast-warning .toast-action-btn:hover {
+  background: rgba(var(--warning-rgb, 255, 170, 0), 0.25);
+  border-color: rgba(var(--warning-rgb, 255, 170, 0), 0.5);
+  color: var(--warning-color);
+}
+
 .toast-close {
   background: none;
   border: none;
@@ -104,12 +116,32 @@
 
 .toast-show {
   opacity: 1;
-  transform: translateX(0);
+  transform: translateY(calc(var(--stack-index, 0) * 16px)) scale(calc(1 - var(--stack-index, 0) * 0.05));
+}
+
+.toast-show[data-stacked="true"] {
+  opacity: calc(1 - var(--stack-index, 0) * 0.15);
+  pointer-events: none;
+}
+
+/* Fan out stacked toasts on hover */
+#toast-container:hover .toast-show {
+  transform: translateY(calc(var(--stack-index, 0) * 70px)) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+  z-index: calc(100 - var(--stack-index, 0));
+}
+
+#toast-container:hover .toast-show[data-stacked="true"] {
+  opacity: 1;
 }
 
 .toast-hide {
   opacity: 0;
-  transform: translateX(400px);
+  transform: translateX(60px) translateY(calc(var(--stack-index, 0) * 16px)) scale(calc(1 - var(--stack-index, 0) * 0.05));
+  transition:
+    opacity 0.35s cubic-bezier(0.4, 0, 1, 1),
+    transform 0.35s cubic-bezier(0.4, 0, 1, 1);
 }
 
 .toast-success i {

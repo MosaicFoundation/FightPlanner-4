@@ -415,6 +415,7 @@ ${char.mods
 <i class="bi bi-people-fill"></i>
 <h3>No Character Mods Found</h3>
 <p>Configure your mods folder in Settings to see characters with mods.</p>
+<span style="font-size: 13px; margin-top: 10px; color: var(--text-muted);">Go download some on <a href="#" onclick="window.electronAPI.openUrl('https://gamebanana.com/games/6498'); return false;" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">GameBanana</a>!</span>
 </div>
 `;
   }

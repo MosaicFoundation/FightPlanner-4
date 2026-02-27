@@ -172,7 +172,11 @@ class ModManager {
 
     if (this.mods.length === 0) {
       this.modListContainer.innerHTML =
-        '<p style="color: #666; text-align: center; padding: 20px;">No mods available</p>';
+        '<div class="no-results-message" style="color: var(--text-muted); text-align: center; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px;">' +
+        '<i class="bi bi-folder-x" style="font-size: 32px; opacity: 0.5;"></i>' +
+        '<span>No mods available.</span>' +
+        '<span style="font-size: 13px;">Go download some on <a href="#" onclick="window.electronAPI.openUrl(\'https://gamebanana.com/games/6498\'); return false;" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">GameBanana</a>!</span>' +
+        '</div>';
       this.renderedModIds.clear();
       return;
     }
@@ -529,7 +533,7 @@ class ModManager {
             categoryMap[category.toLowerCase()] || category;
           mod.category = normalizedCategory;
         }
-      } catch (error) {}
+      } catch (error) { }
     }
 
     this.updateVisibility();
@@ -892,15 +896,15 @@ class ModManager {
       const filters =
         format === 'md'
           ? [
-              { name: 'Markdown Files', extensions: ['md'] },
-              { name: 'Text Files', extensions: ['txt'] },
-              { name: 'All Files', extensions: ['*'] },
-            ]
+            { name: 'Markdown Files', extensions: ['md'] },
+            { name: 'Text Files', extensions: ['txt'] },
+            { name: 'All Files', extensions: ['*'] },
+          ]
           : [
-              { name: 'Text Files', extensions: ['txt'] },
-              { name: 'Markdown Files', extensions: ['md'] },
-              { name: 'All Files', extensions: ['*'] },
-            ];
+            { name: 'Text Files', extensions: ['txt'] },
+            { name: 'Markdown Files', extensions: ['md'] },
+            { name: 'All Files', extensions: ['*'] },
+          ];
 
       const result = await window.electronAPI.saveFileDialog(fileName, filters);
 

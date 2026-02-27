@@ -155,6 +155,9 @@ const electronAPI = {
   getAnalyticsEnabled: invokeAnalyticsHandler('analytics-get-enabled'),
   setAnalyticsEnabled: invokeAnalyticsHandler('analytics-set-enabled'),
 
+  // Config File
+  openConfigFile: invokeSystemHandler('open-config-file'),
+
   store: {
     get: invokeStoreHandler('store-get'),
     set: invokeStoreHandler('store-set'),

@@ -52,11 +52,25 @@ const TutorialHandlers = {
   ['close-tutorial-window']: async (common: BaseHandlerArg) => {
     console.log('Received close-tutorial-window event');
     closeTutorialWindow();
+
+    // Trigger entrance animation on the main app window if it exists
+    const windows = BrowserWindow.getAllWindows();
+    const mainWindow = windows.find(w => !w.isDestroyed() && w.isVisible());
+    if (mainWindow) {
+      mainWindow.webContents.send('start-intro-animation');
+    }
   },
 
   ['skip-tutorial']: async (common: BaseHandlerArg) => {
     console.log('Received skip-tutorial event');
     closeTutorialWindow();
+
+    // Trigger entrance animation on the main app window if it exists
+    const windows = BrowserWindow.getAllWindows();
+    const mainWindow = windows.find(w => !w.isDestroyed() && w.isVisible());
+    if (mainWindow) {
+      mainWindow.webContents.send('start-intro-animation');
+    }
   },
 
   ['detect-sd-drives']: async (common: BaseHandlerArg) => {

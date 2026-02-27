@@ -825,7 +825,19 @@ let steps = [
     <h3 style="color: #fff; margin-bottom: 24px; font-size: 22px;">Verify Installation</h3>
     <p style="margin-bottom: 24px; color: rgba(255,255,255,0.7);">Please launch Super Smash Bros. Ultimate on your Switch and check if ARCropolis is working.</p>
     
-    <div id="arcropolis-lottie-switch" style="width: 100%; max-width: 600px; height: 300px; margin: 0 auto 24px; display: flex; align-items: center; justify-content: center;"></div>
+    <div style="position: relative; width: 100%; max-width: 600px; margin: 0 auto 24px;">
+        <div id="arcropolis-lottie-switch" style="width: 100%; height: 300px; display: flex; align-items: center; justify-content: center;"></div>
+        <div class="scroll-indicator" style="position: absolute; bottom: 10%; right: -20px; animation: bounce-side 2s infinite; pointer-events: none; background: rgba(20, 20, 20, 0.6); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 10;">
+            <i class="bi bi-chevron-down" style="color: #7a9bff; font-size: 20px;"></i>
+        </div>
+        <style>
+            @keyframes bounce-side {
+                0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+                40% { transform: translateY(10px); }
+                60% { transform: translateY(5px); }
+            }
+        </style>
+    </div>
     
     <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 12px; padding: 20px; max-width: 500px; margin: 0 auto; text-align: left;">
         <p style="color: #ffc107; margin-bottom: 16px; font-weight: 600;">
@@ -837,6 +849,8 @@ let steps = [
             <li>If you see it, ARCropolis is working!</li>
         </ul>
     </div>
+    
+    
     
     <div id="verification-status" style="margin-top: 24px; display: flex; flex-direction: column; gap: 12px; max-width: 500px; margin-left: auto; margin-right: auto;">
         <p style="color: rgba(255,255,255,0.7);">Did you see the ARCropolis text?</p>
@@ -1391,7 +1405,19 @@ let steps = [
     <h3 style="color: #fff; margin-bottom: 24px; font-size: 22px;">Verify Installation</h3>
     <p style="margin-bottom: 24px; color: rgba(255,255,255,0.7);">Please launch Smash Ultimate in Yuzu and check if ARCropolis is working.</p>
     
-    <div id="arcropolis-lottie-yuzu" style="width: 100%; max-width: 600px; height: 300px; margin: 0 auto 24px; display: flex; align-items: center; justify-content: center;"></div>
+    <div style="position: relative; width: 100%; max-width: 600px; margin: 0 auto 24px;">
+        <div id="arcropolis-lottie-yuzu" style="width: 100%; height: 300px; display: flex; align-items: center; justify-content: center;"></div>
+        <div class="scroll-indicator" style="position: absolute; bottom: 10%; right: -20px; animation: bounce-side 2s infinite; pointer-events: none; background: rgba(20, 20, 20, 0.6); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 10;">
+            <i class="bi bi-chevron-down" style="color: #7a9bff; font-size: 20px;"></i>
+        </div>
+        <style>
+            @keyframes bounce-side {
+                0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+                40% { transform: translateY(10px); }
+                60% { transform: translateY(5px); }
+            }
+        </style>
+    </div>
     
     <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 12px; padding: 20px; max-width: 500px; margin: 0 auto; text-align: left;">
         <p style="color: #ffc107; margin-bottom: 16px; font-weight: 600;">
@@ -1403,6 +1429,8 @@ let steps = [
             <li>If you see it, ARCropolis is working!</li>
         </ul>
     </div>
+    
+    
     
     <div id="yuzu-verification-status" style="margin-top: 24px; display: flex; flex-direction: column; gap: 12px; max-width: 500px; margin-left: auto; margin-right: auto;">
         <p style="color: rgba(255,255,255,0.7);">Did you see the ARCropolis text?</p>
@@ -1957,7 +1985,19 @@ let steps = [
     <h3 style="color: #fff; margin-bottom: 24px; font-size: 22px;">Verify Installation</h3>
     <p style="margin-bottom: 24px; color: rgba(255,255,255,0.7);">Please launch Smash Ultimate in Ryujinx and check if ARCropolis is working.</p>
     
-    <div id="arcropolis-lottie-ryujinx" style="width: 100%; max-width: 600px; height: 300px; margin: 0 auto 24px; display: flex; align-items: center; justify-content: center;"></div>
+    <div style="position: relative; width: 100%; max-width: 600px; margin: 0 auto 24px;">
+        <div id="arcropolis-lottie-ryujinx" style="width: 100%; height: 300px; display: flex; align-items: center; justify-content: center;"></div>
+        <div class="scroll-indicator" style="position: absolute; bottom: 10%; right: -20px; animation: bounce-side 2s infinite; pointer-events: none; background: rgba(20, 20, 20, 0.6); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 10;">
+            <i class="bi bi-chevron-down" style="color: #7a9bff; font-size: 20px;"></i>
+        </div>
+        <style>
+            @keyframes bounce-side {
+                0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+                40% { transform: translateY(10px); }
+                60% { transform: translateY(5px); }
+            }
+        </style>
+    </div>
     
     <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 12px; padding: 20px; max-width: 500px; margin: 0 auto; text-align: left;">
         <p style="color: #ffc107; margin-bottom: 16px; font-weight: 600;">
@@ -1969,6 +2009,8 @@ let steps = [
             <li>If you see it, ARCropolis is working!</li>
         </ul>
     </div>
+    
+    
     
     <div id="ryujinx-verification-status" style="margin-top: 24px; display: flex; flex-direction: column; gap: 12px; max-width: 500px; margin-left: auto; margin-right: auto;">
         <p style="color: rgba(255,255,255,0.7);">Did you see the ARCropolis text?</p>

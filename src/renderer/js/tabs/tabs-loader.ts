@@ -224,6 +224,31 @@ function initializeTabFeatures(tabName) {
                   'toasts.emulatorLaunchedSuccessfully',
                 );
               }
+            } else if (result.error === 'emulator_already_running') {
+              if (window.toastManager) {
+                window.toastManager.warning(
+                  'toasts.emulatorAlreadyRunning',
+                  5000,
+                  {},
+                  {
+                    actionButton: {
+                      text: window.i18n?.t('toasts.rerunAnyway') || 'Rerun anyway',
+                      onClick: async () => {
+                        const forceResult = await window.electronAPI.launchEmulator(
+                          emulatorType,
+                          emulatorPath,
+                          gamePath,
+                          fullscreen,
+                          true,
+                        );
+                        if (forceResult.success && window.toastManager) {
+                          window.toastManager.success('toasts.emulatorLaunchedSuccessfully');
+                        }
+                      },
+                    },
+                  },
+                );
+              }
             } else {
               if (window.toastManager) {
                 window.toastManager.error(

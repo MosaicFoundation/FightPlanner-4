@@ -18,17 +18,19 @@
     }
   </style>
   <script>
-    // Immediately check for animation param to prevent flash of content
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('animate') === 'true') {
-      document.body.classList.add('app-entrance-animation');
-    }
     var exports = {};
   </script>
   <script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
 </head>
 
 <body>
+  <script>
+    // Immediately check for animation param to prevent flash of content
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('animate') === 'true') {
+      document.body.classList.add('app-entrance-animation');
+    }
+  </script>
   <!-- Custom Title Bar -->
   <div class="titlebar">
     <div class="titlebar-left">

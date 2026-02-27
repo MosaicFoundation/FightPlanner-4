@@ -1,10 +1,16 @@
 {
   "compilerOptions": {
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "CommonJS",
     "isolatedModules": true,
     "resolveJsonModule": false
   },
-  "include": ["src/renderer/**/*"],
+  "include": [
+    "src/renderer/**/*"
+  ],
   "extends": "./tsconfig.json"
 }

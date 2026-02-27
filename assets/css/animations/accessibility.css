@@ -128,24 +128,17 @@ body.reduced-animations * {
   scroll-behavior: auto !important;
 }
 
-body.reduced-animations .drag-overlay {
+body.reduced-animations .bottom-bar.drag-active {
+  transition: none !important;
+}
+
+body.reduced-animations .bottom-bar-drag-overlay {
   opacity: 1 !important;
   transition: none !important;
 }
 
-body.reduced-animations .drag-overlay-icon {
-  opacity: 1 !important;
-  transform: none !important;
-}
-
-body.reduced-animations .drag-overlay-text {
-  opacity: 1 !important;
-  transform: none !important;
-}
-
-body.reduced-animations .drag-overlay-subtitle {
-  opacity: 0.8 !important;
-  transform: none !important;
+body.reduced-animations .bottom-bar-drag-overlay i {
+  animation: none !important;
 }
 
 body.reduced-animations .tab-content {

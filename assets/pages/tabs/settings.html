@@ -833,6 +833,20 @@
             <span data-i18n="settings.simulateUpdate">Simulate Update</span>
           </button>
         </div>
+
+        <div class="settings-input-group" style="margin-top: 10px;">
+          <button class="settings-btn-action" id="open-config-btn"
+            style="background: rgba(33, 150, 243, 0.1); border-color: rgba(33, 150, 243, 0.3);">
+            <i class="bi bi-file-earmark-code" style="color: #64b5f6"></i>
+            <div class="settings-btn-action-content">
+              <span class="settings-btn-action-title" style="color: #64b5f6" data-i18n="settings.seeConfigJson">See
+                config.json</span>
+              <span class="settings-btn-action-desc" data-i18n="settings.seeConfigJsonDesc">Options le fichier de
+                configuration dans votre éditeur par défaut</span>
+            </div>
+            <i class="bi bi-arrow-right" style="color: #64b5f6"></i>
+          </button>
+        </div>
       </div>
 
       <!-- PostHog Analytics Tests -->
@@ -874,6 +888,56 @@
           <i class="bi bi-check-circle-fill" style="color: var(--success-color);"></i>
           <span></span>
         </p>
+      </div>
+
+      <div class="settings-section" style="
+          background: linear-gradient(
+            135deg,
+            rgba(34, 197, 94, 0.1) 0%,
+            rgba(34, 197, 94, 0.05) 100%
+          );
+          border-color: rgba(34, 197, 94, 0.2);
+        ">
+        <label class="settings-label" style="color: #22c55e; display: flex; align-items: center; gap: 8px;">
+          <i class="bi bi-chat-square-text"></i>
+          <span data-i18n="settings.toastTests">Toast Tests</span>
+        </label>
+        <p class="settings-hint" style="margin-bottom: 12px;" data-i18n="settings.toastTestsHint">
+          Test toast notifications and stacking animations.
+        </p>
+        <div class="settings-input-group" style="gap: 10px; flex-wrap: wrap;">
+          <button class="settings-btn" id="toast-test-success-btn" style="flex: 1; min-width: 100px;"
+            onclick="if(window.toastManager) window.toastManager.success('toasts.testToastSuccess');">
+            <i class="bi bi-check-circle" style="color: var(--success-color);"></i>
+            <span data-i18n="settings.testSuccess">Success</span>
+          </button>
+          <button class="settings-btn" id="toast-test-error-btn" style="flex: 1; min-width: 100px;"
+            onclick="if(window.toastManager) window.toastManager.error('toasts.testToastError');">
+            <i class="bi bi-x-circle" style="color: var(--danger-color);"></i>
+            <span data-i18n="settings.testError">Error</span>
+          </button>
+          <button class="settings-btn" id="toast-test-warning-btn" style="flex: 1; min-width: 100px;"
+            onclick="if(window.toastManager) window.toastManager.warning('toasts.testToastWarning');">
+            <i class="bi bi-exclamation-triangle" style="color: var(--warning-color);"></i>
+            <span data-i18n="settings.testWarning">Warning</span>
+          </button>
+          <button class="settings-btn" id="toast-test-info-btn" style="flex: 1; min-width: 100px;"
+            onclick="if(window.toastManager) window.toastManager.info('toasts.testToastInfo');">
+            <i class="bi bi-info-circle" style="color: var(--accent-color);"></i>
+            <span data-i18n="settings.testInfo">Info</span>
+          </button>
+        </div>
+        <div class="settings-input-group" style="margin-top: 10px;">
+          <button class="settings-btn-action" id="toast-test-spam-btn" style="flex: 1;"
+            onclick="if(window.toastManager){window.toastManager.success('toasts.testToastSuccess');setTimeout(()=>window.toastManager.error('toasts.testToastError'),300);setTimeout(()=>window.toastManager.warning('toasts.testToastWarning'),600);setTimeout(()=>window.toastManager.info('toasts.testToastInfo'),900);setTimeout(()=>window.toastManager.success('toasts.testToastSuccess'),1200);}">
+            <i class="bi bi-layers"></i>
+            <div class="settings-btn-action-content">
+              <span class="settings-btn-action-title" data-i18n="settings.spamToasts">Spam Toasts</span>
+              <span class="settings-btn-action-desc" data-i18n="settings.spamToastsDesc">Send 5 toasts rapidly to test
+                stacking</span>
+            </div>
+          </button>
+        </div>
       </div>
 
       <div class="settings-section" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3);">
