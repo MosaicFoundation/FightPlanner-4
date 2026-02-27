@@ -27,7 +27,7 @@
     "discord-rpc": "^4.0.1",
     "electron-store": "^8.2.0",
     "electron-updater": "^6.3.9",
-    "fast-xml-parser": "^5.3.5",
+    "fast-xml-parser": "^5.3.8",
     "node-7z": "^3.0.0",
     "posthog-node": "^5.21.2",
     "semver": "^7.6.0"
