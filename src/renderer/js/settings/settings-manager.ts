@@ -178,6 +178,25 @@ class SettingsManager {
       console.log('Restart tutorial button listener attached');
     }
 
+    const restartTutorialModsBtn = document.querySelector<HTMLElement>(
+      '#restart-tutorial-mods-btn',
+    );
+    if (restartTutorialModsBtn && !restartTutorialModsBtn.dataset.listenerAttached) {
+      restartTutorialModsBtn.addEventListener('click', async () => {
+        const modsTabBtn = document.querySelector<HTMLElement>(
+          '.sidebar-btn[data-tab="tools"]',
+        );
+        if (modsTabBtn) {
+          modsTabBtn.click();
+        }
+        if (window.tutorial) {
+          window.tutorial.show();
+        }
+      });
+      restartTutorialModsBtn.dataset.listenerAttached = 'true';
+      console.log('Restart tutorial + mods redirect button listener attached');
+    }
+
     const clearTempFilesBtn = document.querySelector<HTMLElement>(
       '#clear-temp-files-btn',
     );

@@ -26,6 +26,7 @@ export class StatusBarManager {
   preservedStatus: string | null;
   animationTimeout: ReturnType<typeof setTimeout> | null;
   hasActiveDownloads: boolean = false;
+  private animationCounter: number = 0;
   userDismissedExtendedBar: boolean = false;
   lastExtendedBarData: string | null = null;
   pendingDynamicIsland: boolean = false;
@@ -53,7 +54,6 @@ export class StatusBarManager {
   }
 
   updateStatus(tabName) {
-    // Target the new structure directly
     const statusText = document.querySelector<HTMLElement>(
       '#main-status-bar .bottom-text-left',
     );
@@ -178,11 +178,13 @@ export class StatusBarManager {
       return;
     }
 
-    // Cancel any pending animation callback to prevent racing conditions
     if (this.animationTimeout) {
       clearTimeout(this.animationTimeout);
       this.animationTimeout = null;
     }
+
+    this.animationCounter++;
+    const myCounter = this.animationCounter;
 
     statusText.classList.add('status-changing');
 
@@ -191,36 +193,41 @@ export class StatusBarManager {
       statusText.style.opacity = '0';
 
       this.animationTimeout = setTimeout(() => {
-        callback();
+        if (myCounter !== this.animationCounter) return;
         this.animationTimeout = null;
+        callback();
 
         setTimeout(() => {
+          if (myCounter !== this.animationCounter) return;
           statusText.style.opacity = '1';
           statusText.style.transform = 'translateY(0)';
           statusText.classList.remove('status-changing');
         }, 50);
-      }, 150); // slightly longer wait
+      }, 150);
     } else {
       statusText.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
       statusText.style.opacity = '0';
       statusText.style.transform = 'translateY(5px)';
 
       this.animationTimeout = setTimeout(() => {
-        callback();
+        if (myCounter !== this.animationCounter) return;
         this.animationTimeout = null;
+        callback();
 
         setTimeout(() => {
+          if (myCounter !== this.animationCounter) return;
           statusText.style.opacity = '1';
           statusText.style.transform = 'translateY(0)';
 
           setTimeout(() => {
+            if (myCounter !== this.animationCounter) return;
             statusText.style.transition = '';
             statusText.style.opacity = '';
             statusText.style.transform = '';
             statusText.classList.remove('status-changing');
           }, 200);
-        }, 50); // slight delay to ensure DOM update
-      }, 250); // Wait longer than transition (0.2s) to ensure text is fully hidden
+        }, 50);
+      }, 250);
     }
   }
 
@@ -637,9 +644,8 @@ export class StatusBarManager {
   }
 
   refreshStandardStatus() {
-    // Attempt to detect current tab if null
     if (!this.currentTab) {
-      const activeBtn = document.querySelector('.nav-btn.active');
+      const activeBtn = document.querySelector('.sidebar-btn.active');
       if (activeBtn) {
         const tabId = activeBtn.getAttribute('data-tab');
         if (tabId) this.currentTab = tabId;
@@ -654,15 +660,7 @@ export class StatusBarManager {
       );
       if (statusLeft) {
         statusLeft.classList.remove('status-downloading');
-
-        const hash = window.location.hash;
-        if (hash.includes('settings')) {
-          this.updateStatus('settings');
-        } else if (hash.includes('social')) {
-          this.updateStatus('social');
-        } else {
-          this.updateStatus('tools');
-        }
+        this.updateStatus('tools');
       }
     }
   }
@@ -1335,20 +1333,14 @@ export class StatusBarManager {
       clearInterval(this.updateInterval);
       this.updateInterval = null;
     }
-    if (!this.preservedStatus) {
-      const statusText =
-        document.querySelector<HTMLElement>('.bottom-text-left') ||
-        document.querySelector<HTMLElement>('.bottom-text');
-      if (statusText && !this.currentTab) {
-        statusText.textContent = this.t('statusBar.ready');
-      }
-    }
     const statusRight =
       document.querySelector<HTMLElement>('.bottom-text-right');
     if (statusRight) {
       statusRight.innerHTML = '';
     }
-    this.currentTab = null;
+    if (this.currentTab && !this.preservedStatus) {
+      this.updateStatus(this.currentTab);
+    }
   }
 }
 
