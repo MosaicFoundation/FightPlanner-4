@@ -49,6 +49,13 @@ class AnimationManager {
 
     console.log('Playing entrance animation sequence (manual trigger)');
 
+    try {
+      const introAudio = new Audio('../../assets/sounds/endtutorial.mp3');
+      introAudio.play().catch(e => console.error('[AnimationManager] Error playing intro audio:', e));
+    } catch (e) {
+      console.error('[AnimationManager] Failed to initialize intro audio:', e);
+    }
+
     // Force reflow to restart animation
     document.body.classList.remove('app-entrance-animation');
     void document.body.offsetWidth;
