@@ -28,6 +28,7 @@ export class FileExtractor {
 
     switch (process.platform) {
       case 'darwin':
+      case 'linux':
         sevenZipBin = '7zz';
         break;
       case 'win32':
@@ -92,6 +93,26 @@ export class FileExtractor {
     });
   }
 
+  private static async extractWithUnzip(filePath: string, extractTo: string) {
+    return new Promise<void>((resolve, reject) => {
+      const child = child_process.spawn('unzip', ['-o', '-q', filePath, '-d', extractTo]);
+      child.on('close', (code) => {
+        if (code === 0 || code === 1) {
+          if (!this.verifyExtraction(extractTo)) {
+            reject(new Error('No files found after unzip extraction'));
+            return;
+          }
+          resolve();
+        } else {
+          reject(new Error(`unzip exited with code ${code}`));
+        }
+      });
+      child.on('error', (err) => {
+        reject(err);
+      });
+    });
+  }
+
   private static verifyExtraction(extractTo: string) {
     try {
       const contents = fs.readdirSync(extractTo).filter((f) => {
@@ -111,15 +132,26 @@ export class FileExtractor {
   }
 
   static async extractArchive(filePath: string, extractTo: string) {
-    // Always ensure the extraction directory exists
     if (!fs.existsSync(extractTo)) {
       fs.mkdirSync(extractTo, { recursive: true });
     }
 
-    // Always try 7-Zip first since it's bundled with the app and handles all formats
     try {
       await this.extractWith7Zip(filePath, extractTo);
-    } catch (error) {
+    } catch (sevenZipError) {
+      console.log('[FileExtractor] 7-Zip extraction failed, trying fallback...', sevenZipError?.message || sevenZipError);
+
+      const ext = path.extname(filePath).toLowerCase();
+
+      if ((process.platform === 'linux' || process.platform === 'darwin') && ext === '.zip') {
+        try {
+          await this.extractWithUnzip(filePath, extractTo);
+          return;
+        } catch (unzipError) {
+          console.log('[FileExtractor] unzip fallback also failed, trying tar...', unzipError?.message || unzipError);
+        }
+      }
+
       await this.extractWithTar(filePath, extractTo);
     }
   }

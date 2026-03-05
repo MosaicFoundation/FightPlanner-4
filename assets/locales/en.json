@@ -266,7 +266,9 @@
     "testWarning": "Warning",
     "testInfo": "Info",
     "spamToasts": "Spam Toasts",
-    "spamToastsDesc": "Send 5 toasts rapidly to test stacking"
+    "spamToastsDesc": "Send 5 toasts rapidly to test stacking",
+    "seeConfigJson": "See config.json",
+    "seeConfigJsonDesc": "Open the configuration file in your default editor"
   },
   "modals": {
     "rename": {
@@ -696,6 +698,7 @@
     "conflictsDetected": "{{count}} conflict{{plural}} detected"
   },
   "fpp": {
+    "step1Info": "Step 1: Pack Information",
     "createTooltip": "Create FPP Pack",
     "createTitle": "Create FPP Pack",
     "installTitle": "Install FPP Pack",
