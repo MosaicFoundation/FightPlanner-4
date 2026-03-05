@@ -79,6 +79,7 @@ export class StatusBarManager {
       'plugins',
       'settings',
       'characters',
+      'echo',
       'stages',
       'fightplanner',
     ];
@@ -145,6 +146,9 @@ export class StatusBarManager {
             break;
           case 'characters':
             this.updateCharactersStatus(statusText);
+            break;
+          case 'echo':
+            this.setStatusText(this.t('statusBar.echoReady'));
             break;
           case 'stages':
             this.updateStagesStatus(statusText);

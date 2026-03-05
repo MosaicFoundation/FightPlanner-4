@@ -1,6 +1,10 @@
 import type { MarketplacePlugin } from '../mods/plugin-marketplace';
 import { Mod } from '../mods/mod-manager';
 import { PathData, ScanModResult } from '../../../main/mod-utils/mod-scanner';
+import type {
+  EchoOperationOptions,
+  SlotCustomNamesByFighter,
+} from '../../../main/mod-utils/slot-changer';
 
 function slotStringToNumber(slot: string): number {
   return parseInt(slot.substring(1));
@@ -27,6 +31,19 @@ type SlotAssignmentsByFighter = Map<string, SlotAssignments>;
  */
 type SlotUsageMod = { name: string; path: string; files: string[] };
 type SlotUsageByFighter = Map<string, Map<string, { mods: SlotUsageMod[] }>>;
+
+type EchoTakenName = {
+  name: string;
+  modName: string;
+  modPath: string;
+};
+
+type ChangeSlotModalContext = {
+  isEchoFighter?: boolean;
+  preferredEchoName?: string;
+  nameSuggestions?: string[];
+  takenNames?: EchoTakenName[];
+};
 
 // Fighter group definitions for multi-character fighters
 const MULTI_CHAR_FIGHTER_GROUPS: Record<
@@ -148,11 +165,19 @@ class ModalManager {
 
   slotAssignments: SlotAssignmentsByFighter;
   deletedSlots: Map<string, Set<string>> = new Map();
+  slotCustomNamesByFighter: SlotCustomNamesByFighter;
+  echoOperationOptions: EchoOperationOptions;
+  isEchoFlow: boolean;
+  echoPreferredName: string;
+  echoNameSuggestions: string[];
+  echoTakenNames: EchoTakenName[];
 
   changeSlotCallback?:
     | ((
       slotAssignments: SlotAssignmentsByFighter,
       deletedSlots: Map<string, Set<string>>,
+      slotCustomNamesByFighter?: SlotCustomNamesByFighter,
+      echoOperationOptions?: EchoOperationOptions,
     ) => void)
     | null;
 
@@ -167,6 +192,17 @@ class ModalManager {
     this.currentModPath = null;
     this.installQueue = [];
     this.slotAssignments = new Map();
+    this.slotCustomNamesByFighter = {};
+    this.echoOperationOptions = {
+      renameFolders: true,
+      renameFiles: true,
+      applyMetadata: true,
+      generateConfig: true,
+    };
+    this.isEchoFlow = false;
+    this.echoPreferredName = '';
+    this.echoNameSuggestions = [];
+    this.echoTakenNames = [];
     this.fighterNames = [];
     this.rawFighterNames = [];
     this.selectedFighterName = null;
@@ -475,7 +511,10 @@ class ModalManager {
     callback: (
       slotAssignments: SlotAssignmentsByFighter,
       deletedSlots: Map<string, Set<string>>,
+      slotCustomNamesByFighter?: SlotCustomNamesByFighter,
+      echoOperationOptions?: EchoOperationOptions,
     ) => void,
+    context: ChangeSlotModalContext = {},
   ) {
     const t = (key, params = {}) => {
       return window.i18n && window.i18n.t ? window.i18n.t(key, params) : key;
@@ -507,6 +546,29 @@ class ModalManager {
     }
 
     this.pathData = modData.pathData;
+    this.slotCustomNamesByFighter = {};
+    for (const fighterName of modData.fighterNames) {
+      this.slotCustomNamesByFighter[fighterName] = {};
+    }
+
+    this.echoOperationOptions = {
+      renameFolders: true,
+      renameFiles: true,
+      applyMetadata: true,
+      generateConfig: true,
+    };
+    this.isEchoFlow = context.isEchoFighter === true;
+    this.echoPreferredName = this.normalizeEchoName(
+      context.preferredEchoName || '',
+    );
+    this.echoNameSuggestions = (context.nameSuggestions || [])
+      .map((name) => this.normalizeEchoName(name))
+      .filter((name) => Boolean(name));
+    this.echoTakenNames = context.takenNames || [];
+
+    if (this.isEchoFlow && !this.echoPreferredName && this.echoNameSuggestions.length > 0) {
+      this.echoPreferredName = this.echoNameSuggestions[0];
+    }
 
     const modal = document.querySelector<HTMLElement>('#change-slot-modal');
     const container = document.querySelector<HTMLElement>(
@@ -550,9 +612,54 @@ class ModalManager {
           // Move title into content div
           contentDiv.appendChild(modalTitle);
         }
+
+        const existingModeBadge = contentDiv.querySelector('.slot-mode-pill');
+        if (existingModeBadge) {
+          existingModeBadge.remove();
+        }
+
+        if (this.isEchoFlow) {
+          const modeBadge = document.createElement('span');
+          modeBadge.className = 'slot-mode-pill slot-mode-pill-echo';
+          modeBadge.textContent = t('modals.changeSlot.echoModeBadge');
+          contentDiv.appendChild(modeBadge);
+
+          const subtitle = document.createElement('p');
+          subtitle.className = 'modal-subtitle';
+          subtitle.textContent = t('modals.changeSlot.echoModeSubtitle');
+          contentDiv.appendChild(subtitle);
+        }
+      }
+
+      modal.classList.toggle('modal-echo-flow', this.isEchoFlow);
+
+      const modalBody = modal.querySelector<HTMLElement>('.modal-body');
+      modalBody?.classList.toggle('slot-modal-echo-mode', this.isEchoFlow);
+
+      const hintParagraph = modal.querySelector<HTMLElement>('#slot-modal-hint');
+      const hintKey = this.isEchoFlow
+        ? 'modals.changeSlot.hintEcho'
+        : 'modals.changeSlot.hint';
+      if (hintParagraph) {
+        hintParagraph.setAttribute('data-i18n', hintKey);
+        hintParagraph.textContent = t(hintKey);
+      }
+
+      const applyButton = modal.querySelector<HTMLButtonElement>(
+        '.modal-footer .modal-btn-primary',
+      );
+      const applyKey = this.isEchoFlow
+        ? 'modals.changeSlot.applyEchoChanges'
+        : 'modals.changeSlot.applyChanges';
+      if (applyButton) {
+        applyButton.classList.toggle('modal-btn-echo', this.isEchoFlow);
+        applyButton.setAttribute('data-i18n', applyKey);
+        applyButton.textContent = t(applyKey);
       }
 
       this.selectedFighterName = this.fighterNames[0];
+
+      this.renderEchoFlowContext();
 
       this.renderFighterTabs();
       this.renderSlotList();
@@ -578,6 +685,10 @@ class ModalManager {
   closeChangeSlotModal() {
     this.closeModal('change-slot-modal');
 
+    const t = (key, params = {}) => {
+      return window.i18n && window.i18n.t ? window.i18n.t(key, params) : key;
+    };
+
     // Reset modal title and remove subtitle/content wrapper
     const modal = document.querySelector<HTMLElement>('#change-slot-modal');
     const modalHeader = modal?.querySelector<HTMLElement>('.modal-header');
@@ -588,6 +699,28 @@ class ModalManager {
 
     if (modalTitle) {
       modalTitle.textContent = 'Change Character Slot';
+    }
+
+    if (modal) {
+      modal.classList.remove('modal-echo-flow');
+
+      const modalBody = modal.querySelector<HTMLElement>('.modal-body');
+      modalBody?.classList.remove('slot-modal-echo-mode');
+
+      const hintParagraph = modal.querySelector<HTMLElement>('#slot-modal-hint');
+      if (hintParagraph) {
+        hintParagraph.setAttribute('data-i18n', 'modals.changeSlot.hint');
+        hintParagraph.textContent = t('modals.changeSlot.hint');
+      }
+
+      const applyButton = modal.querySelector<HTMLButtonElement>(
+        '.modal-footer .modal-btn-primary',
+      );
+      if (applyButton) {
+        applyButton.classList.remove('modal-btn-echo');
+        applyButton.setAttribute('data-i18n', 'modals.changeSlot.applyChanges');
+        applyButton.textContent = t('modals.changeSlot.applyChanges');
+      }
     }
 
     // Remove content wrapper and move title back to header
@@ -605,13 +738,26 @@ class ModalManager {
     const slotUsageHint = document.querySelector('#slot-usage-hint');
     const slotUsageOverview = document.querySelector('#slot-usage-overview');
     const fighterTabs = document.querySelector('#fighter-tabs-wrapper');
+    const echoContext = document.querySelector('#slot-echo-context');
 
     if (slotUsageHint) slotUsageHint.remove();
     if (slotUsageOverview) slotUsageOverview.remove();
     if (fighterTabs) fighterTabs.remove();
+    if (echoContext) echoContext.remove();
 
     this.changeSlotCallback = null;
     this.slotAssignments = new Map();
+    this.slotCustomNamesByFighter = {};
+    this.echoOperationOptions = {
+      renameFolders: true,
+      renameFiles: true,
+      applyMetadata: true,
+      generateConfig: true,
+    };
+    this.isEchoFlow = false;
+    this.echoPreferredName = '';
+    this.echoNameSuggestions = [];
+    this.echoTakenNames = [];
     this.fighterNames = [];
     this.rawFighterNames = [];
     this.selectedFighterName = null;
@@ -642,6 +788,151 @@ class ModalManager {
 
     loadingContainer.appendChild(spinner);
     modalBody.insertBefore(loadingContainer, hintParagraph);
+  }
+
+  normalizeEchoName(value: string): string {
+    return value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 10);
+  }
+
+  formatEchoDisplayName(token: string): string {
+    if (!token) return '';
+    return token.charAt(0).toUpperCase() + token.slice(1);
+  }
+
+  detectEchoFlowFromModData(modData: ScanModResult): boolean {
+    const hasHighSlots = modData.currentSlots.some((slot) => {
+      if (!/^c\d{2,3}$/i.test(slot)) return false;
+      return parseInt(slot.replace('c', ''), 10) > 7;
+    });
+
+    if (hasHighSlots) {
+      return true;
+    }
+
+    return modData.unknownFiles.some((filePath) => {
+      const normalizedPath = filePath.replace(/\\/g, '/').toLowerCase();
+      return (
+        normalizedPath.endsWith('ui/message/msg_name.xmsbt') ||
+        normalizedPath.endsWith('ui/param/database/ui_chara_db.prcxml')
+      );
+    });
+  }
+
+  getEchoNameConflicts(name: string): EchoTakenName[] {
+    const normalized = this.normalizeEchoName(name);
+    if (!normalized) return [];
+
+    return this.echoTakenNames.filter(
+      (entry) => this.normalizeEchoName(entry.name) === normalized,
+    );
+  }
+
+  renderEchoFlowContext() {
+    const modalBody = document.querySelector('#change-slot-modal .modal-body');
+    const hintParagraph = document.querySelector('#slot-modal-hint');
+    if (!modalBody || !hintParagraph) return;
+
+    const existingContext = document.querySelector('#slot-echo-context');
+    if (existingContext) {
+      existingContext.remove();
+    }
+
+    if (!this.isEchoFlow) {
+      return;
+    }
+
+    const t = (key, params = {}) => {
+      return window.i18n && window.i18n.t ? window.i18n.t(key, params) : key;
+    };
+
+    const wrapper = document.createElement('div');
+    wrapper.id = 'slot-echo-context';
+    wrapper.className = 'slot-echo-context';
+
+    const badge = document.createElement('p');
+    badge.className = 'slot-echo-badge';
+    badge.textContent = t('modals.changeSlot.echoDetected');
+    wrapper.appendChild(badge);
+
+    const label = document.createElement('label');
+    label.className = 'slot-echo-name-label';
+    label.setAttribute('for', 'slot-echo-name-input');
+    label.textContent = t('modals.changeSlot.echoNameLabel');
+    wrapper.appendChild(label);
+
+    const input = document.createElement('input');
+    input.id = 'slot-echo-name-input';
+    input.className = 'modal-input';
+    input.type = 'text';
+    input.maxLength = 10;
+    input.autocomplete = 'off';
+    input.placeholder = t('modals.changeSlot.echoNamePlaceholder');
+    input.value = this.normalizeEchoName(this.echoPreferredName);
+    wrapper.appendChild(input);
+
+    const hint = document.createElement('p');
+    hint.className = 'slot-echo-name-hint';
+    hint.textContent = t('modals.changeSlot.echoNameHint');
+    wrapper.appendChild(hint);
+
+    const conflictBox = document.createElement('div');
+    conflictBox.className = 'slot-echo-conflict';
+    conflictBox.style.display = 'none';
+    wrapper.appendChild(conflictBox);
+
+    const suggestions = document.createElement('div');
+    suggestions.className = 'slot-echo-suggestions';
+
+    this.echoNameSuggestions.slice(0, 6).forEach((suggestion) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'slot-echo-suggestion';
+      button.textContent = suggestion;
+
+      button.addEventListener('click', () => {
+        const normalizedSuggestion = this.normalizeEchoName(suggestion);
+        input.value = normalizedSuggestion;
+        this.echoPreferredName = normalizedSuggestion;
+        updateConflictState();
+      });
+
+      suggestions.appendChild(button);
+    });
+
+    if (suggestions.childElementCount > 0) {
+      wrapper.appendChild(suggestions);
+    }
+
+    const updateConflictState = () => {
+      const normalizedInput = this.normalizeEchoName(input.value);
+      if (input.value !== normalizedInput) {
+        input.value = normalizedInput;
+      }
+
+      this.echoPreferredName = normalizedInput;
+      const conflicts = this.getEchoNameConflicts(this.echoPreferredName);
+
+      if (conflicts.length === 0 || !this.echoPreferredName) {
+        conflictBox.style.display = 'none';
+        conflictBox.textContent = '';
+        return;
+      }
+
+      const modNames = Array.from(new Set(conflicts.map((entry) => entry.modName))).join(', ');
+      conflictBox.style.display = 'block';
+      conflictBox.textContent = t('modals.changeSlot.echoNameConflict', {
+        mods: modNames,
+      });
+    };
+
+    input.addEventListener('input', updateConflictState);
+    updateConflictState();
+
+    modalBody.insertBefore(wrapper, hintParagraph);
   }
 
   renderFighterTabs() {
@@ -942,14 +1233,92 @@ class ModalManager {
     overviewContainer.classList.remove('slot-usage-loading');
     overviewContainer.innerHTML = '';
 
-    // Create grid for slots (show c00-c07 by default, can be expanded)
+    // Create grid for slots and expand visibility when higher slots are detected.
     const grid = document.createElement('div');
     grid.className = 'slot-usage-grid';
 
-    const slotsToShow = 16; // Show c00-c15 for better visibility, can be adjusted as needed
+    const usedSlotNumbers = Array.from(slotUsage.keys())
+      .filter((slot) => /^c\d{2,3}$/i.test(slot))
+      .map((slot) => parseInt(slot.replace('c', ''), 10))
+      .filter((slotNumber) => !Number.isNaN(slotNumber));
 
-    for (let i = 0; i < slotsToShow; i++) {
-      const slotString = slotNumberToString(i);
+    const assignmentSlotNumbers = this.selectedFighterName
+      ? getActualFighterNames(this.selectedFighterName, this.rawFighterNames)
+          .flatMap((fighter) =>
+            Array.from(this.slotAssignments.get(fighter)?.keys() || []),
+          )
+          .filter((slot) => /^c\d{2,3}$/i.test(slot))
+          .map((slot) => parseInt(slot.replace('c', ''), 10))
+          .filter((slotNumber) => !Number.isNaN(slotNumber))
+      : [];
+
+    const highestVisibleSlot = Math.max(
+      16,
+      ...usedSlotNumbers,
+      ...assignmentSlotNumbers,
+    );
+
+    const rangeLabel = document.createElement('div');
+    rangeLabel.className = 'slot-usage-range-note';
+    rangeLabel.textContent = `Showing compact ranges up to c${highestVisibleSlot.toString().padStart(2, '0')}`;
+    overviewContainer.appendChild(rangeLabel);
+
+    const relevantSlots = Array.from(
+      new Set([...usedSlotNumbers, ...assignmentSlotNumbers]),
+    ).sort((a, b) => a - b);
+
+    const baseRanges =
+      relevantSlots.length === 0
+        ? [{ start: 0, end: 15 }]
+        : relevantSlots.map((slotNumber) => {
+            const start = Math.floor(slotNumber / 8) * 8;
+            return { start, end: start + 7 };
+          });
+
+    const mergedRanges: { start: number; end: number }[] = [];
+    for (const range of baseRanges) {
+      const previous = mergedRanges[mergedRanges.length - 1];
+      if (!previous || range.start > previous.end + 1) {
+        mergedRanges.push({ ...range });
+      } else if (range.end > previous.end) {
+        previous.end = range.end;
+      }
+    }
+
+    const displayItems: Array<{ type: 'slot'; slotNumber: number } | { type: 'ellipsis' }> = [];
+
+    mergedRanges.forEach((range, index) => {
+      const nextRange = mergedRanges[index + 1];
+
+      for (let slotNumber = range.start; slotNumber <= range.end; slotNumber++) {
+        displayItems.push({ type: 'slot', slotNumber });
+      }
+
+      if (!nextRange) return;
+
+      const gapStart = range.end + 1;
+      const gapEnd = nextRange.start - 1;
+      const gapSize = gapEnd - gapStart + 1;
+
+      if (gapSize > 8) {
+        displayItems.push({ type: 'ellipsis' });
+      } else {
+        for (let slotNumber = gapStart; slotNumber <= gapEnd; slotNumber++) {
+          displayItems.push({ type: 'slot', slotNumber });
+        }
+      }
+    });
+
+    for (const item of displayItems) {
+      if (item.type === 'ellipsis') {
+        const ellipsisItem = document.createElement('div');
+        ellipsisItem.className = 'slot-usage-item slot-usage-ellipsis';
+        ellipsisItem.textContent = '...';
+        grid.appendChild(ellipsisItem);
+        continue;
+      }
+
+      const slotString = slotNumberToString(item.slotNumber);
       const usage = slotUsage.get(slotString);
       const isUsed = usage && usage.mods.length > 0;
 
@@ -1124,9 +1493,134 @@ class ModalManager {
       }
     }
 
-    const sortedAssignments = Array.from(mergedAssignments).sort(
-      ([a], [b]) => slotStringToNumber(a) - slotStringToNumber(b),
+    const sortedAssignments = Array.from(mergedAssignments)
+      .filter(([slot]) => /^c\d{2,3}$/i.test(slot))
+      .sort(([a], [b]) => slotStringToNumber(a) - slotStringToNumber(b));
+
+    const assignmentSlotNumbers = sortedAssignments
+      .flatMap(([originalSlot, assignedSlot]) => [originalSlot, assignedSlot])
+      .filter((slot) => /^c\d{2,3}$/i.test(slot))
+      .map((slot) => parseInt(slot.replace('c', ''), 10))
+      .filter((slot) => !Number.isNaN(slot));
+
+    const usageSlotNumbers = actualFighters
+      .flatMap((fighter) =>
+        Array.from(this.slotUsageByFighter?.get(fighter)?.keys() || []),
+      )
+      .filter((slot) => /^c\d{2,3}$/i.test(slot))
+      .map((slot) => parseInt(slot.replace('c', ''), 10))
+      .filter((slot) => !Number.isNaN(slot));
+
+    const highestDetectedSlot = Math.max(
+      16,
+      ...assignmentSlotNumbers,
+      ...usageSlotNumbers,
     );
+
+    const quickStartOptionCount = 12;
+    const maxQuickStartStart = quickStartOptionCount * 8;
+    const maxQuickStartEnd =
+      maxQuickStartStart + Math.max(0, sortedAssignments.length - 1);
+
+    // Keep options in 8-slot blocks so users can quickly work with echo ranges.
+    const maxSelectableSlot = Math.max(
+      23,
+      Math.ceil((highestDetectedSlot + 1) / 8) * 8 - 1,
+      maxQuickStartEnd,
+    );
+
+    const quickOffsetContainer = document.createElement('div');
+    quickOffsetContainer.className = 'slot-quick-offsets';
+
+    const quickOffsetLabel = document.createElement('span');
+    quickOffsetLabel.className = 'slot-quick-offsets-label';
+    quickOffsetLabel.textContent = t('modals.changeSlot.quickOffsets');
+    quickOffsetContainer.appendChild(quickOffsetLabel);
+
+    const presetStarts = Array.from(
+      { length: quickStartOptionCount },
+      (_, index) => (index + 1) * 8,
+    );
+
+    const quickOffsetSelect = document.createElement('select');
+    quickOffsetSelect.className = 'slot-quick-offset-select';
+
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = '';
+    placeholderOption.textContent = t('modals.changeSlot.quickOffsetsSelect');
+    quickOffsetSelect.appendChild(placeholderOption);
+
+    presetStarts.forEach((startSlot) => {
+      const rangeEnd = startSlot + Math.max(0, sortedAssignments.length - 1);
+
+      const option = document.createElement('option');
+      option.value = `${startSlot}`;
+      option.textContent = `${slotNumberToString(startSlot)}-${slotNumberToString(rangeEnd)}`;
+      quickOffsetSelect.appendChild(option);
+    });
+
+    const assignedTargetNumbers = sortedAssignments
+      .map(([, assignedSlot]) => {
+        if (!/^c\d{2,3}$/i.test(assignedSlot)) {
+          return Number.NaN;
+        }
+        return parseInt(assignedSlot.replace('c', ''), 10);
+      })
+      .filter((slotNumber) => !Number.isNaN(slotNumber));
+
+    let detectedQuickStart = '';
+    if (assignedTargetNumbers.length > 0) {
+      const firstAssigned = assignedTargetNumbers[0];
+      const isContiguous = assignedTargetNumbers.every(
+        (slotNumber, slotIndex) => slotNumber === firstAssigned + slotIndex,
+      );
+
+      if (isContiguous && presetStarts.includes(firstAssigned)) {
+        detectedQuickStart = `${firstAssigned}`;
+      }
+    }
+
+    quickOffsetSelect.value = detectedQuickStart;
+
+    quickOffsetSelect.addEventListener('change', () => {
+      const startSlot = parseInt(quickOffsetSelect.value, 10);
+      if (Number.isNaN(startSlot)) {
+        return;
+      }
+
+      const selectedActualFighters = getActualFighterNames(
+        this.selectedFighterName!,
+        this.rawFighterNames,
+      );
+
+      for (const fighter of selectedActualFighters) {
+        const fighterAssignments = this.slotAssignments.get(fighter);
+        if (!fighterAssignments) continue;
+
+        sortedAssignments.forEach(([originalSlot], slotIndex) => {
+          if (fighterAssignments.has(originalSlot)) {
+            fighterAssignments.set(
+              originalSlot,
+              slotNumberToString(startSlot + slotIndex),
+            );
+          }
+        });
+
+        if (this.isEchoFlow) {
+          this.echoOperationOptions.renameFiles = true;
+        }
+      }
+
+      this.renderSlotList();
+
+      if (this.slotUsageByFighter) {
+        this.renderSlotUsageForSelectedFighter();
+      }
+    });
+
+    quickOffsetContainer.appendChild(quickOffsetSelect);
+
+    container.appendChild(quickOffsetContainer);
 
     for (const [
       index,
@@ -1186,7 +1680,7 @@ class ModalManager {
       const selectDropdown = document.createElement('div');
       selectDropdown.className = 'custom-select-dropdown';
 
-      for (let slotNumber = 0; slotNumber <= 16; slotNumber++) {
+      for (let slotNumber = 0; slotNumber <= maxSelectableSlot; slotNumber++) {
         const slotString = slotNumberToString(slotNumber);
         const option = document.createElement('div');
         option.className = 'custom-select-option';
@@ -1464,10 +1958,54 @@ class ModalManager {
     }
   }
 
+  applyEchoPreferredNameToSlots() {
+    const preferredToken = this.normalizeEchoName(this.echoPreferredName);
+    if (!preferredToken) return;
+
+    const displayName = this.formatEchoDisplayName(preferredToken);
+
+    this.echoOperationOptions.echoFighterName = preferredToken;
+    this.echoOperationOptions.echoSourceFighters = [...this.rawFighterNames];
+
+    for (const [fighterName, assignments] of this.slotAssignments.entries()) {
+      if (!this.slotCustomNamesByFighter[fighterName]) {
+        this.slotCustomNamesByFighter[fighterName] = {};
+      }
+
+      for (const targetSlot of assignments.values()) {
+        this.slotCustomNamesByFighter[fighterName][targetSlot] = {
+          cspName: displayName,
+          vsName: displayName.toUpperCase(),
+          boxingRing: displayName,
+          announcer:
+            this.slotCustomNamesByFighter[fighterName][targetSlot]?.announcer ||
+            'vc_narration_characall',
+        };
+      }
+    }
+  }
+
   confirmChangeSlots() {
     if (!this.changeSlotCallback || !this.slotAssignments) return;
 
-    this.changeSlotCallback(this.slotAssignments, this.deletedSlots);
+    if (this.isEchoFlow) {
+      const echoNameInput = document.querySelector<HTMLInputElement>(
+        '#slot-echo-name-input',
+      );
+
+      if (echoNameInput) {
+        this.echoPreferredName = this.normalizeEchoName(echoNameInput.value);
+      }
+
+      this.applyEchoPreferredNameToSlots();
+    }
+
+    this.changeSlotCallback(
+      this.slotAssignments,
+      this.deletedSlots,
+      this.slotCustomNamesByFighter,
+      this.echoOperationOptions,
+    );
     this.closeChangeSlotModal();
   }
 

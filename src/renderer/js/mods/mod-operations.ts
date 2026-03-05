@@ -1,5 +1,12 @@
 import { Mod, ModManager } from './mod-manager';
 
+type ChangeSlotModalContext = {
+  isEchoFighter?: boolean;
+  preferredEchoName?: string;
+  nameSuggestions?: string[];
+  takenNames?: { name: string; modName: string; modPath: string }[];
+};
+
 class ModOperations {
   modManager: ModManager;
 
@@ -24,9 +31,13 @@ class ModOperations {
 
           if (result.success) {
             console.log('Mod renamed successfully');
+            const finalName = result.newPath
+              ? result.newPath.split(/[/\\]/).pop() || newName
+              : newName;
+
             if (window.toastManager) {
               window.toastManager.success('toasts.modRenamed', 3000, {
-                name: newName,
+                name: finalName,
               });
             }
 
@@ -151,7 +162,10 @@ class ModOperations {
     }
   }
 
-  async startChangeSlotsFlow(mod: Mod) {
+  async startChangeSlotsFlow(
+    mod: Mod,
+    modalContext: ChangeSlotModalContext = {},
+  ) {
     if (!mod.path) {
       if (window.toastManager) {
         window.toastManager.error('toasts.cannotChangeSlot');
@@ -168,13 +182,20 @@ class ModOperations {
           window.modalManager.openChangeSlotModal(
             mod,
             scanResult.data,
-            async (slotAssignments, deletedSlots) => {
+            async (
+              slotAssignments,
+              deletedSlots,
+              slotCustomNamesByFighter,
+              echoOperationOptions,
+            ) => {
               if (window.electronAPI && window.electronAPI.changeSlots) {
                 const changeSlotsResult = await window.electronAPI.changeSlots(
                   mod.path,
                   scanResult.data.pathData,
                   slotAssignments,
                   deletedSlots,
+                  slotCustomNamesByFighter,
+                  echoOperationOptions,
                 );
 
                 if (changeSlotsResult.success) {
@@ -190,6 +211,7 @@ class ModOperations {
                 }
               }
             },
+            modalContext,
           );
         }
       } else {

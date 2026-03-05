@@ -1,0 +1,109 @@
+<div class="content-box echo-tab">
+  <div class="echo-hero">
+    <div>
+      <h2 class="echo-title" data-i18n="echo.title">Echo Fighter</h2>
+      <p class="echo-subtitle" data-i18n="echo.subtitle">
+        Create an echo fighter in 3 simple steps.
+      </p>
+    </div>
+    <button class="input-btn short" id="echo-refresh-btn">
+      <i class="bi bi-arrow-clockwise"></i>
+      <span data-i18n="echo.refresh">Refresh</span>
+    </button>
+  </div>
+
+  <div class="echo-steps" id="echo-steps">
+    <div class="echo-step" id="echo-step-select">
+      <div class="echo-step-number">1</div>
+      <div class="echo-step-content">
+        <h3 data-i18n="echo.stepSelectTitle">Select a mod in Mods</h3>
+        <p data-i18n="echo.stepSelectDesc">
+          Go to the Mods tab and click the fighter mod you want to turn into an echo.
+        </p>
+      </div>
+    </div>
+    <div class="echo-step" id="echo-step-review">
+      <div class="echo-step-number">2</div>
+      <div class="echo-step-content">
+        <h3 data-i18n="echo.stepReviewTitle">Review slots and fighter data</h3>
+        <p data-i18n="echo.stepReviewDesc">
+          Confirm detected fighters and currently used slots before making changes.
+        </p>
+      </div>
+    </div>
+    <div class="echo-step" id="echo-step-apply">
+      <div class="echo-step-number">3</div>
+      <div class="echo-step-content">
+        <h3 data-i18n="echo.stepApplyTitle">Open slot editor and apply</h3>
+        <p data-i18n="echo.stepApplyDesc">
+          Use Change Slot to pick new slots, then apply to generate your echo-ready files.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="echo-picker-grid">
+    <div class="echo-mod-picker">
+      <h3 class="echo-section-title" data-i18n="echo.modPickerTitle">Choose a mod</h3>
+      <p class="echo-section-hint" data-i18n="echo.modPickerHint">
+        Pick the mod you want to convert without leaving this tab.
+      </p>
+
+      <input
+        id="echo-mod-search"
+        class="modal-input"
+        type="text"
+        data-i18n="echo.searchMods"
+        data-i18n-placeholder
+        placeholder="Search mods..."
+      />
+
+      <div id="echo-mod-list" class="echo-mod-list"></div>
+    </div>
+
+    <div class="echo-selected-mod-card">
+      <p class="echo-selected-mod-label" data-i18n="echo.selectedModLabel">Current selection</p>
+      <div class="echo-selected-mod" id="echo-selected-mod" data-i18n="echo.noSelectedMod">
+        No selected mod from Mods tab.
+      </div>
+
+      <label class="echo-name-label" for="echo-new-name-input" data-i18n="echo.newNameLabel">
+        New Echo Name
+      </label>
+      <input
+        id="echo-new-name-input"
+        class="modal-input"
+        type="text"
+        maxlength="10"
+        data-i18n="echo.newNamePlaceholder"
+        data-i18n-placeholder
+        placeholder="Example: Shadow Mario"
+      />
+      <p class="echo-name-hint" data-i18n="echo.newNameHint">
+        This name is written into Echo naming files when you apply slot changes.
+      </p>
+
+      <div class="echo-name-conflict" id="echo-name-conflict" style="display: none"></div>
+
+      <div class="echo-name-suggestions" id="echo-name-suggestions"></div>
+
+      <div class="echo-actions">
+        <button class="input-btn" id="echo-open-slot-modal-btn">
+          <i class="bi bi-grid-3x3-gap"></i>
+          <span data-i18n="echo.openSlotModal">Open Echo Change Slot</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="echo-main-grid">
+    <div class="echo-analysis-panel" id="echo-analysis-results">
+      <p class="echo-empty" data-i18n="echo.analysisPlaceholder">
+        Select a mod in Mods, then open this tab to inspect echo slot data.
+      </p>
+    </div>
+    <div class="echo-preview-panel">
+      <img id="echo-preview-image" alt="Echo Preview" style="display: none" />
+    </div>
+  </div>
+</div>

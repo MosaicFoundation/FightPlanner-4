@@ -13,18 +13,126 @@ interface CustomData {
   announcer?: string;
 }
 
+export type SlotCustomData = CustomData;
+
+export type SlotCustomNamesByFighter = Record<
+  string,
+  Record<string, SlotCustomData>
+>;
+
+export interface EchoOperationOptions {
+  renameFolders?: boolean;
+  renameFiles?: boolean;
+  applyMetadata?: boolean;
+  generateConfig?: boolean;
+  echoFighterName?: string;
+  echoSourceFighters?: string[];
+}
+
 export class SlotChanger {
+  static sanitizeEchoFighterName(name: string): string {
+    return name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 10);
+  }
+
+  static replaceFighterTokenInPath(
+    relativePath: string,
+    sourceFighter: string,
+    targetFighter: string,
+  ): string {
+    if (!sourceFighter || !targetFighter || sourceFighter === targetFighter) {
+      return relativePath;
+    }
+
+    const escapedSource = sourceFighter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Replace token only when separated by path, underscore, dash, or dot boundaries.
+    // Note: use escaped backslash in regex class so Windows separators are matched too.
+    return relativePath.replace(
+      new RegExp(`(^|[\\\\/_.-])${escapedSource}(?=($|[\\\\/_.-]))`, 'gi'),
+      (_, prefix) => `${prefix}${targetFighter}`,
+    );
+  }
+
+  static async renameEchoFighterReferences(
+    modPath: string,
+    sourceFighters: string[],
+    targetFighter: string,
+  ) {
+    const normalizedTarget = this.sanitizeEchoFighterName(targetFighter);
+    if (!normalizedTarget) return;
+
+    const normalizedSources = Array.from(
+      new Set(
+        sourceFighters
+          .map((fighter) => this.sanitizeEchoFighterName(fighter))
+          .filter((fighter) => fighter && fighter !== normalizedTarget),
+      ),
+    ).sort((a, b) => b.length - a.length);
+
+    if (normalizedSources.length === 0) {
+      return;
+    }
+
+    const allPaths = await ModFileOperations.getAllModFiles(modPath);
+
+    // Rename deeper paths first to avoid parent path invalidation.
+    const sortedPaths = allPaths.sort((a, b) => {
+      const depthA = a.split(/[\\/]/).length;
+      const depthB = b.split(/[\\/]/).length;
+      if (depthA === depthB) return b.length - a.length;
+      return depthB - depthA;
+    });
+
+    for (const oldPath of sortedPaths) {
+      let newPath = oldPath;
+
+      for (const source of normalizedSources) {
+        newPath = this.replaceFighterTokenInPath(newPath, source, normalizedTarget);
+      }
+
+      if (newPath === oldPath) {
+        continue;
+      }
+
+      const oldAbsolutePath = path.join(modPath, oldPath);
+      const newAbsolutePath = path.join(modPath, newPath);
+
+      const oldExists = await ModFileOperations.fileExists(oldAbsolutePath);
+      if (!oldExists) {
+        continue;
+      }
+
+      const newExists = await ModFileOperations.fileExists(newAbsolutePath);
+      if (newExists) {
+        // Skip collisions to avoid destructive overwrites.
+        continue;
+      }
+
+      await ModFileOperations.renameModFile(modPath, oldPath, newPath);
+    }
+  }
+
   static async changeSlots(
     modPath: string,
     slotAssignments: Map<string, Map<string, string>>,
     pathData: PathData,
-    slotCustomNames: Record<string, CustomData> = {},
+    slotCustomNamesByFighter: SlotCustomNamesByFighter = {},
+    options: EchoOperationOptions = {},
   ) {
     const changedPaths: string[] = [];
+    const shouldRenameFolders = options.renameFolders !== false;
+    const shouldRenameFiles = options.renameFiles !== false;
+    const shouldApplyMetadata = options.applyMetadata !== false;
+    const shouldGenerateConfig = options.generateConfig !== false;
 
     for (const fighterName of Object.keys(pathData)) {
       const defaultCustomNames = await this.getDefaultCustomNames(fighterName);
       const fighterAssignments = slotAssignments.get(fighterName);
+      const fighterCustomNames = slotCustomNamesByFighter[fighterName] || {};
 
       if (!fighterAssignments) continue;
 
@@ -36,88 +144,100 @@ export class SlotChanger {
         finalPath: string;
       }[] = [];
 
-      Object.keys(pathData[fighterName]).forEach((currentSlot) => {
-        const newSlot = fighterAssignments.get(currentSlot);
+      if (shouldRenameFiles || shouldRenameFolders) {
+        Object.keys(pathData[fighterName]).forEach((currentSlot) => {
+          const newSlot = fighterAssignments.get(currentSlot);
 
-        if (!newSlot) {
-          return;
-        }
-
-        Object.values(
-          pathData[fighterName][currentSlot].pathsToBeModified,
-        ).forEach(({ original, normalized }) => {
-          let newNum = newSlot.replace('c', '');
-          if (newNum.length === 1) newNum = '0' + newNum;
-
-          if (!normalized) {
-            console.warn(
-              '[changeSlots] Normalized path is null for original path:',
-              original,
-            );
+          if (!newSlot) {
             return;
           }
 
-          const newPath = normalized.replace('###', newNum);
+          Object.values(
+            pathData[fighterName][currentSlot].pathsToBeModified,
+          ).forEach(({ original, normalized, type }) => {
+            if (type === 'directory' && !shouldRenameFolders) {
+              return;
+            }
 
-          // Create temporary path in a slot-specific temp directory
-          // This isolates temp files for each slot to prevent conflicts
-          const tempPathParts = normalized.split(/[/\\]/);
-          const lastPart = tempPathParts[tempPathParts.length - 1];
+            if (type === 'file' && !shouldRenameFiles) {
+              return;
+            }
 
-          tempPathParts[tempPathParts.length - 1] =
-            `.temp_${currentSlot}_${lastPart}`;
+            let newNum = newSlot.replace('c', '');
+            if (newNum.length === 1) newNum = '0' + newNum;
 
-          const tempPath = tempPathParts.join('/');
+            if (!normalized) {
+              console.warn(
+                '[changeSlots] Normalized path is null for original path:',
+                original,
+              );
+              return;
+            }
 
-          fighterTempMappings.push({
-            originalPath: original,
-            tempPath: tempPath,
-            finalPath: newPath,
+            const newPath = normalized.replace('###', newNum);
+
+            // Create temporary path in a slot-specific temp directory
+            // This isolates temp files for each slot to prevent conflicts
+            const tempPathParts = normalized.split(/[/\\]/);
+            const lastPart = tempPathParts[tempPathParts.length - 1];
+
+            tempPathParts[tempPathParts.length - 1] =
+              `.temp_${currentSlot}_${lastPart}`;
+
+            const tempPath = tempPathParts.join('/');
+
+            fighterTempMappings.push({
+              originalPath: original,
+              tempPath: tempPath,
+              finalPath: newPath,
+            });
           });
         });
-      });
-
-      for (const mapping of fighterTempMappings) {
-        try {
-          await ModFileOperations.renameModFile(
-            modPath,
-            mapping.originalPath.replace(/\\/g, '/'),
-            mapping.tempPath.replace(/\\/g, '/'),
-          );
-        } catch (error) {
-          console.error(
-            `Error moving file to temp ${mapping.originalPath}:`,
-            error,
-          );
-
-          throw new Error(
-            `Failed to move file to temp ${mapping.originalPath}: ${error.message}`,
-          );
-        }
       }
 
-      // Step 3: Move all files from temp paths to final paths
-      console.log(
-        '[changeSlots] Moving files from temporary to final paths...',
-      );
+      if (fighterTempMappings.length > 0) {
+        for (const mapping of fighterTempMappings) {
+          try {
+            await ModFileOperations.renameModFile(
+              modPath,
+              mapping.originalPath.replace(/\\/g, '/'),
+              mapping.tempPath.replace(/\\/g, '/'),
+            );
+          } catch (error) {
+            console.error(
+              `Error moving file to temp ${mapping.originalPath}:`,
+              error,
+            );
 
-      for (const mapping of fighterTempMappings) {
-        try {
-          await ModFileOperations.renameModFile(
-            modPath,
-            mapping.tempPath.replace(/\\/g, '/'),
-            mapping.finalPath.replace(/\\/g, '/'),
-          );
+            throw new Error(
+              `Failed to move file to temp ${mapping.originalPath}: ${error.message}`,
+            );
+          }
+        }
 
-          changedPaths.push(mapping.finalPath);
-        } catch (error) {
-          console.error(
-            `Error moving file from temp ${mapping.tempPath}:`,
-            error,
-          );
-          throw new Error(
-            `Failed to move file from temp ${mapping.tempPath}: ${error.message}`,
-          );
+        // Step 3: Move all files from temp paths to final paths
+        console.log(
+          '[changeSlots] Moving files from temporary to final paths...',
+        );
+
+        for (const mapping of fighterTempMappings) {
+          try {
+            await ModFileOperations.renameModFile(
+              modPath,
+              mapping.tempPath.replace(/\\/g, '/'),
+              mapping.finalPath.replace(/\\/g, '/'),
+            );
+
+            changedPaths.push(mapping.finalPath);
+          } catch (error) {
+            console.error(
+              `Error moving file from temp ${mapping.tempPath}:`,
+              error,
+            );
+            throw new Error(
+              `Failed to move file from temp ${mapping.tempPath}: ${error.message}`,
+            );
+          }
         }
       }
 
@@ -126,8 +246,9 @@ export class SlotChanger {
       );
 
       if (
-        hasAnySlotAboveC07 ||
-        (slotCustomNames && Object.keys(slotCustomNames).length > 0)
+        shouldApplyMetadata &&
+        (hasAnySlotAboveC07 ||
+          (fighterCustomNames && Object.keys(fighterCustomNames).length > 0))
       ) {
         try {
           // 1. Get the fighter folder name
@@ -195,18 +316,20 @@ export class SlotChanger {
               let customAnnouncer = '';
 
               if (
-                slotCustomNames &&
-                slotCustomNames[slot] &&
-                slotCustomNames[slot].announcer
+                fighterCustomNames &&
+                fighterCustomNames[slot] &&
+                fighterCustomNames[slot].announcer
               ) {
-                customAnnouncer = announcer = slotCustomNames[slot].announcer;
+                customAnnouncer = announcer =
+                  fighterCustomNames[slot].announcer;
               } else if (defaultCustomNames.announcer) {
                 announcer = defaultCustomNames.announcer;
               }
 
               if (slotNum > 7 || customAnnouncer) {
                 const hasCustomNames =
-                  slotCustomNames && Object.keys(slotCustomNames).length;
+                  fighterCustomNames &&
+                  Object.keys(fighterCustomNames).length;
 
                 const nxyIndex = !hasCustomNames ? 0 : slotNum + 8;
 
@@ -251,7 +374,7 @@ export class SlotChanger {
           console.error('Error editing ui_chara_db.prcxml:', error);
           throw new Error(`Error editing ui_chara_db.prcxml: ${error.message}`);
         }
-      } else {
+      } else if (shouldApplyMetadata) {
         console.log(
           'Deleting ui_chara_db.prcxml as no slots above c07 and no custom names provided',
         );
@@ -264,24 +387,33 @@ export class SlotChanger {
 
       // Update msg_name.xmsbt with custom names if provided (for all slots)
       if (
-        (fighterName && hasAnySlotAboveC07) ||
-        (slotCustomNames && Object.keys(slotCustomNames).length > 0)
+        shouldApplyMetadata &&
+        ((fighterName && hasAnySlotAboveC07) ||
+          (fighterCustomNames && Object.keys(fighterCustomNames).length > 0))
       ) {
         await SlotChanger.updateMsgName(
           modPath,
           fighterName,
           finalSlots,
-          slotCustomNames,
+          fighterCustomNames,
           defaultCustomNames,
         );
       }
 
-      if (fighterName) {
+      if (fighterName && shouldGenerateConfig) {
         await ConfigGenerator.init();
         const jsonCreator = new ConfigGenerator(modPath, fighterName);
 
         await jsonCreator.generateConfig(finalSlots);
       }
+    }
+
+    if (options.echoFighterName && options.echoSourceFighters?.length) {
+      await this.renameEchoFighterReferences(
+        modPath,
+        options.echoSourceFighters,
+        options.echoFighterName,
+      );
     }
 
     return changedPaths.length;
@@ -316,8 +448,8 @@ export class SlotChanger {
     modPath: string,
     fighterName: string,
     slots: string[],
-    slotCustomNames: Record<string, CustomData>,
-    defaultCustomNames: CustomData,
+    slotCustomNames: Record<string, SlotCustomData>,
+    defaultCustomNames: SlotCustomData,
   ) {
     try {
       console.log('[updateMsgName] called');
@@ -441,7 +573,7 @@ export class SlotChanger {
     modPath: string,
     fighterName: string,
     slots: string[],
-  ) {
+  ): Promise<Record<string, SlotCustomData>> {
     const customNames = {};
     const parser = new XMLParser({
       ignoreAttributes: false,
@@ -662,7 +794,7 @@ export class SlotChanger {
    */
   static async getDefaultCustomNames(
     fighterNameInternal: string,
-  ): Promise<CustomData> {
+  ): Promise<SlotCustomData> {
     try {
       // Get the path to messages.data
       const messagesPath = path.join(PATHS.dataDir(), 'messages.data');

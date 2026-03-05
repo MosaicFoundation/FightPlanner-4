@@ -2,6 +2,7 @@ const tabConfigs = {
   tools: 'tabs/tools.html',
   plugins: 'tabs/plugins.html',
   characters: 'tabs/characters.html',
+  echo: 'tabs/echo.html',
   stages: 'tabs/stages.html',
   social: 'tabs/social.html',
   downloads: 'tabs/downloads.html',
@@ -444,6 +445,17 @@ function initializeTabFeatures(tabName) {
           window.charactersManager.refresh();
         }
       });
+    }
+
+    if (window.i18n) {
+      window.i18n.updateDOM();
+    }
+  }
+
+  if (tabName === 'echo') {
+    if (window.echoManager) {
+      console.log('Initializing Echo tab...');
+      window.echoManager.initialize();
     }
 
     if (window.i18n) {

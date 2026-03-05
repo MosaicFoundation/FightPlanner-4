@@ -12,6 +12,7 @@ import { DownloadManager } from '../js/downloads/download-manager';
 import { SettingsManager } from '../js/settings/settings-manager';
 import { ConflictModalManager } from '../js/ui/conflict-modal-manager';
 import { CharactersManager } from '../js/characters/characters-manager';
+import { EchoManager } from '../js/echo/echo-manager';
 import { SocialManager } from '../js/social/social-manager';
 import { PluginManager } from '../js/mods/plugin-manager';
 import { ResizeHandler } from '../js/ui/resize-handler';
@@ -57,6 +58,7 @@ declare global {
     settingsManager: SettingsManager;
     conflictModalManager: ConflictModalManager;
     charactersManager: CharactersManager;
+    echoManager: EchoManager;
     socialManager: SocialManager;
     pluginManager: PluginManager;
     resizeHandler: ResizeHandler;
