@@ -558,6 +558,13 @@ class ModalManager {
       generateConfig: true,
     };
     this.isEchoFlow = context.isEchoFighter === true;
+
+    if (this.isEchoFlow) {
+      // Echo flow follows the legacy behavior: move slot folders and generate config,
+      // while keeping most original file names for config-based slot sharing.
+      this.echoOperationOptions.renameFiles = false;
+    }
+
     this.echoPreferredName = this.normalizeEchoName(
       context.preferredEchoName || '',
     );
@@ -1606,9 +1613,6 @@ class ModalManager {
           }
         });
 
-        if (this.isEchoFlow) {
-          this.echoOperationOptions.renameFiles = true;
-        }
       }
 
       this.renderSlotList();

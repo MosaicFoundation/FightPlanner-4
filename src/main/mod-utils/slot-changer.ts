@@ -88,6 +88,13 @@ export class SlotChanger {
     });
 
     for (const oldPath of sortedPaths) {
+      const normalizedOldPath = oldPath.replace(/\\/g, '/').toLowerCase();
+
+      // Keep legacy behavior: echo token replacement is only for UI chara assets.
+      if (!normalizedOldPath.startsWith('ui/replace/chara/')) {
+        continue;
+      }
+
       let newPath = oldPath;
 
       for (const source of normalizedSources) {
