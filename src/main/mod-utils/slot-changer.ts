@@ -30,9 +30,16 @@ export interface EchoOperationOptions {
   echoSourceFighters?: string[];
   duplicateCharacter?: boolean;
   duplicateNIndexOffset?: number;
+  uiOutputModPath?: string;
 }
 
 export class SlotChanger {
+  private static readonly ECHO_UI_LAYOUT_RELATIVE_PATH =
+    'ui/layout/menu/chara_select/chara_select/layout.arc';
+
+  private static readonly ECHO_UI_PARAM_RELATIVE_PATH =
+    'param/menu/chara_icon_arrangement.prc';
+
   static sanitizeEchoFighterName(name: string): string {
     return name
       .trim()
@@ -126,6 +133,47 @@ export class SlotChanger {
     }
   }
 
+  static async isEchoUiOutputMod(candidatePath: string): Promise<boolean> {
+    if (!candidatePath) return false;
+
+    const hasLayout = await ModFileOperations.fileExists(
+      path.join(candidatePath, this.ECHO_UI_LAYOUT_RELATIVE_PATH),
+    );
+    const hasParam = await ModFileOperations.fileExists(
+      path.join(candidatePath, this.ECHO_UI_PARAM_RELATIVE_PATH),
+    );
+
+    return hasLayout || hasParam;
+  }
+
+  static async resolveMetadataOutputModPath(
+    modPath: string,
+    options: EchoOperationOptions,
+  ): Promise<string> {
+    if (options.uiOutputModPath) {
+      const isValidExplicitTarget = await this.isEchoUiOutputMod(
+        options.uiOutputModPath,
+      );
+
+      if (isValidExplicitTarget) {
+        return options.uiOutputModPath;
+      }
+    }
+
+    if (!options.duplicateCharacter) {
+      return modPath;
+    }
+
+    const modsRoot = path.dirname(modPath);
+    const knownCssModPath = path.join(modsRoot, '[UI] CSS 91-255 Slots');
+
+    if (await this.isEchoUiOutputMod(knownCssModPath)) {
+      return knownCssModPath;
+    }
+
+    return modPath;
+  }
+
   static async changeSlots(
     modPath: string,
     slotAssignments: Map<string, Map<string, string>>,
@@ -138,6 +186,10 @@ export class SlotChanger {
     const shouldRenameFiles = options.renameFiles !== false;
     const shouldApplyMetadata = options.applyMetadata !== false;
     const shouldGenerateConfig = options.generateConfig !== false;
+    const metadataOutputModPath = await this.resolveMetadataOutputModPath(
+      modPath,
+      options,
+    );
 
     for (const fighterName of Object.keys(pathData)) {
       const defaultCustomNames = await this.getDefaultCustomNames(fighterName);
@@ -294,7 +346,7 @@ export class SlotChanger {
               );
 
             // 4. Edit ui_chara_db.prcxml
-            const pathParts = modPath.replace(/\\/g, '/').split('/');
+            const pathParts = metadataOutputModPath.replace(/\\/g, '/').split('/');
             pathParts.pop();
 
             const prcXmlTemplatePath = path.join(
@@ -369,14 +421,14 @@ export class SlotChanger {
             }
 
             // Ensure the directory exists before writing the file
-            const outputDir = `${modPath}/ui/param/database`;
+            const outputDir = `${metadataOutputModPath}/ui/param/database`;
             if (!(await ModFileOperations.fileExists(outputDir))) {
               await ModFileOperations.createDirectory(outputDir);
             }
 
             // Write the modified file to the mod folder
             await ModFileOperations.writeModFile(
-              `${modPath}/ui/param/database/ui_chara_db.prcxml`,
+              `${metadataOutputModPath}/ui/param/database/ui_chara_db.prcxml`,
               prcXmlContent,
             );
           }
@@ -390,7 +442,7 @@ export class SlotChanger {
         );
 
         await ModFileOperations.deleteModFile(
-          modPath,
+          metadataOutputModPath,
           'ui/param/database/ui_chara_db.prcxml',
         );
       }
@@ -401,17 +453,9 @@ export class SlotChanger {
         ((fighterName && hasAnySlotAboveC07) ||
           (fighterCustomNames && Object.keys(fighterCustomNames).length > 0))
       ) {
-        await SlotChanger.updateMsgName(
-          modPath,
-          fighterName,
-          finalSlots,
-          fighterCustomNames,
-          defaultCustomNames,
-        );
-
         if (options.duplicateCharacter) {
           await EchoDuplicateService.applyCharacterDuplicateMetadata({
-            modPath,
+            modPath: metadataOutputModPath,
             fighterName,
             finalSlots,
             fighterCustomNames,
@@ -419,6 +463,14 @@ export class SlotChanger {
             echoNameId: options.echoFighterName,
             nIndexOffset: options.duplicateNIndexOffset,
           });
+        } else {
+          await SlotChanger.updateMsgName(
+            metadataOutputModPath,
+            fighterName,
+            finalSlots,
+            fighterCustomNames,
+            defaultCustomNames,
+          );
         }
       }
 
