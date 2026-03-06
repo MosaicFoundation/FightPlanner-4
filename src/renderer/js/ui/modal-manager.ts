@@ -198,6 +198,8 @@ class ModalManager {
       renameFiles: true,
       applyMetadata: true,
       generateConfig: true,
+      duplicateCharacter: false,
+      duplicateNIndexOffset: 8,
     };
     this.isEchoFlow = false;
     this.echoPreferredName = '';
@@ -556,6 +558,8 @@ class ModalManager {
       renameFiles: true,
       applyMetadata: true,
       generateConfig: true,
+      duplicateCharacter: false,
+      duplicateNIndexOffset: 8,
     };
     this.isEchoFlow = context.isEchoFighter === true;
 
@@ -563,6 +567,8 @@ class ModalManager {
       // Echo flow follows the legacy behavior: move slot folders and generate config,
       // while keeping most original file names for config-based slot sharing.
       this.echoOperationOptions.renameFiles = false;
+      this.echoOperationOptions.duplicateCharacter = true;
+      this.echoOperationOptions.duplicateNIndexOffset = 8;
     }
 
     this.echoPreferredName = this.normalizeEchoName(
@@ -760,6 +766,8 @@ class ModalManager {
       renameFiles: true,
       applyMetadata: true,
       generateConfig: true,
+      duplicateCharacter: false,
+      duplicateNIndexOffset: 8,
     };
     this.isEchoFlow = false;
     this.echoPreferredName = '';

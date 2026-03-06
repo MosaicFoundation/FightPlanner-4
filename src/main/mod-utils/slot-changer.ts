@@ -4,6 +4,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { PathData } from './mod-scanner';
 import { ModFileOperations } from '../mod-file-operations';
 import { ConfigGenerator } from './config-generator';
+import { EchoDuplicateService } from './echo-duplicate';
 import { PATHS } from '../config';
 
 interface CustomData {
@@ -27,6 +28,8 @@ export interface EchoOperationOptions {
   generateConfig?: boolean;
   echoFighterName?: string;
   echoSourceFighters?: string[];
+  duplicateCharacter?: boolean;
+  duplicateNIndexOffset?: number;
 }
 
 export class SlotChanger {
@@ -405,6 +408,18 @@ export class SlotChanger {
           fighterCustomNames,
           defaultCustomNames,
         );
+
+        if (options.duplicateCharacter) {
+          await EchoDuplicateService.applyCharacterDuplicateMetadata({
+            modPath,
+            fighterName,
+            finalSlots,
+            fighterCustomNames,
+            defaultCustomNames,
+            echoNameId: options.echoFighterName,
+            nIndexOffset: options.duplicateNIndexOffset,
+          });
+        }
       }
 
       if (fighterName && shouldGenerateConfig) {
