@@ -42,6 +42,7 @@ type ChangeSlotModalContext = {
   isEchoFighter?: boolean;
   preferredEchoName?: string;
   preferredEchoDisplayName?: string;
+  preferredEchoIntroName?: string;
   nameSuggestions?: string[];
   takenNames?: EchoTakenName[];
   echoOperationOptions?: Partial<EchoOperationOptions>;
@@ -172,6 +173,7 @@ class ModalManager {
   isEchoFlow: boolean;
   echoPreferredName: string;
   echoPreferredDisplayName: string;
+  echoPreferredIntroName: string;
   echoNameSuggestions: string[];
   echoTakenNames: EchoTakenName[];
 
@@ -207,6 +209,7 @@ class ModalManager {
     this.isEchoFlow = false;
     this.echoPreferredName = '';
     this.echoPreferredDisplayName = '';
+    this.echoPreferredIntroName = '';
     this.echoNameSuggestions = [];
     this.echoTakenNames = [];
     this.fighterNames = [];
@@ -596,6 +599,9 @@ class ModalManager {
     this.echoPreferredDisplayName = this.sanitizeEchoDisplayName(
       context.preferredEchoDisplayName || '',
     );
+    this.echoPreferredIntroName = this.sanitizeEchoDisplayName(
+      context.preferredEchoIntroName || '',
+    );
     this.echoNameSuggestions = (context.nameSuggestions || [])
       .map((name) => this.normalizeEchoName(name))
       .filter((name) => Boolean(name));
@@ -609,6 +615,10 @@ class ModalManager {
       this.echoPreferredDisplayName = this.formatEchoDisplayName(
         this.echoPreferredName,
       );
+    }
+
+    if (this.isEchoFlow && !this.echoPreferredIntroName) {
+      this.echoPreferredIntroName = this.echoPreferredDisplayName;
     }
 
     const modal = document.querySelector<HTMLElement>('#change-slot-modal');
@@ -800,6 +810,7 @@ class ModalManager {
     this.isEchoFlow = false;
     this.echoPreferredName = '';
     this.echoPreferredDisplayName = '';
+    this.echoPreferredIntroName = '';
     this.echoNameSuggestions = [];
     this.echoTakenNames = [];
     this.fighterNames = [];
@@ -955,6 +966,29 @@ class ModalManager {
     uiNameHint.textContent = t('modals.changeSlot.echoUiNameHint');
     wrapper.appendChild(uiNameHint);
 
+    const introNameLabel = document.createElement('label');
+    introNameLabel.className = 'slot-echo-name-label';
+    introNameLabel.setAttribute('for', 'slot-echo-intro-input');
+    introNameLabel.textContent = t('modals.changeSlot.echoIntroLabel');
+    wrapper.appendChild(introNameLabel);
+
+    const introNameInput = document.createElement('input');
+    introNameInput.id = 'slot-echo-intro-input';
+    introNameInput.className = 'modal-input';
+    introNameInput.type = 'text';
+    introNameInput.maxLength = 32;
+    introNameInput.autocomplete = 'off';
+    introNameInput.placeholder = t('modals.changeSlot.echoIntroPlaceholder');
+    introNameInput.value = this.sanitizeEchoDisplayName(
+      this.echoPreferredIntroName || this.echoPreferredDisplayName,
+    );
+    wrapper.appendChild(introNameInput);
+
+    const introNameHint = document.createElement('p');
+    introNameHint.className = 'slot-echo-name-hint';
+    introNameHint.textContent = t('modals.changeSlot.echoIntroHint');
+    wrapper.appendChild(introNameHint);
+
     const conflictBox = document.createElement('div');
     conflictBox.className = 'slot-echo-conflict';
     conflictBox.style.display = 'none';
@@ -999,9 +1033,16 @@ class ModalManager {
         uiNameInput.value = normalizedUiName;
       }
 
+      const normalizedIntroName = this.sanitizeEchoDisplayName(introNameInput.value);
+      if (introNameInput.value !== normalizedIntroName) {
+        introNameInput.value = normalizedIntroName;
+      }
+
       this.echoPreferredName = normalizedInput;
       this.echoPreferredDisplayName =
         normalizedUiName || this.formatEchoDisplayName(normalizedInput);
+      this.echoPreferredIntroName =
+        normalizedIntroName || this.echoPreferredDisplayName;
       const conflicts = this.getEchoNameConflicts(this.echoPreferredName);
 
       if (conflicts.length === 0 || !this.echoPreferredName) {
@@ -1019,6 +1060,7 @@ class ModalManager {
 
     input.addEventListener('input', updateConflictState);
     uiNameInput.addEventListener('input', updateConflictState);
+    introNameInput.addEventListener('input', updateConflictState);
     updateConflictState();
 
     modalBody.insertBefore(wrapper, hintParagraph);
@@ -2065,7 +2107,7 @@ class ModalManager {
         this.slotCustomNamesByFighter[fighterName][targetSlot] = {
           cspName: displayName,
           vsName: displayName.toUpperCase(),
-          boxingRing: displayName.toUpperCase(),
+          boxingRing: this.echoPreferredIntroName || displayName,
           announcer:
             this.slotCustomNamesByFighter[fighterName][targetSlot]?.announcer ||
             'vc_narration_characall',
@@ -2093,6 +2135,16 @@ class ModalManager {
       if (echoUiNameInput) {
         this.echoPreferredDisplayName = this.sanitizeEchoDisplayName(
           echoUiNameInput.value,
+        );
+      }
+
+      const echoIntroInput = document.querySelector<HTMLInputElement>(
+        '#slot-echo-intro-input',
+      );
+
+      if (echoIntroInput) {
+        this.echoPreferredIntroName = this.sanitizeEchoDisplayName(
+          echoIntroInput.value,
         );
       }
 

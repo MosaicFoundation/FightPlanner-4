@@ -3,6 +3,7 @@ const tabConfigs = {
   plugins: 'tabs/plugins.html',
   characters: 'tabs/characters.html',
   echo: 'tabs/echo.html',
+  uicompat: 'tabs/uicompat.html',
   stages: 'tabs/stages.html',
   social: 'tabs/social.html',
   downloads: 'tabs/downloads.html',
@@ -456,6 +457,17 @@ function initializeTabFeatures(tabName) {
     if (window.echoManager) {
       console.log('Initializing Echo tab...');
       window.echoManager.initialize();
+    }
+
+    if (window.i18n) {
+      window.i18n.updateDOM();
+    }
+  }
+
+  if (tabName === 'uicompat') {
+    if (window.uiCompatManager) {
+      console.log('Initializing UI Compatibility tab...');
+      window.uiCompatManager.initialize();
     }
 
     if (window.i18n) {

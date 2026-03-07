@@ -2156,6 +2156,179 @@ document.addEventListener('DOMContentLoaded', () => {
     },
     {
       icon: 'bi-grid-3x3-gap',
+      title: 'Echo Slot Expansion (Recommended)',
+      description: 'Install the 91-255 delimiter dependency for Echo workflows',
+      content: `
+<div style="text-align: center;">
+    <h3 style="color: #fff; margin-bottom: 12px; font-size: 20px;">Prepare Echo Fighter slot expansion</h3>
+    <p style="margin-bottom: 18px; color: rgba(255,255,255,0.7);">FightPlanner Echo workflows work best with the <strong style="color: #fff;">91-255 slot delimiter</strong> mod installed.</p>
+
+    <div style="margin: 0 auto 18px; max-width: 650px; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(122, 155, 255, 0.28); background: rgba(122, 155, 255, 0.12); text-align: left;">
+        <p style="margin: 0; color: rgba(255,255,255,0.8); font-size: 13px; line-height: 1.55;">
+            Clicking install below uses the same GameBanana protocol flow as regular downloads. If install confirmation is enabled, confirm it in the main FightPlanner window.
+        </p>
+    </div>
+
+    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px;">
+        <button id="install-delimiter-btn" class="tutorial-btn-small" style="padding: 10px 16px; border-radius: 8px; border: 1px solid rgba(122, 155, 255, 0.4); background: rgba(122, 155, 255, 0.22); color: #7a9bff; cursor: pointer; font-weight: 600; transition: all 0.2s;">
+            <i class="bi bi-download"></i> Install 91-255 Dependency
+        </button>
+        <button id="delimiter-open-page-btn" class="tutorial-btn-small" style="padding: 10px 16px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.08); color: #e6e6e6; cursor: pointer; font-weight: 600; transition: all 0.2s;">
+          <i class="bi bi-box-arrow-up-right"></i> Open GameBanana Page
+        </button>
+        <button id="delimiter-mark-installed-btn" class="tutorial-btn-small" style="padding: 10px 16px; border-radius: 8px; border: 1px solid rgba(76, 175, 80, 0.35); background: rgba(76, 175, 80, 0.14); color: #4caf50; cursor: pointer; font-weight: 600; transition: all 0.2s;">
+            <i class="bi bi-check2-circle"></i> I Already Installed It
+        </button>
+    </div>
+
+    <div id="delimiter-status" style="margin: 0 auto; max-width: 650px; padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.26); color: rgba(255,255,255,0.72); font-size: 13px; text-align: left; line-height: 1.5;">
+        Checking dependency status...
+    </div>
+</div>
+`,
+      onRender: async () => {
+        const installBtn = document.querySelector<HTMLButtonElement>(
+          '#install-delimiter-btn',
+        );
+        const openPageBtn = document.querySelector<HTMLButtonElement>(
+          '#delimiter-open-page-btn',
+        );
+        const markInstalledBtn = document.querySelector<HTMLButtonElement>(
+          '#delimiter-mark-installed-btn',
+        );
+        const status = document.querySelector<HTMLElement>('#delimiter-status');
+
+        const delimiterLink =
+          'fightplanner:https://gamebanana.com/mmdl/1592208,Mod,573626,7z';
+
+        const renderStatus = (installed: boolean, state: 'idle' | 'pending' | 'error' = 'idle') => {
+          if (!status) return;
+
+          if (installed) {
+            status.style.borderColor = 'rgba(76, 175, 80, 0.32)';
+            status.style.background = 'rgba(76, 175, 80, 0.12)';
+            status.style.color = '#dff5df';
+            status.innerHTML = `
+              <div style="display: flex; align-items: flex-start; gap: 10px;">
+                <i class="bi bi-check-circle-fill" style="color: #4caf50; margin-top: 1px;"></i>
+                <div>
+                  <strong style="color: #fff;">Installed</strong>
+                  <div style="margin-top: 4px; color: rgba(255,255,255,0.82);">91-255 delimiter dependency is marked as installed. You can continue safely and use Echo slot expansion features.</div>
+                </div>
+              </div>
+            `;
+            return;
+          }
+
+          if (state === 'pending') {
+            status.style.borderColor = 'rgba(122, 155, 255, 0.35)';
+            status.style.background = 'rgba(122, 155, 255, 0.14)';
+            status.style.color = 'rgba(255,255,255,0.85)';
+            status.innerHTML = `
+              <div style="display: flex; align-items: flex-start; gap: 10px;">
+                <i class="bi bi-hourglass-split" style="color: #7a9bff; margin-top: 1px;"></i>
+                <div>
+                  <strong style="color: #fff;">Install Started</strong>
+                  <div style="margin-top: 4px;">Complete the prompt in the main FightPlanner window (if shown), then wait for the download/install to finish.</div>
+                </div>
+              </div>
+            `;
+            return;
+          }
+
+          if (state === 'error') {
+            status.style.borderColor = 'rgba(255, 77, 77, 0.36)';
+            status.style.background = 'rgba(255, 77, 77, 0.12)';
+            status.style.color = 'rgba(255,255,255,0.86)';
+            status.innerHTML = `
+              <div style="display: flex; align-items: flex-start; gap: 10px;">
+                <i class="bi bi-exclamation-triangle-fill" style="color: #ff6363; margin-top: 1px;"></i>
+                <div>
+                  <strong style="color: #fff;">Unable to start install</strong>
+                  <div style="margin-top: 4px;">Make sure your mods path is configured, then try again.</div>
+                </div>
+              </div>
+            `;
+            return;
+          }
+
+          status.style.borderColor = 'rgba(255,255,255,0.14)';
+          status.style.background = 'rgba(0,0,0,0.26)';
+          status.style.color = 'rgba(255,255,255,0.72)';
+          status.innerHTML = `
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
+              <i class="bi bi-info-circle-fill" style="color: rgba(255,255,255,0.65); margin-top: 1px;"></i>
+              <div>
+                <strong style="color: #fff;">Not installed yet</strong>
+                <div style="margin-top: 4px;">You can keep going and install this later, but Echo slot expansion guidance assumes this dependency is present.</div>
+              </div>
+            </div>
+          `;
+        };
+
+        const refreshStatus = async () => {
+          try {
+            const installed = Boolean(
+              await apiWrapper.storeGet('tutorial.echoDelimiterInstalled'),
+            );
+            renderStatus(installed, 'idle');
+          } catch (error) {
+            console.error('Failed to read delimiter install status:', error);
+            renderStatus(false, 'error');
+          }
+        };
+
+        await refreshStatus();
+
+        installBtn?.addEventListener('click', async () => {
+          if (!window.tutorialAPI?.openFightPlannerLink) {
+            renderStatus(false, 'error');
+            return;
+          }
+
+          installBtn.disabled = true;
+          installBtn.style.opacity = '0.75';
+          renderStatus(false, 'pending');
+
+          try {
+            await window.tutorialAPI.openFightPlannerLink(delimiterLink);
+          } catch (error) {
+            console.error('Failed to start delimiter install:', error);
+            renderStatus(false, 'error');
+          } finally {
+            installBtn.disabled = false;
+            installBtn.style.opacity = '1';
+          }
+
+          setTimeout(() => {
+            refreshStatus();
+          }, 1500);
+        });
+
+        openPageBtn?.addEventListener('click', async () => {
+          try {
+            await window.tutorialAPI.openUrl('https://gamebanana.com/mods/573626');
+          } catch (error) {
+            console.error('Failed to open external link:', error);
+          }
+        });
+
+        markInstalledBtn?.addEventListener('click', async () => {
+          try {
+            await window.tutorialAPI.store.set(
+              'tutorial.echoDelimiterInstalled',
+              true,
+            );
+            await refreshStatus();
+          } catch (error) {
+            console.error('Failed to update delimiter status:', error);
+            renderStatus(false, 'error');
+          }
+        });
+      },
+    },
+    {
+      icon: 'bi-grid-3x3-gap',
       title: 'Manage Your Mods',
       description: 'Enable, disable, and organize your mods',
       content: `

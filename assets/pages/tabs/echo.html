@@ -22,144 +22,48 @@
   </div>
 
   <div class="echo-view echo-view-builder" id="echo-builder-view">
-    <div class="echo-steps" id="echo-steps">
-      <div class="echo-step" id="echo-step-select">
-        <div class="echo-step-number">1</div>
-        <div class="echo-step-content">
-          <h3 data-i18n="echo.stepSelectTitle">Select a mod in Mods</h3>
-          <p data-i18n="echo.stepSelectDesc">
-            Go to the Mods tab and click the fighter mod you want to turn into an echo.
+    <div class="echo-builder-shell">
+      <div class="echo-builder-controls">
+        <div>
+          <h3 class="echo-section-title" data-i18n="echo.builderSelectTitle">Select a mod to create an echo</h3>
+          <p class="echo-section-hint" data-i18n="echo.builderSelectHint">
+            Pick a fighter mod, then launch the step-by-step modal flow.
           </p>
         </div>
-      </div>
-      <div class="echo-step" id="echo-step-review">
-        <div class="echo-step-number">2</div>
-        <div class="echo-step-content">
-          <h3 data-i18n="echo.stepReviewTitle">Review slots and fighter data</h3>
-          <p data-i18n="echo.stepReviewDesc">
-            Confirm detected fighters and currently used slots before making changes.
-          </p>
-        </div>
-      </div>
-      <div class="echo-step" id="echo-step-apply">
-        <div class="echo-step-number">3</div>
-        <div class="echo-step-content">
-          <h3 data-i18n="echo.stepApplyTitle">Open slot editor and apply</h3>
-          <p data-i18n="echo.stepApplyDesc">
-            Use Change Slot to pick new slots, then apply to generate your echo-ready files.
-          </p>
-        </div>
-      </div>
-    </div>
 
-    <div class="echo-picker-grid">
-      <div class="echo-mod-picker">
-        <h3 class="echo-section-title" data-i18n="echo.modPickerTitle">Choose a mod</h3>
-        <p class="echo-section-hint" data-i18n="echo.modPickerHint">
-          Pick the mod you want to convert without leaving this tab.
-        </p>
-
-        <input
-          id="echo-mod-search"
-          class="modal-input"
-          type="text"
-          data-i18n="echo.searchMods"
-          data-i18n-placeholder
-          placeholder="Search mods..."
-        />
-
-        <div id="echo-mod-list" class="echo-mod-list"></div>
-      </div>
-
-      <div class="echo-selected-mod-card">
-        <p class="echo-selected-mod-label" data-i18n="echo.selectedModLabel">Current selection</p>
-        <div class="echo-selected-mod" id="echo-selected-mod" data-echo-selected-mod data-i18n="echo.noSelectedMod">
-          No selected mod from Mods tab.
-        </div>
-
-        <label class="echo-name-label" for="echo-new-name-input" data-i18n="echo.newNameLabel">
-          Character ID
-        </label>
-        <input
-          id="echo-new-name-input"
-          class="modal-input"
-          type="text"
-          maxlength="10"
-          data-i18n="echo.newNamePlaceholder"
-          data-i18n-placeholder
-          placeholder="Example: Shadow Mario"
-        />
-        <p class="echo-name-hint" data-i18n="echo.newNameHint">
-          This ID is used for file naming and the internal character token.
-        </p>
-
-        <label class="echo-name-label" for="echo-ui-display-name-input" data-i18n="echo.uiNameLabel">
-          Echo Fighter Name (UI)
-        </label>
-        <input
-          id="echo-ui-display-name-input"
-          class="modal-input"
-          type="text"
-          maxlength="32"
-          data-i18n="echo.uiNamePlaceholder"
-          data-i18n-placeholder
-          placeholder="Example: Hylian Hood Zelda"
-        />
-        <p class="echo-name-hint" data-i18n="echo.uiNameHint">
-          This is the name shown in UI (nam_chr values) during gameplay.
-        </p>
-
-        <div class="echo-name-conflict" id="echo-name-conflict" style="display: none"></div>
-
-        <div class="echo-name-suggestions" id="echo-name-suggestions"></div>
-
-        <div class="echo-actions">
-          <button class="input-btn" id="echo-open-slot-modal-btn">
-            <i class="bi bi-grid-3x3-gap"></i>
-            <span data-i18n="echo.openSlotModal">Open Echo Change Slot</span>
+        <div class="echo-builder-row">
+          <select id="echo-builder-mod-select" class="echo-compat-select"></select>
+          <button class="input-btn" id="echo-builder-start-btn" type="button">
+            <i class="bi bi-magic"></i>
+            <span data-i18n="echo.builderStart">Start Echo Workflow</span>
+          </button>
+          <button class="input-btn short" id="echo-builder-clear-btn" type="button">
+            <i class="bi bi-x-circle"></i>
+            <span data-i18n="echo.builderClear">Clear</span>
           </button>
         </div>
-      </div>
-    </div>
 
-    <div class="echo-main-grid">
-      <div class="echo-analysis-panel" id="echo-analysis-results">
-        <p class="echo-empty" data-i18n="echo.analysisPlaceholder">
-          Select a mod in Mods, then open this tab to inspect echo slot data.
+        <p class="echo-builder-current" id="echo-builder-current-mod" data-echo-selected-mod data-i18n="echo.noSelectedMod">
+          No selected mod from Mods tab.
         </p>
       </div>
-      <div class="echo-preview-panel">
-        <img id="echo-preview-image" alt="Echo Preview" style="display: none" />
+
+      <div class="echo-builder-results" id="echo-builder-results" style="display: none">
+        <div class="echo-main-grid">
+          <div class="echo-analysis-panel" id="echo-analysis-results">
+            <p class="echo-empty" data-i18n="echo.analysisPlaceholder">
+              Complete the echo workflow to view fighter data.
+            </p>
+          </div>
+          <div class="echo-preview-panel">
+            <img id="echo-preview-image" alt="Echo Preview" style="display: none" />
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="echo-view echo-view-planner" id="echo-planner-view">
-    <div class="echo-planner-context">
-      <p class="echo-selected-mod-label" data-i18n="echo.selectedModLabel">Current selection</p>
-      <div class="echo-selected-mod" id="echo-selected-mod-compact" data-echo-selected-mod data-i18n="echo.noSelectedMod">
-        No selected mod from Mods tab.
-      </div>
-    </div>
-
-    <details class="echo-compatibility-details" id="echo-compatibility-details">
-      <summary class="echo-compatibility-summary">
-        <span data-i18n="echo.compatibilityTitle">UI Compatibility Planner</span>
-      </summary>
-      <div class="echo-compatibility-panel" id="echo-compatibility-panel">
-        <div class="echo-compatibility-header">
-          <p class="echo-section-hint" data-i18n="echo.compatibilityHint">
-            Choose which UI categories to apply and where they should be written to avoid conflicts.
-          </p>
-        </div>
-        <div class="echo-compatibility-content" id="echo-compatibility-content">
-          <p class="echo-empty" data-i18n="echo.compatibilityPlaceholder">
-            Select a mod to load compatibility recommendations.
-          </p>
-        </div>
-      </div>
-    </details>
-
     <div class="echo-visual-panel" id="echo-visual-panel">
       <div class="echo-visual-header">
         <div>
@@ -167,11 +71,18 @@
           <p class="echo-section-hint" data-i18n="echo.visualHint">
             View all fighters and mod types, drag to reorder your board, then save your plan.
           </p>
+          <p class="echo-selected-mod echo-selected-mod-embedded" id="echo-selected-mod-compact" data-echo-selected-mod data-i18n="echo.noSelectedMod">
+            No selected mod from Mods tab.
+          </p>
         </div>
         <div class="echo-visual-actions">
           <button class="input-btn short" id="echo-visual-refresh-btn">
             <i class="bi bi-arrow-repeat"></i>
             <span data-i18n="echo.visualRefresh">Refresh Board</span>
+          </button>
+          <button class="input-btn short" id="echo-open-save-dir-btn">
+            <i class="bi bi-folder2-open"></i>
+            <span data-i18n="echo.visualOpenSaveDir">Open Save Directory</span>
           </button>
           <button class="input-btn short" id="echo-visual-save-btn">
             <i class="bi bi-save"></i>
@@ -202,6 +113,53 @@
         <button class="echo-character-menu-close" id="echo-character-menu-close" type="button">&times;</button>
       </div>
       <div class="echo-character-menu-body" id="echo-character-menu-body"></div>
+    </div>
+  </div>
+
+  <div class="echo-character-menu" id="echo-create-wizard" style="display: none">
+    <div class="echo-character-menu-card echo-wizard-card">
+      <div class="echo-character-menu-header">
+        <h3 class="echo-character-menu-title" data-i18n="echo.wizardTitle">Create Echo Fighter</h3>
+        <button class="echo-character-menu-close" id="echo-wizard-close" type="button">&times;</button>
+      </div>
+      <div class="echo-character-menu-body">
+        <div class="echo-wizard-step active" id="echo-wizard-step-1">
+          <p class="echo-section-hint" data-i18n="echo.wizardStep1Hint">Set your internal character ID.</p>
+          <label class="echo-name-label" for="echo-wizard-id-input" data-i18n="echo.wizardId">Character ID</label>
+          <input id="echo-wizard-id-input" class="modal-input" type="text" maxlength="10" />
+        </div>
+
+        <div class="echo-wizard-step" id="echo-wizard-step-2">
+          <p class="echo-section-hint" data-i18n="echo.wizardStep2Hint">Set the visible UI fighter name.</p>
+          <label class="echo-name-label" for="echo-wizard-ui-input" data-i18n="echo.wizardUiName">Echo Fighter Name (UI)</label>
+          <input id="echo-wizard-ui-input" class="modal-input" type="text" maxlength="32" />
+        </div>
+
+        <div class="echo-wizard-step" id="echo-wizard-step-3">
+          <p class="echo-section-hint" data-i18n="echo.wizardStep3Hint">Set the intro label used for nam_stage_name.</p>
+          <label class="echo-name-label" for="echo-wizard-intro-input" data-i18n="echo.wizardIntro">Character Intro (nam_stage_name)</label>
+          <input id="echo-wizard-intro-input" class="modal-input" type="text" maxlength="32" />
+        </div>
+
+        <div class="echo-wizard-step" id="echo-wizard-step-4">
+          <p class="echo-section-hint" data-i18n="echo.wizardStep4Hint">Review and continue to slot selection.</p>
+          <div id="echo-wizard-review" class="echo-character-menu-details"></div>
+          <p class="echo-character-menu-mod-meta">
+            <span data-i18n="echo.wizardCharacter">Character</span>: <span id="echo-wizard-character-label">-</span>
+          </p>
+          <p class="echo-character-menu-mod-meta">
+            <span data-i18n="echo.wizardMod">Mod</span>: <span id="echo-wizard-mod-label">-</span>
+          </p>
+        </div>
+
+        <div class="echo-character-menu-actions">
+          <button class="input-btn short" type="button" id="echo-wizard-back-btn" data-i18n="common.back">Back</button>
+          <button class="input-btn short" type="button" id="echo-wizard-next-btn" data-i18n="common.next">Next</button>
+          <button class="input-btn short" type="button" id="echo-wizard-create-btn" style="display: none" data-i18n="echo.wizardCreate">
+            Continue to Slot Picker
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>

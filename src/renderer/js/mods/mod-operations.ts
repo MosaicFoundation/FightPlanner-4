@@ -5,6 +5,7 @@ type ChangeSlotModalContext = {
   isEchoFighter?: boolean;
   preferredEchoName?: string;
   preferredEchoDisplayName?: string;
+  preferredEchoIntroName?: string;
   nameSuggestions?: string[];
   takenNames?: { name: string; modName: string; modPath: string }[];
   echoOperationOptions?: Partial<EchoOperationOptions>;

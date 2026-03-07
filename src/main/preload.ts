@@ -102,6 +102,8 @@ const electronAPI = {
   echoLoadUiLayoutState: invokeModHandler('echo-load-ui-layout-state'),
   echoSaveUiLayoutState: invokeModHandler('echo-save-ui-layout-state'),
   echoReadUiCharaStruct: invokeModHandler('echo-read-ui-chara-struct'),
+  uiBuilderAnalyzeMods: invokeModHandler('ui-builder-analyze-mods'),
+  uiBuilderBuildBundle: invokeModHandler('ui-builder-build-bundle'),
   echoRenameCFolders: invokeModHandler('echo-rename-c-folders'),
   echoRenameCharaFiles: invokeModHandler('echo-rename-chara-files'),
   echoGenerateConfig: invokeModHandler('echo-generate-config'),
@@ -248,6 +250,7 @@ const tutorialAPI = {
   joinPath: invokeTutorialHandler('join-path'),
   getTempDir: invokeTutorialHandler('get-temp-dir'),
   openUrl: invokeSystemHandler('open-url'),
+  openFightPlannerLink: invokeSystemHandler('open-fightplanner-link'),
 
   store: {
     get: invokeStoreHandler('store-get'),

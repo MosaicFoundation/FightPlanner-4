@@ -24,6 +24,7 @@ import { TutorialManager } from '../js/tutorial/tutorial-manager';
 import { FightPlannerManager } from '../js/fightplanner/fightplanner-manager';
 import { ModInfoEditor } from '../js/mods/mod-info-editor';
 import { CustomizationManager } from '../js/customization/customization-manager';
+import { UICompatManager } from '../js/customization/uicompat-manager';
 import { ProtocolListener } from '../js/protocol/protocol-listener';
 import { DiscordRPCClient } from '../js/core/discord-rpc-client';
 import { ModDragDropHandler } from '../js/mods/mod-drag-drop';
@@ -70,6 +71,7 @@ declare global {
     fightPlannerManager: FightPlannerManager;
     modInfoEditor: ModInfoEditor;
     customizationManager: CustomizationManager;
+    uiCompatManager: UICompatManager;
     protocolListener: ProtocolListener;
     discordRPCClient: DiscordRPCClient;
     modDragDropHandler: ModDragDropHandler;

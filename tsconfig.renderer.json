@@ -5,7 +5,7 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "module": "CommonJS",
+    "module": "Node16",
     "isolatedModules": true,
     "resolveJsonModule": false
   },

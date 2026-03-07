@@ -80,6 +80,7 @@ type VisualCharacterEntry = {
 type VisualPlannerPersistedState = {
   characterOrder?: string[];
   selectedCharacter?: string | null;
+  disabledCharacters?: string[];
 };
 
 type EchoSubview = 'builder' | 'planner';
@@ -128,6 +129,7 @@ class EchoManager {
   uiCompatibilityPlan: EchoUiCompatibilityPlan | null;
   uiCompatibilityState: EchoUiCompatibilityState | null;
   visualCharacterOrder: string[];
+  visualDisabledCharacters: Set<string>;
   visualSelectedCharacter: string | null;
   visualCharactersByKey: Map<string, VisualCharacterEntry>;
   visualMods: VisualModEntry[];
@@ -136,10 +138,18 @@ class EchoManager {
   visualDraggedCharacter: string | null;
   activeSubview: EchoSubview;
   visualCharacterImageCache: Map<string, string>;
+  visualImagePreloadSet: Set<string>;
   visualModScanCache: Map<string, VisualModScanCacheEntry>;
   uiCharaInspectorLoading: boolean;
   uiCharaInspectorData: EchoUiCharaInspectorData | null;
   uiCharaInspectorError: string | null;
+  echoPreferredNameValue: string;
+  echoPreferredDisplayNameValue: string;
+  echoPreferredIntroName: string;
+  echoWizardStep: number;
+  echoWizardCharacterKey: string | null;
+  echoWizardSourceModPath: string | null;
+  builderCompletedModPath: string | null;
 
   constructor() {
     this.initialized = false;
@@ -152,6 +162,7 @@ class EchoManager {
     this.uiCompatibilityPlan = null;
     this.uiCompatibilityState = null;
     this.visualCharacterOrder = [];
+    this.visualDisabledCharacters = new Set();
     this.visualSelectedCharacter = null;
     this.visualCharactersByKey = new Map();
     this.visualMods = [];
@@ -160,10 +171,18 @@ class EchoManager {
     this.visualDraggedCharacter = null;
     this.activeSubview = 'planner';
     this.visualCharacterImageCache = new Map();
+    this.visualImagePreloadSet = new Set();
     this.visualModScanCache = new Map();
     this.uiCharaInspectorLoading = false;
     this.uiCharaInspectorData = null;
     this.uiCharaInspectorError = null;
+    this.echoPreferredNameValue = '';
+    this.echoPreferredDisplayNameValue = '';
+    this.echoPreferredIntroName = '';
+    this.echoWizardStep = 1;
+    this.echoWizardCharacterKey = null;
+    this.echoWizardSourceModPath = null;
+    this.builderCompletedModPath = null;
     console.log('Echo Manager created');
   }
 
@@ -235,6 +254,11 @@ class EchoManager {
       await this.refreshVisualPlanner();
     } else {
       this.closeCharacterQuickMenu();
+      const selectedMod = this.getSelectedMod();
+      const showBuilderResults = Boolean(
+        selectedMod && this.builderCompletedModPath === selectedMod.path,
+      );
+      this.setBuilderResultsVisible(showBuilderResults);
     }
     await this.saveSubviewState();
   }
@@ -275,44 +299,41 @@ class EchoManager {
       newRefreshBtn.addEventListener('click', () => this.refresh());
     }
 
-    const openSlotBtn = document.querySelector<HTMLElement>('#echo-open-slot-modal-btn');
-    if (openSlotBtn) {
-      const newOpenSlotBtn = openSlotBtn.cloneNode(true) as HTMLElement;
-      openSlotBtn.parentNode?.replaceChild(newOpenSlotBtn, openSlotBtn);
-      newOpenSlotBtn.addEventListener('click', () => this.openChangeSlotFlow());
-    }
-
-    const searchInput = document.querySelector<HTMLInputElement>('#echo-mod-search');
-    if (searchInput) {
-      const newSearchInput = searchInput.cloneNode(true) as HTMLInputElement;
-      searchInput.parentNode?.replaceChild(newSearchInput, searchInput);
-      newSearchInput.addEventListener('input', () => {
-        this.renderModPicker(newSearchInput.value);
-      });
-    }
-
-    const nameInput = document.querySelector<HTMLInputElement>('#echo-new-name-input');
-    if (nameInput) {
-      const newNameInput = nameInput.cloneNode(true) as HTMLInputElement;
-      nameInput.parentNode?.replaceChild(newNameInput, nameInput);
-      newNameInput.addEventListener('input', () => {
-        this.updateNameConflictView();
-        this.syncEchoDisplayNameFromId();
-      });
-    }
-
-    const uiNameInput = document.querySelector<HTMLInputElement>(
-      '#echo-ui-display-name-input',
+    const builderSelect = document.querySelector<HTMLSelectElement>(
+      '#echo-builder-mod-select',
     );
-    if (uiNameInput) {
-      const newUiNameInput = uiNameInput.cloneNode(true) as HTMLInputElement;
-      uiNameInput.parentNode?.replaceChild(newUiNameInput, uiNameInput);
-      newUiNameInput.addEventListener('input', () => {
-        const normalizedValue = this.sanitizeEchoDisplayName(newUiNameInput.value);
-        if (newUiNameInput.value !== normalizedValue) {
-          newUiNameInput.value = normalizedValue;
+    if (builderSelect) {
+      const nextBuilderSelect = builderSelect.cloneNode(true) as HTMLSelectElement;
+      builderSelect.parentNode?.replaceChild(nextBuilderSelect, builderSelect);
+      nextBuilderSelect.addEventListener('change', async () => {
+        const nextPath = nextBuilderSelect.value || null;
+        this.selectedEchoModPath = nextPath;
+        this.builderCompletedModPath = null;
+        this.setBuilderResultsVisible(false);
+
+        const selectedMod = this.getSelectedMod();
+        this.updateSelectedModView(selectedMod);
+
+        if (selectedMod && window.modManager) {
+          await window.modManager.selectMod(selectedMod.id, true);
         }
       });
+    }
+
+    const builderStartBtn = document.querySelector<HTMLElement>(
+      '#echo-builder-start-btn',
+    );
+    if (builderStartBtn) {
+      const nextBuilderStartBtn = builderStartBtn.cloneNode(true) as HTMLElement;
+      builderStartBtn.parentNode?.replaceChild(nextBuilderStartBtn, builderStartBtn);
+      nextBuilderStartBtn.addEventListener('click', () => this.launchBuilderEchoFlow());
+    }
+
+    const builderClearBtn = document.querySelector<HTMLElement>('#echo-builder-clear-btn');
+    if (builderClearBtn) {
+      const nextBuilderClearBtn = builderClearBtn.cloneNode(true) as HTMLElement;
+      builderClearBtn.parentNode?.replaceChild(nextBuilderClearBtn, builderClearBtn);
+      nextBuilderClearBtn.addEventListener('click', () => this.clearBuilderFlowState());
     }
 
     const visualRefreshBtn = document.querySelector<HTMLElement>(
@@ -350,6 +371,28 @@ class EchoManager {
       visualCreateBtn.parentNode?.replaceChild(newVisualCreateBtn, visualCreateBtn);
       newVisualCreateBtn.addEventListener('click', () => {
         this.createEchoDraftFromVisualSelection();
+      });
+    }
+
+    const openSaveDirBtn = document.querySelector<HTMLElement>(
+      '#echo-open-save-dir-btn',
+    );
+    if (openSaveDirBtn) {
+      const newOpenSaveDirBtn = openSaveDirBtn.cloneNode(true) as HTMLElement;
+      openSaveDirBtn.parentNode?.replaceChild(newOpenSaveDirBtn, openSaveDirBtn);
+      newOpenSaveDirBtn.addEventListener('click', async () => {
+        const mod = this.getSelectedMod();
+        const targetPath = this.resolveLayoutTargetModPath(mod) || mod?.path || null;
+
+        if (!targetPath) {
+          window.toastManager?.warning('echo.noSelectedMod');
+          return;
+        }
+
+        const result = await window.electronAPI.openFolder(targetPath);
+        if (!result?.success) {
+          window.toastManager?.error('toasts.failedToOpenFolder');
+        }
       });
     }
 
@@ -397,6 +440,52 @@ class EchoManager {
         if (event.target === characterMenuBackdrop) {
           this.closeCharacterQuickMenu();
         }
+      });
+    }
+
+    const wizardClose = document.querySelector<HTMLElement>('#echo-wizard-close');
+    if (wizardClose) {
+      const nextWizardClose = wizardClose.cloneNode(true) as HTMLElement;
+      wizardClose.parentNode?.replaceChild(nextWizardClose, wizardClose);
+      nextWizardClose.addEventListener('click', () => this.closeEchoWizard());
+    }
+
+    const wizardBackdrop = document.querySelector<HTMLElement>('#echo-create-wizard');
+    if (wizardBackdrop) {
+      wizardBackdrop.addEventListener('click', (event) => {
+        if (event.target === wizardBackdrop) {
+          this.closeEchoWizard();
+        }
+      });
+    }
+
+    const wizardBack = document.querySelector<HTMLElement>('#echo-wizard-back-btn');
+    if (wizardBack) {
+      const nextWizardBack = wizardBack.cloneNode(true) as HTMLElement;
+      wizardBack.parentNode?.replaceChild(nextWizardBack, wizardBack);
+      nextWizardBack.addEventListener('click', () => {
+        this.setEchoWizardStep(this.echoWizardStep - 1);
+      });
+    }
+
+    const wizardNext = document.querySelector<HTMLElement>('#echo-wizard-next-btn');
+    if (wizardNext) {
+      const nextWizardNext = wizardNext.cloneNode(true) as HTMLElement;
+      wizardNext.parentNode?.replaceChild(nextWizardNext, wizardNext);
+      nextWizardNext.addEventListener('click', () => {
+        this.syncEchoWizardInputs();
+        this.setEchoWizardStep(this.echoWizardStep + 1);
+      });
+    }
+
+    const wizardCreate = document.querySelector<HTMLElement>(
+      '#echo-wizard-create-btn',
+    );
+    if (wizardCreate) {
+      const nextWizardCreate = wizardCreate.cloneNode(true) as HTMLElement;
+      wizardCreate.parentNode?.replaceChild(nextWizardCreate, wizardCreate);
+      nextWizardCreate.addEventListener('click', async () => {
+        await this.confirmEchoWizardCreate();
       });
     }
   }
@@ -474,6 +563,10 @@ class EchoManager {
       .slice(0, 32);
   }
 
+  sanitizeEchoIntroName(value: string): string {
+    return this.sanitizeEchoDisplayName(value);
+  }
+
   formatEchoDisplayNameFromId(token: string): string {
     if (!token) {
       return '';
@@ -484,7 +577,14 @@ class EchoManager {
 
   getEchoNameValue(): string {
     const input = document.querySelector<HTMLInputElement>('#echo-new-name-input');
-    return this.normalizeName(input?.value || '');
+    if (input) {
+      const normalized = this.normalizeName(input.value || '');
+      this.echoPreferredNameValue = normalized;
+      return normalized;
+    }
+
+    this.echoPreferredNameValue = this.normalizeName(this.echoPreferredNameValue || '');
+    return this.echoPreferredNameValue;
   }
 
   getEchoDisplayNameValue(): string {
@@ -492,34 +592,48 @@ class EchoManager {
       '#echo-ui-display-name-input',
     );
 
-    const sanitizedValue = this.sanitizeEchoDisplayName(input?.value || '');
-    if (input && input.value !== sanitizedValue) {
-      input.value = sanitizedValue;
+    if (input) {
+      const sanitizedValue = this.sanitizeEchoDisplayName(input.value || '');
+      if (input.value !== sanitizedValue) {
+        input.value = sanitizedValue;
+      }
+      this.echoPreferredDisplayNameValue = sanitizedValue;
+
+      if (sanitizedValue) {
+        return sanitizedValue;
+      }
     }
 
-    if (sanitizedValue) {
-      return sanitizedValue;
+    const storedValue = this.sanitizeEchoDisplayName(
+      this.echoPreferredDisplayNameValue || '',
+    );
+    this.echoPreferredDisplayNameValue = storedValue;
+    if (storedValue) {
+      return storedValue;
     }
 
     return this.formatEchoDisplayNameFromId(this.getEchoNameValue());
   }
 
   setEchoNameValue(value: string) {
+    this.echoPreferredNameValue = this.normalizeName(value);
     const input = document.querySelector<HTMLInputElement>('#echo-new-name-input');
-    if (!input) return;
+    if (input) {
+      input.value = this.echoPreferredNameValue;
+    }
 
-    input.value = this.normalizeName(value);
     this.updateNameConflictView();
     this.syncEchoDisplayNameFromId();
   }
 
   setEchoDisplayNameValue(value: string) {
+    this.echoPreferredDisplayNameValue = this.sanitizeEchoDisplayName(value);
     const input = document.querySelector<HTMLInputElement>(
       '#echo-ui-display-name-input',
     );
 
     if (!input) return;
-    input.value = this.sanitizeEchoDisplayName(value);
+    input.value = this.echoPreferredDisplayNameValue;
   }
 
   syncEchoDisplayNameFromId() {
@@ -528,6 +642,11 @@ class EchoManager {
     );
 
     if (!input) {
+      if (!this.echoPreferredDisplayNameValue) {
+        this.echoPreferredDisplayNameValue = this.formatEchoDisplayNameFromId(
+          this.getEchoNameValue(),
+        );
+      }
       return;
     }
 
@@ -544,6 +663,7 @@ class EchoManager {
     );
     if (fallbackDisplayName) {
       input.value = fallbackDisplayName;
+      this.echoPreferredDisplayNameValue = fallbackDisplayName;
     }
   }
 
@@ -602,15 +722,40 @@ class EchoManager {
   }
 
   renderModPicker(searchQuery = '') {
-    const modList = document.querySelector<HTMLElement>('#echo-mod-list');
-    if (!modList) return;
-
     const normalizedQuery = searchQuery.trim().toLowerCase();
     const allMods = this.getAllMods();
 
     const filteredMods = allMods.filter((mod) =>
       mod.name.toLowerCase().includes(normalizedQuery),
     );
+
+    const builderSelect = document.querySelector<HTMLSelectElement>(
+      '#echo-builder-mod-select',
+    );
+
+    if (builderSelect) {
+      builderSelect.innerHTML = '';
+
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = this.t('echo.builderSelectPlaceholder');
+      builderSelect.appendChild(placeholder);
+
+      filteredMods.forEach((mod) => {
+        const option = document.createElement('option');
+        option.value = mod.path;
+        option.textContent = mod.name;
+        if (mod.path === this.selectedEchoModPath) {
+          option.selected = true;
+        }
+        builderSelect.appendChild(option);
+      });
+
+      builderSelect.disabled = filteredMods.length === 0;
+    }
+
+    const modList = document.querySelector<HTMLElement>('#echo-mod-list');
+    if (!modList) return;
 
     modList.innerHTML = '';
 
@@ -658,6 +803,33 @@ class EchoManager {
 
       modList.appendChild(item);
     });
+  }
+
+  setBuilderResultsVisible(visible: boolean) {
+    const container = document.querySelector<HTMLElement>('#echo-builder-results');
+    if (!container) return;
+    container.style.display = visible ? 'block' : 'none';
+  }
+
+  clearBuilderFlowState() {
+    const builderSelect = document.querySelector<HTMLSelectElement>(
+      '#echo-builder-mod-select',
+    );
+
+    if (builderSelect) {
+      builderSelect.value = '';
+    }
+
+    this.selectedEchoModPath = null;
+    this.builderCompletedModPath = null;
+    this.echoPreferredNameValue = '';
+    this.echoPreferredDisplayNameValue = '';
+    this.echoPreferredIntroName = '';
+
+    this.setBuilderResultsVisible(false);
+    this.renderModPicker();
+    this.clearAnalysis();
+    this.updateSelectedModView(null);
   }
 
   getSelectedMod(): Mod | null {
@@ -1013,6 +1185,14 @@ class EchoManager {
   }
 
   collectCompatibilityOptions(mod: Mod): Partial<EchoOperationOptions> {
+    const sharedUiCompatOptions = window.uiCompatManager?.getCompatibilityOptions(
+      mod.path,
+    );
+
+    if (sharedUiCompatOptions) {
+      return sharedUiCompatOptions;
+    }
+
     if (!this.uiCompatibilityState) {
       const defaultSlotsPath = this.resolveDefaultSlotsModPath() || mod.path;
 
@@ -1074,6 +1254,16 @@ class EchoManager {
 
   getDefaultCharacterOrder(): string[] {
     return Object.keys(window.SSBU_CHARACTERS || {});
+  }
+
+  getCharacterInfoMap(): Record<
+    string,
+    { name: string; number: string; series: string }
+  > {
+    return (window.SSBU_CHARACTERS || {}) as Record<
+      string,
+      { name: string; number: string; series: string }
+    >;
   }
 
   normalizeFighterKey(rawFighterId: string): string {
@@ -1196,25 +1386,31 @@ class EchoManager {
       return cachedImage;
     }
 
-    const remoteUrl = window.CHARACTER_IMAGES?.[fighterKey] || '';
+    const characterImages = (window.CHARACTER_IMAGES || {}) as Record<string, string>;
+    const fallbackRemoteUrl = characterImages[fighterKey] || '';
 
-    if (!window.electronAPI?.echoResolveCharacterImage || !remoteUrl) {
-      return remoteUrl;
-    }
+    if (window.electronAPI?.echoResolveCharacterImage) {
+      try {
+        const resolvedUrl = await window.electronAPI.echoResolveCharacterImage(
+          fighterKey,
+          fallbackRemoteUrl,
+        );
 
-    try {
-      const resolved = await window.electronAPI.echoResolveCharacterImage(
-        fighterKey,
-        remoteUrl,
-      );
-      const finalUrl = resolved || remoteUrl;
-      if (resolved && resolved.startsWith('file:')) {
-        this.visualCharacterImageCache.set(fighterKey, resolved);
+        if (resolvedUrl) {
+          this.visualCharacterImageCache.set(fighterKey, resolvedUrl);
+          return resolvedUrl;
+        }
+      } catch (error) {
+        console.warn('Failed to resolve local character image', fighterKey, error);
       }
-      return finalUrl;
-    } catch (error) {
-      return remoteUrl;
     }
+
+    if (fallbackRemoteUrl) {
+      this.visualCharacterImageCache.set(fighterKey, fallbackRemoteUrl);
+      return fallbackRemoteUrl;
+    }
+
+    return '';
   }
 
   getVisualTileInitials(name: string): string {
@@ -1228,6 +1424,49 @@ class EchoManager {
     }
 
     return `${words[0][0] || ''}${words[1][0] || ''}`.toUpperCase();
+  }
+
+  preloadCharacterImages(urls: string[]) {
+    const uniqueUrls = Array.from(new Set(urls.filter(Boolean))).filter(
+      (url) => !this.visualImagePreloadSet.has(url),
+    );
+
+    if (uniqueUrls.length === 0) {
+      return;
+    }
+
+    const queue = uniqueUrls.slice();
+    const concurrency = 4;
+
+    const loadNext = () => {
+      const nextUrl = queue.shift();
+      if (!nextUrl) {
+        return;
+      }
+
+      this.visualImagePreloadSet.add(nextUrl);
+
+      const img = new Image();
+      img.loading = 'eager';
+      img.decoding = 'async';
+      img.src = nextUrl;
+
+      if (typeof img.decode === 'function') {
+        img.decode().catch(() => undefined);
+      }
+
+      img.onload = () => {
+        loadNext();
+      };
+
+      img.onerror = () => {
+        loadNext();
+      };
+    };
+
+    for (let index = 0; index < concurrency; index += 1) {
+      loadNext();
+    }
   }
 
   resolveCharacterModPreview(entry: VisualCharacterEntry): string | null {
@@ -1276,7 +1515,7 @@ class EchoManager {
         new Set(
           (scanResult.data?.fighterNames || [])
             .map((rawName) => this.normalizeFighterKey(rawName))
-            .filter((fighterKey) => Boolean(window.SSBU_CHARACTERS?.[fighterKey])),
+            .filter((fighterKey) => Boolean(this.getCharacterInfoMap()[fighterKey])),
         ),
       );
 
@@ -1537,11 +1776,15 @@ class EchoManager {
       this.visualCharacterOrder = Array.isArray(stored.characterOrder)
         ? [...stored.characterOrder]
         : this.getDefaultCharacterOrder();
+      this.visualDisabledCharacters = new Set(
+        Array.isArray(stored.disabledCharacters) ? stored.disabledCharacters : [],
+      );
       this.visualSelectedCharacter = stored.selectedCharacter || null;
       this.ensureVisualCharacterOrder();
     } catch (error) {
       console.warn('Failed to load visual planner state:', error);
       this.visualCharacterOrder = this.getDefaultCharacterOrder();
+      this.visualDisabledCharacters = new Set();
       this.visualSelectedCharacter = null;
     }
   }
@@ -1553,6 +1796,7 @@ class EchoManager {
       const payload: VisualPlannerPersistedState = {
         characterOrder: this.visualCharacterOrder,
         selectedCharacter: this.visualSelectedCharacter,
+        disabledCharacters: Array.from(this.visualDisabledCharacters),
       };
 
       await window.electronAPI.store.set(ECHO_VISUAL_STATE_KEY, payload);
@@ -1664,7 +1908,7 @@ class EchoManager {
 
     const baseCharacterEntries = await Promise.all(
       defaultOrder.map(async (fighterKey) => {
-        const fighterInfo = window.SSBU_CHARACTERS?.[fighterKey];
+        const fighterInfo = this.getCharacterInfoMap()[fighterKey];
         const imageUrl = await this.resolveCharacterImageUrl(fighterKey);
 
         return {
@@ -1685,6 +1929,9 @@ class EchoManager {
     for (const entry of baseCharacterEntries) {
       visualCharacters.set(entry.fighterKey, entry);
     }
+
+    // Warm up fighter portraits in the background to reduce scroll jank.
+    this.preloadCharacterImages(baseCharacterEntries.map((entry) => entry.imageUrl));
 
     const visualMods: VisualModEntry[] = [];
 
@@ -1748,6 +1995,12 @@ class EchoManager {
     await this.loadVisualLayoutStateFromSlotTarget(selectedMod);
     this.ensureVisualCharacterOrder(Array.from(this.visualCharactersByKey.keys()));
 
+    this.visualDisabledCharacters = new Set(
+      Array.from(this.visualDisabledCharacters).filter((fighterKey) =>
+        this.visualCharactersByKey.has(fighterKey),
+      ),
+    );
+
     if (
       this.visualSelectedCharacter &&
       !this.visualCharactersByKey.has(this.visualSelectedCharacter)
@@ -1756,7 +2009,6 @@ class EchoManager {
     }
 
     this.visualLoading = false;
-    await this.refreshUiCharaInspector();
     this.renderVisualPlanner();
     await this.saveVisualPlannerState(false);
   }
@@ -1808,12 +2060,58 @@ class EchoManager {
       return baseEntry.name;
     }
 
-    return window.SSBU_CHARACTERS?.[entry.baseFighterKey]?.name || entry.baseFighterKey;
+    return this.getCharacterInfoMap()[entry.baseFighterKey]?.name || entry.baseFighterKey;
   }
 
   getVisualCardSubtitle(entry: VisualCharacterEntry): string {
     const primaryMod = this.getPrimaryVisualModForEntry(entry);
-    return primaryMod?.name || '';
+    if (primaryMod?.name) {
+      return primaryMod.name;
+    }
+
+    const characterInfoMap = this.getCharacterInfoMap();
+    const fighterInfo =
+      characterInfoMap[entry.baseFighterKey] || characterInfoMap[entry.fighterKey];
+
+    if (fighterInfo?.number && fighterInfo?.series) {
+      return `#${fighterInfo.number} - ${fighterInfo.series}`;
+    }
+
+    if (fighterInfo?.series) {
+      return fighterInfo.series;
+    }
+
+    return '';
+  }
+
+  getVisualCardImageUrl(entry: VisualCharacterEntry): string {
+    const candidateKeys = [entry.baseFighterKey, entry.fighterKey].filter(Boolean);
+
+    for (const fighterKey of candidateKeys) {
+      const cachedImage = this.visualCharacterImageCache.get(fighterKey);
+      if (cachedImage) {
+        return cachedImage;
+      }
+
+      const characterImages = (window.CHARACTER_IMAGES || {}) as Record<string, string>;
+      const mappedImage = characterImages[fighterKey];
+      if (mappedImage) {
+        return mappedImage;
+      }
+    }
+
+    const fallbackUrl = entry.imageUrl || '';
+    
+    // Debug logging to help troubleshoot image loading issues
+    if (!fallbackUrl && entry.fighterKey) {
+      console.debug(`No image URL found for character: ${entry.fighterKey}`, {
+        baseFighterKey: entry.baseFighterKey,
+        hasCache: this.visualCharacterImageCache.has(entry.fighterKey),
+        hasWindowImages: Boolean(window.CHARACTER_IMAGES),
+      });
+    }
+    
+    return fallbackUrl;
   }
 
   renderVisualPlanner() {
@@ -1825,7 +2123,6 @@ class EchoManager {
       return;
     }
 
-    const counts = this.getVisualSummaryCounts();
     const selectedEntry = this.getSelectedVisualEntry();
     const selectedTitle = selectedEntry ? this.getVisualCardTitle(selectedEntry) : '';
     const selectedSubtitle = selectedEntry
@@ -1845,127 +2142,54 @@ class EchoManager {
       ? `${selectedText} (${selectedMods.length})`
       : selectedText;
 
-    const inspectorTargetLabel = this.resolveLayoutTargetModPath(this.getSelectedMod()) || '-';
-    const selectedSlotLabel = this.getSelectedVisualSlotLabel() || '-';
-    const selectedNameOption = this.getSelectedInspectorNameOption();
-    const inspectorNameOptions = this.getInspectorNameOptions();
 
-    const inspectorNameOptionsHtml =
-      !selectedNameOption || inspectorNameOptions.length === 0
-        ? `<p class="echo-empty">${this.t('echo.inspectorNameOptionsEmpty')}</p>`
-        : `
-          <div class="echo-inspector-name-grid">
-            <div class="echo-inspector-name-card active">
-              <p class="echo-inspector-name-card-title">${this.escapeHtml(selectedNameOption.slot.toUpperCase())} - #${this.escapeHtml(selectedNameOption.labelIndex)}</p>
-              <div class="echo-inspector-name-card-row"><span>nam_chr0</span><code>${this.escapeHtml(this.formatInspectorValue(selectedNameOption.namChr0))}</code></div>
-              <div class="echo-inspector-name-card-row"><span>nam_chr1</span><code>${this.escapeHtml(this.formatInspectorValue(selectedNameOption.namChr1))}</code></div>
-              <div class="echo-inspector-name-card-row"><span>nam_chr2</span><code>${this.escapeHtml(this.formatInspectorValue(selectedNameOption.namChr2))}</code></div>
-              <div class="echo-inspector-name-card-row"><span>nam_chr3</span><code>${this.escapeHtml(this.formatInspectorValue(selectedNameOption.namChr3))}</code></div>
-              <div class="echo-inspector-name-card-row"><span>nam_stage_name</span><code>${this.escapeHtml(this.formatInspectorValue(selectedNameOption.namStageName))}</code></div>
-              <div class="echo-inspector-name-card-row"><span>characall_label</span><code>${this.escapeHtml(this.formatInspectorValue(selectedNameOption.announcer))}</code></div>
-            </div>
-          </div>
-        `;
+    const renderTile = (fighterKey: string, isDisabledArea = false) => {
+      const entry = this.visualCharactersByKey.get(fighterKey);
+      if (!entry) return '';
 
-    const inspectorContent = this.uiCharaInspectorLoading
-      ? `<p class="echo-loading">${this.t('echo.loading')}</p>`
-      : this.uiCharaInspectorError
-        ? `<p class="echo-empty">${this.escapeHtml(this.uiCharaInspectorError)}</p>`
-        : this.uiCharaInspectorData
-          ? `
-            <div class="echo-inspector-grid">
-              <div class="echo-inspector-row"><span>${this.t('echo.inspectorSelectedSlot')}</span><code>${this.escapeHtml(selectedSlotLabel.toUpperCase())}</code></div>
-              <div class="echo-inspector-row"><span>${this.t('echo.inspectorLabelIndex')}</span><code>${this.escapeHtml(this.formatInspectorValue(selectedNameOption?.labelIndex || ''))}</code></div>
-              <div class="echo-inspector-row"><span>ui_chara_id</span><code>${this.escapeHtml(this.getInspectorFieldValue('ui_chara_id'))}</code></div>
-              <div class="echo-inspector-row"><span>name_id</span><code>${this.escapeHtml(this.getInspectorFieldValue('name_id'))}</code></div>
-              <div class="echo-inspector-row"><span>fighter_kind</span><code>${this.escapeHtml(this.getInspectorFieldValue('fighter_kind'))}</code></div>
-              <div class="echo-inspector-row"><span>fighter_kind_corps</span><code>${this.escapeHtml(this.getInspectorFieldValue('fighter_kind_corps'))}</code></div>
-              <div class="echo-inspector-row"><span>alt_chara_id</span><code>${this.escapeHtml(this.getInspectorFieldValue('alt_chara_id'))}</code></div>
-              <div class="echo-inspector-row"><span>color_start_index</span><code>${this.escapeHtml(this.getInspectorFieldValue('color_start_index'))}</code></div>
-              <div class="echo-inspector-row"><span>color_num</span><code>${this.escapeHtml(this.getInspectorFieldValue('color_num'))}</code></div>
-              <div class="echo-inspector-row"><span>c00_index</span><code>${this.escapeHtml(this.getInspectorFieldValue('c00_index'))}</code></div>
-              <div class="echo-inspector-row"><span>n00_index</span><code>${this.escapeHtml(this.getInspectorFieldValue('n00_index'))}</code></div>
-              <div class="echo-inspector-row"><span>characall_label_c00</span><code>${this.escapeHtml(this.getInspectorFieldValue('characall_label_c00'))}</code></div>
-            </div>
-            <div class="echo-inspector-name-options">
-              <p class="echo-inspector-name-options-title">${this.t('echo.inspectorNameOptionsTitle')}</p>
-              ${inspectorNameOptionsHtml}
-            </div>
-            <p class="echo-section-hint">${this.t('echo.inspectorSource')}: ${this.escapeHtml(this.uiCharaInspectorData.sourcePath)}</p>
-          `
-          : `<p class="echo-empty">${this.t('echo.inspectorNoData')}</p>`;
+      const isActive = fighterKey === this.visualSelectedCharacter;
+      const tileTitle = this.getVisualCardTitle(entry);
+      const resolvedImageUrl = this.getVisualCardImageUrl(entry);
+      const imageUrl = this.escapeHtml(resolvedImageUrl);
+      const fallbackInitials = this.escapeHtml(this.getVisualTileInitials(tileTitle));
 
-    const tilesHtml = this.visualCharacterOrder
-      .map((fighterKey) => {
-        const entry = this.visualCharactersByKey.get(fighterKey);
-        if (!entry) return '';
+      const tileClasses = [
+        'echo-visual-tile',
+        isActive ? 'active' : '',
+        isDisabledArea ? 'is-disabled' : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
 
-        const isActive = fighterKey === this.visualSelectedCharacter;
-        const slotLabel = this.getVisualSlotLabel(fighterKey);
-
-        const badges: string[] = [];
-        if (entry.fighterMods.length > 0) {
-          badges.push(
-            `<span class="echo-visual-badge fighter">${this.t('echo.visualTypeFighter')}: ${entry.fighterMods.length}</span>`,
-          );
-        }
-        if (entry.movesetMods.length > 0) {
-          badges.push(
-            `<span class="echo-visual-badge moveset">${this.t('echo.visualTypeMoveset')}: ${entry.movesetMods.length}</span>`,
-          );
-        }
-        if (entry.echoMods.length > 0) {
-          badges.push(
-            `<span class="echo-visual-badge echo">${this.t('echo.visualTypeEcho')}: ${entry.echoMods.length}</span>`,
-          );
-        }
-
-        if (entry.cardKind === 'echo') {
-          const baseName =
-            this.visualCharactersByKey.get(entry.baseFighterKey)?.name ||
-            entry.baseFighterKey;
-          badges.unshift(
-            `<span class="echo-visual-badge echo">Echo of ${this.escapeHtml(baseName)}</span>`,
-          );
-
-          if (slotLabel) {
-            badges.unshift(
-              `<span class="echo-visual-badge echo">${this.escapeHtml(slotLabel.toUpperCase())}</span>`,
-            );
-          }
-        }
-
-        const tileTitle = this.getVisualCardTitle(entry);
-        const tileSubtitle = this.getVisualCardSubtitle(entry);
-        const imageUrl = this.escapeHtml(entry.modPreviewUrl || entry.imageUrl || '');
-        const fallbackInitials = this.escapeHtml(this.getVisualTileInitials(tileTitle));
-
-        return `
-          <div
-            class="echo-visual-tile ${isActive ? 'active' : ''}"
-            data-fighter="${this.escapeHtml(fighterKey)}"
-            draggable="true"
-          >
-            <div class="echo-visual-tile-media">
-              <img
-                class="echo-visual-tile-image"
-                src="${imageUrl}"
-                alt="${this.escapeHtml(tileTitle)}"
-                loading="lazy"
-                onerror="this.style.display='none'; this.parentElement.querySelector('.echo-visual-tile-image-fallback').classList.add('visible');"
-              />
-              <div class="echo-visual-tile-image-fallback">${fallbackInitials}</div>
-              <div class="echo-visual-tile-subtitle">${this.escapeHtml(tileTitle)}</div>
-            </div>
+      return `
+        <div
+          class="${tileClasses}"
+          data-fighter="${this.escapeHtml(fighterKey)}"
+          data-disabled="${isDisabledArea ? 'true' : 'false'}"
+          draggable="${isDisabledArea ? 'false' : 'true'}"
+        >
+          <div class="echo-tile-image-bg">
             ${
-              tileSubtitle
-                ? `<div class="echo-visual-tile-body"><p class="echo-visual-tile-submeta">${this.escapeHtml(tileSubtitle)}</p></div>`
-                : ''
+              imageUrl
+                ? `<img src="${imageUrl}" alt="${this.escapeHtml(tileTitle)}" class="echo-tile-img" loading="lazy" />`
+                : `<div class="echo-tile-placeholder">${fallbackInitials}</div>`
             }
-            <div class="echo-visual-tile-badges">${badges.join('')}</div>
           </div>
-        `;
-      })
+          <div class="echo-tile-name-bar">${this.escapeHtml(tileTitle)}</div>
+        </div>
+      `;
+    };
+
+    const activeOrder = this.visualCharacterOrder.filter(
+      (fighterKey) => !this.visualDisabledCharacters.has(fighterKey),
+    );
+    const disabledOrder = this.visualCharacterOrder.filter((fighterKey) =>
+      this.visualDisabledCharacters.has(fighterKey),
+    );
+
+    const activeTilesHtml = activeOrder.map((fighterKey) => renderTile(fighterKey)).join('');
+    const disabledTilesHtml = disabledOrder
+      .map((fighterKey) => renderTile(fighterKey, true))
       .join('');
 
     const unmappedModsHtml =
@@ -1991,56 +2215,26 @@ class EchoManager {
           `;
 
     container.innerHTML = `
-      <div class="echo-visual-summary">
-        <div class="echo-visual-summary-item">
-          <p class="echo-visual-summary-title">${this.t('echo.visualSummaryFighters')}</p>
-          <p class="echo-visual-summary-value">${counts.fighters}</p>
-        </div>
-        <div class="echo-visual-summary-item">
-          <p class="echo-visual-summary-title">${this.t('echo.visualSummaryFighterMods')}</p>
-          <p class="echo-visual-summary-value">${counts.fighterMods}</p>
-        </div>
-        <div class="echo-visual-summary-item">
-          <p class="echo-visual-summary-title">${this.t('echo.visualSummaryMovesets')}</p>
-          <p class="echo-visual-summary-value">${counts.movesets}</p>
-        </div>
-        <div class="echo-visual-summary-item">
-          <p class="echo-visual-summary-title">${this.t('echo.visualSummaryEchoes')}</p>
-          <p class="echo-visual-summary-value">${counts.echoes}</p>
-        </div>
-      </div>
-
       <div class="echo-visual-selected-inline">
         <p class="echo-visual-selected-inline-text">${this.escapeHtml(selectedSummary)}</p>
-        <button
-          id="echo-visual-open-menu-btn"
-          class="input-btn short"
-          type="button"
-          ${selectedEntry ? '' : 'disabled'}
-        >
-          ${this.t('echo.visualOpenCharacterMenu')}
-        </button>
       </div>
 
-      <div class="echo-inspector-panel">
-        <h4 class="echo-inspector-title">${this.t('echo.inspectorTitle')}</h4>
-        <p class="echo-section-hint">${this.t('echo.inspectorTarget')}: ${this.escapeHtml(inspectorTargetLabel)}</p>
-        ${inspectorContent}
-      </div>
+      <div class="echo-visual-board" id="echo-visual-board">${activeTilesHtml}</div>
 
-      <div class="echo-visual-board" id="echo-visual-board">${tilesHtml}</div>
+      <div class="echo-visual-disabled-section">
+        <p class="echo-visual-unmapped-title">${this.t('echo.visualDisabledArea')}</p>
+        <div class="echo-visual-board echo-visual-board-disabled" id="echo-visual-board-disabled">
+          ${
+            disabledTilesHtml ||
+            `<p class="echo-empty">${this.t('echo.visualDisabledEmpty')}</p>`
+          }
+        </div>
+      </div>
       ${unmappedModsHtml}
     `;
 
     this.bindVisualPlannerBoardEvents();
     this.bindVisualPlannerModItemEvents();
-
-    const openMenuBtn = document.querySelector<HTMLElement>('#echo-visual-open-menu-btn');
-    if (openMenuBtn) {
-      openMenuBtn.addEventListener('click', () => {
-        this.openCharacterQuickMenu();
-      });
-    }
   }
 
   bindVisualPlannerModItemEvents() {
@@ -2072,6 +2266,7 @@ class EchoManager {
 
     for (const tile of tiles) {
       const fighterKey = tile.dataset.fighter;
+      const isDisabledTile = tile.dataset.disabled === 'true';
       if (!fighterKey) continue;
 
       tile.addEventListener('click', async () => {
@@ -2086,12 +2281,10 @@ class EchoManager {
           if (sourceMod && window.modManager) {
             await window.modManager.selectMod(sourceMod.id, true);
             this.updateSelectedModView(sourceMod);
-            await this.loadSelectedModAnalysis(sourceMod);
           }
         }
 
         this.visualSelectedCharacter = fighterKey;
-        await this.refreshUiCharaInspector();
         this.renderVisualPlanner();
         await this.saveVisualPlannerState(false);
         this.openCharacterQuickMenu(fighterKey);
@@ -2099,29 +2292,21 @@ class EchoManager {
 
       tile.addEventListener('contextmenu', async (event) => {
         event.preventDefault();
-        const entry = this.visualCharactersByKey.get(fighterKey);
-        if (entry?.sourceModPath) {
-          this.selectedEchoModPath = entry.sourceModPath;
 
-          const sourceMod = window.modManager?.mods?.find(
-            (modEntry) => modEntry.path === entry.sourceModPath,
-          );
-
-          if (sourceMod && window.modManager) {
-            await window.modManager.selectMod(sourceMod.id, true);
-            this.updateSelectedModView(sourceMod);
-            await this.loadSelectedModAnalysis(sourceMod);
-          }
+        if (isDisabledTile) {
+          await this.enableVisualCharacter(fighterKey);
+          return;
         }
 
-        this.visualSelectedCharacter = fighterKey;
-        await this.refreshUiCharaInspector();
-        this.renderVisualPlanner();
-        await this.saveVisualPlannerState(false);
-        this.openCharacterQuickMenu(fighterKey);
+        await this.disableVisualCharacter(fighterKey);
       });
 
       tile.addEventListener('dragstart', (event) => {
+        if (isDisabledTile) {
+          event.preventDefault();
+          return;
+        }
+
         this.visualDraggedCharacter = fighterKey;
         if (event.dataTransfer) {
           event.dataTransfer.effectAllowed = 'move';
@@ -2141,6 +2326,11 @@ class EchoManager {
       tile.addEventListener('drop', async (event) => {
         event.preventDefault();
         tile.classList.remove('drop-target');
+
+        if (isDisabledTile) {
+          this.visualDraggedCharacter = null;
+          return;
+        }
 
         const draggedKey = this.visualDraggedCharacter;
         const targetKey = fighterKey;
@@ -2175,6 +2365,189 @@ class EchoManager {
           .forEach((entry) => entry.classList.remove('drop-target'));
       });
     }
+  }
+
+  async disableVisualCharacter(fighterKey: string) {
+    if (!fighterKey) return;
+
+    this.visualDisabledCharacters.add(fighterKey);
+
+    if (this.visualSelectedCharacter === fighterKey) {
+      this.visualSelectedCharacter = null;
+    }
+
+    await this.refreshUiCharaInspector();
+    this.renderVisualPlanner();
+    await this.saveVisualPlannerState(false);
+  }
+
+  async enableVisualCharacter(fighterKey: string) {
+    if (!fighterKey) return;
+
+    this.visualDisabledCharacters.delete(fighterKey);
+    this.visualSelectedCharacter = fighterKey;
+
+    await this.refreshUiCharaInspector();
+    this.renderVisualPlanner();
+    await this.saveVisualPlannerState(false);
+  }
+
+  openEchoWizard(
+    selectedEntry: VisualCharacterEntry,
+    sourceModPath: string,
+    preferredId?: string,
+    preferredDisplayName?: string,
+  ) {
+    const modal = document.querySelector<HTMLElement>('#echo-create-wizard');
+    if (!modal) return;
+
+    this.echoWizardCharacterKey = selectedEntry.fighterKey;
+    this.echoWizardSourceModPath = sourceModPath;
+    this.echoWizardStep = 1;
+
+    const normalizedId = this.normalizeName(
+      preferredId || selectedEntry.name || selectedEntry.fighterKey,
+    );
+    const displayName = this.sanitizeEchoDisplayName(
+      preferredDisplayName || selectedEntry.name || this.formatEchoDisplayNameFromId(normalizedId),
+    );
+
+    this.setEchoNameValue(normalizedId);
+    this.setEchoDisplayNameValue(displayName);
+    this.echoPreferredIntroName = this.sanitizeEchoIntroName(displayName);
+
+    const idInput = document.querySelector<HTMLInputElement>('#echo-wizard-id-input');
+    const uiInput = document.querySelector<HTMLInputElement>('#echo-wizard-ui-input');
+    const introInput = document.querySelector<HTMLInputElement>('#echo-wizard-intro-input');
+
+    if (idInput) idInput.value = normalizedId;
+    if (uiInput) uiInput.value = displayName;
+    if (introInput) introInput.value = this.echoPreferredIntroName;
+
+    const characterLabel = document.querySelector<HTMLElement>('#echo-wizard-character-label');
+    if (characterLabel) {
+      characterLabel.textContent = this.getVisualCardTitle(selectedEntry);
+    }
+
+    const mod = window.modManager?.mods?.find((entry) => entry.path === sourceModPath);
+    const modLabel = document.querySelector<HTMLElement>('#echo-wizard-mod-label');
+    if (modLabel) {
+      modLabel.textContent = mod?.name || sourceModPath;
+    }
+
+    this.setEchoWizardStep(1);
+    modal.style.display = 'flex';
+  }
+
+  closeEchoWizard() {
+    const modal = document.querySelector<HTMLElement>('#echo-create-wizard');
+    if (!modal) return;
+    modal.style.display = 'none';
+  }
+
+  setEchoWizardStep(step: number) {
+    const clampedStep = Math.max(1, Math.min(4, step));
+    this.echoWizardStep = clampedStep;
+
+    for (let index = 1; index <= 4; index += 1) {
+      const section = document.querySelector<HTMLElement>(`#echo-wizard-step-${index}`);
+      section?.classList.toggle('active', index === clampedStep);
+    }
+
+    const backBtn = document.querySelector<HTMLElement>('#echo-wizard-back-btn');
+    const nextBtn = document.querySelector<HTMLElement>('#echo-wizard-next-btn');
+    const createBtn = document.querySelector<HTMLElement>('#echo-wizard-create-btn');
+
+    if (backBtn) {
+      backBtn.toggleAttribute('disabled', clampedStep === 1);
+    }
+
+    if (nextBtn) {
+      nextBtn.style.display = clampedStep >= 4 ? 'none' : 'inline-flex';
+    }
+
+    if (createBtn) {
+      createBtn.style.display = clampedStep >= 4 ? 'inline-flex' : 'none';
+    }
+
+    this.renderEchoWizardReview();
+  }
+
+  syncEchoWizardInputs() {
+    const idInput = document.querySelector<HTMLInputElement>('#echo-wizard-id-input');
+    const uiInput = document.querySelector<HTMLInputElement>('#echo-wizard-ui-input');
+    const introInput = document.querySelector<HTMLInputElement>('#echo-wizard-intro-input');
+
+    if (idInput) {
+      const normalized = this.normalizeName(idInput.value);
+      idInput.value = normalized;
+      this.setEchoNameValue(normalized);
+    }
+
+    if (uiInput) {
+      const sanitized = this.sanitizeEchoDisplayName(uiInput.value);
+      uiInput.value = sanitized;
+      this.setEchoDisplayNameValue(sanitized);
+    }
+
+    if (introInput) {
+      const sanitizedIntro = this.sanitizeEchoIntroName(introInput.value);
+      introInput.value = sanitizedIntro;
+      this.echoPreferredIntroName = sanitizedIntro;
+    }
+  }
+
+  renderEchoWizardReview() {
+    const review = document.querySelector<HTMLElement>('#echo-wizard-review');
+    if (!review) return;
+
+    const mod = window.modManager?.mods?.find(
+      (entry) => entry.path === this.echoWizardSourceModPath,
+    );
+    const characterEntry = this.echoWizardCharacterKey
+      ? this.visualCharactersByKey.get(this.echoWizardCharacterKey)
+      : null;
+
+    review.innerHTML = `
+      <p><strong>${this.t('echo.wizardCharacter')}</strong>: ${this.escapeHtml(
+        characterEntry ? this.getVisualCardTitle(characterEntry) : '-',
+      )}</p>
+      <p><strong>${this.t('echo.wizardMod')}</strong>: ${this.escapeHtml(mod?.name || '-')}</p>
+      <p><strong>${this.t('echo.wizardId')}</strong>: ${this.escapeHtml(this.getEchoNameValue() || '-')}</p>
+      <p><strong>${this.t('echo.wizardUiName')}</strong>: ${this.escapeHtml(
+        this.getEchoDisplayNameValue() || '-',
+      )}</p>
+      <p><strong>${this.t('echo.wizardIntro')}</strong>: ${this.escapeHtml(
+        this.echoPreferredIntroName || this.getEchoDisplayNameValue() || '-',
+      )}</p>
+      <p class="echo-section-hint">${this.t('echo.wizardSlotHint')}</p>
+    `;
+  }
+
+  async confirmEchoWizardCreate() {
+    this.syncEchoWizardInputs();
+
+    if (!this.echoWizardSourceModPath || !window.modManager?.mods) {
+      window.toastManager?.warning('echo.visualNoModsForCharacter');
+      return;
+    }
+
+    const mod = window.modManager.mods.find(
+      (entry) => entry.path === this.echoWizardSourceModPath,
+    );
+
+    if (!mod) {
+      window.toastManager?.warning('echo.visualNoModsForCharacter');
+      return;
+    }
+
+    this.selectedEchoModPath = mod.path;
+    await window.modManager.selectMod(mod.id, true);
+    this.updateSelectedModView(mod);
+    await this.loadSelectedModAnalysis(mod);
+
+    await this.openChangeSlotFlow();
+    this.closeEchoWizard();
   }
 
   closeCharacterQuickMenu() {
@@ -2219,6 +2592,7 @@ class EchoManager {
     const titleLabel = selectedCardSubtitle
       ? `${displayName} - ${selectedCardSubtitle}`
       : displayName;
+    const isDisabled = this.visualDisabledCharacters.has(selectedEntry.fighterKey);
 
     title.textContent = this.t('echo.characterMenuTitle', {
       name: titleLabel,
@@ -2240,9 +2614,17 @@ class EchoManager {
                     <p class="echo-character-menu-mod-name">${this.escapeHtml(mod.name)}</p>
                     <p class="echo-character-menu-mod-meta">${this.escapeHtml(this.getVisualTypeLabel(mod.type))} - ${this.escapeHtml(mod.status)}</p>
                   </div>
-                  <button class="input-btn short" type="button" data-character-menu-mod="${this.escapeHtml(mod.path)}">
-                    ${this.t('echo.characterMenuSelectMod')}
-                  </button>
+                  <div class="echo-character-menu-mod-actions">
+                    <button class="input-btn short" type="button" data-character-menu-mod="${this.escapeHtml(mod.path)}">
+                      ${this.t('echo.characterMenuSelectMod')}
+                    </button>
+                    <button class="input-btn short" type="button" data-character-menu-details="${this.escapeHtml(mod.path)}">
+                      ${this.t('echo.characterMenuSeeDetails')}
+                    </button>
+                    <button class="input-btn short" type="button" data-character-menu-create-mod="${this.escapeHtml(mod.path)}">
+                      ${this.t('echo.characterMenuCreateFromMod')}
+                    </button>
+                  </div>
                 </div>
               `,
             )
@@ -2253,9 +2635,36 @@ class EchoManager {
         <button class="input-btn short" type="button" id="echo-character-menu-create">
           ${this.t('echo.characterMenuCreateEcho')}
         </button>
+        <button class="input-btn short" type="button" id="echo-character-menu-disable-toggle">
+          ${isDisabled ? this.t('echo.characterMenuReenable') : this.t('echo.characterMenuDisable')}
+        </button>
+      </div>
+      <div class="echo-character-menu-details" id="echo-character-menu-details">
+        <p class="echo-character-menu-empty">${this.t('echo.characterMenuDetailsPrompt')}</p>
       </div>
       <div class="echo-visual-mod-list">${modsHtml}</div>
     `;
+
+    const detailsContainer = document.querySelector<HTMLElement>(
+      '#echo-character-menu-details',
+    );
+
+    const renderModDetails = (modPath: string) => {
+      if (!detailsContainer) return;
+
+      const modDetails = selectedMods.find((mod) => mod.path === modPath);
+      if (!modDetails) {
+        detailsContainer.innerHTML = `<p class="echo-character-menu-empty">${this.t('echo.characterMenuDetailsPrompt')}</p>`;
+        return;
+      }
+
+      detailsContainer.innerHTML = `
+        <p class="echo-character-menu-mod-name">${this.escapeHtml(modDetails.name)}</p>
+        <p class="echo-character-menu-mod-meta">${this.escapeHtml(this.getVisualTypeLabel(modDetails.type))} - ${this.escapeHtml(modDetails.status)}</p>
+        <p class="echo-character-menu-mod-meta">${this.t('echo.characterMenuDetailsPath')}: ${this.escapeHtml(modDetails.path)}</p>
+        <p class="echo-character-menu-mod-meta">${this.t('echo.characterMenuDetailsFighterCount')}: ${modDetails.fighterKeys.length}</p>
+      `;
+    };
 
     const createButton = document.querySelector<HTMLElement>(
       '#echo-character-menu-create',
@@ -2263,6 +2672,21 @@ class EchoManager {
     if (createButton) {
       createButton.addEventListener('click', async () => {
         await this.createEchoDraftFromVisualSelection();
+        this.closeCharacterQuickMenu();
+      });
+    }
+
+    const disableToggleButton = document.querySelector<HTMLElement>(
+      '#echo-character-menu-disable-toggle',
+    );
+    if (disableToggleButton) {
+      disableToggleButton.addEventListener('click', async () => {
+        if (isDisabled) {
+          await this.enableVisualCharacter(selectedEntry.fighterKey);
+        } else {
+          await this.disableVisualCharacter(selectedEntry.fighterKey);
+        }
+
         this.closeCharacterQuickMenu();
       });
     }
@@ -2285,10 +2709,32 @@ class EchoManager {
         });
       });
 
+    body
+      .querySelectorAll<HTMLElement>('[data-character-menu-details]')
+      .forEach((button) => {
+        button.addEventListener('click', () => {
+          const modPath = button.dataset.characterMenuDetails;
+          if (!modPath) return;
+          renderModDetails(modPath);
+        });
+      });
+
+    body
+      .querySelectorAll<HTMLElement>('[data-character-menu-create-mod]')
+      .forEach((button) => {
+        button.addEventListener('click', async () => {
+          const modPath = button.dataset.characterMenuCreateMod;
+          if (!modPath) return;
+
+          await this.createEchoDraftFromVisualSelection(modPath);
+          this.closeCharacterQuickMenu();
+        });
+      });
+
     menu.style.display = 'flex';
   }
 
-  async createEchoDraftFromVisualSelection() {
+  async createEchoDraftFromVisualSelection(sourceModPath?: string) {
     const selectedEntry = this.getSelectedVisualEntry();
 
     if (!selectedEntry) {
@@ -2304,12 +2750,16 @@ class EchoManager {
     }
     this.setEchoDisplayNameValue(selectedEntry.name || token);
 
-    const sourceMod =
-      selectedEntry.fighterMods.find((entry) => entry.status === 'active') ||
-      selectedEntry.fighterMods[0] ||
-      selectedEntry.echoMods.find((entry) => entry.status === 'active') ||
-      selectedEntry.echoMods[0] ||
-      null;
+    const sourceMod = sourceModPath
+      ? selectedEntry.fighterMods.find((entry) => entry.path === sourceModPath) ||
+        selectedEntry.echoMods.find((entry) => entry.path === sourceModPath) ||
+        selectedEntry.movesetMods.find((entry) => entry.path === sourceModPath) ||
+        null
+      : selectedEntry.fighterMods.find((entry) => entry.status === 'active') ||
+        selectedEntry.fighterMods[0] ||
+        selectedEntry.echoMods.find((entry) => entry.status === 'active') ||
+        selectedEntry.echoMods[0] ||
+        null;
 
     if (!sourceMod) {
       if (window.toastManager) {
@@ -2331,10 +2781,11 @@ class EchoManager {
     if (window.modManager) {
       await window.modManager.selectMod(mod.id, true);
     }
-    await this.setActiveSubview('builder');
     this.updateSelectedModView(mod);
     await this.loadSelectedModAnalysis(mod);
     this.setEchoDisplayNameValue(selectedEntry.name || token);
+
+    this.openEchoWizard(selectedEntry, mod.path, token, selectedEntry.name || token);
 
     if (window.toastManager) {
       window.toastManager.success('echo.visualDraftCreated', 2500, {
@@ -2427,6 +2878,9 @@ class EchoManager {
     const displayName =
       this.getEchoDisplayNameValue() ||
       this.formatEchoDisplayNameFromId(preferredToken);
+    const introName =
+      this.sanitizeEchoIntroName(this.echoPreferredIntroName) ||
+      displayName;
 
     for (const [fighterName, assignments] of slotAssignments.entries()) {
       customNames[fighterName] = {};
@@ -2435,7 +2889,7 @@ class EchoManager {
         customNames[fighterName][targetSlot] = {
           cspName: displayName,
           vsName: displayName.toUpperCase(),
-          boxingRing: displayName.toUpperCase(),
+          boxingRing: introName,
           announcer: 'vc_narration_characall',
         };
       }
@@ -2582,6 +3036,7 @@ class EchoManager {
     this.takenNames = [];
     this.uiCompatibilityPlan = null;
     this.uiCompatibilityState = null;
+    this.setBuilderResultsVisible(false);
     this.renderNameSuggestions();
     this.renderCompatibilityPlanner(null, null);
     this.renderVisualPlanner();
@@ -2591,9 +3046,7 @@ class EchoManager {
   async refresh() {
     await this.refreshModEligibility();
 
-    this.renderModPicker(
-      document.querySelector<HTMLInputElement>('#echo-mod-search')?.value || '',
-    );
+    this.renderModPicker();
 
     const mod = this.getSelectedMod();
     this.updateSelectedModView(mod);
@@ -2604,7 +3057,29 @@ class EchoManager {
       return;
     }
 
-    await this.loadSelectedModAnalysis(mod);
+    const shouldShowAnalysis =
+      this.activeSubview === 'planner' || this.builderCompletedModPath === mod.path;
+
+    if (shouldShowAnalysis) {
+      if (this.activeSubview === 'builder') {
+        this.setBuilderResultsVisible(true);
+      }
+      await this.loadSelectedModAnalysis(mod);
+    } else {
+      this.setBuilderResultsVisible(false);
+      const analysisContainer = document.querySelector<HTMLElement>(
+        '#echo-analysis-results',
+      );
+      if (analysisContainer) {
+        analysisContainer.innerHTML = `<p class="echo-empty">${this.t('echo.analysisPlaceholder')}</p>`;
+      }
+      const previewImage = document.querySelector<HTMLImageElement>('#echo-preview-image');
+      if (previewImage) {
+        previewImage.style.display = 'none';
+        previewImage.src = '';
+      }
+    }
+
     await this.refreshVisualPlanner();
   }
 
@@ -2708,6 +3183,85 @@ class EchoManager {
     }
   }
 
+  async launchBuilderEchoFlow() {
+    const mod = this.getSelectedMod();
+
+    if (!mod || !mod.path) {
+      window.toastManager?.warning('echo.noSelectedMod');
+      return;
+    }
+
+    if (!window.electronAPI?.scanMod || !window.electronAPI?.changeSlots) {
+      window.toastManager?.error('echo.operationsUnavailable');
+      return;
+    }
+
+    const scanResult = await window.electronAPI.scanMod(mod.path);
+    if (!scanResult?.success) {
+      window.toastManager?.error('toasts.failedToChangeSlot', 3000, {
+        error: scanResult?.error || 'Unknown error',
+      });
+      return;
+    }
+
+    const defaultToken = this.normalizeName(
+      this.getEchoNameValue() || mod.name || '',
+    );
+    this.setEchoNameValue(defaultToken);
+    this.setEchoDisplayNameValue(
+      this.getEchoDisplayNameValue() || this.formatEchoDisplayNameFromId(defaultToken),
+    );
+
+    const compatibilityOptions = this.collectCompatibilityOptions(mod);
+
+    const forceEchoFlow = this.isEchoModFromScan(scanResult.data || {});
+
+    window.modalManager?.openChangeSlotModal(
+      mod,
+      scanResult.data,
+      async (
+        slotAssignments,
+        deletedSlots,
+        slotCustomNamesByFighter,
+        echoOperationOptions,
+      ) => {
+        const changeSlotsResult = await window.electronAPI.changeSlots(
+          mod.path,
+          scanResult.data.pathData,
+          slotAssignments,
+          deletedSlots,
+          slotCustomNamesByFighter,
+          echoOperationOptions,
+        );
+
+        if (!changeSlotsResult?.success) {
+          window.toastManager?.error('toasts.failedToChangeSlot', 3000, {
+            error: changeSlotsResult?.error || 'Unknown error',
+          });
+          return;
+        }
+
+        window.toastManager?.success('toasts.slotChanged');
+        this.builderCompletedModPath = mod.path;
+        this.setBuilderResultsVisible(true);
+        await this.loadSelectedModAnalysis(mod);
+        await window.modManager?.fetchMods();
+        await this.refreshVisualPlanner();
+      },
+      {
+        isEchoFighter: forceEchoFlow,
+        preferredEchoName: this.getEchoNameValue(),
+        preferredEchoDisplayName: this.getEchoDisplayNameValue(),
+        preferredEchoIntroName:
+          this.sanitizeEchoIntroName(this.echoPreferredIntroName) ||
+          this.getEchoDisplayNameValue(),
+        nameSuggestions: this.nameSuggestions,
+        takenNames: this.takenNames,
+        echoOperationOptions: compatibilityOptions,
+      },
+    );
+  }
+
   async openChangeSlotFlow() {
     const mod = this.getSelectedMod();
     const selectedEntry = this.getSelectedVisualEntry();
@@ -2728,6 +3282,9 @@ class EchoManager {
 
     const preferredEchoName = this.getEchoNameValue();
     const preferredEchoDisplayName = this.getEchoDisplayNameValue();
+    const preferredEchoIntroName =
+      this.sanitizeEchoIntroName(this.echoPreferredIntroName) ||
+      preferredEchoDisplayName;
     const nameConflicts = this.getNameConflicts(preferredEchoName);
     const forceEchoFlow = this.shouldUseEchoDuplicateFlow(mod, selectedEntry);
 
@@ -2751,6 +3308,7 @@ class EchoManager {
       isEchoFighter: forceEchoFlow,
       preferredEchoName,
       preferredEchoDisplayName,
+      preferredEchoIntroName,
       nameSuggestions: this.nameSuggestions,
       takenNames: this.takenNames,
       echoOperationOptions: compatibilityOptions,

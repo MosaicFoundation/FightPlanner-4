@@ -617,6 +617,11 @@ export default class ProtocolHandler {
       );
 
       if (modInstallResult.success) {
+        if (modId === '573626') {
+          // Mark tutorial dependency as installed for Echo slot expansion workflow.
+          sharedStore.set('tutorial.echoDelimiterInstalled', true);
+        }
+
         if (modId && modInstallResult.resultingMods.length === 1) {
           const modData = modInstallResult.resultingMods[0];
           await this.fetchAndSaveModMetadata(modId, modData.modPath, modType);

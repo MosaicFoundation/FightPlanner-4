@@ -93,6 +93,47 @@ type EchoUiNameOption = {
   announcer: string;
 };
 
+type UiBuilderCategory =
+  | 'backgrounds'
+  | 'fonts'
+  | 'borders'
+  | 'images'
+  | 'animations';
+
+type UiBuilderModAnalysis = {
+  name: string;
+  path: string;
+  status: string;
+  category: string | null;
+  categories: UiBuilderCategory[];
+  categoryMatches: Record<UiBuilderCategory, string[]>;
+  uiFiles: string[];
+};
+
+type UiBuilderAnalyzeResponse = {
+  modsPath: string;
+  mods: UiBuilderModAnalysis[];
+};
+
+type UiBuilderBuildRequest = {
+  outputFolderName?: string;
+  categorySelections: Partial<Record<UiBuilderCategory, string>>;
+};
+
+type UiBuilderSkippedConflict = {
+  relativePath: string;
+  existingModPath: string;
+  skippedModPath: string;
+  category: UiBuilderCategory;
+};
+
+type UiBuilderBuildResponse = {
+  outputPath: string;
+  copiedFiles: string[];
+  skippedConflicts: UiBuilderSkippedConflict[];
+  selectedCategories: UiBuilderCategory[];
+};
+
 const SLOT_EXPANSION_SIGNATURES = [
   'ui/param/database/ui_chara_db.prcxml',
   'ui/message/msg_name.xmsbt',
@@ -111,6 +152,117 @@ const MENU_PARAM_SIGNATURES = [
   'param/menu/chara_icon_arrangement.prc',
   'param/menu/chara_icon_arrangement.prcx',
 ];
+
+const UI_BUILDER_CATEGORIES: UiBuilderCategory[] = [
+  'backgrounds',
+  'fonts',
+  'borders',
+  'images',
+  'animations',
+];
+
+const UI_BUILDER_CATEGORY_PATTERNS: Record<UiBuilderCategory, RegExp[]> = {
+  backgrounds: [
+    /(^|\/)ui\/layout\/menu\/(select_bg|title|stage_select|result)(\/|$)/i,
+    /(^|\/)background/i,
+    /(^|\/)bg(_|\/|\.)/i,
+  ],
+  fonts: [
+    /(^|\/)font(s)?(\/|_|\.)/i,
+    /typeface/i,
+    /(^|\/)ui\/message\//i,
+  ],
+  borders: [
+    /(^|\/)border(s)?(\/|_|\.)/i,
+    /(^|\/)frame(s)?(\/|_|\.)/i,
+    /(^|\/)window(s)?(\/|_|\.)/i,
+    /(^|\/)plate(s)?(\/|_|\.)/i,
+  ],
+  images: [
+    /(^|\/)ui\/replace\//i,
+    /(^|\/)icon(s)?(\/|_|\.)/i,
+    /(^|\/)portrait(s)?(\/|_|\.)/i,
+    /(^|\/)image(s)?(\/|_|\.)/i,
+    /texture/i,
+  ],
+  animations: [
+    /(^|\/)anim(ation)?(s)?(\/|_|\.)/i,
+    /(^|\/)motion(\/|_|\.)/i,
+    /(^|\/)movie(s)?(\/|_|\.)/i,
+    /(^|\/)timeline(s)?(\/|_|\.)/i,
+    /(^|\/)effect(s)?(\/|_|\.)/i,
+  ],
+};
+
+function isUiRelatedRelativeFile(relativePath: string): boolean {
+  const normalized = relativePath.replace(/\\/g, '/').toLowerCase();
+  return normalized.startsWith('ui/') || normalized.startsWith('param/menu/');
+}
+
+function listRelativeFilesRecursive(basePath: string): string[] {
+  if (!fs.existsSync(basePath)) {
+    return [];
+  }
+
+  const results: string[] = [];
+
+  const walk = (absolutePath: string, relativePrefix: string) => {
+    const entries = fs.readdirSync(absolutePath, { withFileTypes: true });
+    for (const entry of entries) {
+      const entryAbsolutePath = path.join(absolutePath, entry.name);
+      const entryRelativePath = relativePrefix
+        ? `${relativePrefix}/${entry.name}`
+        : entry.name;
+
+      if (entry.isDirectory()) {
+        walk(entryAbsolutePath, entryRelativePath);
+      } else if (entry.isFile()) {
+        results.push(entryRelativePath.replace(/\\/g, '/'));
+      }
+    }
+  };
+
+  walk(basePath, '');
+  return results;
+}
+
+function buildUiBuilderModAnalysis(mod: Mod): UiBuilderModAnalysis {
+  const allFiles = listRelativeFilesRecursive(mod.path);
+  const uiFiles = allFiles
+    .filter((relativePath) => isUiRelatedRelativeFile(relativePath))
+    .sort((a, b) => a.localeCompare(b));
+
+  const categoryMatches: Record<UiBuilderCategory, string[]> = {
+    backgrounds: [],
+    fonts: [],
+    borders: [],
+    images: [],
+    animations: [],
+  };
+
+  for (const relativePath of uiFiles) {
+    for (const category of UI_BUILDER_CATEGORIES) {
+      const patterns = UI_BUILDER_CATEGORY_PATTERNS[category];
+      if (patterns.some((pattern) => pattern.test(relativePath))) {
+        categoryMatches[category].push(relativePath);
+      }
+    }
+  }
+
+  const categories = UI_BUILDER_CATEGORIES.filter(
+    (category) => categoryMatches[category].length > 0,
+  );
+
+  return {
+    name: mod.name,
+    path: mod.path,
+    status: mod.status,
+    category: ModUtils.readModInfo(mod.path)?.category || null,
+    categories,
+    categoryMatches,
+    uiFiles,
+  };
+}
 
 const CHARACTER_IMAGE_TIMEOUT_MS = 12000;
 const characterImageDownloadPromises = new Map<string, Promise<string | null>>();
@@ -465,19 +617,9 @@ async function resolveCharacterImageUrl(
     'images',
     'chara',
   );
-  const cssManagerPortraitDir = path.join(
-    app.getPath('home'),
-    'Desktop',
-    'CSS Manager',
-    'css-manager-win32-x64',
-    'resources',
-    'app',
-    'img',
-  );
 
   for (const candidateName of candidateNames) {
     localImageCandidates.push(path.join(appAssetPortraitDir, candidateName));
-    localImageCandidates.push(path.join(cssManagerPortraitDir, candidateName));
   }
 
   for (const candidatePath of localImageCandidates) {
@@ -1602,6 +1744,168 @@ const ModHandlers = {
     } catch (error) {
       handleError(error, 'echo-plan-ui-compatibility');
       return createErrorResponse(ErrorCodes.MOD_READ_ERROR, error.message);
+    }
+  },
+
+  ['ui-builder-analyze-mods']: async (
+    common: BaseHandlerArg,
+  ): HandlerResponse<UiBuilderAnalyzeResponse> => {
+    try {
+      const modsPath = store.get('modsPath') as string | undefined;
+
+      if (!modsPath || !fs.existsSync(modsPath)) {
+        return createErrorResponse(
+          ErrorCodes.FILE_NOT_FOUND,
+          'Mods path is not configured.',
+        );
+      }
+
+      const allMods = ModUtils.readAllMods(modsPath);
+      const mergedMods = [...allMods.activeMods, ...allMods.disabledMods];
+
+      const analyzedMods = mergedMods
+        .map((mod) => buildUiBuilderModAnalysis(mod))
+        .filter((mod) => mod.uiFiles.length > 0)
+        .sort((a, b) => {
+          if (a.status === b.status) {
+            return a.name.localeCompare(b.name);
+          }
+
+          if (a.status === 'active') return -1;
+          if (b.status === 'active') return 1;
+          return a.name.localeCompare(b.name);
+        });
+
+      return {
+        success: true,
+        modsPath,
+        mods: analyzedMods,
+      };
+    } catch (error) {
+      handleError(error, 'ui-builder-analyze-mods');
+      return createErrorResponse(ErrorCodes.MOD_READ_ERROR, error.message);
+    }
+  },
+
+  ['ui-builder-build-bundle']: async (
+    common: BaseHandlerArg,
+    request: UiBuilderBuildRequest,
+  ): HandlerResponse<UiBuilderBuildResponse> => {
+    try {
+      const modsPath = store.get('modsPath') as string | undefined;
+
+      if (!modsPath || !fs.existsSync(modsPath)) {
+        return createErrorResponse(
+          ErrorCodes.FILE_NOT_FOUND,
+          'Mods path is not configured.',
+        );
+      }
+
+      const safeOutputFolderName = `${request?.outputFolderName || '[UI] Smash UI Builder Output'}`
+        .replace(/[<>:"|?*]/g, '')
+        .trim();
+
+      if (!safeOutputFolderName) {
+        return createErrorResponse(
+          ErrorCodes.INVALID_PATH,
+          'Output folder name is invalid.',
+        );
+      }
+
+      const outputPath = path.join(modsPath, safeOutputFolderName);
+      const normalizedModsRoot = path.resolve(modsPath).toLowerCase();
+      const normalizedOutputPath = path.resolve(outputPath).toLowerCase();
+
+      if (!normalizedOutputPath.startsWith(normalizedModsRoot)) {
+        return createErrorResponse(
+          ErrorCodes.INVALID_PATH,
+          'Output path must stay inside mods folder.',
+        );
+      }
+
+      const allMods = ModUtils.readAllMods(modsPath);
+      const mergedMods = [...allMods.activeMods, ...allMods.disabledMods];
+      const analysisByPath = new Map(
+        mergedMods.map((mod) => {
+          const analyzed = buildUiBuilderModAnalysis(mod);
+          return [mod.path, analyzed] as const;
+        }),
+      );
+
+      const categorySelections = request?.categorySelections || {};
+      const selectedCategories = UI_BUILDER_CATEGORIES.filter(
+        (category) => Boolean(categorySelections[category]),
+      );
+
+      if (selectedCategories.length === 0) {
+        return createErrorResponse(
+          ErrorCodes.INVALID_PATH,
+          'Select at least one category to build.',
+        );
+      }
+
+      await fs.promises.rm(outputPath, { recursive: true, force: true });
+      await fs.promises.mkdir(outputPath, { recursive: true });
+
+      const copiedFiles: string[] = [];
+      const copiedByRelativePath = new Map<string, string>();
+      const skippedConflicts: UiBuilderSkippedConflict[] = [];
+
+      for (const category of selectedCategories) {
+        const modPath = categorySelections[category];
+        if (!modPath) continue;
+
+        const analyzed = analysisByPath.get(modPath);
+        if (!analyzed) continue;
+
+        const filesForCategory = analyzed.categoryMatches[category] || [];
+
+        for (const relativePath of filesForCategory) {
+          const sourcePath = path.join(modPath, relativePath);
+          if (!fs.existsSync(sourcePath)) continue;
+
+          const existingSource = copiedByRelativePath.get(relativePath);
+          if (existingSource && existingSource !== modPath) {
+            skippedConflicts.push({
+              relativePath,
+              existingModPath: existingSource,
+              skippedModPath: modPath,
+              category,
+            });
+            continue;
+          }
+
+          if (existingSource === modPath) {
+            continue;
+          }
+
+          const targetPath = path.join(outputPath, relativePath);
+          await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
+          await fs.promises.copyFile(sourcePath, targetPath);
+          copiedByRelativePath.set(relativePath, modPath);
+          copiedFiles.push(relativePath);
+        }
+      }
+
+      const infoToml = [
+        `display_name = "${safeOutputFolderName}"`,
+        `version = "1.0.0"`,
+        `authors = "FightPlanner"`,
+        `description = "Generated by Smash UI Builder. Combines selected UI categories into one conflict-safe output mod."`,
+      ].join('\n');
+
+      await fs.promises.writeFile(path.join(outputPath, 'info.toml'), infoToml, 'utf8');
+
+      return {
+        success: true,
+        outputPath,
+        copiedFiles,
+        skippedConflicts,
+        selectedCategories,
+      };
+    } catch (error) {
+      handleError(error, 'ui-builder-build-bundle');
+      return createErrorResponse(ErrorCodes.MOD_SAVE_ERROR, error.message);
     }
   },
 
