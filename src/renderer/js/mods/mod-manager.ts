@@ -202,6 +202,12 @@ class ModManager {
     this.renderedModIds = currentModIds;
 
     this.restoreSelectedMod();
+
+    setTimeout(() => {
+      if (this.listRenderer) {
+        this.listRenderer.showNonVisibleInstantly();
+      }
+    }, 1000);
   }
 
   restoreSelectedMod() {

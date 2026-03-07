@@ -931,9 +931,11 @@ export default class ProtocolHandler {
             ? data._aAdditionalInfo._sVersion
             : '';
 
-        if (category || author || version) {
+        const modUrl = modId ? `https://gamebanana.com/${modType.toLowerCase()}s/${modId}` : '';
+
+        if (category || author || version || modUrl) {
           console.log('Creating info.toml...');
-          this.createInfoToml(modFolderPath, category, author, version);
+          this.createInfoToml(modFolderPath, category, author, version, modUrl);
         }
       }
 
@@ -1023,7 +1025,7 @@ export default class ProtocolHandler {
     });
   }
 
-  createInfoToml(modFolderPath, category, author, version) {
+  createInfoToml(modFolderPath, category, author, version, url = '') {
     const tomlPath = path.join(modFolderPath, 'info.toml');
     let content = '';
 
@@ -1036,9 +1038,12 @@ export default class ProtocolHandler {
     if (category) {
       content += `category = "${category}"\n`;
     }
+    if (url) {
+      content += `url = "${url}"\n`;
+    }
 
     fs.writeFileSync(tomlPath, content, 'utf8');
-    console.log('✓ info.toml created');
+    console.log('[createInfoToml] info.toml created');
   }
 
   sendToRenderer(channel, data) {

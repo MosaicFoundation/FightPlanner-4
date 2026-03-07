@@ -8,6 +8,7 @@ import { getProtocolHandler } from './main-protocol-setup';
 
 import downloadsStore from './store-downloads';
 import store from './store';
+import ModUtils from './mod-utils';
 import { FileExtractor } from './utils/file-extractor';
 
 export interface FppModEntry {
@@ -69,9 +70,22 @@ export default class FppHandler {
             const requiredPlugins: string[] = [];
 
             sendProgress('preparing_manifest', 10);
+            const credits: { modName: string; author: string; url: string }[] = [];
+
             for (const modPath of modPaths) {
                 const modName = path.basename(modPath);
                 const hash = FppHandler.generateHash(modName);
+
+                const modInfo = ModUtils.readModInfo(modPath);
+                if (modInfo) {
+                    credits.push({
+                        modName: modInfo.display_name || modName,
+                        author: modInfo.authors || '',
+                        url: modInfo.url || '',
+                    });
+                } else {
+                    credits.push({ modName, author: '', url: '' });
+                }
 
                 if (modName.endsWith('.nro')) {
                     const baseName = modName.replace(/\.nro$/i, '');
@@ -120,6 +134,17 @@ export default class FppHandler {
                 archive.append(manifestXml, { name: 'manifest.xml' });
 
                 archive.append(JSON.stringify(downloads, null, 2), { name: 'downloads.json' });
+
+                let creditsContent = `Credits for "${name}"\n`;
+                creditsContent += `${'='.repeat(40)}\n\n`;
+                for (const credit of credits) {
+                    creditsContent += `- ${credit.modName}`;
+                    if (credit.author) creditsContent += ` by ${credit.author}`;
+                    if (credit.url) creditsContent += `\n  ${credit.url}`;
+                    creditsContent += '\n';
+                }
+
+                archive.append(creditsContent, { name: 'credits.txt' });
 
                 if (thumbnailPath && fs.existsSync(thumbnailPath)) {
                     sendProgress('adding_thumbnail', 15);
