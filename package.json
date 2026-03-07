@@ -64,6 +64,13 @@
           "7z.exe",
           "7z.dll"
         ]
+      },
+      {
+        "from": "tools",
+        "to": "tools",
+        "filter": [
+          "7zz"
+        ]
       }
     ],
     "protocols": [

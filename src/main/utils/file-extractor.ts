@@ -138,21 +138,70 @@ export class FileExtractor {
 
     try {
       await this.extractWith7Zip(filePath, extractTo);
-    } catch (sevenZipError) {
-      console.log('[FileExtractor] 7-Zip extraction failed, trying fallback...', sevenZipError?.message || sevenZipError);
+    } catch (sevenZipError: any) {
+      console.log('[FileExtractor] bundled 7-Zip extraction failed or binary missing, trying fallback...', sevenZipError?.message || sevenZipError);
 
       const ext = path.extname(filePath).toLowerCase();
 
+      // For .zip on Linux/Mac, try native unzip
       if ((process.platform === 'linux' || process.platform === 'darwin') && ext === '.zip') {
         try {
           await this.extractWithUnzip(filePath, extractTo);
           return;
-        } catch (unzipError) {
+        } catch (unzipError: any) {
           console.log('[FileExtractor] unzip fallback also failed, trying tar...', unzipError?.message || unzipError);
         }
       }
 
-      await this.extractWithTar(filePath, extractTo);
+      // For .7z or .rar on Linux/Mac, try to use system installed p7zip-full (7z or 7za)
+      if ((process.platform === 'linux' || process.platform === 'darwin') && (ext === '.7z' || ext === '.rar')) {
+        console.log(`[FileExtractor] Trying to extract ${ext} using system 7z/7za...`);
+        try {
+          // Try '7z' first, then '7za'
+          const commands = ['7z', '7za'];
+          let commandToUse: string | null = null;
+
+          for (const cmd of commands) {
+            try {
+              execSync(`which ${cmd}`, { stdio: 'ignore' });
+              commandToUse = cmd;
+              break;
+            } catch (e) {
+              // Ignore failure, try next
+            }
+          }
+
+          if (commandToUse) {
+            return new Promise<void>((resolve, reject) => {
+              const child = child_process.spawn(commandToUse!, ['x', '-y', `-o${extractTo}`, filePath]);
+              child.on('close', (code) => {
+                if (code === 0 || code === 1 || code === 2) {
+                  if (this.verifyExtraction(extractTo)) {
+                    resolve();
+                  } else {
+                    reject(new Error(`System ${commandToUse} extracted successfully but output dir is empty`));
+                  }
+                } else {
+                  reject(new Error(`System ${commandToUse} failed with code ${code}`));
+                }
+              });
+              child.on('error', reject);
+            });
+          } else {
+            throw new Error("Cannot extract .7z or .rar archives. Please install the 'p7zip-full' package (or equivalent) in your system.");
+          }
+        } catch (system7zError: any) {
+          console.log('[FileExtractor] System 7z/7za fallback failed:', system7zError?.message || system7zError);
+          throw system7zError; // Rethrow since tar won't work on these formats
+        }
+      }
+
+      // For .tar, .tar.gz, .tgz, .tar.bz2 etc, tar works great
+      if (ext === '.zip' || ext.includes('.tar') || ext === '.gz' || ext === '.bz2' || ext === '.xz') {
+        await this.extractWithTar(filePath, extractTo);
+      } else {
+        throw new Error(`Archive format '${ext}' cannot be extracted by any available fallbacks.`);
+      }
     }
   }
   static async extractFppMetadata(filePath: string, extractTo: string): Promise<void> {
