@@ -1,5 +1,6 @@
 import path from 'path';
 import { XMLParser } from 'fast-xml-parser';
+import * as fse from 'fs-extra';
 
 import { PathData } from './mod-scanner';
 import { ModFileOperations } from '../mod-file-operations';
@@ -21,6 +22,15 @@ export type SlotCustomNamesByFighter = Record<
   Record<string, SlotCustomData>
 >;
 
+export type UiCompatibilityCategory =
+  | 'slotExpansionData'
+  | 'cssLayout'
+  | 'menuParams';
+
+export type UiCategoryPathMap = Partial<
+  Record<UiCompatibilityCategory, string>
+>;
+
 export interface EchoOperationOptions {
   renameFolders?: boolean;
   renameFiles?: boolean;
@@ -31,14 +41,34 @@ export interface EchoOperationOptions {
   duplicateCharacter?: boolean;
   duplicateNIndexOffset?: number;
   uiOutputModPath?: string;
+  selectedCategories?: UiCompatibilityCategory[];
+  categoryOutputPaths?: UiCategoryPathMap;
+  categorySourceModPaths?: UiCategoryPathMap;
+  autoSkipConflictingCategories?: boolean;
+  uiCompatibilityProfile?: string;
 }
 
 export class SlotChanger {
   private static readonly ECHO_UI_LAYOUT_RELATIVE_PATH =
     'ui/layout/menu/chara_select/chara_select/layout.arc';
 
+  private static readonly ECHO_UI_LAYOUT_COMPETE_RELATIVE_PATH =
+    'ui/layout/menu/compe_chara_select/compe_chara_select/layout.arc';
+
   private static readonly ECHO_UI_PARAM_RELATIVE_PATH =
     'param/menu/chara_icon_arrangement.prc';
+
+  private static readonly CSS_LAYOUT_RELATIVE_PATHS = [
+    'ui/layout/menu/chara_select/chara_select/layout.arc',
+    'ui/layout/menu/compe_chara_select/compe_chara_select/layout.arc',
+    'ui/layout/menu/select_bg/select_bg/layout.arc',
+    'ui/layout/menu/title/title/layout.arc',
+  ];
+
+  private static readonly MENU_PARAM_RELATIVE_PATHS = [
+    'param/menu/chara_icon_arrangement.prc',
+    'param/menu/chara_icon_arrangement.prcx',
+  ];
 
   static sanitizeEchoFighterName(name: string): string {
     return name
@@ -139,17 +169,32 @@ export class SlotChanger {
     const hasLayout = await ModFileOperations.fileExists(
       path.join(candidatePath, this.ECHO_UI_LAYOUT_RELATIVE_PATH),
     );
+    const hasCompeLayout = await ModFileOperations.fileExists(
+      path.join(candidatePath, this.ECHO_UI_LAYOUT_COMPETE_RELATIVE_PATH),
+    );
     const hasParam = await ModFileOperations.fileExists(
       path.join(candidatePath, this.ECHO_UI_PARAM_RELATIVE_PATH),
     );
 
-    return hasLayout || hasParam;
+    return hasLayout || hasCompeLayout || hasParam;
   }
 
   static async resolveMetadataOutputModPath(
     modPath: string,
     options: EchoOperationOptions,
   ): Promise<string> {
+    const slotExpansionTarget = options.categoryOutputPaths?.slotExpansionData;
+
+    if (slotExpansionTarget) {
+      const isValidCategoryTarget = await this.isEchoUiOutputMod(
+        slotExpansionTarget,
+      );
+
+      if (isValidCategoryTarget) {
+        return slotExpansionTarget;
+      }
+    }
+
     if (options.uiOutputModPath) {
       const isValidExplicitTarget = await this.isEchoUiOutputMod(
         options.uiOutputModPath,
@@ -174,6 +219,161 @@ export class SlotChanger {
     return modPath;
   }
 
+  static isCategorySelected(
+    options: EchoOperationOptions,
+    category: UiCompatibilityCategory,
+  ): boolean {
+    const selected = options.selectedCategories;
+
+    if (!selected || selected.length === 0) {
+      // Preserve legacy behavior unless explicit category selection is provided.
+      return category === 'slotExpansionData';
+    }
+
+    return selected.includes(category);
+  }
+
+  static resolveCategoryOutputPath(
+    modPath: string,
+    options: EchoOperationOptions,
+    category: UiCompatibilityCategory,
+  ): string {
+    return options.categoryOutputPaths?.[category] || modPath;
+  }
+
+  static resolveCategorySourcePath(
+    modPath: string,
+    options: EchoOperationOptions,
+    category: UiCompatibilityCategory,
+  ): string {
+    return options.categorySourceModPaths?.[category] || modPath;
+  }
+
+  static async categoryHasCopyConflict(
+    sourceModPath: string,
+    targetModPath: string,
+    relativePaths: string[],
+  ): Promise<boolean> {
+    if (!sourceModPath || !targetModPath || sourceModPath === targetModPath) {
+      return false;
+    }
+
+    for (const relativePath of relativePaths) {
+      const sourcePath = path.join(sourceModPath, relativePath);
+      const targetPath = path.join(targetModPath, relativePath);
+
+      const sourceExists = await ModFileOperations.fileExists(sourcePath);
+      if (!sourceExists) continue;
+
+      const targetExists = await ModFileOperations.fileExists(targetPath);
+      if (targetExists) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  static async copyCategoryFiles(
+    sourceModPath: string,
+    targetModPath: string,
+    relativePaths: string[],
+  ): Promise<string[]> {
+    const copiedPaths: string[] = [];
+
+    if (!sourceModPath || !targetModPath) {
+      return copiedPaths;
+    }
+
+    for (const relativePath of relativePaths) {
+      const sourcePath = path.join(sourceModPath, relativePath);
+
+      if (!(await ModFileOperations.fileExists(sourcePath))) {
+        continue;
+      }
+
+      const targetPath = path.join(targetModPath, relativePath);
+      await ModFileOperations.createDirectory(path.dirname(targetPath));
+      await fse.copy(sourcePath, targetPath, {
+        overwrite: true,
+        errorOnExist: false,
+      });
+
+      copiedPaths.push(relativePath);
+    }
+
+    return copiedPaths;
+  }
+
+  static async applySelectedUiCategoryCopies(
+    modPath: string,
+    options: EchoOperationOptions,
+  ): Promise<void> {
+    const shouldAutoSkipConflicts = options.autoSkipConflictingCategories !== false;
+
+    if (this.isCategorySelected(options, 'cssLayout')) {
+      const sourcePath = this.resolveCategorySourcePath(
+        modPath,
+        options,
+        'cssLayout',
+      );
+      const outputPath = this.resolveCategoryOutputPath(
+        modPath,
+        options,
+        'cssLayout',
+      );
+
+      const hasConflict = await this.categoryHasCopyConflict(
+        sourcePath,
+        outputPath,
+        this.CSS_LAYOUT_RELATIVE_PATHS,
+      );
+
+      if (hasConflict && shouldAutoSkipConflicts) {
+        console.warn(
+          '[changeSlots] Skipping cssLayout copy due to existing target files and auto-skip conflict mode.',
+        );
+      } else {
+        await this.copyCategoryFiles(
+          sourcePath,
+          outputPath,
+          this.CSS_LAYOUT_RELATIVE_PATHS,
+        );
+      }
+    }
+
+    if (this.isCategorySelected(options, 'menuParams')) {
+      const sourcePath = this.resolveCategorySourcePath(
+        modPath,
+        options,
+        'menuParams',
+      );
+      const outputPath = this.resolveCategoryOutputPath(
+        modPath,
+        options,
+        'menuParams',
+      );
+
+      const hasConflict = await this.categoryHasCopyConflict(
+        sourcePath,
+        outputPath,
+        this.MENU_PARAM_RELATIVE_PATHS,
+      );
+
+      if (hasConflict && shouldAutoSkipConflicts) {
+        console.warn(
+          '[changeSlots] Skipping menuParams copy due to existing target files and auto-skip conflict mode.',
+        );
+      } else {
+        await this.copyCategoryFiles(
+          sourcePath,
+          outputPath,
+          this.MENU_PARAM_RELATIVE_PATHS,
+        );
+      }
+    }
+  }
+
   static async changeSlots(
     modPath: string,
     slotAssignments: Map<string, Map<string, string>>,
@@ -182,10 +382,18 @@ export class SlotChanger {
     options: EchoOperationOptions = {},
   ) {
     const changedPaths: string[] = [];
-    const shouldRenameFolders = options.renameFolders !== false;
-    const shouldRenameFiles = options.renameFiles !== false;
-    const shouldApplyMetadata = options.applyMetadata !== false;
-    const shouldGenerateConfig = options.generateConfig !== false;
+    const shouldApplySlotExpansionData = this.isCategorySelected(
+      options,
+      'slotExpansionData',
+    );
+    const shouldRenameFolders =
+      shouldApplySlotExpansionData && options.renameFolders !== false;
+    const shouldRenameFiles =
+      shouldApplySlotExpansionData && options.renameFiles !== false;
+    const shouldApplyMetadata =
+      shouldApplySlotExpansionData && options.applyMetadata !== false;
+    const shouldGenerateConfig =
+      shouldApplySlotExpansionData && options.generateConfig !== false;
     const metadataOutputModPath = await this.resolveMetadataOutputModPath(
       modPath,
       options,
@@ -482,13 +690,19 @@ export class SlotChanger {
       }
     }
 
-    if (options.echoFighterName && options.echoSourceFighters?.length) {
+    if (
+      shouldApplySlotExpansionData &&
+      options.echoFighterName &&
+      options.echoSourceFighters?.length
+    ) {
       await this.renameEchoFighterReferences(
         modPath,
         options.echoSourceFighters,
         options.echoFighterName,
       );
     }
+
+    await this.applySelectedUiCategoryCopies(modPath, options);
 
     return changedPaths.length;
   }
@@ -573,6 +787,7 @@ export class SlotChanger {
 
         const cspName = names.cspName || '';
         const vsName = names.vsName || (cspName ? cspName.toUpperCase() : '');
+        const vsNameUpper = vsName ? vsName.toUpperCase() : '';
         const boxingRingName = names.boxingRing || '';
 
         xmlEntries.push(
@@ -591,6 +806,12 @@ export class SlotChanger {
           `\t<entry label="nam_chr2_${labelIndex}_${fighterName}">`,
         );
         xmlEntries.push(`\t\t<text>${this.escapeXml(vsName)}</text>`);
+        xmlEntries.push(`\t</entry>`);
+
+        xmlEntries.push(
+          `\t<entry label="nam_chr3_${labelIndex}_${fighterName}">`,
+        );
+        xmlEntries.push(`\t\t<text>${this.escapeXml(vsNameUpper)}</text>`);
         xmlEntries.push(`\t</entry>`);
 
         xmlEntries.push(
@@ -768,6 +989,14 @@ export class SlotChanger {
                   `nam_chr2_${labelIndexUnpadded}_${fighterName}`,
             );
 
+            const vsEntryAlt = entryArray.find(
+              (e) =>
+                e?.['@_label'] ===
+                  `nam_chr3_${labelIndexPadded}_${fighterName}` ||
+                e?.['@_label'] ===
+                  `nam_chr3_${labelIndexUnpadded}_${fighterName}`,
+            );
+
             const boxingEntry = entryArray.find(
               (e) =>
                 e?.['@_label'] ===
@@ -778,7 +1007,10 @@ export class SlotChanger {
 
             // Convert actual newlines to \n escape sequences for editing
             const cspText = (cspEntry?.text || '').replace(/\n/g, '\\n');
-            const vsText = (vsEntry?.text || '').replace(/\n/g, '\\n');
+            const vsText = (vsEntry?.text || vsEntryAlt?.text || '').replace(
+              /\n/g,
+              '\\n',
+            );
             const boxingText = (boxingEntry?.text || '').replace(/\n/g, '\\n');
 
             if (cspText || vsText || boxingText) {

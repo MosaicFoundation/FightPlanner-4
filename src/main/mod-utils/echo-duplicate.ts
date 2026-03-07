@@ -106,8 +106,11 @@ export class EchoDuplicateService {
       nameId: preferredNameId,
       displayName,
       vsName: firstCustom?.vsName || defaultCustomNames.vsName || displayName.toUpperCase(),
-      boxingRingName:
-        firstCustom?.boxingRing || defaultCustomNames.boxingRing || displayName,
+      boxingRingName: (
+        firstCustom?.boxingRing ||
+        defaultCustomNames.boxingRing ||
+        displayName
+      ).toUpperCase(),
       announcerLabel: `vc_narration_characall_${preferredNameId}`,
     };
   }
@@ -265,9 +268,12 @@ export class EchoDuplicateService {
 
     // Base naming labels use index 08 and the new name_id suffix.
     const label = '08';
+    const vsNameUpper = identity.vsName ? identity.vsName.toUpperCase() : '';
+
     setEntry(`nam_chr0_${label}_${identity.nameId}`, identity.displayName);
     setEntry(`nam_chr1_${label}_${identity.nameId}`, identity.displayName);
     setEntry(`nam_chr2_${label}_${identity.nameId}`, identity.vsName);
+    setEntry(`nam_chr3_${label}_${identity.nameId}`, vsNameUpper);
     setEntry(`nam_stage_name_${label}_${identity.nameId}`, identity.boxingRingName);
 
     if (entriesByLabel.size === 0) {

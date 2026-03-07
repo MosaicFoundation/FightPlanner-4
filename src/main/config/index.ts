@@ -3,9 +3,11 @@ import { app } from 'electron';
 
 export const CONFLICT_WHITELIST_PATTERNS = [
   'ui_chara_db.prcxml',
+  'ui_chara_db.prc',
   'info.toml',
   'preview.webp',
   'msg_name.xmsbt',
+  'msg_name.msbt',
   'config.json',
   'msg_bgm.xmsbt',
   'ui_chara_db.prcx',
@@ -16,6 +18,12 @@ export const CONFLICT_WHITELIST_PATTERNS = [
   'Preview.webp',
   '.DS_Store',
   'Readme.txt',
+  'ui/layout/menu/chara_select/chara_select/layout\\.arc',
+  'ui/layout/menu/compe_chara_select/compe_chara_select/layout\\.arc',
+  'ui/layout/menu/select_bg/select_bg/layout\\.arc',
+  'ui/layout/menu/title/title/layout\\.arc',
+  'param/menu/chara_icon_arrangement\\.prc',
+  'param/menu/chara_icon_arrangement\\.prcx',
 ];
 
 export const TEMP_FOLDERS = ['fightplanner-downloads', 'fightplanner-extract'];

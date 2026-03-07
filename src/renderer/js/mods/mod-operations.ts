@@ -1,10 +1,13 @@
 import { Mod, ModManager } from './mod-manager';
+import type { EchoOperationOptions } from '../../../main/mod-utils/slot-changer';
 
 type ChangeSlotModalContext = {
   isEchoFighter?: boolean;
   preferredEchoName?: string;
+  preferredEchoDisplayName?: string;
   nameSuggestions?: string[];
   takenNames?: { name: string; modName: string; modPath: string }[];
+  echoOperationOptions?: Partial<EchoOperationOptions>;
 };
 
 class ModOperations {

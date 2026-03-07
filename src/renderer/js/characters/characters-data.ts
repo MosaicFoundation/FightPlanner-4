@@ -152,11 +152,11 @@ const CHARACTER_IMAGES = {
   snake: 'https://www.smashbros.com/assets_v2/img/fighter/snake/main.png',
   ike: 'https://www.smashbros.com/assets_v2/img/fighter/ike/main.png',
   pzenigame:
-    'https://www.smashbros.com/assets_v2/img/fighter/squirtle/main.png',
+    'https://www.smashbros.com/assets_v2/img/fighter/pokemon_trainer/main.png',
   pfushigisou:
-    'https://www.smashbros.com/assets_v2/img/fighter/ivysaur/main.png',
+    'https://www.smashbros.com/assets_v2/img/fighter/pokemon_trainer/main.png',
   plizardon:
-    'https://www.smashbros.com/assets_v2/img/fighter/charizard/main.png',
+    'https://www.smashbros.com/assets_v2/img/fighter/pokemon_trainer/main.png',
   ptrainer:
     'https://www.smashbros.com/assets_v2/img/fighter/pokemon_trainer/main.png',
   diddy: 'https://www.smashbros.com/assets_v2/img/fighter/diddy_kong/main.png',
@@ -181,11 +181,11 @@ const CHARACTER_IMAGES = {
     'https://www.smashbros.com/assets_v2/img/fighter/little_mac/main.png',
   gekkouga: 'https://www.smashbros.com/assets_v2/img/fighter/greninja/main.png',
   miifighter:
-    'https://www.smashbros.com/assets_v2/img/fighter/mii_brawler/main.png',
+    'https://www.smashbros.com/assets_v2/img/fighter/mii_fighter/main.png',
   miiswordsman:
-    'https://www.smashbros.com/assets_v2/img/fighter/mii_swordfighter/main.png',
+    'https://www.smashbros.com/assets_v2/img/fighter/mii_fighter/main.png',
   miigunner:
-    'https://www.smashbros.com/assets_v2/img/fighter/mii_gunner/main.png',
+    'https://www.smashbros.com/assets_v2/img/fighter/mii_fighter/main.png',
   palutena: 'https://www.smashbros.com/assets_v2/img/fighter/palutena/main.png',
   pacman: 'https://www.smashbros.com/assets_v2/img/fighter/pac_man/main.png',
   reflet: 'https://www.smashbros.com/assets_v2/img/fighter/robin/main.png',
@@ -211,16 +211,16 @@ const CHARACTER_IMAGES = {
   packun:
     'https://www.smashbros.com/assets_v2/img/fighter/piranha_plant/main.png',
   jack: 'https://www.smashbros.com/assets_v2/img/fighter/joker/main.png',
-  brave: 'https://www.smashbros.com/assets_v2/img/fighter/hero/main.png',
+  brave: 'https://www.smashbros.com/assets_v2/img/fighter/dq_hero/main.png',
   buddy:
     'https://www.smashbros.com/assets_v2/img/fighter/banjo_and_kazooie/main.png',
   dolly: 'https://www.smashbros.com/assets_v2/img/fighter/terry/main.png',
   master: 'https://www.smashbros.com/assets_v2/img/fighter/byleth/main.png',
-  tantan: 'https://www.smashbros.com/assets_v2/img/fighter/min_min/main.png',
+  tantan: 'https://www.smashbros.com/assets_v2/img/fighter/minmin/main.png',
   pickel: 'https://www.smashbros.com/assets_v2/img/fighter/steve/main.png',
   edge: 'https://www.smashbros.com/assets_v2/img/fighter/sephiroth/main.png',
   eflame: 'https://www.smashbros.com/assets_v2/img/fighter/pyra/main.png',
-  elight: 'https://www.smashbros.com/assets_v2/img/fighter/mythra/main.png',
+  elight: 'https://www.smashbros.com/assets_v2/img/fighter/homura/main.png',
   demon: 'https://www.smashbros.com/assets_v2/img/fighter/kazuya/main.png',
   trail: 'https://www.smashbros.com/assets_v2/img/fighter/sora/main.png',
 };

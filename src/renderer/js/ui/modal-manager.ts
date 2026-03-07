@@ -41,8 +41,10 @@ type EchoTakenName = {
 type ChangeSlotModalContext = {
   isEchoFighter?: boolean;
   preferredEchoName?: string;
+  preferredEchoDisplayName?: string;
   nameSuggestions?: string[];
   takenNames?: EchoTakenName[];
+  echoOperationOptions?: Partial<EchoOperationOptions>;
 };
 
 // Fighter group definitions for multi-character fighters
@@ -169,6 +171,7 @@ class ModalManager {
   echoOperationOptions: EchoOperationOptions;
   isEchoFlow: boolean;
   echoPreferredName: string;
+  echoPreferredDisplayName: string;
   echoNameSuggestions: string[];
   echoTakenNames: EchoTakenName[];
 
@@ -203,6 +206,7 @@ class ModalManager {
     };
     this.isEchoFlow = false;
     this.echoPreferredName = '';
+    this.echoPreferredDisplayName = '';
     this.echoNameSuggestions = [];
     this.echoTakenNames = [];
     this.fighterNames = [];
@@ -571,8 +575,26 @@ class ModalManager {
       this.echoOperationOptions.duplicateNIndexOffset = 8;
     }
 
+    if (context.echoOperationOptions) {
+      this.echoOperationOptions = {
+        ...this.echoOperationOptions,
+        ...context.echoOperationOptions,
+        categoryOutputPaths: {
+          ...(this.echoOperationOptions.categoryOutputPaths || {}),
+          ...(context.echoOperationOptions.categoryOutputPaths || {}),
+        },
+        categorySourceModPaths: {
+          ...(this.echoOperationOptions.categorySourceModPaths || {}),
+          ...(context.echoOperationOptions.categorySourceModPaths || {}),
+        },
+      };
+    }
+
     this.echoPreferredName = this.normalizeEchoName(
       context.preferredEchoName || '',
+    );
+    this.echoPreferredDisplayName = this.sanitizeEchoDisplayName(
+      context.preferredEchoDisplayName || '',
     );
     this.echoNameSuggestions = (context.nameSuggestions || [])
       .map((name) => this.normalizeEchoName(name))
@@ -581,6 +603,12 @@ class ModalManager {
 
     if (this.isEchoFlow && !this.echoPreferredName && this.echoNameSuggestions.length > 0) {
       this.echoPreferredName = this.echoNameSuggestions[0];
+    }
+
+    if (this.isEchoFlow && !this.echoPreferredDisplayName) {
+      this.echoPreferredDisplayName = this.formatEchoDisplayName(
+        this.echoPreferredName,
+      );
     }
 
     const modal = document.querySelector<HTMLElement>('#change-slot-modal');
@@ -771,6 +799,7 @@ class ModalManager {
     };
     this.isEchoFlow = false;
     this.echoPreferredName = '';
+    this.echoPreferredDisplayName = '';
     this.echoNameSuggestions = [];
     this.echoTakenNames = [];
     this.fighterNames = [];
@@ -813,6 +842,13 @@ class ModalManager {
       .slice(0, 10);
   }
 
+  sanitizeEchoDisplayName(value: string): string {
+    return `${value || ''}`
+      .replace(/[\r\n\t]+/g, ' ')
+      .trim()
+      .slice(0, 32);
+  }
+
   formatEchoDisplayName(token: string): string {
     if (!token) return '';
     return token.charAt(0).toUpperCase() + token.slice(1);
@@ -832,7 +868,9 @@ class ModalManager {
       const normalizedPath = filePath.replace(/\\/g, '/').toLowerCase();
       return (
         normalizedPath.endsWith('ui/message/msg_name.xmsbt') ||
-        normalizedPath.endsWith('ui/param/database/ui_chara_db.prcxml')
+        normalizedPath.endsWith('ui/param/database/ui_chara_db.prcxml') ||
+        normalizedPath.endsWith('ui/message/msg_name.msbt') ||
+        normalizedPath.endsWith('ui/param/database/ui_chara_db.prc')
       );
     });
   }
@@ -894,6 +932,29 @@ class ModalManager {
     hint.textContent = t('modals.changeSlot.echoNameHint');
     wrapper.appendChild(hint);
 
+    const uiNameLabel = document.createElement('label');
+    uiNameLabel.className = 'slot-echo-name-label';
+    uiNameLabel.setAttribute('for', 'slot-echo-ui-name-input');
+    uiNameLabel.textContent = t('modals.changeSlot.echoUiNameLabel');
+    wrapper.appendChild(uiNameLabel);
+
+    const uiNameInput = document.createElement('input');
+    uiNameInput.id = 'slot-echo-ui-name-input';
+    uiNameInput.className = 'modal-input';
+    uiNameInput.type = 'text';
+    uiNameInput.maxLength = 32;
+    uiNameInput.autocomplete = 'off';
+    uiNameInput.placeholder = t('modals.changeSlot.echoUiNamePlaceholder');
+    uiNameInput.value = this.sanitizeEchoDisplayName(
+      this.echoPreferredDisplayName || this.formatEchoDisplayName(this.echoPreferredName),
+    );
+    wrapper.appendChild(uiNameInput);
+
+    const uiNameHint = document.createElement('p');
+    uiNameHint.className = 'slot-echo-name-hint';
+    uiNameHint.textContent = t('modals.changeSlot.echoUiNameHint');
+    wrapper.appendChild(uiNameHint);
+
     const conflictBox = document.createElement('div');
     conflictBox.className = 'slot-echo-conflict';
     conflictBox.style.display = 'none';
@@ -912,6 +973,11 @@ class ModalManager {
         const normalizedSuggestion = this.normalizeEchoName(suggestion);
         input.value = normalizedSuggestion;
         this.echoPreferredName = normalizedSuggestion;
+
+        if (!this.sanitizeEchoDisplayName(uiNameInput.value)) {
+          uiNameInput.value = this.formatEchoDisplayName(normalizedSuggestion);
+        }
+
         updateConflictState();
       });
 
@@ -928,7 +994,14 @@ class ModalManager {
         input.value = normalizedInput;
       }
 
+      const normalizedUiName = this.sanitizeEchoDisplayName(uiNameInput.value);
+      if (uiNameInput.value !== normalizedUiName) {
+        uiNameInput.value = normalizedUiName;
+      }
+
       this.echoPreferredName = normalizedInput;
+      this.echoPreferredDisplayName =
+        normalizedUiName || this.formatEchoDisplayName(normalizedInput);
       const conflicts = this.getEchoNameConflicts(this.echoPreferredName);
 
       if (conflicts.length === 0 || !this.echoPreferredName) {
@@ -945,6 +1018,7 @@ class ModalManager {
     };
 
     input.addEventListener('input', updateConflictState);
+    uiNameInput.addEventListener('input', updateConflictState);
     updateConflictState();
 
     modalBody.insertBefore(wrapper, hintParagraph);
@@ -1974,7 +2048,10 @@ class ModalManager {
     const preferredToken = this.normalizeEchoName(this.echoPreferredName);
     if (!preferredToken) return;
 
-    const displayName = this.formatEchoDisplayName(preferredToken);
+    const displayName = this.sanitizeEchoDisplayName(
+      this.echoPreferredDisplayName || this.formatEchoDisplayName(preferredToken),
+    );
+    this.echoPreferredDisplayName = displayName;
 
     this.echoOperationOptions.echoFighterName = preferredToken;
     this.echoOperationOptions.echoSourceFighters = [...this.rawFighterNames];
@@ -1988,7 +2065,7 @@ class ModalManager {
         this.slotCustomNamesByFighter[fighterName][targetSlot] = {
           cspName: displayName,
           vsName: displayName.toUpperCase(),
-          boxingRing: displayName,
+          boxingRing: displayName.toUpperCase(),
           announcer:
             this.slotCustomNamesByFighter[fighterName][targetSlot]?.announcer ||
             'vc_narration_characall',
@@ -2007,6 +2084,16 @@ class ModalManager {
 
       if (echoNameInput) {
         this.echoPreferredName = this.normalizeEchoName(echoNameInput.value);
+      }
+
+      const echoUiNameInput = document.querySelector<HTMLInputElement>(
+        '#slot-echo-ui-name-input',
+      );
+
+      if (echoUiNameInput) {
+        this.echoPreferredDisplayName = this.sanitizeEchoDisplayName(
+          echoUiNameInput.value,
+        );
       }
 
       this.applyEchoPreferredNameToSlots();

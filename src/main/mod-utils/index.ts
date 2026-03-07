@@ -320,27 +320,29 @@ export default class ModUtils {
       fighter?: string,
       slot?: string,
     ) {
+      const normalizedFilePath = filePath.replace(/\\/g, '/');
+
       if (
         allWhitelistPatterns.some((pattern) => {
           const regex = new RegExp(pattern);
-          return regex.test(filePath);
+          return regex.test(normalizedFilePath) || regex.test(filePath);
         })
       ) {
         return;
       }
 
-      if (!fileToMods.has(filePath)) {
-        fileToMods.set(filePath, []);
+      if (!fileToMods.has(normalizedFilePath)) {
+        fileToMods.set(normalizedFilePath, []);
       }
 
-      const fileList = fileToMods.get(filePath);
+      const fileList = fileToMods.get(normalizedFilePath);
 
       if (fileList) {
         fileList.push({
           modIndex,
           modName: activeMods[modIndex].name,
           modPath: activeMods[modIndex].path,
-          filePath: filePath,
+          filePath: normalizedFilePath,
           fighter,
           slot,
         });
