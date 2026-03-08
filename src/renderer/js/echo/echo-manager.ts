@@ -2085,6 +2085,11 @@ class EchoManager {
   }
 
   getVisualCardImageUrl(entry: VisualCharacterEntry): string {
+    // For echo fighters, prefer mod preview if available
+    if (entry.cardKind === 'echo' && entry.modPreviewUrl) {
+      return entry.modPreviewUrl;
+    }
+
     const candidateKeys = [entry.baseFighterKey, entry.fighterKey].filter(Boolean);
 
     for (const fighterKey of candidateKeys) {
@@ -2152,6 +2157,30 @@ class EchoManager {
       const resolvedImageUrl = this.getVisualCardImageUrl(entry);
       const imageUrl = this.escapeHtml(resolvedImageUrl);
       const fallbackInitials = this.escapeHtml(this.getVisualTileInitials(tileTitle));
+      const badgeSegments: string[] = [];
+
+      if (entry.cardKind === 'echo' || entry.echoMods.length > 0) {
+        badgeSegments.push(
+          `<span class="echo-visual-badge echo">${this.escapeHtml(this.getVisualTypeLabel('echo'))}${entry.echoMods.length > 1 ? ` x${entry.echoMods.length}` : ''}</span>`,
+        );
+      }
+
+      if (entry.movesetMods.length > 0) {
+        badgeSegments.push(
+          `<span class="echo-visual-badge moveset">${this.escapeHtml(this.getVisualTypeLabel('moveset'))}${entry.movesetMods.length > 1 ? ` x${entry.movesetMods.length}` : ''}</span>`,
+        );
+      }
+
+      if (entry.fighterMods.length > 0) {
+        badgeSegments.push(
+          `<span class="echo-visual-badge fighter">${this.escapeHtml(this.getVisualTypeLabel('fighter'))}${entry.fighterMods.length > 1 ? ` x${entry.fighterMods.length}` : ''}</span>`,
+        );
+      }
+
+      const badgesHtml =
+        badgeSegments.length > 0
+          ? `<div class="echo-tile-meta">${badgeSegments.join('')}</div>`
+          : '';
 
       const tileClasses = [
         'echo-visual-tile',
@@ -2176,6 +2205,7 @@ class EchoManager {
             }
           </div>
           <div class="echo-tile-name-bar">${this.escapeHtml(tileTitle)}</div>
+          ${badgesHtml}
         </div>
       `;
     };
