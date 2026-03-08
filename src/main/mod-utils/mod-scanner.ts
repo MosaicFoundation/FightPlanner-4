@@ -199,13 +199,13 @@ export const ModScanner = {
 
     // Match cXX or cXXX in filename
     const cXXMatchRegex = /(c)(\d{2,3})/i;
-    // Match XX or XXX before file extension
-    const dotXXMatchRegex = /_([a-z]+)_(c)?(\d{2,3})(\.[^.]+)$/i;
+    // Match XX or XXX before file extension (handles complex names like vc_marth_en)
+    const dotXXMatchRegex = /_(.+?)_(?:[a-z]+_)?(c)?(\d{2,3})(\.[^.]+)$/i;
 
     const cMatch = filePath.match(cXXMatchRegex);
     const dotMatch = filePath.match(dotXXMatchRegex);
 
-    if (!detectedFighterName && dotMatch) {
+    if (dotMatch && (!detectedFighterName || detectedFighterName.includes('.'))) {
       detectedFighterName = dotMatch[1];
     }
 
