@@ -445,11 +445,9 @@
   border: 1px solid var(--border-hover);
   border-radius: 10px;
   background: var(--bg-transparent-03);
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 8px;
   min-height: 0;
-  overflow: visible;
 }
 
 .echo-visual-header {
@@ -476,13 +474,9 @@
 }
 
 .echo-visual-content {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 8px;
   min-height: 0;
-  width: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
 }
 
 .echo-visual-selected {
@@ -505,50 +499,39 @@
 
 .echo-visual-board {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
-  gap: 5px;
-  height: auto;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  height: clamp(380px, 58vh, 860px);
   min-height: 0;
-  overflow: hidden;
-  padding: 3px;
-  width: 100%;
-  box-sizing: border-box;
-  flex-shrink: 0;
+  overflow: auto;
+  padding: 12px;
 }
 
 .echo-visual-disabled-section {
   border: 1px dashed var(--border-hover);
-  border-radius: 6px;
-  padding: 6px;
+  border-radius: 8px;
+  padding: 8px;
   background: rgba(255, 255, 255, 0.02);
-  flex-shrink: 0;
-  order: 99;
-  margin-top: 4px;
 }
 
 .echo-visual-board-disabled {
-  margin-top: 4px;
+  margin-top: 6px;
   height: auto;
-  min-height: 48px;
+  min-height: 68px;
   max-height: none;
-  overflow: hidden;
 }
 
 .echo-visual-tile {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border-hover);
-  border-radius: 4px;
-  background: #1e293b !important;
+  border: 2px solid var(--border-hover);
+  border-radius: 8px;
+  background: #1e293b;
   cursor: pointer;
   overflow: hidden;
   transition: all 0.2s ease;
   height: auto;
-  min-height: 82px;
-  max-height: none;
-  opacity: 1 !important;
-  position: relative;
-  box-sizing: border-box;
+  min-height: 220px;
 }
 
 .echo-visual-tile:hover {
@@ -559,7 +542,7 @@
 
 .echo-visual-tile.active {
   border-color: var(--accent-color);
-  border-width: 2px;
+  border-width: 3px;
   box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.6), 0 4px 12px rgba(59, 130, 246, 0.25);
 }
 
@@ -577,7 +560,7 @@
   background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
   overflow: hidden;
   position: relative;
-  min-height: 52px;
+  min-height: 160px;
 }
 
 .echo-tile-img {
@@ -586,7 +569,7 @@
   object-fit: contain;
   object-position: center;
   display: block;
-  padding: 2px;
+  padding: 8px;
   background: transparent;
 }
 
@@ -598,34 +581,24 @@
   height: 100%;
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.5), rgba(30, 41, 59, 0.5));
   color: #64748b;
-  font-size: 16px;
+  font-size: 32px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 2px;
   text-transform: uppercase;
 }
 
 .echo-tile-name-bar {
-  padding: 3px 4px;
-  background: rgba(0, 0, 0, 0.75);
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.6);
   border-top: 1px solid rgba(148, 163, 184, 0.2);
   color: #f1f5f9;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 700;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.1;
-}
-
-.echo-tile-meta {
-  padding: 2px 3px 3px;
-  border-top: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(0, 0, 0, 0.75);
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 2px;
+  line-height: 1.4;
 }
 
 .echo-visual-tile.drop-target {
@@ -636,11 +609,9 @@
 .echo-visual-badge {
   border-radius: 999px;
   border: 1px solid var(--border-hover);
-  padding: 0px 3px;
-  font-size: 7px;
+  padding: 1px 5px;
+  font-size: 9px;
   color: var(--text-secondary);
-  white-space: nowrap;
-  line-height: 1.3;
 }
 
 .echo-visual-badge.fighter {
@@ -693,7 +664,6 @@
   padding: 6px 8px;
   background: var(--bg-input);
   display: block;
-  flex-shrink: 0;
 }
 
 .echo-visual-selected-inline-text {
@@ -811,11 +781,9 @@
 
 .echo-visual-unmapped {
   border: 1px dashed var(--border-hover);
-  border-radius: 6px;
-  padding: 6px;
+  border-radius: 8px;
+  padding: 8px;
   background: rgba(255, 255, 255, 0.02);
-  flex-shrink: 0;
-  order: 100;
 }
 
 .echo-visual-unmapped-title {
@@ -1158,9 +1126,9 @@
   }
 
   .echo-visual-board {
-    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
-    height: auto;
-    gap: 5px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    height: clamp(320px, 50vh, 760px);
+    gap: 12px;
   }
   }
 
