@@ -139,10 +139,17 @@ class CharactersManager {
       const scanModResult = await window.electronAPI.scanMod(mod.path);
 
       if (scanModResult.success && scanModResult.data.fighterNames.length > 0) {
+        const resolvedIds = new Set<string>();
+
         scanModResult.data.fighterNames.forEach((rawFighterId: string) => {
           const fighterId = window.resolveFolderName
             ? window.resolveFolderName(rawFighterId)
             : rawFighterId.toLowerCase();
+
+          if (resolvedIds.has(fighterId)) {
+            return;
+          }
+          resolvedIds.add(fighterId);
 
           if (!this.characters.has(fighterId)) {
             const charInfo = window.SSBU_CHARACTERS[fighterId];

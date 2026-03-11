@@ -184,7 +184,6 @@ export const ModScanner = {
     if (includesFighterFolder && pathParts.length > fighterIndex + 1) {
       detectedFighterName = pathParts[fighterIndex + 1];
 
-      // Search for slot folder at any position after 'fighter'
       for (let i = fighterIndex + 1; i < pathParts.length; i++) {
         const part = pathParts[i];
 
@@ -197,10 +196,34 @@ export const ModScanner = {
       }
     }
 
-    // Match cXX or cXXX in filename
     const cXXMatchRegex = /(c)(\d{2,3})/i;
-    // Match XX or XXX before file extension (handles complex names like vc_marth_en)
     const dotXXMatchRegex = /_(.+?)_(?:[a-z]+_)?(c)?(\d{2,3})(\.[^.]+)$/i;
+
+    const charaMatchRegex = /chara_\d+_([a-z_]+?)_(\d{2,3})(\.[^.]+)$/i;
+    const charaMatch = filePath.match(charaMatchRegex);
+
+    if (charaMatch) {
+      detectedFighterName = charaMatch[1];
+
+      const charaSlot = 'c' + charaMatch[2];
+      const charaNormalizedPath = filePath.replace(
+        charaMatchRegex,
+        (match, fighter, slotNum, ext) => {
+          return match.replace(new RegExp(`_${slotNum}(${ext.replace('.', '\\.')})$`), '_###$1');
+        }
+      );
+
+      return {
+        slot: charaSlot,
+        normalizedPath: charaNormalizedPath,
+        isFighterSlotFolder: false,
+        includesFighterSlotFolder: false,
+        fighterName: await ModScanner.getAccurateFighterName(
+          detectedFighterName,
+          filePath,
+        ),
+      };
+    }
 
     const cMatch = filePath.match(cXXMatchRegex);
     const dotMatch = filePath.match(dotXXMatchRegex);
@@ -220,35 +243,6 @@ export const ModScanner = {
       : dotMatch
         ? filePath.replace(dotXXMatchRegex, `_$1_${dotMatch[2] || ''}###$4`)
         : null;
-
-    // Useful for debugging specific files
-    // if (filePath.includes('effect/fighter/ganon/ef_ganon.eff')) {
-    //   console.log(
-    //     '{\n' +
-    //       '      slot,\n' +
-    //       '      fighterName,\n' +
-    //       '      normalizedPath,\n' +
-    //       '      isFighterSlotFolder,\n' +
-    //       '      includesFighterSlotFolder,\n' +
-    //       '    } :: ',
-    //     {
-    //       slot,
-    //       filePath,
-    //       pathParts,
-    //       fighterIndex,
-    //       normalizedPath,
-    //       detectedFighterName,
-    //       fighterName: await ModScanner.getAccurateFighterName(
-    //         detectedFighterName,
-    //         filePath,
-    //       ),
-    //       isFighterSlotFolder,
-    //       includesFighterFolder,
-    //       includesFighterSlotFolder,
-    //       ['pathParts.length > fighterIndex']: pathParts.length > fighterIndex,
-    //     },
-    //   );
-    // }
 
     return {
       slot,
