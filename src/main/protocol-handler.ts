@@ -571,32 +571,32 @@ export default class ProtocolHandler {
           const allMods = ModUtils.readAllMods(modsPath);
           const disabledModsPath = ModUtils.getDisabledModsFolder(modsPath);
 
-          if (!fs.existsSync(disabledModsPath)) {
-            fs.mkdirSync(disabledModsPath, { recursive: true });
-          }
+          await fs.promises.mkdir(disabledModsPath, { recursive: true });
 
           let disabledCount = 0;
 
           for (const mod of allMods.activeMods) {
             try {
               const targetPath = path.join(disabledModsPath, mod.name);
-              if (!fs.existsSync(targetPath)) {
-                fs.renameSync(mod.path, targetPath);
+              try {
+                await fs.promises.access(targetPath);
+              } catch {
+                await fs.promises.rename(mod.path, targetPath);
                 disabledCount++;
               }
             } catch (moveError) {
               console.warn(
-                `[Protocol][DisableAllOnDownload] Failed to disable ${mod.name}:`,
+                `[proceedWithInstall] Failed to disable ${mod.name}:`,
                 moveError,
               );
             }
           }
           console.log(
-            `[Protocol][DisableAllOnDownload] Disabled ${disabledCount} mods before download`,
+            `[proceedWithInstall] Disabled ${disabledCount} mods before download`,
           );
         } catch (disableError) {
           console.error(
-            '[Protocol][DisableAllOnDownload] Failed to disable mods:',
+            '[proceedWithInstall] Failed to disable mods:',
             disableError,
           );
         }
