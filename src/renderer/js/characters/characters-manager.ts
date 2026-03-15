@@ -399,7 +399,7 @@ ${char.mods
             if (modElement) {
               modElement.scrollIntoView({
                 behavior: 'smooth',
-                block: 'center',
+                block: 'nearest',
               });
 
               modElement.style.animation = 'highlightMod 1.5s ease';

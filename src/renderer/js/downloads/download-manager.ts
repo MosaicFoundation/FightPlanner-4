@@ -515,7 +515,7 @@ ${subItemsHtml}
 
       const modElement = document.querySelector<HTMLElement>(`[data-mod-id="${mod.id}"]`);
       if (modElement) {
-        modElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        modElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     }, 150);
   }
@@ -535,7 +535,7 @@ ${subItemsHtml}
 
         const section = target.closest<HTMLElement>('.settings-section') || target;
 
-        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
         const original = section.style.boxShadow;
         section.style.transition = 'box-shadow 0.4s ease';
