@@ -164,6 +164,13 @@ class ModOperations {
       const scanResult = await window.electronAPI.scanMod(mod.path);
 
       if (scanResult.success) {
+        if (scanResult.data.fighterNames.length === 0) {
+          if (window.toastManager) {
+            window.toastManager.error('toasts.noSlotsFound');
+          }
+          return;
+        }
+
         if (window.modalManager) {
           window.modalManager.openChangeSlotModal(
             mod,

@@ -673,7 +673,8 @@
     "updateDownloadFailed": "Failed to download update",
     "updateInstallFailed": "Failed to install update",
     "channelStable": "Stable",
-    "channelPrerelease": "Prerelease"
+    "channelPrerelease": "Prerelease",
+    "noSlotsFound": "No slots found for this mod."
   },
   "statusBar": {
     "ready": "Ready",
