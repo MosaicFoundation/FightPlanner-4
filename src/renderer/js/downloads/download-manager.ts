@@ -181,16 +181,6 @@ class DownloadManager {
       }
 
       if (progressText) {
-        if (download.statusText) {
-          const lowerStatus = download.statusText.toLowerCase();
-          if (lowerStatus.includes('extract')) {
-            progressText.textContent = 'Extracting...';
-            return;
-          } else if (lowerStatus.includes('verif')) {
-            progressText.textContent = 'Verifying...';
-            return;
-          }
-        }
         progressText.textContent = `${progress}% (${this.formatBytes(
           receivedBytes,
         )} / ${this.formatBytes(totalBytes)})`;
