@@ -673,8 +673,7 @@
     "updateDownloadFailed": "Échec du téléchargement de la mise à jour",
     "updateInstallFailed": "Échec de l'installation de la mise à jour",
     "channelStable": "Stable",
-    "channelPrerelease": "Pré-version",
-    "noSlotsFound": "Aucun slot trouvé pour ce mod."
+    "channelPrerelease": "Pré-version"
   },
   "statusBar": {
     "ready": "Prêt",
