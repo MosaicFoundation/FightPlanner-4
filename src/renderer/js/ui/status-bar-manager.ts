@@ -13,11 +13,18 @@ interface ConflictUpdate {
   modsWithConflictsCount: number;
 }
 
+interface DownloadItem {
+  id: string;
+  fileName: string;
+  modName?: string;
+  statusText?: string;
+  progress: number;
+  speedText?: string;
+}
+
 interface DownloadUpdate {
   type: 'download';
-  fileName: string;
-  progress: number;
-  speedText: string;
+  downloads: DownloadItem[];
 }
 
 export class StatusBarManager {
@@ -30,6 +37,7 @@ export class StatusBarManager {
   userDismissedExtendedBar: boolean = false;
   lastExtendedBarData: string | null = null;
   pendingDynamicIsland: boolean = false;
+  private lastHandledSuccessId: string | null = null;
 
   constructor() {
     this.updateInterval = null;
@@ -120,7 +128,8 @@ export class StatusBarManager {
       if (
         bottomBar &&
         bottomBar.classList.contains('expanded') &&
-        !bottomBar.classList.contains('conflict-mode')
+        !bottomBar.classList.contains('conflict-mode') &&
+        !bottomBar.classList.contains('success-mode')
       ) {
         this.updateExtendedBar({ type: 'none' });
       }
@@ -150,7 +159,6 @@ export class StatusBarManager {
             this.updateStagesStatus(statusText);
             break;
           case 'fightplanner':
-            // FightPlanner status if needed
             break;
           default:
             if (!this.currentTab) {
@@ -309,6 +317,14 @@ export class StatusBarManager {
     return false;
   }
 
+  _getDownloadDisplayName(dl: DownloadItem): string {
+    if (dl.modName) return dl.modName;
+    if (dl.statusText && !dl.statusText.toLowerCase().includes('downloading')) return dl.statusText;
+    const name = dl.fileName || '';
+    if (/^\d+$/.test(name) || name === 'mod.zip') return 'Downloading...';
+    return name;
+  }
+
   updateExtendedBar(
     update: NoneUpdate | SuccessUpdate | ConflictUpdate | DownloadUpdate,
   ) {
@@ -339,11 +355,9 @@ export class StatusBarManager {
         }, 300);
       }
       return;
-    }
-
-    if (update.type === 'download') {
+    }    if (update.type === 'download') {
       if (!bottomBar.classList.contains('download-mode')) {
-        bottomBar.classList.remove('conflict-mode');
+        bottomBar.classList.remove('conflict-mode', 'success-mode');
         bottomBar.classList.add('download-mode');
       }
 
@@ -355,44 +369,193 @@ export class StatusBarManager {
         bottomBar.classList.add('expanded');
       }
 
-      // Ensure content is visible
       (content as HTMLElement).style.display = 'flex';
 
-      const progress = Math.round(update.progress || 0);
-      const speed = update.speedText || '';
+      const downloads = update.downloads || [];
+      const isSingle = downloads.length === 1;
 
-      content.innerHTML = `
-        <div class="ext-download-card">
-            <button class="ext-close-btn" onclick="window.statusBarManager.updateExtendedBar('none')" title="Close">
-                <i class="bi bi-chevron-down"></i>
-            </button>
-            <div class="ext-card-icon-container">
-                <div class="ext-card-icon">
-                    <i class="bi bi-cloud-arrow-down-fill"></i>
+      if (isSingle) {
+        const dl = downloads[0];
+        const progress = Math.round(dl.progress || 0);
+        let speed = dl.speedText || '';
+        const displayName = this._getDownloadDisplayName(dl);
+
+        let phaseText = 'Downloading';
+        let iconClass = 'bi-cloud-arrow-down-fill';
+        let isExtractingOrVerifying = false;
+
+        if (dl.statusText) {
+          const lowerStatus = dl.statusText.toLowerCase();
+          if (lowerStatus.includes('extract')) {
+            phaseText = 'Extracting...';
+            iconClass = 'bi-file-zip-fill';
+            isExtractingOrVerifying = true;
+          } else if (lowerStatus.includes('verif')) {
+            phaseText = 'Verifying...';
+            iconClass = 'bi-shield-check';
+            isExtractingOrVerifying = true;
+          }
+        }
+
+        if (isExtractingOrVerifying) {
+          speed = '';
+        }
+
+        const isActiveDownloadCard = content.querySelector('.ext-download-card .ext-progress-container');
+        const isMultiCard = content.querySelector('.ext-multi-download-card');
+        if (isActiveDownloadCard && !isMultiCard) {
+            const fileNameEl = content.querySelector('.ext-filename');
+            const progressFillEl = content.querySelector('.ext-progress-fill') as HTMLElement;
+            const percentageEl = content.querySelector('.ext-percentage');
+            const speedEl = content.querySelector('.ext-speed');
+            const badgeEl = content.querySelector('.ext-status-badge');
+            const iconEl = content.querySelector('.ext-card-icon i');
+            const separatorEl = content.querySelector('.ext-separator') as HTMLElement;
+            
+            if (fileNameEl) {
+                fileNameEl.textContent = displayName;
+                fileNameEl.setAttribute('title', displayName);
+            }
+            if (progressFillEl) progressFillEl.style.width = `${progress}%`;
+            
+            if (badgeEl) badgeEl.textContent = phaseText;
+            if (iconEl && iconEl.className !== `bi ${iconClass}`) {
+                iconEl.className = `bi ${iconClass}`;
+            }
+
+            if (isExtractingOrVerifying) {
+              if (percentageEl) percentageEl.textContent = phaseText;
+              if (speedEl) speedEl.textContent = '';
+              if (separatorEl) separatorEl.style.display = 'none';
+            } else {
+              if (percentageEl) percentageEl.textContent = `${progress}%`;
+              if (speedEl) speedEl.textContent = speed;
+              if (separatorEl) separatorEl.style.display = 'inline';
+            }
+        } else {
+            content.innerHTML = `
+              <div class="ext-download-card">
+                  <button class="ext-close-btn" onclick="window.statusBarManager.updateExtendedBar('none')" title="Close">
+                      <i class="bi bi-chevron-down"></i>
+                  </button>
+                  <div class="ext-card-icon-container">
+                      <div class="ext-card-icon">
+                          <i class="bi ${iconClass}"></i>
+                      </div>
+                  </div>
+                  <div class="ext-card-details">
+                      <div class="ext-card-header">
+                          <span class="ext-status-badge">${phaseText}</span>
+                          <span class="ext-filename" title="${displayName}">${displayName}</span>
+                      </div>
+                      
+                      <div class="ext-progress-container">
+                          <div class="ext-progress-track">
+                              <div class="ext-progress-fill" style="width: ${progress}%">
+                                  <div class="ext-progress-glare"></div>
+                              </div>
+                          </div>
+                      </div>
+                      
+                      <div class="ext-card-meta">
+                          <span class="ext-percentage">${isExtractingOrVerifying ? phaseText : progress + '%'}</span>
+                          <span class="ext-separator" style="display: ${isExtractingOrVerifying ? 'none' : 'inline'}">•</span>
+                          <span class="ext-speed">${speed}</span>
+                      </div>
+                  </div>
+              </div>
+            `;
+        }
+      } else {
+        const existingItems = content.querySelectorAll('.ext-multi-dl-item');
+        const existingIds = new Set<string>();
+        existingItems.forEach((el) => {
+          const id = (el as HTMLElement).dataset.dlId;
+          if (id) existingIds.add(id);
+        });
+
+        const currentIds = new Set(downloads.map(d => d.id));
+        let needsFullRebuild = !content.querySelector('.ext-multi-download-card');
+
+        if (!needsFullRebuild) {
+          for (const id of existingIds) {
+            if (!currentIds.has(id)) { needsFullRebuild = true; break; }
+          }
+          for (const id of currentIds) {
+            if (!existingIds.has(id)) { needsFullRebuild = true; break; }
+          }
+        }
+
+        if (needsFullRebuild) {
+          const itemsHtml = downloads.map((dl) => {
+            const progress = Math.round(dl.progress || 0);
+            const displayName = this._getDownloadDisplayName(dl);
+            let pctText = `${progress}%`;
+            
+            if (dl.statusText) {
+              const lowerStatus = dl.statusText.toLowerCase();
+              if (lowerStatus.includes('extract')) pctText = 'Extracting...';
+              else if (lowerStatus.includes('verif')) pctText = 'Verifying...';
+            }
+
+            return `
+              <div class="ext-multi-dl-item" data-dl-id="${dl.id}">
+                <div class="ext-multi-dl-info">
+                  <span class="ext-multi-dl-name" title="${displayName}">${displayName}</span>
+                  <span class="ext-multi-dl-pct">${pctText}</span>
                 </div>
-            </div>
-            <div class="ext-card-details">
-                <div class="ext-card-header">
-                    <span class="ext-status-badge">Downloading</span>
-                    <span class="ext-filename" title="${update.fileName}">${update.fileName || 'Unknown file'}</span>
+                <div class="ext-multi-dl-bar">
+                  <div class="ext-multi-dl-fill" style="width: ${progress}%"></div>
                 </div>
-                
-                <div class="ext-progress-container">
-                    <div class="ext-progress-track">
-                        <div class="ext-progress-fill" style="width: ${progress}%">
-                            <div class="ext-progress-glare"></div>
-                        </div>
+              </div>`;
+          }).join('');
+
+          content.innerHTML = `
+            <div class="ext-multi-download-card ext-download-card">
+                <button class="ext-close-btn" onclick="window.statusBarManager.updateExtendedBar('none')" title="Close">
+                    <i class="bi bi-chevron-down"></i>
+                </button>
+                <div class="ext-card-icon-container">
+                    <div class="ext-card-icon">
+                        <i class="bi bi-cloud-arrow-down-fill"></i>
                     </div>
                 </div>
-                
-                <div class="ext-card-meta">
-                    <span class="ext-percentage">${progress}%</span>
-                    <span class="ext-separator">•</span>
-                    <span class="ext-speed">${speed}</span>
+                <div class="ext-card-details">
+                    <div class="ext-card-header">
+                        <span class="ext-status-badge">${downloads.length} Downloads</span>
+                    </div>
+                    <div class="ext-multi-dl-list">
+                      ${itemsHtml}
+                    </div>
                 </div>
             </div>
-        </div>
-      `;
+          `;
+        } else {
+          downloads.forEach((dl) => {
+            const itemEl = content.querySelector(`.ext-multi-dl-item[data-dl-id="${dl.id}"]`);
+            if (!itemEl) return;
+            const progress = Math.round(dl.progress || 0);
+            const displayName = this._getDownloadDisplayName(dl);
+            let pctText = `${progress}%`;
+            
+            if (dl.statusText) {
+              const lowerStatus = dl.statusText.toLowerCase();
+              if (lowerStatus.includes('extract')) pctText = 'Extracting...';
+              else if (lowerStatus.includes('verif')) pctText = 'Verifying...';
+            }
+
+            const nameEl = itemEl.querySelector('.ext-multi-dl-name');
+            const pctEl = itemEl.querySelector('.ext-multi-dl-pct');
+            const fillEl = itemEl.querySelector('.ext-multi-dl-fill') as HTMLElement;
+            if (nameEl) { nameEl.textContent = displayName; (nameEl as HTMLElement).title = displayName; }
+            if (pctEl) pctEl.textContent = pctText;
+            if (fillEl) fillEl.style.width = `${progress}%`;
+          });
+
+          const badgeEl = content.querySelector('.ext-status-badge');
+          if (badgeEl) badgeEl.textContent = `${downloads.length} Downloads`;
+        }
+      }
     } else if (update.type === 'success') {
       if (!bottomBar.classList.contains('success-mode')) {
         bottomBar.classList.remove('download-mode', 'conflict-mode');
@@ -418,7 +581,7 @@ export class StatusBarManager {
                 </div>
                 <div class="ext-card-details">
                     <div class="ext-card-header">
-                        <span class="ext-status-badge" style="background: #28a745; border-color: #28a745;">Completed</span>
+                        <span class="ext-status-badge" style="background: #28a745; border-color: #28a745; color: #fff;">Completed</span>
                         <span class="ext-filename" title="${update.fileName}">${update.fileName || 'Unknown file'}</span>
                     </div>
                     
@@ -509,7 +672,15 @@ export class StatusBarManager {
 
         if (!this.userDismissedExtendedBar) {
           // Update extended bar
-          this.updateExtendedBar({ type: 'download', ...active });
+          const dlItems: DownloadItem[] = activeDownloads.map((d: any) => ({
+            id: d.id,
+            fileName: d.fileName,
+            modName: d.modName,
+            statusText: d.statusText,
+            progress: d.progress || 0,
+            speedText: d.speedText || '',
+          }));
+          this.updateExtendedBar({ type: 'download', downloads: dlItems });
         }
 
         // Also update standard status bar as fallback or complement
@@ -520,8 +691,7 @@ export class StatusBarManager {
         }
 
         if (this.currentTab !== 'downloads') {
-          let statusText =
-            document.querySelector<HTMLElement>('.bottom-text-left');
+          let statusText = document.querySelector<HTMLElement>('.bottom-text-left');
           if (!statusText) {
             statusText = document.querySelector<HTMLElement>('.bottom-text');
           }
@@ -530,7 +700,17 @@ export class StatusBarManager {
             statusText.classList.add('status-downloading');
             const dlName = active.modName || active.fileName || active.url?.split('/').pop() || 'Downloading...';
             const shortName = dlName.length > 30 ? dlName.substring(0, 27) + '...' : dlName;
-            const prog = active.progress !== undefined ? ` • ${Math.round(active.progress)}%` : '';
+            
+            let prog = '';
+            if (active.statusText) {
+              const lowerStatus = active.statusText.toLowerCase();
+              if (lowerStatus.includes('extract')) prog = ' • Extracting...';
+              else if (lowerStatus.includes('verif')) prog = ' • Verifying...';
+            }
+            if (!prog && active.progress !== undefined) {
+              prog = ` • ${Math.round(active.progress)}%`;
+            }
+
             statusText.textContent = this.t('statusBar.downloadsDownloading', {
               fileName: shortName,
               progress: prog,
@@ -557,19 +737,24 @@ export class StatusBarManager {
             (window.downloadManager as any).completedDownloads || [];
           if (completed.length > 0) {
             const last = completed[0];
-            // If finished within last 5 seconds
-            if (Date.now() - (last.endTime || 0) < 5000) {
+            // If finished within last 5 seconds AND it's a new completion
+            if (Date.now() - (last.endTime || 0) < 5000 && this.lastHandledSuccessId !== last.id) {
+              this.lastHandledSuccessId = last.id; // Mark this download as handled for success UI
               this.userDismissedExtendedBar = false; // Always show success
               this.updateExtendedBar({
                 type: 'success',
                 fileName: last.modName || last.fileName,
               });
 
-              // Wait 3 seconds then retract
+              this.refreshStandardStatus(); // Update the background text instantly
+
+              // Wait 2 seconds then retract
               setTimeout(() => {
-                this.updateExtendedBar({ type: 'none' });
-                this.refreshStandardStatus();
-              }, 3000);
+                const bottomBar = document.getElementById('main-status-bar');
+                if (bottomBar && bottomBar.classList.contains('success-mode')) {
+                  this.updateExtendedBar({ type: 'none' });
+                }
+              }, 2000);
 
               return false;
             }
@@ -630,7 +815,8 @@ export class StatusBarManager {
           if (
             bottomBar &&
             bottomBar.classList.contains('expanded') &&
-            !bottomBar.classList.contains('conflict-mode')
+            !bottomBar.classList.contains('conflict-mode') &&
+            !bottomBar.classList.contains('success-mode')
           ) {
             this.updateExtendedBar({ type: 'none' });
           }

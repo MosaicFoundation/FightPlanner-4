@@ -1,3 +1,28 @@
+// Global Renderer Error Tracking
+window.addEventListener('error', (event) => {
+  console.error('[Renderer] Uncaught Error:', event.error || event.message);
+  if (window.electronAPI && window.electronAPI.trackError) {
+    const errorMsg = event.error ? event.error.message : event.message;
+    const errorStack = event.error && event.error.stack ? event.error.stack : '';
+    window.electronAPI.trackError(errorMsg, errorStack, {
+      source: 'renderer_window_error',
+      filename: event.filename,
+      lineno: event.lineno,
+    });
+  }
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('[Renderer] Unhandled Rejection:', event.reason);
+  if (window.electronAPI && window.electronAPI.trackError) {
+    const errorMsg = event.reason instanceof Error ? event.reason.message : String(event.reason);
+    const errorStack = event.reason instanceof Error && event.reason.stack ? event.reason.stack : '';
+    window.electronAPI.trackError(errorMsg, errorStack, {
+      source: 'renderer_unhandled_rejection',
+    });
+  }
+});
+
 document
   .querySelector<HTMLElement>('.minimize')!
   .addEventListener('click', () => {

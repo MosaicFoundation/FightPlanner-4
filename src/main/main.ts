@@ -9,9 +9,30 @@ import DiscordRPCManager from './discord-rpc';
 import { registerAllHandlers } from './ipc';
 import { PATHS } from './config';
 import autoUpdater from './auto-updater';
-import { initPosthog, identifyUser, shutdownPosthog } from './posthog';
+import { initPosthog, identifyUser, shutdownPosthog, captureError, captureEvent } from './posthog';
 
 import AnimationHandler from './animations/animation-handler';
+
+// Global Error Catchers for PostHog
+process.on('uncaughtException', (error) => {
+  console.error('[Main] Uncaught Exception:', error);
+  captureError(error, { source: 'main_uncaught_exception', fatal: true });
+});
+
+process.on('unhandledRejection', (reason: any) => {
+  console.error('[Main] Unhandled Rejection:', reason);
+  captureError(reason instanceof Error ? reason : new Error(String(reason)), { source: 'main_unhandled_rejection', fatal: true });
+});
+
+app.on('render-process-gone', (event, webContents, details) => {
+  console.error('[Main] Renderer Process Gone:', details);
+  captureEvent('renderer_crash', { reason: details.reason, exitCode: details.exitCode });
+});
+
+app.on('child-process-gone', (event, details) => {
+  console.error('[Main] Child Process Gone:', details);
+  captureEvent('child_process_crash', { type: details.type, reason: details.reason, name: details.name });
+});
 
 const logsDir = PATHS.logsDir();
 if (!fs.existsSync(logsDir)) {
