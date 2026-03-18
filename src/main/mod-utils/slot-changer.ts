@@ -6,6 +6,7 @@ import { PathData } from './mod-scanner';
 import { ModFileOperations } from '../mod-file-operations';
 import { ConfigGenerator } from './config-generator';
 import { EchoDuplicateService } from './echo-duplicate';
+import { UiCharaDbBinaryPatch, UiCharaDbBinaryService } from './ui-chara-db-prc';
 import { PATHS } from '../config';
 
 interface CustomData {
@@ -382,6 +383,7 @@ export class SlotChanger {
     options: EchoOperationOptions = {},
   ) {
     const changedPaths: string[] = [];
+    const pendingUiCharaDbBinaryPatches: UiCharaDbBinaryPatch[] = [];
     const shouldApplySlotExpansionData = this.isCategorySelected(
       options,
       'slotExpansionData',
@@ -567,6 +569,8 @@ export class SlotChanger {
 
             // Build all parameters for this fighter's struct
             const structParams: string[] = [];
+            const byteUpdates: Record<string, number> = {};
+            const hash40Updates: Record<string, string> = {};
 
             // Calculate the highest slot number for color_num
             const maxSlotNum = Math.max(
@@ -577,6 +581,7 @@ export class SlotChanger {
             // Add color_num if the highest slot is > 7
             if (maxSlotNum > 7) {
               structParams.push(`<byte hash="color_num">${colorNum}</byte>`);
+              byteUpdates.color_num = colorNum;
             }
 
             for (const slot of finalSlots) {
@@ -607,14 +612,29 @@ export class SlotChanger {
                 structParams.push(
                   `<byte hash="n${String(slotNum).padStart(2, '0')}_index">${nxyIndex}</byte>`,
                 );
+                byteUpdates[`n${String(slotNum).padStart(2, '0')}_index`] = nxyIndex;
 
                 // Add custom announcer call if provided
                 if (customAnnouncer) {
                   structParams.push(
                     `<hash40 hash="characall_label_c${String(nxyIndex).padStart(2, '0')}">${announcer}</hash40>`,
                   );
+                  hash40Updates[`characall_label_c${String(nxyIndex).padStart(2, '0')}`] =
+                    announcer;
                 }
               }
+            }
+
+            if (
+              !options.duplicateCharacter &&
+              (Object.keys(byteUpdates).length > 0 ||
+                Object.keys(hash40Updates).length > 0)
+            ) {
+              pendingUiCharaDbBinaryPatches.push({
+                fighterIndex,
+                byte: byteUpdates,
+                hash40: hash40Updates,
+              });
             }
 
             // Build a single struct with all parameters
@@ -687,6 +707,19 @@ export class SlotChanger {
         const jsonCreator = new ConfigGenerator(modPath, fighterName);
 
         await jsonCreator.generateConfig(finalSlots);
+      }
+    }
+
+    if (shouldApplyMetadata && pendingUiCharaDbBinaryPatches.length > 0) {
+      const binaryPatched = await UiCharaDbBinaryService.applyPatches(
+        metadataOutputModPath,
+        pendingUiCharaDbBinaryPatches,
+      );
+
+      if (!binaryPatched) {
+        throw new Error(
+          'Failed to overwrite ui_chara_db.prc. Ensure prc2json tooling and labels are available.',
+        );
       }
     }
 

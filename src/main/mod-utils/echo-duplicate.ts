@@ -3,6 +3,7 @@ import path from 'path';
 import { ModFileOperations } from '../mod-file-operations';
 import { PATHS } from '../config';
 import type { SlotCustomData } from './slot-changer';
+import { UiCharaDbBinaryService } from './ui-chara-db-prc';
 
 type SlotCustomNames = Record<string, SlotCustomData>;
 
@@ -237,6 +238,40 @@ export class EchoDuplicateService {
     }
 
     await ModFileOperations.writeModFile(outputPath, xmlContent);
+
+    const byteUpdates: Record<string, number> = {
+      color_start_index: slotInfo.colorStartIndex,
+      color_num: slotInfo.colorNum,
+    };
+
+    for (let i = 0; i < 8; i += 1) {
+      const index = String(i).padStart(2, '0');
+      byteUpdates[`c${index}_index`] = 0;
+      byteUpdates[`n${index}_index`] = 0;
+    }
+
+    const binaryPatched = await UiCharaDbBinaryService.applyPatches(modPath, [
+      {
+        fighterIndex,
+        hash40: {
+          ui_chara_id: `ui_chara_${identity.nameId}`,
+          fighter_kind: `fighter_kind_${fighterName}`,
+          fighter_kind_corps: `fighter_kind_${fighterName}`,
+          alt_chara_id: '',
+          characall_label_c00: identity.announcerLabel,
+        },
+        string: {
+          name_id: identity.nameId,
+        },
+        byte: byteUpdates,
+      },
+    ]);
+
+    if (!binaryPatched) {
+      throw new Error(
+        'Failed to overwrite ui_chara_db.prc. Ensure prc2json tooling and labels are available.',
+      );
+    }
   }
 
   private static async writeMsgName({

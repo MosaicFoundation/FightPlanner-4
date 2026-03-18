@@ -64,6 +64,17 @@
           "7z.exe",
           "7z.dll"
         ]
+      },
+      {
+        "from": "tools/prc2json",
+        "to": "tools/prc2json",
+        "filter": [
+          "prc2json.dll",
+          "prc2json.deps.json",
+          "prc2json.runtimeconfig.json",
+          "Newtonsoft.Json.dll",
+          "ParamLabels_A.csv"
+        ]
       }
     ],
     "protocols": [

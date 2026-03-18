@@ -9,6 +9,7 @@ type ChangeSlotModalContext = {
   nameSuggestions?: string[];
   takenNames?: { name: string; modName: string; modPath: string }[];
   echoOperationOptions?: Partial<EchoOperationOptions>;
+  onSlotsApplied?: () => void | Promise<void>;
 };
 
 class ModOperations {
@@ -208,6 +209,14 @@ class ModOperations {
                   }
 
                   this.modManager.fetchMods();
+
+                  if (modalContext.onSlotsApplied) {
+                    try {
+                      await modalContext.onSlotsApplied();
+                    } catch (error) {
+                      console.warn('Slot apply callback failed:', error);
+                    }
+                  }
                 } else {
                   window.toastManager.error('toasts.failedToChangeSlot', 3000, {
                     error: changeSlotsResult.error,

@@ -27,6 +27,7 @@ import {
   SlotCustomNamesByFighter,
   UiCompatibilityCategory,
 } from '../../mod-utils/slot-changer';
+import { UiCharaDbBinaryService } from '../../mod-utils/ui-chara-db-prc';
 import { PATHS } from '../../config';
 
 export type ModHandlers = typeof ModHandlers;
@@ -868,24 +869,38 @@ async function readUiCharaStructInspector(
     'ui_chara_db.prcxml',
   );
 
-  if (!fs.existsSync(prcxmlPath)) {
-    return null;
-  }
-
   const fighterIndex = await resolveFighterIndex(fighterName);
-  const xmlContent = await fs.promises.readFile(prcxmlPath, 'utf8');
+  let sourcePath = prcxmlPath;
+  let fields: Record<string, string> | null = null;
 
-  const structRegex = new RegExp(
-    `<struct\\s+index="${fighterIndex}"[\\s\\S]*?<\\/struct>`,
-    'i',
-  );
-  const structMatch = xmlContent.match(structRegex);
+  if (fs.existsSync(prcxmlPath)) {
+    const xmlContent = await fs.promises.readFile(prcxmlPath, 'utf8');
 
-  if (!structMatch) {
-    return null;
+    const structRegex = new RegExp(
+      `<struct\\s+index="${fighterIndex}"[\\s\\S]*?<\\/struct>`,
+      'i',
+    );
+    const structMatch = xmlContent.match(structRegex);
+
+    if (structMatch) {
+      fields = extractHashFieldsFromStruct(structMatch[0]);
+    }
   }
 
-  const fields = extractHashFieldsFromStruct(structMatch[0]);
+  if (!fields) {
+    const binaryStruct = await UiCharaDbBinaryService.readStructFields(
+      slotTargetModPath,
+      fighterIndex,
+    );
+
+    if (!binaryStruct) {
+      return null;
+    }
+
+    fields = binaryStruct.fields;
+    sourcePath = binaryStruct.sourcePath;
+  }
+
   const msgNamePath = path.join(slotTargetModPath, 'ui', 'message', 'msg_name.xmsbt');
   let msgEntries = new Map<string, string>();
 
@@ -898,7 +913,7 @@ async function readUiCharaStructInspector(
   const fallbackSuffix = normalizeMessageLabelSuffix(fighterName);
 
   return {
-    sourcePath: prcxmlPath,
+    sourcePath,
     fighterName,
     fighterIndex,
     fields,
