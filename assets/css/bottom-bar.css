@@ -21,6 +21,7 @@
   transition:
     opacity 0.2s ease,
     transform 0.2s ease,
+    filter 0.2s ease,
     color 0.3s ease;
   white-space: nowrap;
   overflow: hidden;
@@ -35,7 +36,8 @@
 .bottom-text-left.status-changing {
   transition:
     opacity 0.2s ease,
-    transform 0.2s ease;
+    transform 0.2s ease,
+    filter 0.2s ease;
 }
 
 body.no-animations .bottom-text.status-changing,
@@ -43,11 +45,15 @@ body.no-animations .bottom-text-left.status-changing {
   transition: none !important;
   opacity: 1 !important;
   transform: translateY(0) !important;
+  filter: none !important;
 }
 
 body.reduced-animations .bottom-text.status-changing,
 body.reduced-animations .bottom-text-left.status-changing {
-  transition: opacity 0.1s ease !important;
+  transition:
+    opacity 0.12s ease !important,
+    transform 0.12s ease !important,
+    filter 0.12s ease !important;
 }
 
 .bottom-text-right {
@@ -70,7 +76,7 @@ body.reduced-animations .bottom-text-left.status-changing {
 .bottom-text.status-downloading,
 .bottom-text-left.status-downloading {
   color: var(--accent-color);
-  animation: pulseDownload 1.5s ease-in-out infinite;
+  animation: pulseDownload 1.9s cubic-bezier(0.22, 1, 0.36, 1) infinite;
   transition: opacity 0.3s ease;
 }
 
@@ -94,7 +100,7 @@ body.reduced-animations .bottom-text-left.status-changing {
   content: '⬇';
   display: inline-block;
   margin-right: 6px;
-  animation: bounceDown 1s ease-in-out infinite;
+  animation: bounceDown 1.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
 .bottom-text:not(.status-downloading),
@@ -110,28 +116,41 @@ body.reduced-animations .bottom-text-left.status-changing {
 }
 
 @keyframes pulseDownload {
-
   0%,
   100% {
     opacity: 1;
     transform: translateX(0);
+    filter: blur(0);
   }
 
-  50% {
-    opacity: 0.8;
-    transform: translateX(2px);
+  35% {
+    opacity: 0.92;
+    transform: translateX(1px);
+    filter: blur(0.2px);
+  }
+
+  60% {
+    opacity: 0.84;
+    transform: translateX(3px);
+    filter: blur(0.35px);
   }
 }
 
 @keyframes bounceDown {
-
   0%,
   100% {
     transform: translateY(0);
+    opacity: 0.9;
   }
 
-  50% {
-    transform: translateY(3px);
+  45% {
+    transform: translateY(2px) scale(0.96);
+    opacity: 1;
+  }
+
+  70% {
+    transform: translateY(1px) scale(1.03);
+    opacity: 0.92;
   }
 }
 
@@ -539,6 +558,7 @@ body.reduced-animations .bottom-text-left.status-changing {
 
 /* Bottom Bar - Main Container */
 .bottom-bar {
+  --island-accent-rgb: var(--accent-rgb);
   position: relative;
   margin-left: 70px;
   flex-shrink: 0;
@@ -554,6 +574,7 @@ body.reduced-animations .bottom-text-left.status-changing {
   transition:
     height 0.4s cubic-bezier(0.22, 1, 0.36, 1),
     padding 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
     background-color 0.3s ease,
     filter 0.3s ease,
     box-shadow 0.3s ease,
@@ -566,6 +587,67 @@ body.reduced-animations .bottom-text-left.status-changing {
       rgba(255, 255, 255, 0.03) 10px,
       rgba(255, 255, 255, 0.03) 20px);
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  transform-origin: left bottom;
+  will-change: transform, filter, box-shadow;
+  isolation: isolate;
+}
+
+.bottom-bar[data-island-mode='conflict'] {
+  --island-accent-rgb: var(--warning-color-rgb);
+}
+
+.bottom-bar[data-island-mode='success'] {
+  --island-accent-rgb: 40, 167, 69;
+}
+
+.bottom-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0.02) 32%,
+      transparent 78%
+    );
+  opacity: 0;
+  transform: translateX(0) scaleX(1);
+  filter: none;
+  transition:
+    opacity 0.32s ease,
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 0;
+}
+
+.bottom-bar.expanded {
+  transform: translateY(-1px) scaleY(1.01);
+  box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.24);
+}
+
+.bottom-bar.expanded::after {
+  opacity: 0.24;
+}
+
+.bottom-bar:not(.expanded).collapsed-status-swap {
+  animation: collapsedStatusBarSwap 0.44s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bottom-bar.island-pulse {
+  animation: dynamicIslandPulse 0.72s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bottom-bar.island-pulse::after {
+  animation: dynamicIslandShimmer 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bottom-bar.island-settle {
+  animation: dynamicIslandSettle 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bottom-bar.island-collapse {
+  animation: dynamicIslandCollapse 0.42s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Draw the accent line from the right edge of the panel to the screen edge */
@@ -597,14 +679,25 @@ body.reduced-animations .bottom-text-left.status-changing {
 
 /* Standard Content container */
 .status-bar-content {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
   height: 35px;
   opacity: 1;
-  transition: opacity 0.2s ease;
+  transition:
+    opacity 0.28s ease,
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.35s ease;
   flex-shrink: 0;
+  z-index: 1;
+}
+
+.bottom-bar.expanded .status-bar-content {
+  opacity: 0.92;
+  transform: translateY(1px) scale(0.992);
+  filter: saturate(1.05);
 }
 
 /* Extended Content Container — floating dynamic island */
@@ -628,40 +721,82 @@ body.reduced-animations .bottom-text-left.status-changing {
     0 -8px 24px rgba(0, 0, 0, 0.3),
     4px 0 12px rgba(0, 0, 0, 0.1);
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  transform: translateY(20px);
-  opacity: 1; /* No fade */
+  transform: translateY(18px) scale(0.97, 0.82);
+  transform-origin: left bottom;
+  opacity: 0;
   pointer-events: none;
   clip-path: inset(100% -50px 0 -50px); /* Hide completely from bottom up, allow side shadows */
+  filter: blur(14px) saturate(0.88);
   transition:
-    clip-path 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
-    transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-  z-index: 101;
+    clip-path 0.72s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.72s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.26s ease,
+    filter 0.52s ease,
+    box-shadow 0.4s ease;
+  z-index: 2;
   overflow: hidden;
+}
+
+.extended-content::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.12) 0%,
+      rgba(255, 255, 255, 0.03) 28%,
+      transparent 62%
+    ),
+    radial-gradient(
+      140px 80px at 16% 18%,
+      rgba(var(--island-accent-rgb), 0.22),
+      transparent 72%
+    );
+  opacity: 0.58;
+  mix-blend-mode: screen;
 }
 
 .bottom-bar.expanded .extended-content {
   transform: translateY(0);
-  opacity: 1; /* No fade */
+  opacity: 1;
   clip-path: inset(-50px -50px 0 -50px); /* Reveal fully, allowing shadows */
   pointer-events: auto;
+  filter: blur(0) saturate(1);
   transition:
-    clip-path 0.8s cubic-bezier(0.34, 1.56, 0.64, 1),
-    transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    clip-path 0.82s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.82s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s ease,
+    filter 0.52s ease,
+    box-shadow 0.4s ease;
 }
 
 .bottom-bar.expanded.download-mode .extended-content {
   border-top: 2px solid var(--accent-color);
   border-right: 2px solid var(--accent-color);
+  box-shadow:
+    0 -16px 38px rgba(var(--accent-rgb), 0.16),
+    0 -8px 24px rgba(0, 0, 0, 0.3),
+    4px 0 12px rgba(0, 0, 0, 0.1);
 }
 
 .bottom-bar.expanded.conflict-mode .extended-content {
   border-top: 2px solid var(--warning-color);
   border-right: 2px solid var(--warning-color);
+  box-shadow:
+    0 -16px 38px rgba(var(--warning-color-rgb), 0.16),
+    0 -8px 24px rgba(0, 0, 0, 0.3),
+    4px 0 12px rgba(0, 0, 0, 0.1);
 }
 
 .bottom-bar.expanded.success-mode .extended-content {
   border-top: 2px solid var(--success-color, #28a745);
   border-right: 2px solid var(--success-color, #28a745);
+  box-shadow:
+    0 -16px 38px rgba(40, 167, 69, 0.16),
+    0 -8px 24px rgba(0, 0, 0, 0.3),
+    4px 0 12px rgba(0, 0, 0, 0.1);
 }
 
 /* TEXT STYLES (Standard) */
@@ -694,6 +829,8 @@ body.reduced-animations .bottom-text-left.status-changing {
   width: 100%;
   gap: 16px;
   position: relative;
+  animation: islandCardEnter 0.62s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: left bottom;
 }
 
 .ext-multi-dl-list {
@@ -711,6 +848,7 @@ body.reduced-animations .bottom-text-left.status-changing {
   overflow: hidden;
   max-height: 50px;
   opacity: 1;
+  animation: islandCardRowEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .ext-multi-dl-item.removing {
@@ -751,6 +889,14 @@ body.reduced-animations .bottom-text-left.status-changing {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 20px rgba(0, 0, 0, 0.16);
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s ease,
+    background 0.3s ease,
+    border-color 0.3s ease;
 }
 
 .ext-card-icon-container.icon-warning {
@@ -762,6 +908,7 @@ body.reduced-animations .bottom-text-left.status-changing {
   font-size: 22px;
   color: var(--accent-color);
   opacity: 0.9;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .ext-card-icon-container.icon-warning i {
@@ -833,16 +980,37 @@ body.reduced-animations .bottom-text-left.status-changing {
   transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
   position: relative;
   border-radius: 4px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 0 18px rgba(var(--accent-rgb), 0.22);
 }
 
 .ext-progress-fill .ext-progress-glare {
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent);
+  left: -45%;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.28),
+    transparent
+  );
   border-radius: 4px 4px 0 0;
+  transform: skewX(-18deg);
+}
+
+.bottom-bar.expanded.download-mode .ext-progress-glare {
+  animation: dynamicIslandProgressSweep 1.7s linear infinite;
+}
+
+.bottom-bar.expanded .ext-card-icon-container {
+  transform: translateY(-1px) scale(1.02);
+}
+
+.bottom-bar.expanded .ext-card-icon i {
+  transform: scale(1.03);
 }
 
 .ext-card-meta {
@@ -980,4 +1148,158 @@ body.reduced-animations .bottom-text-left.status-changing {
   background: var(--accent-color);
   border-radius: 2px;
   transition: width 0.3s ease;
+}
+
+@keyframes dynamicIslandPulse {
+  0% {
+    transform: translateY(0) scale(1, 1);
+    filter: brightness(1) saturate(1);
+  }
+
+  24% {
+    transform: translateY(-2px) scale(1.01, 1.06);
+    filter: brightness(1.05) saturate(1.08);
+  }
+
+  58% {
+    transform: translateY(-1px) scale(1.005, 0.985);
+    filter: brightness(1.02) saturate(1.03);
+  }
+
+  100% {
+    transform: translateY(-1px) scaleY(1.01);
+    filter: brightness(1) saturate(1);
+  }
+}
+
+@keyframes collapsedStatusBarSwap {
+  0% {
+    transform: translateY(0) scale(1, 1);
+  }
+
+  30% {
+    transform: translateY(-0.5px) scale(0.997, 0.985);
+  }
+
+  68% {
+    transform: translateY(0) scale(1.003, 1.012);
+  }
+
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+
+@keyframes dynamicIslandSettle {
+  0% {
+    transform: translateY(-1px) scale(1.003, 1.015);
+  }
+
+  100% {
+    transform: translateY(-1px) scaleY(1.01);
+  }
+}
+
+@keyframes dynamicIslandCollapse {
+  0% {
+    transform: translateY(-1px) scaleY(1.01);
+    filter: brightness(1.02);
+  }
+
+  100% {
+    transform: translateY(0) scale(1, 1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes dynamicIslandShimmer {
+  0% {
+    opacity: 0.28;
+    transform: translateX(-18%) scaleX(0.94);
+  }
+
+  45% {
+    opacity: 1;
+    transform: translateX(0) scaleX(1.03);
+  }
+
+  100% {
+    opacity: 0.9;
+    transform: translateX(0) scaleX(1);
+  }
+}
+
+@keyframes islandCardEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+    filter: blur(10px);
+  }
+
+  60% {
+    opacity: 1;
+    transform: translateY(-1px) scale(1.005);
+    filter: blur(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes islandCardRowEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dynamicIslandProgressSweep {
+  0% {
+    transform: translateX(0) skewX(-18deg);
+  }
+
+  100% {
+    transform: translateX(330%) skewX(-18deg);
+  }
+}
+
+body.reduced-animations .bottom-bar,
+body.reduced-animations .extended-content,
+body.reduced-animations .status-bar-content {
+  transition-duration: 0.18s !important;
+}
+
+body.reduced-animations .bottom-bar.island-pulse,
+body.reduced-animations .bottom-bar.island-settle,
+body.reduced-animations .bottom-bar.island-collapse,
+body.reduced-animations .bottom-bar.collapsed-status-swap,
+body.reduced-animations .bottom-bar.island-pulse::after,
+body.reduced-animations .bottom-bar.expanded.download-mode .ext-progress-glare,
+body.reduced-animations .ext-download-card,
+body.reduced-animations .ext-conflict-card,
+body.reduced-animations .ext-multi-dl-item {
+  animation-duration: 0.18s !important;
+}
+
+body.no-animations .bottom-bar,
+body.no-animations .bottom-bar::before,
+body.no-animations .bottom-bar::after,
+body.no-animations .bottom-bar.collapsed-status-swap,
+body.no-animations .extended-content,
+body.no-animations .status-bar-content,
+body.no-animations .ext-download-card,
+body.no-animations .ext-conflict-card,
+body.no-animations .ext-multi-dl-item,
+body.no-animations .bottom-bar.expanded.download-mode .ext-progress-glare {
+  animation: none !important;
+  transition: none !important;
+  filter: none !important;
 }

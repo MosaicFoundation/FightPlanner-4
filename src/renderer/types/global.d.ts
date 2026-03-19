@@ -18,6 +18,7 @@ import { ResizeHandler } from '../js/ui/resize-handler';
 import { ModInfoManager } from '../js/mods/mod-info';
 import { PluginMarketplace } from '../js/mods/plugin-marketplace';
 import { LogsManager } from '../js/logs/logs-manager';
+import { BatchTestingManager } from '../js/settings/batch-testing-manager';
 import { AnimationManager } from '../js/ui/animation-manager';
 import { TutorialManager } from '../js/tutorial/tutorial-manager';
 import { FightPlannerManager } from '../js/fightplanner/fightplanner-manager';
@@ -63,6 +64,7 @@ declare global {
     modInfoManager: ModInfoManager;
     pluginMarketplace: PluginMarketplace;
     logsManager: LogsManager;
+    batchTestingManager: BatchTestingManager;
     animationManager: AnimationManager;
     tutorialManager: TutorialManager;
     fightPlannerManager: FightPlannerManager;

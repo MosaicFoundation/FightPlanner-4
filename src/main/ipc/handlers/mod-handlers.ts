@@ -45,6 +45,26 @@ const ModHandlers = {
     }
   },
 
+  ['apply-mod-batch-state']: async (
+    common: BaseHandlerArg,
+    modsPath: string,
+    enabledModNames: string[],
+  ): HandlerResponse<{
+    activeMods: Mod[];
+    disabledMods: Mod[];
+  }> => {
+    try {
+      const result = ModUtils.applyModBatchState(modsPath, enabledModNames);
+      return {
+        success: true,
+        ...result,
+      };
+    } catch (error) {
+      handleError(error, 'apply-mod-batch-state');
+      return createErrorResponse(ErrorCodes.MOD_RENAME_ERROR, error.message);
+    }
+  },
+
   ['get-preview-image']: async (common: BaseHandlerArg, modPath: string) => {
     try {
       const previewPath = ModUtils.getPreviewImagePath(modPath);

@@ -44,6 +44,16 @@ export interface Mod {
   hash?: string;
 }
 
+type BatchModState = 'active' | 'disabled';
+
+interface BatchModMove {
+  mod: Mod;
+  sourcePath: string;
+  targetPath: string;
+  targetStatus: BatchModState;
+  tempPath: string;
+}
+
 export default class ModUtils {
   private static _gatherDirsWithModFiles(rootDir: string): string[] {
     const checkIfModDir = (dir: string): boolean => {
@@ -271,6 +281,125 @@ export default class ModUtils {
       activeMods,
       disabledMods,
     };
+  }
+
+  private static createTempPath(sourcePath: string, label: string) {
+    const parentDir = path.dirname(sourcePath);
+    const safeLabel = label.replace(/[^a-z0-9._-]/gi, '_');
+    let candidate = path.join(
+      parentDir,
+      `.fpp_batch_${Date.now()}_${Math.random().toString(36).slice(2)}_${safeLabel}`,
+    );
+
+    while (fs.existsSync(candidate)) {
+      candidate = path.join(
+        parentDir,
+        `.fpp_batch_${Date.now()}_${Math.random().toString(36).slice(2)}_${safeLabel}`,
+      );
+    }
+
+    return candidate;
+  }
+
+  private static rollbackBatchMoves(moves: BatchModMove[]) {
+    for (let i = moves.length - 1; i >= 0; i -= 1) {
+      const move = moves[i];
+
+      try {
+        if (fs.existsSync(move.tempPath)) {
+          fs.renameSync(move.tempPath, move.sourcePath);
+        } else if (fs.existsSync(move.targetPath)) {
+          fs.renameSync(move.targetPath, move.sourcePath);
+        }
+      } catch (error) {
+        console.error('[ModUtils] Failed to rollback batch move:', error);
+      }
+    }
+  }
+
+  static applyModBatchState(
+    activeModsPath: string,
+    enabledModNames: string[],
+  ) {
+    const { activeMods, disabledMods } = this.readAllMods(activeModsPath);
+    const enabledSet = new Set(enabledModNames);
+    const disabledModsPath = this.getDisabledModsFolder(activeModsPath);
+
+    const allMods = [...activeMods, ...disabledMods];
+    const seenNames = new Set<string>();
+
+    for (const mod of allMods) {
+      if (seenNames.has(mod.name)) {
+        throw new Error(
+          `Duplicate mod name detected: "${mod.name}". Batch testing requires unique mod names.`,
+        );
+      }
+
+      seenNames.add(mod.name);
+    }
+
+    const plannedMoves: BatchModMove[] = [];
+
+    for (const mod of allMods) {
+      const shouldBeActive = enabledSet.has(mod.name);
+      const shouldMove =
+        (mod.status === 'active' && !shouldBeActive) ||
+        (mod.status === 'disabled' && shouldBeActive);
+
+      if (!shouldMove) {
+        continue;
+      }
+
+      const targetStatus: BatchModState = shouldBeActive ? 'active' : 'disabled';
+      const targetBasePath =
+        targetStatus === 'active' ? activeModsPath : disabledModsPath;
+      const targetPath = path.join(targetBasePath, mod.name);
+
+      if (fs.existsSync(targetPath)) {
+        throw new Error(
+          `Batch state collision: "${mod.name}" already exists in the ${targetStatus === 'active' ? 'active' : 'disabled'} mods folder.`,
+        );
+      }
+
+      plannedMoves.push({
+        mod,
+        sourcePath: mod.path,
+        targetPath,
+        targetStatus,
+        tempPath: this.createTempPath(mod.path, mod.name),
+      });
+    }
+
+    if (plannedMoves.some((move) => move.targetStatus === 'active')) {
+      fs.mkdirSync(activeModsPath, { recursive: true });
+    }
+
+    if (plannedMoves.some((move) => move.targetStatus === 'disabled')) {
+      fs.mkdirSync(disabledModsPath, { recursive: true });
+    }
+
+    const stagedMoves: BatchModMove[] = [];
+    const finalizedMoves: BatchModMove[] = [];
+
+    try {
+      for (const move of plannedMoves) {
+        fs.renameSync(move.sourcePath, move.tempPath);
+        stagedMoves.push(move);
+      }
+
+      for (const move of stagedMoves) {
+        fs.renameSync(move.tempPath, move.targetPath);
+        finalizedMoves.push(move);
+      }
+    } catch (error) {
+      this.rollbackBatchMoves(finalizedMoves);
+      this.rollbackBatchMoves(
+        stagedMoves.filter((move) => !finalizedMoves.includes(move)),
+      );
+      throw error;
+    }
+
+    return this.readAllMods(activeModsPath);
   }
 
   static async detectConflicts(
