@@ -1113,14 +1113,6 @@ export class StatusBarManager {
     return name;
   }
 
-  _getDownloadDisplayName(dl: DownloadItem): string {
-    if (dl.modName) return dl.modName;
-    if (dl.statusText && !dl.statusText.toLowerCase().includes('downloading')) return dl.statusText;
-    const name = dl.fileName || '';
-    if (/^\d+$/.test(name) || name === 'mod.zip') return 'Downloading...';
-    return name;
-  }
-
   updateExtendedBar(
     update: NoneUpdate | SuccessUpdate | ConflictUpdate | DownloadUpdate,
   ) {
