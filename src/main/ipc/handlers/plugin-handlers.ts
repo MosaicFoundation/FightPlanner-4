@@ -35,6 +35,33 @@ const PluginHandlers = {
     }
   },
 
+  ['apply-plugin-batch-state']: async (
+    common: BaseHandlerArg,
+    pluginsPath: string,
+    enabledPluginNames: string[],
+  ): HandlerResponse<{
+    activePlugins: SimplePlugin[];
+    disabledPlugins: SimplePlugin[];
+  }> => {
+    try {
+      const result = PluginUtils.applyPluginBatchState(
+        pluginsPath,
+        enabledPluginNames,
+      );
+
+      return {
+        success: true,
+        ...result,
+      };
+    } catch (error) {
+      handleError(error, 'apply-plugin-batch-state');
+      return createErrorResponse(
+        ErrorCodes.PLUGIN_READ_ERROR,
+        error.message,
+      );
+    }
+  },
+
   ['select-plugin-file']: async (
     common: BaseHandlerArg,
     pluginsPath: string,

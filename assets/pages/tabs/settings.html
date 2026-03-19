@@ -372,6 +372,147 @@
           mode
         </p>
       </div>
+
+      <div class="settings-group-title"><i class="bi bi-search"></i> Batch Testing</div>
+
+      <div class="settings-section">
+        <label class="settings-label" data-i18n="settings.batchTestingTitle">Batch Testing</label>
+        <p class="settings-hint" data-i18n="settings.batchTestingDesc">
+          Binary diagnostic mode for mods and plugins. We disable half of your
+          active items, ask you to launch the game, and narrow down the problem
+          until the main cause is found.
+        </p>
+
+        <div id="batch-testing-session-card"
+          style="margin-bottom: 12px; padding: 16px 18px; border-radius: 14px; background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.03) 100%); border: 1px solid var(--border-color);">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);"
+              data-i18n="settings.batchTestingSessionLabel">
+              Current Session
+            </div>
+            <div id="batch-testing-session-badge"
+              style="padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: var(--text-secondary); font-size: 12px; font-weight: 600;">
+              Ready
+            </div>
+          </div>
+          <div id="batch-testing-session-title" style="margin-top: 10px; font-size: 18px; font-weight: 700; color: var(--text-primary);"
+            data-i18n="settings.batchTestingReadyTitle">
+            Ready to start a diagnostic
+          </div>
+          <div id="batch-testing-session-desc" style="margin-top: 6px; color: var(--text-secondary); line-height: 1.6;"
+            data-i18n="settings.batchTestingReadyDesc">
+            Choose where to begin, then FightPlanner will disable groups step by step until the likely cause is isolated.
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 12px;">
+          <div style="padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color);">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; background: rgba(var(--primary-rgb), 0.14); border: 1px solid rgba(var(--primary-rgb), 0.22); color: var(--primary-color); font-size: 13px; font-weight: 700; margin-bottom: 10px;">1</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;"
+              data-i18n="settings.batchTestingHowStepOneTitle">
+              FightPlanner disables a group
+            </div>
+            <div style="font-size: 13px; line-height: 1.6; color: var(--text-secondary);"
+              data-i18n="settings.batchTestingHowStepOneDesc">
+              A portion of your active mods or plugins is turned off temporarily.
+            </div>
+          </div>
+          <div style="padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color);">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; background: rgba(var(--primary-rgb), 0.14); border: 1px solid rgba(var(--primary-rgb), 0.22); color: var(--primary-color); font-size: 13px; font-weight: 700; margin-bottom: 10px;">2</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;"
+              data-i18n="settings.batchTestingHowStepTwoTitle">
+              You test the game
+            </div>
+            <div style="font-size: 13px; line-height: 1.6; color: var(--text-secondary);"
+              data-i18n="settings.batchTestingHowStepTwoDesc">
+              Launch the game, reproduce the issue, then tell FightPlanner if it works now.
+            </div>
+          </div>
+          <div style="padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color);">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; background: rgba(var(--primary-rgb), 0.14); border: 1px solid rgba(var(--primary-rgb), 0.22); color: var(--primary-color); font-size: 13px; font-weight: 700; margin-bottom: 10px;">3</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;"
+              data-i18n="settings.batchTestingHowStepThreeTitle">
+              The suspect list gets smaller
+            </div>
+            <div style="font-size: 13px; line-height: 1.6; color: var(--text-secondary);"
+              data-i18n="settings.batchTestingHowStepThreeDesc">
+              FightPlanner repeats the process until the most likely cause is isolated.
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-input-group" style="margin-bottom: 12px; gap: 12px; flex-wrap: wrap;">
+          <label class="settings-label" style="margin-right: 12px; min-width: 150px"
+            data-i18n="settings.batchTestingStartOrder">
+            Start With:
+          </label>
+          <label style="display: inline-flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-tertiary); cursor: pointer; flex: 1; min-width: 220px;">
+            <input type="radio" name="batch-testing-start-order" id="batch-testing-start-mods" value="mods" checked
+              style="margin-top: 4px;" />
+            <span style="display: flex; flex-direction: column; gap: 4px;">
+              <span data-i18n="settings.batchTestingStartMods">Mods</span>
+              <span style="font-size: 12px; color: var(--text-muted);" data-i18n="settings.batchTestingStartModsDesc">
+                Recommended first. Most problems come from mods.
+              </span>
+            </span>
+          </label>
+          <label style="display: inline-flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-tertiary); cursor: pointer; flex: 1; min-width: 220px;">
+            <input type="radio" name="batch-testing-start-order" id="batch-testing-start-plugins" value="plugins"
+              style="margin-top: 4px;" />
+            <span style="display: flex; flex-direction: column; gap: 4px;">
+              <span data-i18n="settings.batchTestingStartPlugins">Plugins</span>
+              <span style="font-size: 12px; color: var(--text-muted);" data-i18n="settings.batchTestingStartPluginsDesc">
+                Useful if the issue looks related to Skyline or a runtime plugin.
+              </span>
+            </span>
+          </label>
+        </div>
+
+        <button class="settings-btn-action" id="batch-testing-btn">
+          <i class="bi bi-bezier2"></i>
+          <div class="settings-btn-action-content">
+            <span class="settings-btn-action-title" data-i18n="settings.batchTestingButton">Batch Testing</span>
+            <span class="settings-btn-action-desc" data-i18n="settings.batchTestingButtonDesc">Start the binary
+              mod/plugin diagnostic flow</span>
+          </div>
+          <i class="bi bi-arrow-right"></i>
+        </button>
+
+        <div class="settings-input-group" style="margin-top: 12px; gap: 12px; flex-wrap: wrap;">
+          <button class="settings-btn-action" id="batch-testing-resume-btn" style="display: none; flex: 1; min-width: 260px;">
+            <i class="bi bi-play-circle"></i>
+            <div class="settings-btn-action-content">
+              <span class="settings-btn-action-title" data-i18n="settings.batchTestingResumeButton">Resume Batch Testing</span>
+              <span class="settings-btn-action-desc" data-i18n="settings.batchTestingResumeButtonDesc">Resume the current diagnostic session</span>
+            </div>
+            <i class="bi bi-arrow-right"></i>
+          </button>
+
+          <button class="settings-btn-action" id="batch-testing-cancel-btn"
+            style="display: none; flex: 1; min-width: 260px; background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3);">
+            <i class="bi bi-x-circle" style="color: var(--danger-color);"></i>
+            <div class="settings-btn-action-content">
+              <span class="settings-btn-action-title" data-i18n="settings.batchTestingCancelButton">Cancel Batch Testing</span>
+              <span class="settings-btn-action-desc" data-i18n="settings.batchTestingCancelButtonDesc">Cancel the current session and restore the original state</span>
+            </div>
+            <i class="bi bi-arrow-right" style="color: var(--danger-color);"></i>
+          </button>
+        </div>
+
+        <p class="settings-hint" data-i18n="settings.batchTestingLaunchGame">
+          Launch the game and confirm if it works
+        </p>
+        <p class="settings-hint" data-i18n="settings.batchTestingQuestion">
+          Does it work?
+        </p>
+
+        <p class="settings-hint" data-i18n="settings.batchTestingPrimaryCause">
+          The current priority is shown as the principal cause while testing.
+        </p>
+        <p class="settings-hint" data-i18n="settings.batchTestingDeleteOrDisable">
+          Do you want to delete it or just disable it?
+        </p>
+      </div>
     </div>
 
     <!-- Advanced Settings -->

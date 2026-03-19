@@ -150,6 +150,55 @@ class SettingsManager {
       console.log('Export mods list button listener attached');
     }
 
+    const batchTestingBtn = document.querySelector<HTMLElement>(
+      '#batch-testing-btn',
+    );
+    if (batchTestingBtn && !batchTestingBtn.dataset.listenerAttached) {
+      batchTestingBtn.addEventListener('click', async () => {
+        if ((window as any).batchTestingManager) {
+          await (window as any).batchTestingManager.openStartModal();
+        }
+      });
+      batchTestingBtn.dataset.listenerAttached = 'true';
+      console.log('Batch testing button listener attached');
+    }
+
+    const batchTestingResumeBtn = document.querySelector<HTMLElement>(
+      '#batch-testing-resume-btn',
+    );
+    if (
+      batchTestingResumeBtn &&
+      !batchTestingResumeBtn.dataset.listenerAttached
+    ) {
+      batchTestingResumeBtn.addEventListener('click', async () => {
+        if ((window as any).batchTestingManager) {
+          await (window as any).batchTestingManager.resumeSession();
+        }
+      });
+      batchTestingResumeBtn.dataset.listenerAttached = 'true';
+      console.log('Batch testing resume button listener attached');
+    }
+
+    const batchTestingCancelBtn = document.querySelector<HTMLElement>(
+      '#batch-testing-cancel-btn',
+    );
+    if (
+      batchTestingCancelBtn &&
+      !batchTestingCancelBtn.dataset.listenerAttached
+    ) {
+      batchTestingCancelBtn.addEventListener('click', async () => {
+        if ((window as any).batchTestingManager) {
+          await (window as any).batchTestingManager.cancelSession();
+        }
+      });
+      batchTestingCancelBtn.dataset.listenerAttached = 'true';
+      console.log('Batch testing cancel button listener attached');
+    }
+
+    if ((window as any).batchTestingManager?.refreshControlState) {
+      (window as any).batchTestingManager.refreshControlState();
+    }
+
     const browseEmulator = document.querySelector<HTMLElement>(
       '#browse-emulator-path',
     );
