@@ -108,23 +108,34 @@ class ModContextMenuHandler {
 
     contextMenu.dataset.modId = mod.id;
 
-    contextMenu.classList.remove('closing');
-    contextMenu.style.display = 'none';
-    void contextMenu.offsetWidth;
-
-    contextMenu.style.left = `${e.clientX}px`;
-    contextMenu.style.top = `${e.clientY}px`;
+    contextMenu.style.visibility = 'hidden';
     contextMenu.style.display = 'block';
 
-    setTimeout(() => {
-      const rect = contextMenu.getBoundingClientRect();
-      if (rect.right > window.innerWidth) {
-        contextMenu.style.left = `${window.innerWidth - rect.width - 10}px`;
-      }
-      if (rect.bottom > window.innerHeight) {
-        contextMenu.style.top = `${window.innerHeight - rect.height - 10}px`;
-      }
-    }, 0);
+    void contextMenu.offsetWidth;
+
+    const rectWidth = contextMenu.offsetWidth;
+    const rectHeight = contextMenu.offsetHeight;
+
+    contextMenu.style.display = 'none';
+    contextMenu.style.visibility = '';
+
+    let left = e.clientX;
+    let top = e.clientY;
+
+    if (left + rectWidth > window.innerWidth) {
+      left = window.innerWidth - rectWidth - 10;
+    }
+
+    if (top + rectHeight > window.innerHeight) {
+      top = e.clientY - rectHeight;
+      if (top < 10) top = 10;
+    }
+
+    contextMenu.style.left = `${left}px`;
+    contextMenu.style.top = `${top}px`;
+
+    void contextMenu.offsetWidth;
+    contextMenu.style.display = 'block';
   }
 }
 

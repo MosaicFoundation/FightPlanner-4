@@ -571,32 +571,32 @@ export default class ProtocolHandler {
           const allMods = ModUtils.readAllMods(modsPath);
           const disabledModsPath = ModUtils.getDisabledModsFolder(modsPath);
 
-          if (!fs.existsSync(disabledModsPath)) {
-            fs.mkdirSync(disabledModsPath, { recursive: true });
-          }
+          await fs.promises.mkdir(disabledModsPath, { recursive: true });
 
           let disabledCount = 0;
 
           for (const mod of allMods.activeMods) {
             try {
               const targetPath = path.join(disabledModsPath, mod.name);
-              if (!fs.existsSync(targetPath)) {
-                fs.renameSync(mod.path, targetPath);
+              try {
+                await fs.promises.access(targetPath);
+              } catch {
+                await fs.promises.rename(mod.path, targetPath);
                 disabledCount++;
               }
             } catch (moveError) {
               console.warn(
-                `[Protocol][DisableAllOnDownload] Failed to disable ${mod.name}:`,
+                `[proceedWithInstall] Failed to disable ${mod.name}:`,
                 moveError,
               );
             }
           }
           console.log(
-            `[Protocol][DisableAllOnDownload] Disabled ${disabledCount} mods before download`,
+            `[proceedWithInstall] Disabled ${disabledCount} mods before download`,
           );
         } catch (disableError) {
           console.error(
-            '[Protocol][DisableAllOnDownload] Failed to disable mods:',
+            '[proceedWithInstall] Failed to disable mods:',
             disableError,
           );
         }
@@ -936,9 +936,11 @@ export default class ProtocolHandler {
             ? data._aAdditionalInfo._sVersion
             : '';
 
-        if (category || author || version) {
+        const modUrl = modId ? `https://gamebanana.com/${modType.toLowerCase()}s/${modId}` : '';
+
+        if (category || author || version || modUrl) {
           console.log('Creating info.toml...');
-          this.createInfoToml(modFolderPath, category, author, version);
+          this.createInfoToml(modFolderPath, category, author, version, modUrl);
         }
       }
 
@@ -1028,7 +1030,7 @@ export default class ProtocolHandler {
     });
   }
 
-  createInfoToml(modFolderPath, category, author, version) {
+  createInfoToml(modFolderPath, category, author, version, url = '') {
     const tomlPath = path.join(modFolderPath, 'info.toml');
     let content = '';
 
@@ -1041,9 +1043,12 @@ export default class ProtocolHandler {
     if (category) {
       content += `category = "${category}"\n`;
     }
+    if (url) {
+      content += `url = "${url}"\n`;
+    }
 
     fs.writeFileSync(tomlPath, content, 'utf8');
-    console.log('✓ info.toml created');
+    console.log('[createInfoToml] info.toml created');
   }
 
   sendToRenderer(channel, data) {

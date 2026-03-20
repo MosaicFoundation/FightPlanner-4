@@ -158,9 +158,10 @@ class CustomizationManager {
       }
 
       this.pendingJsPath = result.filePath;
+      console.log('[CustomizationManager] Pending JS path set:', this.pendingJsPath);
       this.showJsWarningModal();
     } catch (error) {
-      console.error('Error adding custom JS:', error);
+      console.error('[CustomizationManager] Error adding custom JS:', error);
       if (window.toastManager) {
         window.toastManager.error('toasts.failedToSelectJsFile');
       }
@@ -333,15 +334,20 @@ class CustomizationManager {
         modal.remove();
       }, 300);
       window.modalManager.hideOverlay();
-      this.pendingJsPath = null;
     };
 
     if (closeBtn) {
-      closeBtn.addEventListener('click', closeModal);
+      closeBtn.addEventListener('click', () => {
+        this.pendingJsPath = null;
+        closeModal();
+      });
     }
 
     if (cancelBtn) {
-      cancelBtn.addEventListener('click', closeModal);
+      cancelBtn.addEventListener('click', () => {
+        this.pendingJsPath = null;
+        closeModal();
+      });
     }
 
     if (confirmBtn) {
@@ -356,15 +362,19 @@ class CustomizationManager {
     const overlay = document.querySelector<HTMLElement>('#modal-overlay');
     if (overlay) {
       const overlayClickHandler = () => {
+        this.pendingJsPath = null;
         closeModal();
-        overlay.removeEventListener('click', overlayClickHandler);
       };
-      overlay.addEventListener('click', overlayClickHandler);
+      overlay.addEventListener('click', overlayClickHandler, { once: true });
     }
   }
 
   async confirmLoadJs() {
-    if (!this.pendingJsPath) return;
+    console.log('[CustomizationManager] confirmLoadJs called, pending path:', this.pendingJsPath);
+    if (!this.pendingJsPath) {
+      console.warn('[CustomizationManager] No pending JS path to confirm');
+      return;
+    }
 
     try {
       await this.loadCustomJsFile(this.pendingJsPath);
@@ -375,7 +385,7 @@ class CustomizationManager {
         window.toastManager.success('toasts.customJsLoaded');
       }
     } catch (error) {
-      console.error('Error loading custom JS:', error);
+      console.error('[CustomizationManager] Error in confirmLoadJs:', error);
       if (window.toastManager) {
         window.toastManager.error('toasts.failedToLoadCustomJs');
       }
@@ -430,15 +440,30 @@ class CustomizationManager {
         throw new Error(result.error || 'Failed to read JS file');
       }
 
+      const blob = new Blob([result.content], { type: 'text/javascript' });
+      const url = URL.createObjectURL(blob);
+
       const element = document.createElement('script');
       element.id = `custom-js-${this.customJsFiles.length}`;
-      element.textContent = result.content;
+      element.src = url;
+      element.type = 'text/javascript';
+      
+      element.onload = () => {
+        console.log('[CustomizationManager] Custom JS script loaded successfully');
+        URL.revokeObjectURL(url);
+      };
+
+      element.onerror = (e) => {
+        console.error('[CustomizationManager] Custom JS script failed to load:', e);
+        URL.revokeObjectURL(url);
+      };
+      
       document.body.appendChild(element);
 
       this.customJsFiles.push({ path: filePath, element });
-      console.log('Custom JS file added:', filePath);
+      console.log('[CustomizationManager] Custom JS file added to state:', filePath);
     } catch (error) {
-      console.error('Error loading custom JS file:', error);
+      console.error('[CustomizationManager] Error loading custom JS file:', error);
       if (window.toastManager) {
         window.toastManager.error(`Failed to load JS: ${error.message}`);
       }
@@ -489,6 +514,25 @@ class CustomizationManager {
 
     if (window.toastManager) {
       window.toastManager.success('toasts.jsFileRemoved');
+    }
+  }
+
+  async reloadCustomJsFile(filePath: string) {
+    console.log('[CustomizationManager] reloadCustomJsFile called:', filePath);
+    const index = this.customJsFiles.findIndex((f) => f.path === filePath);
+    if (index === -1) return;
+
+    const file = this.customJsFiles[index];
+    if (file.element) {
+      file.element.remove();
+    }
+
+    this.customJsFiles.splice(index, 1);
+    await this.loadCustomJsFile(filePath);
+    this.renderJsList();
+
+    if (window.toastManager) {
+      window.toastManager.success('toasts.jsFileReloaded');
     }
   }
 
@@ -559,11 +603,10 @@ class CustomizationManager {
 
   renderJsList() {
     const container = document.querySelector<HTMLElement>('#custom-js-list');
-    if (!container) {
-      console.warn('JS list container not found');
-      return;
-    }
+    console.log('[CustomizationManager] renderJsList container:', container ? 'found' : 'NOT FOUND');
+    if (!container) return;
 
+    console.log('[CustomizationManager] renderJsList files count:', this.customJsFiles.length);
     if (this.customJsFiles.length === 0) {
       container.innerHTML = `
         <div class="custom-files-empty">
@@ -595,7 +638,7 @@ class CustomizationManager {
         <div class="custom-file-item-path">${filePath}</div>
       </div>
       <div class="custom-file-item-actions">
-        ${type === 'css' ? `<button class="custom-file-action-btn" data-action="reload" title="Reload"><i class="bi bi-arrow-clockwise"></i></button>` : ''}
+        <button class="custom-file-action-btn" data-action="reload" title="Reload"><i class="bi bi-arrow-clockwise"></i></button>
         <button class="custom-file-action-btn danger" data-action="remove" title="Remove"><i class="bi bi-trash"></i></button>
       </div>
     `;
@@ -605,6 +648,8 @@ class CustomizationManager {
       reloadBtn.addEventListener('click', () => {
         if (type === 'css') {
           this.reloadCustomCssFile(filePath);
+        } else {
+          this.reloadCustomJsFile(filePath);
         }
       });
     }
@@ -689,9 +734,17 @@ class CustomizationManager {
         throw new Error(result.error || 'Failed to read JavaScript file');
       }
 
+      const blob = new Blob([result.content], { type: 'application/javascript' });
+      const url = URL.createObjectURL(blob);
+
       this.customJsElement = document.createElement('script');
       this.customJsElement.id = 'custom-js';
-      this.customJsElement.textContent = result.content;
+      this.customJsElement.src = url;
+      
+      this.customJsElement.onload = () => {
+        URL.revokeObjectURL(url);
+      };
+      
       document.body.appendChild(this.customJsElement);
 
       console.log('Custom JavaScript loaded from:', filePath);

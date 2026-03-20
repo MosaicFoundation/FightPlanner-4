@@ -7,6 +7,16 @@ export interface SimplePlugin {
   size: string;
 }
 
+type BatchPluginState = 'active' | 'disabled';
+
+interface BatchPluginMove {
+  name: string;
+  sourcePath: string;
+  targetPath: string;
+  targetStatus: BatchPluginState;
+  tempPath: string;
+}
+
 export default class PluginUtils {
   /**
    * Read all plugins from a folder (active and disabled)
@@ -40,8 +50,7 @@ export default class PluginUtils {
         });
       }
 
-      const parentDir = path.dirname(pluginsPath);
-      const disabledPluginsPath = path.join(parentDir, 'disabled_plugins');
+      const disabledPluginsPath = this.getDisabledPluginsFolder(pluginsPath);
 
       if (fs.existsSync(disabledPluginsPath)) {
         const files = fs.readdirSync(disabledPluginsPath);
@@ -65,6 +74,133 @@ export default class PluginUtils {
       console.error('Error reading plugins:', error);
       throw error;
     }
+  }
+
+  static getDisabledPluginsFolder(pluginsBasePath: string) {
+    const parentDir = path.dirname(pluginsBasePath);
+    return path.join(parentDir, 'disabled_plugins');
+  }
+
+  private static createTempPath(sourcePath: string, label: string) {
+    const parentDir = path.dirname(sourcePath);
+    const safeLabel = label.replace(/[^a-z0-9._-]/gi, '_');
+    let candidate = path.join(
+      parentDir,
+      `.fpp_batch_${Date.now()}_${Math.random().toString(36).slice(2)}_${safeLabel}`,
+    );
+
+    while (fs.existsSync(candidate)) {
+      candidate = path.join(
+        parentDir,
+        `.fpp_batch_${Date.now()}_${Math.random().toString(36).slice(2)}_${safeLabel}`,
+      );
+    }
+
+    return candidate;
+  }
+
+  private static rollbackBatchMoves(moves: BatchPluginMove[]) {
+    for (let i = moves.length - 1; i >= 0; i -= 1) {
+      const move = moves[i];
+
+      try {
+        if (fs.existsSync(move.tempPath)) {
+          fs.renameSync(move.tempPath, move.sourcePath);
+        } else if (fs.existsSync(move.targetPath)) {
+          fs.renameSync(move.targetPath, move.sourcePath);
+        }
+      } catch (error) {
+        console.error('[PluginUtils] Failed to rollback batch move:', error);
+      }
+    }
+  }
+
+  static applyPluginBatchState(
+    pluginsBasePath: string,
+    enabledPluginNames: string[],
+  ) {
+    const currentState = this.readAllPlugins(pluginsBasePath);
+    const activePlugins = currentState.activePlugins;
+    const disabledPluginsPath = this.getDisabledPluginsFolder(pluginsBasePath);
+    const disabledPlugins = currentState.disabledPlugins;
+    const enabledSet = new Set(enabledPluginNames);
+    const allPlugins = [
+      ...activePlugins.map((plugin) => ({ ...plugin, status: 'active' as const })),
+      ...disabledPlugins.map((plugin) => ({ ...plugin, status: 'disabled' as const })),
+    ];
+
+    const seenNames = new Set<string>();
+    for (const plugin of allPlugins) {
+      if (seenNames.has(plugin.name)) {
+        throw new Error(
+          `Duplicate plugin name detected: "${plugin.name}". Batch testing requires unique plugin names.`,
+        );
+      }
+      seenNames.add(plugin.name);
+    }
+
+    const plannedMoves: BatchPluginMove[] = [];
+
+    for (const plugin of allPlugins) {
+      const shouldBeActive = enabledSet.has(plugin.name);
+      const shouldMove =
+        (plugin.status === 'active' && !shouldBeActive) ||
+        (plugin.status === 'disabled' && shouldBeActive);
+
+      if (!shouldMove) {
+        continue;
+      }
+
+      const targetStatus: BatchPluginState = shouldBeActive ? 'active' : 'disabled';
+      const targetBasePath =
+        targetStatus === 'active' ? pluginsBasePath : disabledPluginsPath;
+      const targetPath = path.join(targetBasePath, plugin.name);
+
+      if (fs.existsSync(targetPath)) {
+        throw new Error(
+          `Batch state collision: "${plugin.name}" already exists in the ${targetStatus === 'active' ? 'active' : 'disabled'} plugins folder.`,
+        );
+      }
+
+      plannedMoves.push({
+        name: plugin.name,
+        sourcePath: plugin.path,
+        targetPath,
+        targetStatus,
+        tempPath: this.createTempPath(plugin.path, plugin.name),
+      });
+    }
+
+    if (plannedMoves.some((move) => move.targetStatus === 'active')) {
+      fs.mkdirSync(pluginsBasePath, { recursive: true });
+    }
+
+    if (plannedMoves.some((move) => move.targetStatus === 'disabled')) {
+      fs.mkdirSync(disabledPluginsPath, { recursive: true });
+    }
+
+    const stagedMoves: BatchPluginMove[] = [];
+    const finalizedMoves: BatchPluginMove[] = [];
+
+    try {
+      for (const move of plannedMoves) {
+        fs.renameSync(move.sourcePath, move.tempPath);
+        stagedMoves.push(move);
+      }
+
+      for (const move of stagedMoves) {
+        fs.renameSync(move.tempPath, move.targetPath);
+        finalizedMoves.push(move);
+      }
+    } catch (error) {
+      this.rollbackBatchMoves(finalizedMoves);
+      this.rollbackBatchMoves(
+        stagedMoves.filter((move) => !finalizedMoves.includes(move)),
+      );
+      throw error;
+    }
+
+    return this.readAllPlugins(pluginsBasePath);
   }
 
   /**

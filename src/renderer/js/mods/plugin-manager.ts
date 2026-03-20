@@ -267,7 +267,7 @@ class PluginManager {
             const settingsSection = pluginsPathContainer.closest('.settings-section') as HTMLElement;
             if (settingsSection) {
               settingsSection.classList.add('highlight-setting');
-              settingsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              settingsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
               // Function to fade out the highlight smoothly
               const fadeOutHighlight = () => {

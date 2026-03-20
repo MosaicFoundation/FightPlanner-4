@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs';
+import * as fsPromises from 'fs/promises';
 import * as crypto from 'crypto';
 import { app } from 'electron';
 
@@ -41,6 +42,16 @@ export interface Mod {
   path: string;
   status: 'active' | 'disabled';
   hash?: string;
+}
+
+type BatchModState = 'active' | 'disabled';
+
+interface BatchModMove {
+  mod: Mod;
+  sourcePath: string;
+  targetPath: string;
+  targetStatus: BatchModState;
+  tempPath: string;
 }
 
 export default class ModUtils {
@@ -272,6 +283,125 @@ export default class ModUtils {
     };
   }
 
+  private static createTempPath(sourcePath: string, label: string) {
+    const parentDir = path.dirname(sourcePath);
+    const safeLabel = label.replace(/[^a-z0-9._-]/gi, '_');
+    let candidate = path.join(
+      parentDir,
+      `.fpp_batch_${Date.now()}_${Math.random().toString(36).slice(2)}_${safeLabel}`,
+    );
+
+    while (fs.existsSync(candidate)) {
+      candidate = path.join(
+        parentDir,
+        `.fpp_batch_${Date.now()}_${Math.random().toString(36).slice(2)}_${safeLabel}`,
+      );
+    }
+
+    return candidate;
+  }
+
+  private static rollbackBatchMoves(moves: BatchModMove[]) {
+    for (let i = moves.length - 1; i >= 0; i -= 1) {
+      const move = moves[i];
+
+      try {
+        if (fs.existsSync(move.tempPath)) {
+          fs.renameSync(move.tempPath, move.sourcePath);
+        } else if (fs.existsSync(move.targetPath)) {
+          fs.renameSync(move.targetPath, move.sourcePath);
+        }
+      } catch (error) {
+        console.error('[ModUtils] Failed to rollback batch move:', error);
+      }
+    }
+  }
+
+  static applyModBatchState(
+    activeModsPath: string,
+    enabledModNames: string[],
+  ) {
+    const { activeMods, disabledMods } = this.readAllMods(activeModsPath);
+    const enabledSet = new Set(enabledModNames);
+    const disabledModsPath = this.getDisabledModsFolder(activeModsPath);
+
+    const allMods = [...activeMods, ...disabledMods];
+    const seenNames = new Set<string>();
+
+    for (const mod of allMods) {
+      if (seenNames.has(mod.name)) {
+        throw new Error(
+          `Duplicate mod name detected: "${mod.name}". Batch testing requires unique mod names.`,
+        );
+      }
+
+      seenNames.add(mod.name);
+    }
+
+    const plannedMoves: BatchModMove[] = [];
+
+    for (const mod of allMods) {
+      const shouldBeActive = enabledSet.has(mod.name);
+      const shouldMove =
+        (mod.status === 'active' && !shouldBeActive) ||
+        (mod.status === 'disabled' && shouldBeActive);
+
+      if (!shouldMove) {
+        continue;
+      }
+
+      const targetStatus: BatchModState = shouldBeActive ? 'active' : 'disabled';
+      const targetBasePath =
+        targetStatus === 'active' ? activeModsPath : disabledModsPath;
+      const targetPath = path.join(targetBasePath, mod.name);
+
+      if (fs.existsSync(targetPath)) {
+        throw new Error(
+          `Batch state collision: "${mod.name}" already exists in the ${targetStatus === 'active' ? 'active' : 'disabled'} mods folder.`,
+        );
+      }
+
+      plannedMoves.push({
+        mod,
+        sourcePath: mod.path,
+        targetPath,
+        targetStatus,
+        tempPath: this.createTempPath(mod.path, mod.name),
+      });
+    }
+
+    if (plannedMoves.some((move) => move.targetStatus === 'active')) {
+      fs.mkdirSync(activeModsPath, { recursive: true });
+    }
+
+    if (plannedMoves.some((move) => move.targetStatus === 'disabled')) {
+      fs.mkdirSync(disabledModsPath, { recursive: true });
+    }
+
+    const stagedMoves: BatchModMove[] = [];
+    const finalizedMoves: BatchModMove[] = [];
+
+    try {
+      for (const move of plannedMoves) {
+        fs.renameSync(move.sourcePath, move.tempPath);
+        stagedMoves.push(move);
+      }
+
+      for (const move of stagedMoves) {
+        fs.renameSync(move.tempPath, move.targetPath);
+        finalizedMoves.push(move);
+      }
+    } catch (error) {
+      this.rollbackBatchMoves(finalizedMoves);
+      this.rollbackBatchMoves(
+        stagedMoves.filter((move) => !finalizedMoves.includes(move)),
+      );
+      throw error;
+    }
+
+    return this.readAllMods(activeModsPath);
+  }
+
   static async detectConflicts(
     activeMods: Mod[],
     whitelistPatterns: string[] = [],
@@ -426,11 +556,28 @@ export default class ModUtils {
     }
   }
 
+  static async copyRecursive(src: string, dest: string) {
+    const stats = await fsPromises.stat(src);
+
+    if (stats.isDirectory()) {
+      await fsPromises.mkdir(dest, { recursive: true });
+
+      const children = await fsPromises.readdir(src);
+      for (const childItemName of children) {
+        await this.copyRecursive(
+          path.join(src, childItemName),
+          path.join(dest, childItemName),
+        );
+      }
+    } else {
+      await fsPromises.copyFile(src, dest);
+    }
+  }
+
   static async installFromArchive(sourceArchivePath: string, modsPath: string) {
     let tempExtractDir: string | null;
-    let extractedItems: string[];
 
-    console.log('Installing mod from archive:', sourceArchivePath);
+    console.log('[installFromArchive] Installing mod from archive:', sourceArchivePath);
 
     tempExtractDir = path.join(
       app.getPath('temp'),
@@ -438,23 +585,18 @@ export default class ModUtils {
       `mod-${Date.now()}`,
     );
 
-    if (!fs.existsSync(tempExtractDir)) {
-      fs.mkdirSync(tempExtractDir, { recursive: true });
-    }
+    await fsPromises.mkdir(tempExtractDir, { recursive: true });
 
     await FileExtractor.extractArchive(sourceArchivePath, tempExtractDir);
 
-    extractedItems = fs.readdirSync(tempExtractDir);
+    const extractedItems = await fsPromises.readdir(tempExtractDir);
     let isSingleFolderExtract = false;
 
-    if (
-      extractedItems.length === 1 &&
-      fs.statSync(path.join(tempExtractDir, extractedItems[0])).isDirectory()
-    ) {
-      isSingleFolderExtract = true;
+    if (extractedItems.length === 1) {
+      const firstItemStat = await fsPromises.stat(path.join(tempExtractDir, extractedItems[0]));
+      isSingleFolderExtract = firstItemStat.isDirectory();
     }
 
-    // Determine the top-level directory of the downloaded mod
     const topLevelModDir = isSingleFolderExtract
       ? path.join(tempExtractDir, extractedItems[0])
       : tempExtractDir;
@@ -464,11 +606,10 @@ export default class ModUtils {
       modName: string;
     }[] = [];
 
-    // Find a directory that contains actual mod files (sometimes there is some additional nesting)
     const dirsWithModFiles =
       this._gatherDirsWithModFiles(tempExtractDir) || tempExtractDir;
 
-    function _prepareModPath(modDirectory: string) {
+    async function _prepareModPath(modDirectory: string) {
       const modName = path.basename(modDirectory);
       const modPath = path.join(modsPath, modName);
 
@@ -477,71 +618,68 @@ export default class ModUtils {
         modName,
       });
 
-      if (fs.existsSync(modPath)) {
-        console.log(`Mod ${modName} already exists, removing old version`);
-
-        fs.rmSync(modPath, { recursive: true, force: true });
-      }
+      try {
+        await fsPromises.access(modPath);
+        console.log(`[installFromArchive] Mod ${modName} already exists, removing old version`);
+        await fsPromises.rm(modPath, { recursive: true, force: true });
+      } catch { }
 
       return modPath;
     }
 
     if (!dirsWithModFiles.length) {
-      // No mod files found, copy everything and hope for the best
-
-      console.log('Copying multiple items to mods folder...');
-      this.copyRecursiveSync(tempExtractDir, _prepareModPath(tempExtractDir));
+      console.log('[installFromArchive] Copying multiple items to mods folder...');
+      await this.copyRecursive(tempExtractDir, await _prepareModPath(tempExtractDir));
     } else {
       for (const dir of dirsWithModFiles) {
-        console.log(`Copying mod files from ${dir} to mods folder...`);
+        console.log(`[installFromArchive] Copying mod files from ${dir} to mods folder...`);
 
-        const modPath = _prepareModPath(dir);
-        this.copyRecursiveSync(dir, modPath);
+        const modPath = await _prepareModPath(dir);
+        await this.copyRecursive(dir, modPath);
 
-        // If the mod files were found in a nested directory, copy info.toml and preview.webp
         if (dir !== topLevelModDir) {
           const infoTomlSource = path.join(topLevelModDir, 'info.toml');
           const infoTomlDest = path.join(modPath, 'info.toml');
 
-          if (fs.existsSync(infoTomlSource) && !fs.existsSync(infoTomlDest)) {
+          try {
+            await fsPromises.access(infoTomlSource);
             try {
-              fs.copyFileSync(infoTomlSource, infoTomlDest);
-              console.log('Copied info.toml from top level directory');
-            } catch (err) {
-              console.warn('Failed to copy info.toml:', err.message);
+              await fsPromises.access(infoTomlDest);
+            } catch {
+              await fsPromises.copyFile(infoTomlSource, infoTomlDest);
+              console.log('[installFromArchive] Copied info.toml from top level directory');
             }
-          }
+          } catch { }
 
           const previewSource = path.join(topLevelModDir, 'preview.webp');
           const previewDest = path.join(modPath, 'preview.webp');
 
-          if (fs.existsSync(previewSource) && !fs.existsSync(previewDest)) {
+          try {
+            await fsPromises.access(previewSource);
             try {
-              fs.copyFileSync(previewSource, previewDest);
-              console.log('Copied preview.webp from top level directory');
-            } catch (err) {
-              console.warn('Failed to copy preview.webp:', err.message);
+              await fsPromises.access(previewDest);
+            } catch {
+              await fsPromises.copyFile(previewSource, previewDest);
+              console.log('[installFromArchive] Copied preview.webp from top level directory');
             }
-          }
+          } catch { }
         }
       }
     }
 
-    if (tempExtractDir && fs.existsSync(tempExtractDir)) {
+    if (tempExtractDir) {
       try {
-        fs.rmSync(tempExtractDir, { recursive: true, force: true });
+        await fsPromises.rm(tempExtractDir, { recursive: true, force: true });
       } catch (err) {
-        console.warn('Failed to cleanup temp directory:', err.message);
+        console.warn('[installFromArchive] Failed to cleanup temp directory:', err.message);
       }
     }
 
-    if (fs.existsSync(sourceArchivePath)) {
-      try {
-        fs.unlinkSync(sourceArchivePath);
-        console.log('Deleted original archive file');
-      } catch (err) {
-        console.warn('Failed to delete original archive:', err.message);
-      }
+    try {
+      await fsPromises.unlink(sourceArchivePath);
+      console.log('[installFromArchive] Deleted original archive file');
+    } catch (err) {
+      console.warn('[installFromArchive] Failed to delete original archive:', err.message);
     }
 
     return resultingMods;

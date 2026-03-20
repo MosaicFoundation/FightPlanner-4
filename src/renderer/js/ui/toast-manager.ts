@@ -32,7 +32,7 @@ class ToastManager {
   setupContainer() {
     this.container = document.querySelector<HTMLElement>('#toast-container');
     if (!this.container) {
-      console.warn('Toast container not found');
+      console.warn('[ToastManager] toast container not found');
     }
   }
 
@@ -85,7 +85,7 @@ class ToastManager {
     if (!this.container) {
       this.setupContainer();
       if (!this.container) {
-        console.error('Cannot show toast: container not found');
+        console.error('[ToastManager] Cannot show toast: container not found');
         return;
       }
     }
@@ -93,7 +93,7 @@ class ToastManager {
     const translatedMessage =
       this.translateMessage(message, params) || message || '';
     if (!translatedMessage) {
-      console.warn('Toast message is empty, skipping');
+      console.warn('[ToastManager] message is empty, skipping');
       return;
     }
     const toastKey = `${type}:${translatedMessage}`;
@@ -105,7 +105,7 @@ class ToastManager {
 
       if (timeSince < this.toastCooldown) {
         console.log(
-          '[Toast] Skipping duplicate toast (shown',
+          '[ToastManager] Skipping duplicate toast (shown',
           timeSince,
           'ms ago):',
           message,
@@ -128,6 +128,7 @@ class ToastManager {
 
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
+    toast.style.setProperty('--toast-duration', `${duration}ms`);
 
     let icon = '';
     switch (type) {
@@ -183,14 +184,40 @@ ${actionButtonHtml}
       }
     }
 
-    setTimeout(() => {
+    let autoHideTimeout: ReturnType<typeof setTimeout> | null = null;
+    let remainingTime = duration;
+    let pauseStart = 0;
+
+    const startAutoHide = () => {
+      autoHideTimeout = setTimeout(() => {
+        this.hide(toast);
+      }, remainingTime);
+    };
+
+    toast.addEventListener('mouseenter', () => {
+      toast.classList.add('toast-paused');
+      if (autoHideTimeout) {
+        clearTimeout(autoHideTimeout);
+        autoHideTimeout = null;
+      }
+      pauseStart = Date.now();
+    });
+
+    toast.addEventListener('mouseleave', () => {
+      toast.classList.remove('toast-paused');
+      if (pauseStart > 0) {
+        remainingTime = Math.max(remainingTime - (Date.now() - pauseStart), 500);
+        pauseStart = 0;
+      }
+      startAutoHide();
+    });
+
+    requestAnimationFrame(() => {
       toast.classList.add('toast-show');
       this.updateStackState();
-    }, 10);
+    });
 
-    setTimeout(() => {
-      this.hide(toast);
-    }, duration);
+    startAutoHide();
   }
 
   hide(toast) {
@@ -199,6 +226,9 @@ ${actionButtonHtml}
     toast.classList.remove('toast-show');
     toast.removeAttribute('data-stacked');
     toast.classList.add('toast-hide');
+
+    const noAnimations = document.body.classList.contains('no-animations');
+    const delay = noAnimations ? 0 : 450;
 
     setTimeout(() => {
       if (toast.parentElement) {
@@ -211,7 +241,7 @@ ${actionButtonHtml}
       }
 
       this.updateStackState();
-    }, 400);
+    }, delay);
   }
 
   success(message, duration?, params?, options?) {
@@ -239,7 +269,7 @@ ${actionButtonHtml}
           if (toast.parentElement) {
             toast.parentElement.removeChild(toast);
           }
-        }, 400);
+        }, 450);
       }
     });
     this.toasts = [];
@@ -254,7 +284,7 @@ ${actionButtonHtml}
 
 if (typeof window !== 'undefined') {
   window.toastManager = new ToastManager();
-  console.log('Toast Manager initialized');
+  console.log('[ToastManager] initialized');
 }
 
 export { type ToastManager };

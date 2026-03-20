@@ -193,6 +193,11 @@ class ModListRenderer {
       return;
     }
 
+    if (this.intersectionObserver) {
+      this.intersectionObserver.disconnect();
+    }
+    this.setupIntersectionObserver();
+
     filteredMods.forEach((mod, index) => {
       const modItem = this.renderModItem(mod, index);
 
@@ -206,7 +211,11 @@ class ModListRenderer {
 
     setTimeout(() => {
       this.showNonVisibleInstantly();
-    }, 150);
+    }, 300);
+
+    setTimeout(() => {
+      this.showNonVisibleInstantly();
+    }, 800);
   }
 
   updateVisibility(

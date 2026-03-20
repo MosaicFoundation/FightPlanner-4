@@ -233,6 +233,8 @@ const FOLDER_ALIASES = {
   zss: 'szerosuit',
   ice_climbers: 'ice_climber',
   icies: 'ice_climber',
+  popo: 'ice_climber',
+  nana: 'ice_climber',
   gnw: 'gamewatch',
   game_watch: 'gamewatch',
   mr_game_and_watch: 'gamewatch',

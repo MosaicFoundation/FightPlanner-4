@@ -586,31 +586,35 @@ export class FppManager {
     }
 
     updateStatusBar(data: any) {
-        const statusLeft = document.querySelector('.bottom-text-left');
-        if (!statusLeft) return;
-
         const t = (key: string, fallback: string) => {
             if (window.i18n && window.i18n.t) return window.i18n.t(key);
             return fallback;
         };
 
+        const statusBar = window.statusBarManager;
+        if (!statusBar) return;
+
         switch (data.step) {
             case 'extracting':
-                statusLeft.textContent = t('fpp.statusExtracting', 'FPP: Extracting...');
+                statusBar.showTemporaryStatus(
+                    t('fpp.statusExtracting', 'FPP: Extracting...'),
+                );
                 break;
             case 'installing':
-                statusLeft.textContent = `FPP: ${t('fpp.statusInstalling', 'Installing')} ${data.modName || ''}...`;
+                statusBar.showTemporaryStatus(
+                    `FPP: ${t('fpp.statusInstalling', 'Installing')} ${data.modName || ''}...`,
+                );
                 break;
             case 'downloading':
-                statusLeft.textContent = `FPP: ${t('fpp.statusDownloading', 'Downloading')} (${data.totalDownloads} mods)...`;
+                statusBar.showTemporaryStatus(
+                    `FPP: ${t('fpp.statusDownloading', 'Downloading')} (${data.totalDownloads} mods)...`,
+                );
                 break;
             case 'complete':
-                statusLeft.textContent = t('fpp.statusComplete', 'FPP: Installation complete!');
-                setTimeout(() => {
-                    if (statusLeft.textContent?.startsWith('FPP:')) {
-                        statusLeft.textContent = t('app.ready', 'Ready');
-                    }
-                }, 3000);
+                statusBar.showTemporaryStatus(
+                    t('fpp.statusComplete', 'FPP: Installation complete!'),
+                    { autoRestoreMs: 3000 },
+                );
                 break;
         }
     }

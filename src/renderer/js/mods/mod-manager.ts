@@ -202,6 +202,12 @@ class ModManager {
     this.renderedModIds = currentModIds;
 
     this.restoreSelectedMod();
+
+    setTimeout(() => {
+      if (this.listRenderer) {
+        this.listRenderer.showNonVisibleInstantly();
+      }
+    }, 1000);
   }
 
   restoreSelectedMod() {
@@ -330,8 +336,49 @@ class ModManager {
             img.src = previewPath;
           });
 
+          img.style.cursor = 'zoom-in';
           previewArea.innerHTML = '';
           previewArea.appendChild(img);
+
+          // Add click event for zooming
+          img.addEventListener('click', () => {
+            const zoomOverlay = document.getElementById('image-zoom-overlay');
+            const zoomImg = document.getElementById('image-zoom-img') as HTMLImageElement;
+            
+            if (zoomOverlay && zoomImg) {
+              zoomImg.src = previewPath;
+              zoomOverlay.style.display = 'flex';
+              
+              // Trigger reflow
+              void zoomOverlay.offsetWidth;
+              
+              zoomOverlay.classList.add('active');
+              
+              // Handle closing
+              const closeBtn = document.getElementById('image-zoom-close');
+              const closeZoom = () => {
+                zoomOverlay.classList.remove('active');
+                setTimeout(() => {
+                  zoomOverlay.style.display = 'none';
+                  zoomImg.src = '';
+                }, 300); // match transition duration
+              };
+              
+              closeBtn?.addEventListener('click', closeZoom, { once: true });
+              zoomOverlay.addEventListener('click', (e) => {
+                if (e.target === zoomOverlay) closeZoom();
+              }, { once: true });
+              
+              // Escape key to close
+              const escHandler = (e: KeyboardEvent) => {
+                if (e.key === 'Escape') {
+                  closeZoom();
+                  document.removeEventListener('keydown', escHandler);
+                }
+              };
+              document.addEventListener('keydown', escHandler);
+            }
+          });
 
           setTimeout(() => {
             img.style.opacity = '1';
