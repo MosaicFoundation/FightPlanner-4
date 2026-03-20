@@ -1,8 +1,12 @@
 class FightPlannerManager {
   initialized: boolean;
+  oldTestersExpanded: boolean;
+  localeChangedHandler: (() => void) | null;
 
   constructor() {
     this.initialized = false;
+    this.oldTestersExpanded = false;
+    this.localeChangedHandler = null;
     console.log('FightPlanner Manager created');
   }
 
@@ -11,6 +15,7 @@ class FightPlannerManager {
 
     console.log('Initializing FightPlanner tab...');
     await this.loadVersionInfo();
+    this.setupOldTestersToggle();
     this.initialized = true;
   }
 
@@ -57,9 +62,65 @@ class FightPlannerManager {
     }
   }
 
+  setupOldTestersToggle() {
+    const existingToggleButton =
+      document.querySelector<HTMLButtonElement>('#toggle-old-testers');
+    const oldTestersSection =
+      document.querySelector<HTMLElement>('#old-testers-section');
+
+    if (!existingToggleButton || !oldTestersSection) {
+      return;
+    }
+
+    if (this.localeChangedHandler) {
+      window.removeEventListener('localeChanged', this.localeChangedHandler);
+      this.localeChangedHandler = null;
+    }
+
+    const toggleButton = existingToggleButton.cloneNode(true) as HTMLButtonElement;
+    existingToggleButton.replaceWith(toggleButton);
+
+    toggleButton.addEventListener('click', () => {
+      this.oldTestersExpanded = !this.oldTestersExpanded;
+      this.refreshOldTestersToggleState();
+    });
+
+    this.localeChangedHandler = () => this.refreshOldTestersToggleState();
+    window.addEventListener('localeChanged', this.localeChangedHandler);
+
+    this.refreshOldTestersToggleState();
+  }
+
+  refreshOldTestersToggleState() {
+    const toggleButton =
+      document.querySelector<HTMLButtonElement>('#toggle-old-testers');
+    const oldTestersSection =
+      document.querySelector<HTMLElement>('#old-testers-section');
+
+    if (!toggleButton || !oldTestersSection) {
+      return;
+    }
+
+    const showLabel = window.i18n?.t(
+      'fightplanner.showOldTesters',
+    ) || 'See old testers';
+    const hideLabel = window.i18n?.t(
+      'fightplanner.hideOldTesters',
+    ) || 'Hide old testers';
+
+    toggleButton.textContent = this.oldTestersExpanded ? hideLabel : showLabel;
+    toggleButton.setAttribute('aria-expanded', String(this.oldTestersExpanded));
+    oldTestersSection.classList.toggle('is-collapsed', !this.oldTestersExpanded);
+    oldTestersSection.setAttribute(
+      'aria-hidden',
+      String(!this.oldTestersExpanded),
+    );
+  }
+
   reinitialize() {
     console.log('Reinitializing FightPlanner tab...');
     this.loadVersionInfo();
+    this.refreshOldTestersToggleState();
   }
 }
 
