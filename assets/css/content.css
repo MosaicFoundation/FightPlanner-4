@@ -2522,6 +2522,75 @@ body.no-animations .mod-info-item {
   border: 1px solid var(--bg-hover);
 }
 
+.credits-toggle-old-testers {
+  margin-top: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.credits-toggle-old-testers:hover {
+  color: var(--text-secondary);
+}
+
+.credits-section-old-testers {
+  padding: 20px;
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.02) 0%,
+      rgba(255, 255, 255, 0.01) 100%);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  opacity: 0.82;
+  overflow: hidden;
+  max-height: 500px;
+  margin-top: 0;
+  transition: max-height 0.28s ease, opacity 0.28s ease, margin-top 0.28s ease,
+    padding-top 0.28s ease, padding-bottom 0.28s ease, border-color 0.28s ease;
+}
+
+.credits-section-old-testers.is-collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin-top: -10px;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-color: transparent;
+  pointer-events: none;
+}
+
+.credits-section-old-testers .credits-section-header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+.credits-section-old-testers .credits-section-header i {
+  font-size: 20px;
+  opacity: 0.7;
+}
+
+.credits-section-old-testers .credits-section-header h2 {
+  font-size: 19px;
+  color: var(--text-secondary);
+}
+
+.credits-section-old-testers .credits-simple-list {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.credits-section-old-testers .credits-simple-list li {
+  padding: 8px 12px;
+  font-size: 13px;
+  background-color: rgba(0, 0, 0, 0.12);
+  color: var(--text-secondary);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
 .credits-footer {
   text-align: center;
   margin-top: 50px;
