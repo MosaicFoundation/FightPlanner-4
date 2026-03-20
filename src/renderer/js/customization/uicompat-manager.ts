@@ -327,6 +327,30 @@ class UICompatManager {
       const copiedCount = response.copiedFiles.length;
       const conflictCount = response.skippedConflicts.length;
 
+      // --- UI MOD STATUS ENFORCEMENT ---
+      // After building, disable all UI mods except the output mod
+      if (window.modManager && Array.isArray(window.modManager.mods)) {
+        // Find the output mod by matching the output path (folder name)
+        const outputFolder = response.outputPath;
+        // Normalize for comparison (just folder name)
+        const outputFolderName = outputFolder.split(/[\\/]/).pop();
+        window.modManager.mods.forEach((mod) => {
+          if (mod.category === 'UI') {
+            // If this is the output mod, enable it; otherwise, disable
+            const modFolderName = mod.path.split(/[\\/]/).pop();
+            if (modFolderName === outputFolderName) {
+              mod.status = 'active';
+            } else {
+              mod.status = 'disabled';
+            }
+          }
+        });
+        // Refresh the mod list UI
+        if (typeof window.modManager.renderModList === 'function') {
+          window.modManager.renderModList(true);
+        }
+      }
+
       status.innerHTML = `
         <div class="uicompat-build-result">
           <p><strong>${this.escapeHtml(this.t('uicompat.buildSuccessTitle'))}</strong></p>

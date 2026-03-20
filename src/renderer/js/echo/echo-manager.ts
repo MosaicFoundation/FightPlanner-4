@@ -119,6 +119,10 @@ const ECHO_VISUAL_STATE_KEY = 'echo.visualPlannerState.v1';
 const ECHO_SUBVIEW_STATE_KEY = 'echo.activeSubview.v1';
 
 class EchoManager {
+  /**
+   * Session cache for visual planner grid: { hash, html }
+   */
+  _visualPlannerCache = { hash: '', html: '' };
   initialized: boolean;
   selectedEchoModPath: string | null;
   lastAnalyzedModPath: string | null;
@@ -136,74 +140,89 @@ class EchoManager {
   visualUnmappedMods: VisualModEntry[];
   visualLoading: boolean;
   visualDraggedCharacter: string | null;
-  visualSearchQuery: string;
-  activeSubview: EchoSubview;
-  visualCharacterImageCache: Map<string, string>;
-  visualImagePreloadSet: Set<string>;
-  visualModScanCache: Map<string, VisualModScanCacheEntry>;
-  uiCharaInspectorLoading: boolean;
-  uiCharaInspectorData: EchoUiCharaInspectorData | null;
-  uiCharaInspectorError: string | null;
-  echoPreferredNameValue: string;
-  echoPreferredDisplayNameValue: string;
-  echoPreferredIntroName: string;
-  echoWizardStep: number;
-  echoWizardCharacterKey: string | null;
-  echoWizardSourceModPath: string | null;
-  builderCompletedModPath: string | null;
+  renderVisualPlanner() {
+    const container = document.querySelector<HTMLElement>('#echo-visual-content');
+    if (!container) return;
 
-  constructor() {
-    this.initialized = false;
-    this.selectedEchoModPath = null;
-    this.lastAnalyzedModPath = null;
-    this.isEchoFighter = false;
-    this.nameSuggestions = [];
-    this.takenNames = [];
-    this.modEligibilityByPath = new Map();
-    this.uiCompatibilityPlan = null;
-    this.uiCompatibilityState = null;
-    this.visualCharacterOrder = [];
-    this.visualDisabledCharacters = new Set();
-    this.visualSelectedCharacter = null;
-    this.visualCharactersByKey = new Map();
-    this.visualMods = [];
-    this.visualUnmappedMods = [];
-    this.visualLoading = false;
-    this.visualDraggedCharacter = null;
-    this.visualSearchQuery = '';
-    this.activeSubview = 'planner';
-    this.visualCharacterImageCache = new Map();
-    this.visualImagePreloadSet = new Set();
-    this.visualModScanCache = new Map();
-    this.uiCharaInspectorLoading = false;
-    this.uiCharaInspectorData = null;
-    this.uiCharaInspectorError = null;
-    this.echoPreferredNameValue = '';
-    this.echoPreferredDisplayNameValue = '';
-    this.echoPreferredIntroName = '';
-    this.echoWizardStep = 1;
-    this.echoWizardCharacterKey = null;
-    this.echoWizardSourceModPath = null;
-    this.builderCompletedModPath = null;
-    console.log('Echo Manager created');
-  }
+    // Hash the current visual planner state for cache key
+    const stateHash = JSON.stringify({
+      order: this.visualCharacterOrder,
+      byKey: Array.from(this.visualCharactersByKey.entries()),
+      unmapped: this.visualUnmappedMods.map((m) => m.id || m.name || m.path),
+      disabled: Array.from(this.visualDisabledCharacters),
+    });
 
-  t(key: string, params = {}) {
-    if (window.i18n && window.i18n.t) {
-      return window.i18n.t(key, params);
+    if (this._visualPlannerCache.hash === stateHash) {
+      container.innerHTML = this._visualPlannerCache.html;
+      return;
     }
 
-    return key;
-  }
+    if (this.visualLoading) {
+      container.innerHTML = `<p class="echo-loading">${this.t('echo.loading')}</p>`;
+      return;
+    }
 
-  async initialize() {
-    this.setupEventListeners();
-    await this.loadSubviewState();
-    await this.loadVisualPlannerState();
-    await this.refreshModEligibility();
-    await this.refresh();
-    this.applySubviewState();
-    this.initialized = true;
+    const selectedEntry = this.getSelectedVisualEntry();
+    const selectedTitle = selectedEntry ? this.getVisualCardTitle(selectedEntry) : '';
+    const selectedSubtitle = selectedEntry
+      ? this.getVisualCardSubtitle(selectedEntry)
+      : '';
+    const selectedLabel = selectedSubtitle
+      ? `${selectedTitle} - ${selectedSubtitle}`
+      : selectedTitle;
+    const selectedText = selectedEntry
+      ? this.t('echo.visualSelectedCharacter', { name: selectedLabel })
+      : this.t('echo.visualNoCharacterSelected');
+
+    const selectedMods = selectedEntry
+      ? [...selectedEntry.fighterMods, ...selectedEntry.movesetMods, ...selectedEntry.echoMods]
+      : [];
+    const selectedSummary = selectedEntry
+      ? `${selectedText} (${selectedMods.length})`
+      : selectedText;
+
+    const renderTile = (fighterKey: string, isDisabledArea = false) => {
+      // ...existing code...
+      // return /* tile HTML */; (REMOVED: placeholder, not valid JS)
+    };
+
+    const activeOrder = this.visualCharacterOrder.filter(
+      (fighterKey) => !this.visualDisabledCharacters.has(fighterKey),
+    );
+    const disabledOrder = this.visualCharacterOrder.filter((fighterKey) =>
+      this.visualDisabledCharacters.has(fighterKey),
+    );
+
+    const activeTilesHtml = activeOrder.map((fighterKey) => renderTile(fighterKey)).join('');
+    const disabledTilesHtml = disabledOrder
+      .map((fighterKey) => renderTile(fighterKey, true))
+      .join('');
+
+    const unmappedModsHtml =
+      this.visualUnmappedMods.length === 0
+        ? ''
+        : `
+            <div class="echo-visual-unmapped">
+              <p class="echo-visual-unmapped-title">${this.t('echo.visualUnmappedMods')}</p>
+              <div class="echo-visual-mod-list">
+                ${this.visualUnmappedMods
+                  .slice(0, 10)
+                  .map((mod) => this.renderUnmappedModItem(mod))
+                  .join('')}
+              </div>
+            </div>
+          `;
+
+    const html = `
+      <div class="echo-visual-board">
+        ${activeTilesHtml}
+        ${disabledTilesHtml}
+      </div>
+      ${unmappedModsHtml}
+    `;
+    container.innerHTML = html;
+    this._visualPlannerCache = { hash: stateHash, html };
+  }
   }
 
   async loadSubviewState() {

@@ -162,10 +162,22 @@ class CharactersManager {
 
           const char = this.characters.get(fighterId);
           if (char) {
+            // Try to get type from mod, fallback to echo eligibility
+            let type = mod.type;
+            if (!type && window.echoManager && typeof window.echoManager.isEligibleFighterMod === 'function') {
+              if (window.echoManager.isEligibleFighterMod(mod)) {
+                type = 'fighter';
+              } else if (mod.name && mod.name.toLowerCase().includes('echo')) {
+                type = 'echo';
+              } else {
+                type = '';
+              }
+            }
             char.mods.push({
               name: mod.name,
               path: mod.path,
               status: status,
+              type: type,
             });
           }
         });
@@ -222,43 +234,101 @@ class CharactersManager {
 
     card.innerHTML = `
 <div class="character-card-header">
-<img src="${imageUrl}" alt="${escapedName}" class="character-image"
-onerror="this.style.display='none'; this.nextElementSibling.classList.add('show-placeholder');">
-<div class="character-image-placeholder">
-<i class="bi bi-person-circle"></i>
-<span class="character-placeholder-text">${escapedName}</span>
-</div>
-<div class="character-overlay">
-<span class="character-number">#${char.info.number}</span>
-</div>
+  <img src="${imageUrl}" alt="${escapedName}" class="character-image"
+    onerror="this.style.display='none'; this.nextElementSibling.classList.add('show-placeholder');">
+  <div class="character-image-placeholder">
+    <i class="bi bi-person-circle"></i>
+    <span class="character-placeholder-text">${escapedName}</span>
+  </div>
+  <div class="character-overlay">
+    <span class="character-number">#${char.info.number}</span>
+  </div>
 </div>
 <div class="character-card-body">
-<h3 class="character-name">${this.escapeHtml(char.info.name)}</h3>
-<div class="character-mod-count">
-<i class="bi bi-file-earmark-code"></i>
-<span>${char.mods.length} mod${char.mods.length > 1 ? 's' : ''}</span>
-</div>
-<div class="character-mods-list">
-${char.mods
-        .map(
-          (mod) => `
-<div class="character-mod-item ${mod.status}" data-mod-path="${this.escapeHtml(mod.path)}">
-<span class="mod-status-dot"></span>
-<span class="mod-name">${this.escapeHtml(mod.name)}</span>
-</div>
-`,
-        )
-        .join('')}
-</div>
+  <h3 class="character-name">${this.escapeHtml(char.info.name)}</h3>
+  <div class="character-mod-count">
+    <i class="bi bi-file-earmark-code"></i>
+    <span>${char.mods.length} mod${char.mods.length > 1 ? 's' : ''}</span>
+  </div>
+  <div class="character-mods-list">
+    ${char.mods
+      .map((mod) => {
+        // Echo logic integration
+        let isEcho = false;
+        let isEligible = false;
+        let echoBtn = '';
+        // Try to get echo eligibility from EchoManager if available
+        if (window.echoManager && typeof window.echoManager.isEligibleFighterMod === 'function') {
+          isEligible = window.echoManager.isEligibleFighterMod(mod);
+        }
+        // Heuristic: treat as echo if name or path contains 'echo' or type is 'echo'
+        isEcho = (mod.type === 'echo') || (mod.name && mod.name.toLowerCase().includes('echo'));
+        // Distinct styling for echo mods
+        let modClass = `character-mod-item ${mod.status}`;
+        if (isEcho) modClass += ' echo-mod';
+        // Button logic
+        if (isEcho) {
+          echoBtn = `<button class="echo-details-btn" data-echo-details="${this.escapeHtml(mod.path)}">View/Change Details</button>`;
+        } else if (isEligible) {
+          echoBtn = `<button class="echo-create-btn" data-echo-create="${this.escapeHtml(mod.path)}">Create Echo Fighter</button>`;
+        }
+        return `
+          <div class="${modClass}" data-mod-path="${this.escapeHtml(mod.path)}">
+            <span class="mod-status-dot"></span>
+            <span class="mod-name">${this.escapeHtml(mod.name)}</span>
+            ${echoBtn}
+          </div>
+        `;
+      })
+      .join('')}
+  </div>
 </div>
 `;
 
+
+    // Add click handlers for mod items (open in tools tab)
     const modItems = card.querySelectorAll<HTMLElement>('.character-mod-item');
     modItems.forEach((item) => {
       item.addEventListener('click', (e) => {
         e.stopPropagation();
         const modPath = item.dataset.modPath;
         this.openModInToolsTab(modPath);
+      });
+    });
+
+    // Add click handlers for echo buttons
+    const echoCreateBtns = card.querySelectorAll<HTMLElement>('.echo-create-btn');
+    echoCreateBtns.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const modPath = btn.getAttribute('data-echo-create');
+        if (window.echoManager && typeof window.echoManager.createEchoDraftFromVisualSelection === 'function') {
+          // Try to find the visual entry for this character
+          if (window.echoManager.visualCharactersByKey && window.echoManager.visualCharactersByKey.has(char.id)) {
+            window.echoManager.visualSelectedCharacter = char.id;
+          }
+          window.echoManager.createEchoDraftFromVisualSelection(modPath);
+        } else {
+          window.toastManager?.warning('Echo creation not available.');
+        }
+      });
+    });
+    const echoDetailsBtns = card.querySelectorAll<HTMLElement>('.echo-details-btn');
+    echoDetailsBtns.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const modPath = btn.getAttribute('data-echo-details');
+        if (window.echoManager && typeof window.echoManager.openEchoWizard === 'function') {
+          // Try to find the visual entry for this character
+          if (window.echoManager.visualCharactersByKey && window.echoManager.visualCharactersByKey.has(char.id)) {
+            const entry = window.echoManager.visualCharactersByKey.get(char.id);
+            window.echoManager.openEchoWizard(entry, modPath);
+          } else {
+            window.toastManager?.warning('Echo details unavailable.');
+          }
+        } else {
+          window.toastManager?.warning('Echo details not available.');
+        }
       });
     });
 
