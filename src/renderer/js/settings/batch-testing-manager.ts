@@ -258,6 +258,7 @@ class BatchTestingManager {
         Array.isArray(storedSession.order)
       ) {
         this.session = storedSession;
+        this.syncPersistedSessionState();
       } else {
         this.session = null;
       }
@@ -266,6 +267,22 @@ class BatchTestingManager {
       this.session = null;
     } finally {
       this.refreshControlState();
+    }
+  }
+
+  syncPersistedSessionState() {
+    if (!this.session) {
+      return;
+    }
+
+    for (const category of ['mods', 'plugins'] as BatchCategory[]) {
+      const snapshot = this.session.snapshots?.[category];
+
+      if (!snapshot?.basePath || !snapshot.lastState) {
+        continue;
+      }
+
+      this.state.syncManager(category, snapshot.basePath, snapshot.lastState);
     }
   }
 
@@ -694,7 +711,7 @@ class BatchTestingManager {
     }
 
     await this.finalizeCurrentCategory(snapshot, progress);
-    return false;
+    return !!this.session?.result;
   }
 
   async finalizeCurrentCategory(
@@ -1476,6 +1493,14 @@ class BatchTestingManager {
     const modal = this.modal;
     this.modal = null;
     this.session = null;
+    if (window.modManager?.clearBatchTestingOverride) {
+      window.modManager.clearBatchTestingOverride();
+      void window.modManager.fetchMods();
+    }
+    if (window.pluginManager?.clearBatchTestingOverride) {
+      window.pluginManager.clearBatchTestingOverride();
+      void window.pluginManager.fetchPlugins();
+    }
     void this.persistSession();
 
     if (!modal) {

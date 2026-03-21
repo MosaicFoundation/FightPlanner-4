@@ -12,12 +12,14 @@ class PluginManager {
   pluginListContainer: HTMLElement | null;
   pluginsPath: string | null;
   searchQuery: string;
+  batchTestingOverrideActive: boolean;
 
   constructor() {
     this.plugins = [];
     this.pluginListContainer = null;
     this.pluginsPath = null;
     this.searchQuery = '';
+    this.batchTestingOverrideActive = false;
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => this.initContainer());
@@ -141,6 +143,28 @@ class PluginManager {
     console.log('Loading plugins:', pluginsData);
     this.plugins = pluginsData;
     this.renderPluginList();
+  }
+
+  isBatchTestingLocked() {
+    const batchManager = (window as any).batchTestingManager;
+    const isModalOpen = !!(
+      batchManager?.modal && document.body.contains(batchManager.modal)
+    );
+
+    return !!(
+      isModalOpen ||
+      batchManager?.isRestoring
+    );
+  }
+
+  applyBatchTestingState(pluginsData, pluginsPath: string | null) {
+    this.batchTestingOverrideActive = true;
+    this.pluginsPath = pluginsPath;
+    return this.loadPlugins(pluginsData);
+  }
+
+  clearBatchTestingOverride() {
+    this.batchTestingOverrideActive = false;
   }
 
   renderPluginList() {
@@ -526,6 +550,11 @@ ${plugin.status === 'active'
   }
 
   async loadPluginsFromFolder(pluginsPath: string) {
+    if (this.isBatchTestingLocked()) {
+      console.log('[PluginManager] Skipping folder refresh while batch testing is active');
+      return;
+    }
+
     if (!window.electronAPI || !window.electronAPI.readPluginsFolder) {
       console.error('Electron API not available');
       return;
@@ -566,13 +595,20 @@ ${plugin.status === 'active'
       }
 
       this.loadPlugins(allPlugins);
+      this.clearBatchTestingOverride();
     } catch (error) {
       console.error('Failed to load plugins from folder:', error);
       this.loadPlugins([]);
+      this.clearBatchTestingOverride();
     }
   }
 
   async refreshPlugins() {
+    if (this.isBatchTestingLocked()) {
+      console.log('[PluginManager] Ignoring refresh request during batch testing');
+      return;
+    }
+
     if (
       typeof window.settingsManager !== 'undefined' &&
       window.settingsManager
@@ -590,6 +626,11 @@ ${plugin.status === 'active'
   }
 
   async fetchPlugins() {
+    if (this.isBatchTestingLocked()) {
+      console.log('[PluginManager] Ignoring fetch request during batch testing');
+      return;
+    }
+
     if (
       typeof window.settingsManager !== 'undefined' &&
       window.settingsManager

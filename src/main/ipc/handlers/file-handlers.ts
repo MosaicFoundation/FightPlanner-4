@@ -84,6 +84,7 @@ const FileHandlers = {
     fileType: string,
   ): HandlerResponse<{
     filePath: string;
+    filePaths: string[];
   }> => {
     try {
       const filters =
@@ -91,19 +92,21 @@ const FileHandlers = {
           ? [{ name: 'CSS Files', extensions: ['css'] }]
           : [{ name: 'JavaScript Files', extensions: ['js'] }];
 
-      const result = await dialog.showOpenDialog({
+      const win = BrowserWindow.fromWebContents(common.event.sender)!;
+      const result = await dialog.showOpenDialog(win, {
         title: `Select Custom ${fileType.toUpperCase()} File`,
-        properties: ['openFile'],
+        properties: ['openFile', 'multiSelections'],
         filters: filters,
       });
 
-      if (result.canceled) {
+      if (result.canceled || result.filePaths.length === 0) {
         return { success: false, canceled: true };
       }
 
       return {
         success: true,
         filePath: result.filePaths[0],
+        filePaths: result.filePaths,
       };
     } catch (error) {
       handleError(error, 'select-custom-file');

@@ -11,8 +11,6 @@ import { PATHS } from './config';
 import autoUpdater from './auto-updater';
 import { initPosthog, identifyUser, shutdownPosthog, captureError, captureEvent } from './posthog';
 
-import AnimationHandler from './animations/animation-handler';
-
 // Global Error Catchers for PostHog
 process.on('uncaughtException', (error) => {
   console.error('[Main] Uncaught Exception:', error);
@@ -78,8 +76,6 @@ const originalConsoleError = console.error;
 let mainWindow: BrowserWindow | null = null;
 let discordRPC: DiscordRPCManager | null = null;
 
-const animationHandler = new AnimationHandler();
-
 export interface MainEvents {
   'main-log': { level: string; message: string; timestamp: string };
 }
@@ -136,7 +132,8 @@ console.error = (...args) => {
 };
 
 interface CreateWindowOptions {
-  animate?: boolean;
+  startup?: boolean;
+  postTutorialIntro?: boolean;
 }
 
 function createWindow(options: CreateWindowOptions = {}) {
@@ -179,16 +176,14 @@ function createWindow(options: CreateWindowOptions = {}) {
       windowShown = true;
       mainWindow.show();
 
-      animationHandler.initialize(mainWindow);
-
-      if (options.animate) {
-        // Give the renderer a moment to fully initialize before sending the animation signal
+      if (options.postTutorialIntro) {
         setTimeout(() => {
           if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.webContents.send('start-intro-animation');
           }
         }, 500);
       }
+
     }
   };
 
@@ -234,8 +229,16 @@ function createWindow(options: CreateWindowOptions = {}) {
 
   const loadPath = path.join(app.getAppPath(), 'assets', 'pages', 'index.html');
 
-  if (options.animate) {
-    mainWindow.loadFile(loadPath, { query: { animate: 'true' } });
+  const query: Record<string, string> = {};
+  if (options.startup) {
+    query.startup = 'true';
+  }
+  if (options.postTutorialIntro) {
+    query.postTutorialIntro = 'true';
+  }
+
+  if (Object.keys(query).length > 0) {
+    mainWindow.loadFile(loadPath, { query });
   } else {
     mainWindow.loadFile(loadPath);
   }
@@ -324,14 +327,16 @@ if (!gotTheLock) {
         tempWindow.close();
 
         console.log('omg he finish the tutorial lets gooo, go to the main app');
-        createWindow({ animate: true });
+        createWindow({ postTutorialIntro: true });
       });
     } else {
-      createWindow();
+      createWindow({ startup: true });
     }
 
     app.on('activate', function () {
-      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow({ startup: true });
+      }
     });
   });
 

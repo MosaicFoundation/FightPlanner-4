@@ -6,9 +6,13 @@
       <i class="bi bi-gear"></i>
       General
     </button>
-    <button class="settings-tab-btn" data-settings-tab="mods" data-i18n="settings.paths">
-      <i class="bi bi-folder2"></i>
-      Paths
+    <button class="settings-tab-btn" data-settings-tab="library" data-i18n="settings.library">
+      <i class="bi bi-collection"></i>
+      Library
+    </button>
+    <button class="settings-tab-btn" data-settings-tab="emulator" data-i18n="settings.emulator">
+      <i class="bi bi-controller"></i>
+      Emulator
     </button>
     <button class="settings-tab-btn" data-settings-tab="customization" data-i18n="settings.customization">
       <i class="bi bi-palette"></i>
@@ -130,6 +134,32 @@
         </p>
       </div>
 
+      <div class="settings-section">
+        <label class="settings-label" data-i18n="settings.startupSplash">Startup Splash Screen</label>
+        <div class="settings-input-group">
+          <label class="settings-switch">
+            <input type="checkbox" id="startup-splash-enabled" checked />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <span style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.enableStartupSplash">Play the splash screen on normal app startup</span>
+        </div>
+        <p class="settings-hint" data-i18n="settings.startupSplashHint">
+          Shows the startup splash before the app becomes interactive. When disabled, only the loading animation is shown.
+        </p>
+        <div class="settings-input-group" style="margin-top: 12px">
+          <label class="settings-switch">
+            <input type="checkbox" id="startup-splash-sound-enabled" checked />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <span id="startup-splash-sound-label" style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.enableStartupSplashSound">Play the splash screen sound</span>
+        </div>
+        <p class="settings-hint" data-i18n="settings.startupSplashSoundHint">
+          Keeps the splash visual but mutes the startup audio.
+        </p>
+      </div>
+
       <div class="settings-group-title"><i class="bi bi-toggles"></i> Behavior</div>
 
       <div class="settings-section">
@@ -219,12 +249,13 @@
           No personal data is collected. You can disable this at any time.
         </p>
       </div>
+
     </div>
 
-    <!-- Paths Settings -->
-    <div class="settings-tab-content" id="settings-mods">
-      <h2 class="settings-title" data-i18n="settings.pathsConfiguration">
-        Paths Configuration
+    <!-- Library Settings -->
+    <div class="settings-tab-content" id="settings-library">
+      <h2 class="settings-title" data-i18n="settings.libraryTitle">
+        Library Settings
       </h2>
 
       <div class="settings-group-title"><i class="bi bi-folder2-open"></i> Folders</div>
@@ -306,6 +337,39 @@
         </p>
       </div>
 
+      <div class="settings-section">
+        <label class="settings-label" data-i18n="settings.bulkModActions">Bulk Mod Actions</label>
+        <div class="settings-input-group" style="gap: 12px; flex-wrap: wrap;">
+          <button class="settings-btn-action" id="bulk-enable-mods-btn" style="flex: 1; min-width: 240px;">
+            <i class="bi bi-check2-circle"></i>
+            <div class="settings-btn-action-content">
+              <span class="settings-btn-action-title" data-i18n="settings.bulkEnableModsTitle">Enable All Mods</span>
+              <span class="settings-btn-action-desc" data-i18n="settings.bulkEnableModsDesc">Move all disabled mods back to the active folder</span>
+            </div>
+            <i class="bi bi-arrow-right"></i>
+          </button>
+          <button class="settings-btn-action" id="bulk-disable-mods-btn" style="flex: 1; min-width: 240px;">
+            <i class="bi bi-slash-circle"></i>
+            <div class="settings-btn-action-content">
+              <span class="settings-btn-action-title" data-i18n="settings.bulkDisableModsTitle">Disable All Mods</span>
+              <span class="settings-btn-action-desc" data-i18n="settings.bulkDisableModsDesc">Move all active mods into the disabled folder</span>
+            </div>
+            <i class="bi bi-arrow-right"></i>
+          </button>
+        </div>
+        <p class="settings-hint" data-i18n="settings.bulkModActionsHint">
+          Quickly enable or disable your whole mod library in one click.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Emulator Settings -->
+    <div class="settings-tab-content" id="settings-emulator">
+      <h2 class="settings-title" data-i18n="settings.emulatorTitle">
+        Emulator Settings
+      </h2>
+
       <div class="settings-group-title"><i class="bi bi-controller"></i> Emulator</div>
 
       <div class="settings-section">
@@ -370,6 +434,141 @@
         <p class="settings-hint" data-i18n="settings.launchFullscreenHint">
           When enabled, adds the -f flag to launch the emulator in fullscreen
           mode
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Advanced Settings -->
+    <div class="settings-tab-content" id="settings-advanced">
+      <h2 class="settings-title" data-i18n="settings.advanced">
+        Advanced Settings
+      </h2>
+
+      <div class="settings-section">
+        <label class="settings-label" data-i18n="settings.developerMode">Developer Mode</label>
+        <div class="settings-input-group">
+          <label class="settings-switch">
+            <input type="checkbox" id="developer-mode-enabled" />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <span style="margin-left: 12px; color: var(--text-secondary)" data-i18n="settings.developerModeHint">Enable
+            advanced developer features</span>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <label class="settings-label" data-i18n="settings.switchConnection">Switch Connection</label>
+
+        <div class="settings-input-group" style="margin-bottom: 12px">
+          <label class="settings-label" style="margin-right: 12px; min-width: 150px"
+            data-i18n="settings.transferMethod">Transfer Method:</label>
+          <div class="custom-select" id="switch-transfer-method-select" style="flex: 1">
+            <div class="custom-select-trigger">
+              <span class="selected-value">Select method...</span>
+              <i class="bi bi-chevron-down"></i>
+            </div>
+            <div class="custom-select-dropdown">
+              <div class="custom-select-option" data-value="ftp">
+                <span data-i18n="settings.transferMethodFtp">FTP</span>
+              </div>
+              <div class="custom-select-option" data-value="drive">
+                <span data-i18n="settings.transferMethodDrive">Local Drive</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="settings-hint" data-i18n="settings.transferMethodHint">
+          Choose how to send mods to Switch: via FTP or directly to SD card
+        </p>
+
+        <!-- FTP Settings -->
+        <div id="switch-ftp-settings" style="margin-top: 12px">
+          <div class="settings-input-group">
+            <input type="text" id="switch-ip" class="settings-input" data-i18n="settings.switchIpPlaceholder"
+              data-i18n-placeholder placeholder="192.168.1.100" />
+            <label class="settings-label" style="margin: 0 10px">:</label>
+            <input type="text" id="switch-port" class="settings-input" data-i18n="settings.switchPortPlaceholder"
+              data-i18n-placeholder placeholder="5000" style="width: 100px" />
+          </div>
+          <p class="settings-hint" data-i18n="settings.switchIpPort">
+            Switch IP address and FTP port (default: 5000)
+          </p>
+
+          <div class="settings-input-group" style="margin-top: 12px">
+            <input type="text" id="switch-ftp-path" class="settings-input" data-i18n="settings.switchFtpPathPlaceholder"
+              data-i18n-placeholder placeholder="/switch/atmosphere/contents" />
+          </div>
+          <p class="settings-hint" data-i18n="settings.switchFtpPath">
+            Remote path on Switch SD card for mods
+          </p>
+        </div>
+
+        <!-- Drive Settings -->
+        <div id="switch-drive-settings" style="margin-top: 12px; display: none">
+          <div class="settings-input-group">
+            <label class="settings-label" style="margin-right: 12px; min-width: 150px"
+              data-i18n="settings.driveLetter">Drive Letter:</label>
+            <div class="custom-select" id="switch-drive-letter-select" style="flex: 1">
+              <div class="custom-select-trigger">
+                <span class="selected-value" data-i18n="settings.selectDrive">Select Drive</span>
+                <i class="bi bi-chevron-down"></i>
+              </div>
+              <div class="custom-select-dropdown" id="switch-drive-letter-options">
+                <!-- Drive letters will be populated dynamically -->
+              </div>
+            </div>
+          </div>
+          <p class="settings-hint" data-i18n="settings.driveLetterHint">
+            Select the drive letter of your Switch SD card (e.g., E:)
+          </p>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <label class="settings-label" data-i18n="settings.conflictDetection">Conflict Detection</label>
+        <div class="settings-input-group">
+          <label class="settings-switch">
+            <input type="checkbox" id="conflict-detection-enabled" checked />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <span style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.enableConflictDetection">Enable automatic conflict detection</span>
+        </div>
+        <p class="settings-hint" data-i18n="settings.conflictDetectionHint">
+          Automatically check for file conflicts between mods
+        </p>
+      </div>
+
+      <div class="settings-section">
+        <label class="settings-label" data-i18n="settings.pluginAutoUpdate">Plugin Auto-Update Check</label>
+        <div class="settings-input-group">
+          <label class="settings-switch">
+            <input type="checkbox" id="auto-check-plugin-updates-enabled" />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <span style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.enablePluginAutoUpdate">Check for plugin updates on startup</span>
+        </div>
+        <p class="settings-hint" data-i18n="settings.pluginAutoUpdateHint">
+          Automatically check for plugin updates when the application starts
+        </p>
+      </div>
+
+      <div class="settings-section">
+        <label class="settings-label" data-i18n="settings.tempFiles">Temporary Files</label>
+        <button class="settings-btn-action" id="clear-temp-files-btn">
+          <i class="bi bi-trash3"></i>
+          <div class="settings-btn-action-content">
+            <span class="settings-btn-action-title" data-i18n="settings.clearTempFiles">Clear Temporary Files</span>
+            <span class="settings-btn-action-desc" data-i18n="settings.clearTempFilesDesc">Remove temporary download and
+              extraction files</span>
+          </div>
+          <i class="bi bi-arrow-right"></i>
+        </button>
+        <p class="settings-hint" data-i18n="settings.clearTempFilesHint">
+          Clears temporary files left from mod downloads and installations. Safe
+          to use at any time.
         </p>
       </div>
 
@@ -511,140 +710,6 @@
         </p>
         <p class="settings-hint" data-i18n="settings.batchTestingDeleteOrDisable">
           Do you want to delete it or just disable it?
-        </p>
-      </div>
-    </div>
-
-    <!-- Advanced Settings -->
-    <div class="settings-tab-content" id="settings-advanced">
-      <h2 class="settings-title" data-i18n="settings.advanced">
-        Advanced Settings
-      </h2>
-
-      <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.developerMode">Developer Mode</label>
-        <div class="settings-input-group">
-          <label class="settings-switch">
-            <input type="checkbox" id="developer-mode-enabled" />
-            <span class="settings-switch-slider"></span>
-          </label>
-          <span style="margin-left: 12px; color: var(--text-secondary)" data-i18n="settings.developerModeHint">Enable
-            advanced developer features</span>
-        </div>
-      </div>
-
-      <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.switchConnection">Switch Connection</label>
-
-        <div class="settings-input-group" style="margin-bottom: 12px">
-          <label class="settings-label" style="margin-right: 12px; min-width: 150px"
-            data-i18n="settings.transferMethod">Transfer Method:</label>
-          <div class="custom-select" id="switch-transfer-method-select" style="flex: 1">
-            <div class="custom-select-trigger">
-              <span class="selected-value">Select method...</span>
-              <i class="bi bi-chevron-down"></i>
-            </div>
-            <div class="custom-select-dropdown">
-              <div class="custom-select-option" data-value="ftp">
-                <span data-i18n="settings.transferMethodFtp">FTP</span>
-              </div>
-              <div class="custom-select-option" data-value="drive">
-                <span data-i18n="settings.transferMethodDrive">Local Drive</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <p class="settings-hint" data-i18n="settings.transferMethodHint">
-          Choose how to send mods to Switch: via FTP or directly to SD card
-        </p>
-
-        <!-- FTP Settings -->
-        <div id="switch-ftp-settings" style="margin-top: 12px">
-          <div class="settings-input-group">
-            <input type="text" id="switch-ip" class="settings-input" data-i18n="settings.switchIpPlaceholder"
-              data-i18n-placeholder placeholder="192.168.1.100" />
-            <label class="settings-label" style="margin: 0 10px">:</label>
-            <input type="text" id="switch-port" class="settings-input" data-i18n="settings.switchPortPlaceholder"
-              data-i18n-placeholder placeholder="5000" style="width: 100px" />
-          </div>
-          <p class="settings-hint" data-i18n="settings.switchIpPort">
-            Switch IP address and FTP port (default: 5000)
-          </p>
-
-          <div class="settings-input-group" style="margin-top: 12px">
-            <input type="text" id="switch-ftp-path" class="settings-input" data-i18n="settings.switchFtpPathPlaceholder"
-              data-i18n-placeholder placeholder="/switch/atmosphere/contents" />
-          </div>
-          <p class="settings-hint" data-i18n="settings.switchFtpPath">
-            Remote path on Switch SD card for mods
-          </p>
-        </div>
-
-        <!-- Drive Settings -->
-        <div id="switch-drive-settings" style="margin-top: 12px; display: none">
-          <div class="settings-input-group">
-            <label class="settings-label" style="margin-right: 12px; min-width: 150px"
-              data-i18n="settings.driveLetter">Drive Letter:</label>
-            <div class="custom-select" id="switch-drive-letter-select" style="flex: 1">
-              <div class="custom-select-trigger">
-                <span class="selected-value" data-i18n="settings.selectDrive">Select Drive</span>
-                <i class="bi bi-chevron-down"></i>
-              </div>
-              <div class="custom-select-dropdown" id="switch-drive-letter-options">
-                <!-- Drive letters will be populated dynamically -->
-              </div>
-            </div>
-          </div>
-          <p class="settings-hint" data-i18n="settings.driveLetterHint">
-            Select the drive letter of your Switch SD card (e.g., E:)
-          </p>
-        </div>
-      </div>
-
-      <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.conflictDetection">Conflict Detection</label>
-        <div class="settings-input-group">
-          <label class="settings-switch">
-            <input type="checkbox" id="conflict-detection-enabled" checked />
-            <span class="settings-switch-slider"></span>
-          </label>
-          <span style="margin-left: 12px; color: var(--text-secondary)"
-            data-i18n="settings.enableConflictDetection">Enable automatic conflict detection</span>
-        </div>
-        <p class="settings-hint" data-i18n="settings.conflictDetectionHint">
-          Automatically check for file conflicts between mods
-        </p>
-      </div>
-
-      <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.pluginAutoUpdate">Plugin Auto-Update Check</label>
-        <div class="settings-input-group">
-          <label class="settings-switch">
-            <input type="checkbox" id="auto-check-plugin-updates-enabled" />
-            <span class="settings-switch-slider"></span>
-          </label>
-          <span style="margin-left: 12px; color: var(--text-secondary)"
-            data-i18n="settings.enablePluginAutoUpdate">Check for plugin updates on startup</span>
-        </div>
-        <p class="settings-hint" data-i18n="settings.pluginAutoUpdateHint">
-          Automatically check for plugin updates when the application starts
-        </p>
-      </div>
-
-      <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.tempFiles">Temporary Files</label>
-        <button class="settings-btn-action" id="clear-temp-files-btn">
-          <i class="bi bi-trash3"></i>
-          <div class="settings-btn-action-content">
-            <span class="settings-btn-action-title" data-i18n="settings.clearTempFiles">Clear Temporary Files</span>
-            <span class="settings-btn-action-desc" data-i18n="settings.clearTempFilesDesc">Remove temporary download and
-              extraction files</span>
-          </div>
-          <i class="bi bi-arrow-right"></i>
-        </button>
-        <p class="settings-hint" data-i18n="settings.clearTempFilesHint">
-          Clears temporary files left from mod downloads and installations. Safe
-          to use at any time.
         </p>
       </div>
     </div>
@@ -928,10 +993,10 @@
           <i class="bi bi-arrow-right"></i>
         </button>
         <button class="settings-btn-action" id="restart-tutorial-mods-btn" style="margin-top: 8px;">
-          <i class="bi bi-book"></i>
+          <i class="bi bi-box-seam"></i>
           <div class="settings-btn-action-content">
-            <span class="settings-btn-action-title">Open Tutorial & Redirect to Mods</span>
-            <span class="settings-btn-action-desc">Opens the tutorial then navigates to the mods tab when closed</span>
+            <span class="settings-btn-action-title" data-i18n="settings.openTutorialMods">Open Tutorial & Redirect to Mods</span>
+            <span class="settings-btn-action-desc" data-i18n="settings.openTutorialModsDesc">Opens the tutorial then navigates to the mods tab when closed</span>
           </div>
           <i class="bi bi-arrow-right"></i>
         </button>

@@ -89,7 +89,12 @@ declare global {
 
     tabLoader: {
       loadTabContent: (tabId: string) => Promise<void>;
-      initializeTabs: () => void;
+      initializeTabs: () => Promise<void>;
+    };
+
+    startupSplashManager: {
+      initialize: () => Promise<void>;
+      isStartupLaunch: () => boolean;
     };
 
     lottie: LottiePlayer;

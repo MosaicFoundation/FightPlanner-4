@@ -46,6 +46,7 @@ class ModManager {
   contextMenuHandler: ModContextMenuHandler | null;
   operations: ModOperations | null;
   keybindsHandler: ModKeybindsHandler | null;
+  batchTestingOverrideActive: boolean;
 
   constructor() {
     this.mods = [];
@@ -61,6 +62,7 @@ class ModManager {
     this.listRenderer = null;
     this.contextMenuHandler = null;
     this.operations = null;
+    this.batchTestingOverrideActive = false;
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => this.initContainer());
@@ -150,6 +152,90 @@ class ModManager {
     if (window.discordRPCClient) {
       window.discordRPCClient.updateModCount(modsData.length);
     }
+  }
+
+  mapFolderStateToMods(result: {
+    activeMods: Array<{ name: string; path: string; hash?: string }>;
+    disabledMods: Array<{ name: string; path: string; hash?: string }>;
+  }) {
+    const allMods: Mod[] = [];
+    let idCounter = 1;
+
+    for (const mod of result.activeMods) {
+      allMods.push({
+        id: String(idCounter++),
+        name: mod.name,
+        version: 'Unknown',
+        author: 'Unknown',
+        description: 'Active mod',
+        size: 'Unknown',
+        status: 'active',
+        path: mod.path,
+        category: null,
+        hash: mod.hash,
+      });
+    }
+
+    for (const mod of result.disabledMods) {
+      allMods.push({
+        id: String(idCounter++),
+        name: mod.name,
+        version: 'Unknown',
+        author: 'Unknown',
+        description: 'Disabled mod',
+        size: 'Unknown',
+        status: 'disabled',
+        path: mod.path,
+        category: null,
+        hash: mod.hash,
+      });
+    }
+
+    return allMods;
+  }
+
+  async refreshModsFromState(result: {
+    activeMods: Array<{ name: string; path: string; hash?: string }>;
+    disabledMods: Array<{ name: string; path: string; hash?: string }>;
+  }) {
+    const allMods = this.mapFolderStateToMods(result);
+
+    await this.loadMods(allMods);
+    this.clearBatchTestingOverride();
+    this.loadCategoriesInBackground(allMods);
+
+    if (
+      window.settingsManager &&
+      window.settingsManager.settings.conflictDetectionEnabled
+    ) {
+      const whitelistPatterns =
+        window.settingsManager.settings.conflictWhitelistPatterns || [];
+      setTimeout(() => {
+        this.checkConflicts(whitelistPatterns);
+      }, 1000);
+    }
+  }
+
+  isBatchTestingLocked() {
+    const batchManager = (window as any).batchTestingManager;
+    const isModalOpen = !!(
+      batchManager?.modal && document.body.contains(batchManager.modal)
+    );
+
+    return !!(
+      isModalOpen ||
+      batchManager?.isRestoring
+    );
+  }
+
+  applyBatchTestingState(modsData: Mod[], modsPath: string | null) {
+    this.batchTestingOverrideActive = true;
+    this.modsPath = modsPath;
+    return this.loadMods(modsData);
+  }
+
+  clearBatchTestingOverride() {
+    this.batchTestingOverrideActive = false;
   }
 
   renderModList(forceRender = false) {
@@ -477,9 +563,14 @@ class ModManager {
   }
 
   async loadModsFromFolder(modsPath: string) {
+    if (this.isBatchTestingLocked()) {
+      console.log('[ModManager] Skipping folder refresh while batch testing is active');
+      return;
+    }
+
     if (!window.electronAPI || !window.electronAPI.readModsFolder) {
       console.error('Electron API not available');
-      this.loadExampleMods();
+      await this.loadExampleMods();
       return;
     }
 
@@ -490,64 +581,91 @@ class ModManager {
 
       if (!result.success) {
         console.error('Error reading mods:', result.error);
-        this.loadExampleMods();
+        await this.loadExampleMods();
         return;
       }
 
-      const allMods: Mod[] = [];
-      let idCounter = 1;
-
-      for (const mod of result.activeMods) {
-        const modData: Mod = {
-          id: String(idCounter++),
-          name: mod.name,
-          version: 'Unknown',
-          author: 'Unknown',
-          description: 'Active mod',
-          size: 'Unknown',
-          status: 'active',
-          path: mod.path,
-          category: null,
-          hash: mod.hash,
-        };
-
-        allMods.push(modData);
-      }
-
-      for (const mod of result.disabledMods) {
-        const modData: Mod = {
-          id: String(idCounter++),
-          name: mod.name,
-          version: 'Unknown',
-          author: 'Unknown',
-          description: 'Disabled mod',
-          size: 'Unknown',
-          status: 'disabled',
-          path: mod.path,
-          category: null,
-          hash: mod.hash,
-        };
-
-        allMods.push(modData);
-      }
-
-      this.loadMods(allMods);
-
-      this.loadCategoriesInBackground(allMods);
-
-      if (
-        window.settingsManager &&
-        window.settingsManager.settings.conflictDetectionEnabled
-      ) {
-        const whitelistPatterns =
-          window.settingsManager.settings.conflictWhitelistPatterns || [];
-        setTimeout(() => {
-          this.checkConflicts(whitelistPatterns);
-        }, 1000);
-      }
+      await this.refreshModsFromState(result);
     } catch (error) {
       console.error('Failed to load mods from folder:', error);
-      this.loadExampleMods();
+      await this.loadExampleMods();
+      this.clearBatchTestingOverride();
+    }
+  }
+
+  async setAllModsEnabled(enabled: boolean) {
+    if (this.isBatchTestingLocked()) {
+      if (window.toastManager) {
+        window.toastManager.warning('toasts.batchTestingAlreadyRunning');
+      }
+      return;
+    }
+
+    const modsPath =
+      this.modsPath || window.settingsManager?.getModsPath?.() || null;
+
+    if (!modsPath) {
+      if (window.toastManager) {
+        window.toastManager.error('toasts.modsFolderNotConfigured');
+      }
+      return;
+    }
+
+    if (
+      !window.electronAPI?.readModsFolder ||
+      !window.electronAPI?.applyModBatchState
+    ) {
+      if (window.toastManager) {
+        window.toastManager.error('toasts.functionNotAvailable');
+      }
+      return;
+    }
+
+    this.modsPath = modsPath;
+
+    try {
+      const currentState = await window.electronAPI.readModsFolder(modsPath);
+
+      if (!currentState.success) {
+        throw new Error(currentState.error || 'Failed to read mods folder');
+      }
+
+      const enabledModNames = enabled
+        ? [
+            ...currentState.activeMods.map((mod) => mod.name),
+            ...currentState.disabledMods.map((mod) => mod.name),
+          ]
+        : [];
+
+      if (enabled && currentState.disabledMods.length === 0) {
+        window.toastManager?.info('toasts.noDisabledModsToEnable');
+        return;
+      }
+
+      if (!enabled && currentState.activeMods.length === 0) {
+        window.toastManager?.info('toasts.noActiveModsToDisable');
+        return;
+      }
+
+      const result = await window.electronAPI.applyModBatchState(
+        modsPath,
+        enabledModNames,
+      );
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update mods');
+      }
+
+      await this.refreshModsFromState(result);
+
+      window.toastManager?.success(
+        enabled ? 'toasts.allModsEnabled' : 'toasts.allModsDisabled',
+      );
+    } catch (error) {
+      console.error('Failed to apply bulk mod state:', error);
+      window.toastManager?.error('toasts.failedToBulkToggleMods', 3000, {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -611,6 +729,11 @@ class ModManager {
   }
 
   async fetchMods() {
+    if (this.isBatchTestingLocked()) {
+      console.log('[ModManager] Ignoring fetch request during batch testing');
+      return;
+    }
+
     if (
       typeof window.settingsManager !== 'undefined' &&
       window.settingsManager
@@ -619,13 +742,13 @@ class ModManager {
 
       if (modsPath) {
         console.log('Loading mods from saved path:', modsPath);
-        this.loadModsFromFolder(modsPath);
+        await this.loadModsFromFolder(modsPath);
         return;
       }
     }
 
     console.log('Loading example mods');
-    this.loadExampleMods();
+    await this.loadExampleMods();
   }
 
   async checkConflicts(whitelistPatterns: string[] = []) {
