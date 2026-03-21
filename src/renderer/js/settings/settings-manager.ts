@@ -4,6 +4,7 @@ class SettingsManager {
   tabSwitchingAttached: boolean;
   drivesLoaded: boolean;
   switchTabTimeout: any;
+  readyPromise: Promise<void>;
 
   constructor() {
     this.settings = {
@@ -28,11 +29,13 @@ class SettingsManager {
       devShowModHash: false,
       theme: 'dark',
       enhancedStatusBar: true,
+      startupSplashEnabled: true,
+      startupSplashSoundEnabled: true,
     };
     this.initialized = false;
     this.tabSwitchingAttached = false;
     this.drivesLoaded = false;
-    this.initSettings();
+    this.readyPromise = this.initSettings();
     this.initializeUI();
   }
 
@@ -102,6 +105,33 @@ class SettingsManager {
       this.loadAnimationPreference();
     }
 
+    const startupSplashToggle = document.querySelector<HTMLInputElement>(
+      '#startup-splash-enabled',
+    );
+    if (startupSplashToggle && !startupSplashToggle.dataset.listenerAttached) {
+      startupSplashToggle.addEventListener('change', () => {
+        this.settings.startupSplashEnabled = startupSplashToggle.checked;
+        this.saveSettings();
+        this.updateStartupSplashSoundUI();
+      });
+      startupSplashToggle.dataset.listenerAttached = 'true';
+    }
+
+    const startupSplashSoundToggle = document.querySelector<HTMLInputElement>(
+      '#startup-splash-sound-enabled',
+    );
+    if (
+      startupSplashSoundToggle &&
+      !startupSplashSoundToggle.dataset.listenerAttached
+    ) {
+      startupSplashSoundToggle.addEventListener('change', () => {
+        this.settings.startupSplashSoundEnabled =
+          startupSplashSoundToggle.checked;
+        this.saveSettings();
+      });
+      startupSplashSoundToggle.dataset.listenerAttached = 'true';
+    }
+
     const enhancedStatusBarToggle = document.querySelector<HTMLInputElement>(
       '#enhanced-status-bar-enabled',
     );
@@ -148,6 +178,32 @@ class SettingsManager {
       });
       exportModsListBtn.dataset.listenerAttached = 'true';
       console.log('Export mods list button listener attached');
+    }
+
+    const bulkEnableModsBtn = document.querySelector<HTMLElement>(
+      '#bulk-enable-mods-btn',
+    );
+    if (bulkEnableModsBtn && !bulkEnableModsBtn.dataset.listenerAttached) {
+      bulkEnableModsBtn.addEventListener('click', async () => {
+        if (window.modManager) {
+          await window.modManager.setAllModsEnabled(true);
+        }
+      });
+      bulkEnableModsBtn.dataset.listenerAttached = 'true';
+      console.log('Bulk enable mods button listener attached');
+    }
+
+    const bulkDisableModsBtn = document.querySelector<HTMLElement>(
+      '#bulk-disable-mods-btn',
+    );
+    if (bulkDisableModsBtn && !bulkDisableModsBtn.dataset.listenerAttached) {
+      bulkDisableModsBtn.addEventListener('click', async () => {
+        if (window.modManager) {
+          await window.modManager.setAllModsEnabled(false);
+        }
+      });
+      bulkDisableModsBtn.dataset.listenerAttached = 'true';
+      console.log('Bulk disable mods button listener attached');
     }
 
     const batchTestingBtn = document.querySelector<HTMLElement>(
@@ -730,6 +786,8 @@ class SettingsManager {
     this.updateAutoDisableModsUI();
     this.updateDisableAllModsOnDownloadUI();
     this.updateEnhancedStatusBarUI();
+    this.updateStartupSplashUI();
+    this.updateStartupSplashSoundUI();
     this.updateDeveloperModeUI();
 
     // Analytics toggle
@@ -1725,6 +1783,39 @@ ${t('settings.okUnderstand')}
     }
   }
 
+  updateStartupSplashUI() {
+    const startupSplashCheckbox = document.querySelector<HTMLInputElement>(
+      '#startup-splash-enabled',
+    );
+    if (startupSplashCheckbox) {
+      startupSplashCheckbox.checked = this.settings.startupSplashEnabled !== false;
+    }
+  }
+
+  updateStartupSplashSoundUI() {
+    const startupSplashSoundCheckbox = document.querySelector<HTMLInputElement>(
+      '#startup-splash-sound-enabled',
+    );
+    if (startupSplashSoundCheckbox) {
+      const splashEnabled = this.settings.startupSplashEnabled !== false;
+      startupSplashSoundCheckbox.checked =
+        splashEnabled && this.settings.startupSplashSoundEnabled !== false;
+      startupSplashSoundCheckbox.disabled = !splashEnabled;
+      startupSplashSoundCheckbox.closest('.settings-switch')?.classList.toggle(
+        'disabled',
+        !splashEnabled,
+      );
+    }
+
+    const splashSoundLabel = document.querySelector<HTMLElement>(
+      '#startup-splash-sound-label',
+    );
+    if (splashSoundLabel) {
+      splashSoundLabel.style.opacity =
+        this.settings.startupSplashEnabled !== false ? '1' : '0.55';
+    }
+  }
+
   async updateAppVersionUI() {
     const appVersionEl = document.querySelector<HTMLElement>('#app-version');
     if (
@@ -1846,6 +1937,12 @@ ${t('settings.okUnderstand')}
       const disableAllModsOnDownload = await window.electronAPI.store.get(
         'disableAllModsOnDownload',
       );
+      const startupSplashEnabled = await window.electronAPI.store.get(
+        'startupSplashEnabled',
+      );
+      const startupSplashSoundEnabled = await window.electronAPI.store.get(
+        'startupSplashSoundEnabled',
+      );
       return {
         modsPath: modsPath || null,
         pluginsPath: pluginsPath || null,
@@ -1864,6 +1961,8 @@ ${t('settings.okUnderstand')}
         theme: theme || 'dark',
         autoDisableNewMods: autoDisableNewMods || false,
         disableAllModsOnDownload: disableAllModsOnDownload || false,
+        startupSplashEnabled: startupSplashEnabled !== false,
+        startupSplashSoundEnabled: startupSplashSoundEnabled !== false,
       };
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -1885,6 +1984,8 @@ ${t('settings.okUnderstand')}
         theme: 'dark',
         autoDisableNewMods: false,
         disableAllModsOnDownload: false,
+        startupSplashEnabled: true,
+        startupSplashSoundEnabled: true,
       };
     }
   }
@@ -1946,6 +2047,14 @@ ${t('settings.okUnderstand')}
       await window.electronAPI.store.set(
         'disableAllModsOnDownload',
         this.settings.disableAllModsOnDownload,
+      );
+      await window.electronAPI.store.set(
+        'startupSplashEnabled',
+        this.settings.startupSplashEnabled,
+      );
+      await window.electronAPI.store.set(
+        'startupSplashSoundEnabled',
+        this.settings.startupSplashSoundEnabled,
       );
     } catch (error) {
       console.error('Failed to save settings:', error);

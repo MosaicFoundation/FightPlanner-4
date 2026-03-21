@@ -119,14 +119,20 @@ actionButtons.forEach((btn) => {
   });
 });
 
-window.addEventListener('DOMContentLoaded', () => {
-  if (window.tabLoader) {
-    window.tabLoader.initializeTabs();
-  }
-
+window.addEventListener('DOMContentLoaded', async () => {
   // Initialize Animation Manager
   if (window.animationManager) {
     window.animationManager.initialize();
+  }
+
+  if (window.startupSplashManager?.isStartupLaunch()) {
+    await window.startupSplashManager.initialize();
+  } else if (window.tabLoader) {
+    await window.tabLoader.initializeTabs();
+
+    if (window.modManager?.fetchMods) {
+      await window.modManager.fetchMods();
+    }
   }
 
   setTimeout(() => {

@@ -39,32 +39,50 @@ class AnimationManager {
     // Listen for intro animation trigger from main process (manual trigger)
     if (window.electronAPI) {
       window.electronAPI.onStartIntroAnimation(() => {
-        this.playIntroAnimation();
+        void this.playIntroAnimation();
       });
     }
   }
 
-  playIntroAnimation() {
-    if (this.isReducedMotion) return;
+  prepareIntroAnimation() {
+    if (this.isReducedMotion) {
+      return;
+    }
+
+    document.body.classList.remove('app-entrance-animation');
+    document.body.classList.add('app-entrance-prepared');
+  }
+
+  playIntroAnimation(playAudio = true) {
+    if (this.isReducedMotion) return Promise.resolve();
 
     console.log('Playing entrance animation sequence (manual trigger)');
 
-    try {
-      const introAudio = new Audio('../../assets/sounds/endtutorial.mp3');
-      introAudio.play().catch(e => console.error('[AnimationManager] Error playing intro audio:', e));
-    } catch (e) {
-      console.error('[AnimationManager] Failed to initialize intro audio:', e);
+    if (playAudio) {
+      try {
+        const introAudio = new Audio('../../assets/sounds/endtutorial.mp3');
+        introAudio.play().catch(e => console.error('[AnimationManager] Error playing intro audio:', e));
+      } catch (e) {
+        console.error('[AnimationManager] Failed to initialize intro audio:', e);
+      }
     }
 
-    // Force reflow to restart animation
-    document.body.classList.remove('app-entrance-animation');
-    void document.body.offsetWidth;
-    document.body.classList.add('app-entrance-animation');
+    return new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        document.body.classList.remove('app-entrance-animation');
+        document.body.classList.add('app-entrance-prepared');
+        void document.body.offsetWidth;
+        document.body.classList.remove('app-entrance-prepared');
+        document.body.classList.add('app-entrance-animation');
 
-    setTimeout(() => {
-      document.body.classList.remove('app-entrance-animation');
-      console.log('Entrance animation sequence completed');
-    }, 2500);
+        setTimeout(() => {
+          document.body.classList.remove('app-entrance-animation');
+          document.body.classList.remove('app-entrance-prepared');
+          console.log('Entrance animation sequence completed');
+          resolve();
+        }, 2500);
+      });
+    });
   }
 
   // Helper for GSAP tab switches to keep renderer.js clean

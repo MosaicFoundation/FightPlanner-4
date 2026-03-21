@@ -13,6 +13,12 @@ const AppHandlers = {
       chromeVersion: process.versions.chrome,
     };
   },
+
+  ['relaunch-app']: async (common: BaseHandlerArg) => {
+    app.relaunch();
+    app.exit(0);
+    return { success: true };
+  },
 } as const;
 
 /**

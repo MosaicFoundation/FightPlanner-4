@@ -176,7 +176,11 @@ class BatchTestingStateHelpers {
         })),
       ];
 
-      window.modManager.loadMods(mods);
+      if (typeof (window.modManager as any).applyBatchTestingState === 'function') {
+        (window.modManager as any).applyBatchTestingState(mods, basePath);
+      } else {
+        window.modManager.loadMods(mods);
+      }
       return;
     }
 
@@ -200,7 +204,11 @@ class BatchTestingStateHelpers {
         })),
       ];
 
-      window.pluginManager.loadPlugins(plugins);
+      if (typeof (window.pluginManager as any).applyBatchTestingState === 'function') {
+        (window.pluginManager as any).applyBatchTestingState(plugins, basePath);
+      } else {
+        window.pluginManager.loadPlugins(plugins);
+      }
     }
   }
 

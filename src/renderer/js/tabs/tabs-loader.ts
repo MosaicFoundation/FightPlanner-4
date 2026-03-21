@@ -357,13 +357,6 @@ function initializeTabFeatures(tabName) {
       window.i18n.updateDOM();
     }
 
-    // Delay fetching mods to ensure everything is loaded
-    setTimeout(() => {
-      if (window.modManager) {
-        window.modManager.fetchMods();
-      }
-    }, 150);
-
     if (window.modManager) {
       const currentInput =
         document.querySelector<HTMLInputElement>('#search-mods-input');

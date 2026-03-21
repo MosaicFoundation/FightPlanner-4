@@ -1,5 +1,6 @@
 class CustomizationManager {
   pendingJsPath: string | null;
+  pendingJsPaths: string[];
   customCssFiles: Array<{ path: string; element: HTMLStyleElement }>;
   customJsFiles: Array<{ path: string; element: HTMLScriptElement }>;
   customCssElement: HTMLStyleElement | null;
@@ -9,6 +10,7 @@ class CustomizationManager {
 
   constructor() {
     this.pendingJsPath = null;
+    this.pendingJsPaths = [];
     this.customCssFiles = []; // Array of {path, element}
     this.customJsFiles = []; // Array of {path, element}
 
@@ -112,21 +114,23 @@ class CustomizationManager {
         return;
       }
 
-      // Check if already added
-      if (this.customCssFiles.find((f) => f.path === result.filePath)) {
-        if (window.toastManager) {
-          window.toastManager.warning('toasts.cssFileAlreadyLoaded');
-        }
+      const selectedPaths = this.getSelectedCustomPaths(result);
+      const newPaths = selectedPaths.filter(
+        (filePath) => !this.customCssFiles.find((f) => f.path === filePath),
+      );
+
+      if (newPaths.length === 0) {
+        window.toastManager?.warning('toasts.cssFileAlreadyLoaded');
         return;
       }
 
-      await this.loadCustomCssFile(result.filePath);
+      for (const filePath of newPaths) {
+        await this.loadCustomCssFile(filePath);
+      }
+
       await this.saveCssPaths();
       this.renderCssList();
-
-      if (window.toastManager) {
-        window.toastManager.success('toasts.customCssAdded');
-      }
+      window.toastManager?.success('toasts.customCssAdded');
     } catch (error) {
       console.error('Error adding custom CSS:', error);
       if (window.toastManager) {
@@ -149,16 +153,22 @@ class CustomizationManager {
         return;
       }
 
-      // Check if already added
-      if (this.customJsFiles.find((f) => f.path === result.filePath)) {
-        if (window.toastManager) {
-          window.toastManager.warning('toasts.jsFileAlreadyLoaded');
-        }
+      const selectedPaths = this.getSelectedCustomPaths(result);
+      const newPaths = selectedPaths.filter(
+        (filePath) => !this.customJsFiles.find((f) => f.path === filePath),
+      );
+
+      if (newPaths.length === 0) {
+        window.toastManager?.warning('toasts.jsFileAlreadyLoaded');
         return;
       }
 
-      this.pendingJsPath = result.filePath;
-      console.log('[CustomizationManager] Pending JS path set:', this.pendingJsPath);
+      this.pendingJsPaths = newPaths;
+      this.pendingJsPath = newPaths[0] || null;
+      console.log(
+        '[CustomizationManager] Pending JS paths set:',
+        this.pendingJsPaths,
+      );
       this.showJsWarningModal();
     } catch (error) {
       console.error('[CustomizationManager] Error adding custom JS:', error);
@@ -181,10 +191,15 @@ class CustomizationManager {
         return;
       }
 
-      await this.loadCustomCss(result.filePath);
-      await window.electronAPI.store.set('customCssPath', result.filePath);
-      this.savedCssPath = result.filePath;
-      this.updateCssPathUI(result.filePath);
+      const selectedPath = this.getSelectedCustomPaths(result)[0];
+      if (!selectedPath) {
+        return;
+      }
+
+      await this.loadCustomCss(selectedPath);
+      await window.electronAPI.store.set('customCssPath', selectedPath);
+      this.savedCssPath = selectedPath;
+      this.updateCssPathUI(selectedPath);
 
       if (window.toastManager) {
         window.toastManager.success('toasts.customCssLoaded');
@@ -210,7 +225,13 @@ class CustomizationManager {
         return;
       }
 
-      this.pendingJsPath = result.filePath;
+      const selectedPath = this.getSelectedCustomPaths(result)[0];
+      if (!selectedPath) {
+        return;
+      }
+
+      this.pendingJsPaths = [selectedPath];
+      this.pendingJsPath = selectedPath;
       this.showJsWarningModal();
     } catch (error) {
       console.error('Error browsing custom JS:', error);
@@ -339,6 +360,7 @@ class CustomizationManager {
     if (closeBtn) {
       closeBtn.addEventListener('click', () => {
         this.pendingJsPath = null;
+        this.pendingJsPaths = [];
         closeModal();
       });
     }
@@ -346,6 +368,7 @@ class CustomizationManager {
     if (cancelBtn) {
       cancelBtn.addEventListener('click', () => {
         this.pendingJsPath = null;
+        this.pendingJsPaths = [];
         closeModal();
       });
     }
@@ -363,6 +386,7 @@ class CustomizationManager {
     if (overlay) {
       const overlayClickHandler = () => {
         this.pendingJsPath = null;
+        this.pendingJsPaths = [];
         closeModal();
       };
       overlay.addEventListener('click', overlayClickHandler, { once: true });
@@ -370,14 +394,27 @@ class CustomizationManager {
   }
 
   async confirmLoadJs() {
-    console.log('[CustomizationManager] confirmLoadJs called, pending path:', this.pendingJsPath);
-    if (!this.pendingJsPath) {
+    console.log(
+      '[CustomizationManager] confirmLoadJs called, pending paths:',
+      this.pendingJsPaths,
+    );
+    if (this.pendingJsPaths.length === 0 && !this.pendingJsPath) {
       console.warn('[CustomizationManager] No pending JS path to confirm');
       return;
     }
 
     try {
-      await this.loadCustomJsFile(this.pendingJsPath);
+      const pathsToLoad =
+        this.pendingJsPaths.length > 0
+          ? this.pendingJsPaths
+          : this.pendingJsPath
+            ? [this.pendingJsPath]
+            : [];
+
+      for (const filePath of pathsToLoad) {
+        await this.loadCustomJsFile(filePath);
+      }
+
       await this.saveJsPaths();
       this.renderJsList();
 
@@ -391,7 +428,19 @@ class CustomizationManager {
       }
     } finally {
       this.pendingJsPath = null;
+      this.pendingJsPaths = [];
     }
+  }
+
+  getSelectedCustomPaths(result: {
+    filePath?: string;
+    filePaths?: string[];
+  }) {
+    if (Array.isArray(result.filePaths) && result.filePaths.length > 0) {
+      return result.filePaths;
+    }
+
+    return result.filePath ? [result.filePath] : [];
   }
 
   async loadCustomCssFile(filePath) {
@@ -512,9 +561,7 @@ class CustomizationManager {
     await this.saveJsPaths();
     this.renderJsList();
 
-    if (window.toastManager) {
-      window.toastManager.success('toasts.jsFileRemoved');
-    }
+    this.showCustomJsRestartToast();
   }
 
   async reloadCustomJsFile(filePath: string) {
@@ -785,9 +832,32 @@ class CustomizationManager {
     this.savedJsPath = null;
     this.updateJsPathUI('');
 
-    if (window.toastManager) {
-      window.toastManager.success('toasts.customJsRemoved');
+    this.showCustomJsRestartToast();
+  }
+
+  showCustomJsRestartToast() {
+    if (!window.toastManager) {
+      return;
     }
+
+    const restartLabel = window.i18n?.t?.('common.restart') || 'Restart';
+
+    window.toastManager.success('toasts.customJsRemoved', 8000, {}, {
+      actionButton: {
+        text: restartLabel,
+        onClick: async () => {
+          try {
+            await window.electronAPI?.relaunchApp?.();
+          } catch (error) {
+            console.error(
+              'Failed to relaunch app after custom JS removal:',
+              error,
+            );
+            window.toastManager?.error('toasts.failedToRestartApp');
+          }
+        },
+      },
+    });
   }
 
   async reloadCustomCss() {
