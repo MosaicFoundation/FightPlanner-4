@@ -895,6 +895,7 @@ M.prototype._renderSlotList = function () {
     filesInfo.className = 'slot-item-files';
 
     const allPathsToBeModified: { original: string; type: string }[] = [];
+    const seenPathsToBeModified = new Set<string>();
 
     for (const fighter of actualFighters) {
       const fighterData = this.pathData[fighter];
@@ -905,7 +906,27 @@ M.prototype._renderSlotList = function () {
           : null;
 
       if (pathDataForSlot) {
-        allPathsToBeModified.push(...pathDataForSlot.pathsToBeModified);
+        for (const entry of pathDataForSlot.pathsToBeModified) {
+          const entryKey = `${entry.type}:${entry.original}`;
+
+          if (seenPathsToBeModified.has(entryKey)) {
+            continue;
+          }
+
+          seenPathsToBeModified.add(entryKey);
+          allPathsToBeModified.push(entry);
+        }
+
+        for (const entry of pathDataForSlot.filesToBeModified) {
+          const entryKey = `${entry.type}:${entry.original}`;
+
+          if (seenPathsToBeModified.has(entryKey)) {
+            continue;
+          }
+
+          seenPathsToBeModified.add(entryKey);
+          allPathsToBeModified.push(entry);
+        }
       }
     }
 

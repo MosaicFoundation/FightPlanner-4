@@ -1,7 +1,7 @@
 import path from 'path';
 import { XMLParser } from 'fast-xml-parser';
 
-import { PathData } from './mod-scanner';
+import { PathData, PathDataEntry } from './mod-scanner';
 import { ModFileOperations } from '../mod-file-operations';
 import { ConfigGenerator } from './config-generator';
 import { PATHS } from '../config';
@@ -13,7 +13,88 @@ interface CustomData {
   announcer?: string;
 }
 
+interface SlotPathMapping {
+  originalPath: string;
+  tempPath: string;
+  finalPath: string;
+  type: 'file' | 'directory';
+}
+
 export class SlotChanger {
+  private static normalizeRelativePath(relativePath: string): string {
+    return relativePath.replace(/\\/g, '/');
+  }
+
+  private static buildFinalPath(normalizedPath: string, newSlot: string): string {
+    let newNum = newSlot.replace('c', '');
+    if (newNum.length === 1) newNum = '0' + newNum;
+
+    return normalizedPath.replace(/###/g, newNum);
+  }
+
+  private static buildTempPath(
+    normalizedPath: string,
+    currentSlot: string,
+  ): string {
+    const tempPathParts = normalizedPath.split(/[/\\]/);
+    const lastPart = tempPathParts[tempPathParts.length - 1];
+
+    tempPathParts[tempPathParts.length - 1] = `.temp_${currentSlot}_${lastPart}`;
+
+    return tempPathParts.join('/');
+  }
+
+  private static createSlotPathMapping(
+    currentSlot: string,
+    newSlot: string,
+    pathEntry: PathDataEntry,
+  ): SlotPathMapping | null {
+    if (!pathEntry.normalized) {
+      console.warn(
+        '[changeSlots] Normalized path is null for original path:',
+        pathEntry.original,
+      );
+      return null;
+    }
+
+    return {
+      originalPath: this.normalizeRelativePath(pathEntry.original),
+      tempPath: this.normalizeRelativePath(
+        this.buildTempPath(pathEntry.normalized, currentSlot),
+      ),
+      finalPath: this.normalizeRelativePath(
+        this.buildFinalPath(pathEntry.normalized, newSlot),
+      ),
+      type: pathEntry.type,
+    };
+  }
+
+  private static findContainingDirectoryMapping(
+    filePath: string,
+    directoryMappings: SlotPathMapping[],
+  ): SlotPathMapping | null {
+    const normalizedFilePath = this.normalizeRelativePath(filePath);
+    let bestMatch: SlotPathMapping | null = null;
+
+    for (const mapping of directoryMappings) {
+      if (mapping.type !== 'directory') {
+        continue;
+      }
+
+      const directoryPrefix = `${mapping.originalPath}/`;
+
+      if (!normalizedFilePath.startsWith(directoryPrefix)) {
+        continue;
+      }
+
+      if (!bestMatch || mapping.originalPath.length > bestMatch.originalPath.length) {
+        bestMatch = mapping;
+      }
+    }
+
+    return bestMatch;
+  }
+
   static async changeSlots(
     modPath: string,
     slotAssignments: Map<string, Map<string, string>>,
@@ -30,59 +111,105 @@ export class SlotChanger {
 
       const finalSlots = Array.from(fighterAssignments.values());
 
-      const fighterTempMappings: {
-        originalPath: string;
-        tempPath: string;
+      const topLevelMappings: SlotPathMapping[] = [];
+      const directoryMappings: SlotPathMapping[] = [];
+      const seenTopLevelMappings = new Set<string>();
+      const nestedFileRenameMappings: {
+        currentPath: string;
         finalPath: string;
       }[] = [];
+      const seenNestedFileRenameMappings = new Set<string>();
 
       Object.keys(pathData[fighterName]).forEach((currentSlot) => {
         const newSlot = fighterAssignments.get(currentSlot);
+        const slotData = pathData[fighterName][currentSlot];
 
-        if (!newSlot) {
+        if (!newSlot || !slotData) {
           return;
         }
 
-        Object.values(
-          pathData[fighterName][currentSlot].pathsToBeModified,
-        ).forEach(({ original, normalized }) => {
-          let newNum = newSlot.replace('c', '');
-          if (newNum.length === 1) newNum = '0' + newNum;
+        for (const pathEntry of Object.values(slotData.pathsToBeModified)) {
+          const mapping = this.createSlotPathMapping(
+            currentSlot,
+            newSlot,
+            pathEntry,
+          );
 
-          if (!normalized) {
-            console.warn(
-              '[changeSlots] Normalized path is null for original path:',
-              original,
-            );
-            return;
+          if (!mapping) {
+            continue;
           }
 
-          const newPath = normalized.replace('###', newNum);
+          const mappingKey = `${mapping.type}:${mapping.originalPath}->${mapping.finalPath}`;
+          if (seenTopLevelMappings.has(mappingKey)) {
+            continue;
+          }
 
-          // Create temporary path in a slot-specific temp directory
-          // This isolates temp files for each slot to prevent conflicts
-          const tempPathParts = normalized.split(/[/\\]/);
-          const lastPart = tempPathParts[tempPathParts.length - 1];
+          seenTopLevelMappings.add(mappingKey);
+          topLevelMappings.push(mapping);
 
-          tempPathParts[tempPathParts.length - 1] =
-            `.temp_${currentSlot}_${lastPart}`;
-
-          const tempPath = tempPathParts.join('/');
-
-          fighterTempMappings.push({
-            originalPath: original,
-            tempPath: tempPath,
-            finalPath: newPath,
-          });
-        });
+          if (mapping.type === 'directory') {
+            directoryMappings.push(mapping);
+          }
+        }
       });
 
-      for (const mapping of fighterTempMappings) {
+      for (const [currentSlot, slotData] of Object.entries(pathData[fighterName])) {
+        const newSlot = fighterAssignments.get(currentSlot);
+
+        if (!newSlot || !slotData) {
+          continue;
+        }
+
+        for (const fileEntry of Object.values(slotData.filesToBeModified)) {
+          const mapping = this.createSlotPathMapping(
+            currentSlot,
+            newSlot,
+            fileEntry,
+          );
+
+          if (!mapping) {
+            continue;
+          }
+
+          const containingDirectory = this.findContainingDirectoryMapping(
+            mapping.originalPath,
+            directoryMappings,
+          );
+
+          if (!containingDirectory) {
+            continue;
+          }
+
+          const currentPath = this.normalizeRelativePath(
+            mapping.originalPath.replace(
+              containingDirectory.originalPath,
+              containingDirectory.finalPath,
+            ),
+          );
+
+          if (currentPath === mapping.finalPath) {
+            continue;
+          }
+
+          const mappingKey = `${currentPath}->${mapping.finalPath}`;
+          if (seenNestedFileRenameMappings.has(mappingKey)) {
+            continue;
+          }
+
+          seenNestedFileRenameMappings.add(mappingKey);
+          nestedFileRenameMappings.push({
+            currentPath,
+            finalPath: mapping.finalPath,
+          });
+        }
+      }
+
+      for (const mapping of topLevelMappings) {
         try {
           await ModFileOperations.renameModFile(
             modPath,
-            mapping.originalPath.replace(/\\/g, '/'),
-            mapping.tempPath.replace(/\\/g, '/'),
+            mapping.originalPath,
+            mapping.tempPath,
           );
         } catch (error) {
           console.error(
@@ -101,12 +228,12 @@ export class SlotChanger {
         '[changeSlots] Moving files from temporary to final paths...',
       );
 
-      for (const mapping of fighterTempMappings) {
+      for (const mapping of topLevelMappings) {
         try {
           await ModFileOperations.renameModFile(
             modPath,
-            mapping.tempPath.replace(/\\/g, '/'),
-            mapping.finalPath.replace(/\\/g, '/'),
+            mapping.tempPath,
+            mapping.finalPath,
           );
 
           changedPaths.push(mapping.finalPath);
@@ -117,6 +244,26 @@ export class SlotChanger {
           );
           throw new Error(
             `Failed to move file from temp ${mapping.tempPath}: ${error.message}`,
+          );
+        }
+      }
+
+      for (const mapping of nestedFileRenameMappings) {
+        try {
+          await ModFileOperations.renameModFile(
+            modPath,
+            mapping.currentPath,
+            mapping.finalPath,
+          );
+
+          changedPaths.push(mapping.finalPath);
+        } catch (error) {
+          console.error(
+            `Error renaming nested file ${mapping.currentPath}:`,
+            error,
+          );
+          throw new Error(
+            `Failed to rename nested file ${mapping.currentPath}: ${error.message}`,
           );
         }
       }

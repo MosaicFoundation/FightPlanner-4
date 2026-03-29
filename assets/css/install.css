@@ -135,6 +135,8 @@
   margin-left: 10px;
   vertical-align: middle;
   letter-spacing: 0.5px;
+  transform-origin: center center;
+  will-change: transform, opacity, filter;
 }
 
 /* ── Stacked cards behind modal ── */
@@ -245,6 +247,8 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 0 3px rgba(var(--accent-rgb), 0.3);
   transition: transform 0.2s ease;
   pointer-events: none;
+  transform-origin: center center;
+  will-change: transform, opacity, filter;
 }
 
 @keyframes installBubblePop {
@@ -260,4 +264,193 @@
 .install-bubble-ghost {
   pointer-events: none;
   overflow: hidden;
+}
+
+.install-confirm-flight-ghost,
+.install-confirm-flight-ghost * {
+  animation: none !important;
+  transition: none !important;
+}
+
+.install-confirm-flight-ghost {
+  overflow: hidden !important;
+  contain: layout paint style;
+}
+
+@keyframes stackCardShift {
+  0% {
+    transform: translate(-50%, calc(-50% + 34px)) scale(0.916);
+    opacity: 0.52;
+    filter: blur(1.2px);
+  }
+
+  55% {
+    transform: translate(-50%, calc(-50% + 8px)) scale(0.978);
+    opacity: 0.88;
+    filter: blur(0.2px);
+  }
+
+  100% {
+    filter: blur(0);
+  }
+}
+
+@keyframes installCountBump {
+  0% {
+    transform: scale(1);
+    filter: blur(0);
+  }
+
+  38% {
+    transform: translateY(-1px) scale(1.08);
+    filter: blur(0.2px);
+  }
+
+  100% {
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+.install-stack-card-shift {
+  animation: stackCardShift 0.56s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.install-count-bump {
+  animation: installCountBump 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.install-stack-card {
+  transition:
+    transform 0.48s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.4s ease,
+    filter 0.4s ease,
+    box-shadow 0.4s ease;
+}
+
+.install-stack-card-1 {
+  transform: translate(-50%, calc(-50% + 16px)) scale(0.962) !important;
+  filter: blur(0.45px);
+}
+
+.install-stack-card-2 {
+  transform: translate(-50%, calc(-50% + 32px)) scale(0.924) !important;
+  opacity: 0.52;
+  filter: blur(0.95px);
+}
+
+.install-stack-card-enter {
+  animation: stackCardEnter 0.52s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.install-slide-out-top-right {
+  animation: installSlideOutTopRight 0.42s cubic-bezier(0.32, 0, 0.2, 1) forwards !important;
+}
+
+.install-slide-in-right {
+  animation: installSlideInRight 0.52s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+.install-bubble-pop {
+  animation: installBubblePop 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes stackCardEnter {
+  0% {
+    transform: translate(-50%, calc(-50% + 52px)) scale(0.84);
+    opacity: 0;
+    filter: blur(10px);
+  }
+
+  62% {
+    transform: translate(-50%, calc(-50% + 10px)) scale(0.982);
+    opacity: 0.92;
+    filter: blur(0.4px);
+  }
+
+  100% {
+    filter: blur(0);
+  }
+}
+
+@keyframes installSlideOutTopRight {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+
+  35% {
+    transform: translate(calc(-50% + 26px), calc(-50% - 12px)) scale(0.985);
+    opacity: 0.98;
+    filter: blur(0.5px);
+  }
+
+  100% {
+    transform: translate(calc(-50% + 170px), calc(-50% - 155px)) scale(0.58);
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+
+@keyframes installSlideInRight {
+  0% {
+    transform: translate(calc(-50% + 120px), calc(-50% + 20px)) scale(0.9);
+    opacity: 0;
+    filter: blur(8px);
+  }
+
+  62% {
+    transform: translate(-50%, calc(-50% - 4px)) scale(1.01);
+    opacity: 1;
+    filter: blur(0);
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes installBubblePop {
+  0% {
+    transform: scale(1);
+    filter: blur(0);
+  }
+
+  42% {
+    transform: translateY(-2px) scale(1.18);
+    filter: blur(0.25px);
+  }
+
+  100% {
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+body.reduced-animations .install-stack-card,
+body.reduced-animations .install-slide-out-top-right,
+body.reduced-animations .install-slide-in-right,
+body.reduced-animations .install-stack-card-enter,
+body.reduced-animations .install-stack-card-shift,
+body.reduced-animations .install-count-bump,
+body.reduced-animations .install-bubble-pop {
+  animation-duration: 0.22s !important;
+  transition-duration: 0.18s !important;
+}
+
+body.no-animations .install-stack-card,
+body.no-animations .install-slide-out-top-right,
+body.no-animations .install-slide-in-right,
+body.no-animations .install-stack-card-enter,
+body.no-animations .install-stack-card-shift,
+body.no-animations .install-count-bump,
+body.no-animations .install-bubble-pop,
+body.no-animations .install-confirm-bubble,
+body.no-animations .install-queue-badge {
+  animation: none !important;
+  transition: none !important;
+  filter: none !important;
 }

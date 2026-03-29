@@ -2,6 +2,118 @@ export {};
 (function () {
   const M = (window as any).ModalManagerClass;
   if (!M) { console.error('[install-confirm-modal] ModalManagerClass not found'); return; }
+  const transientAnimationTimers = new WeakMap<
+    HTMLElement,
+    ReturnType<typeof setTimeout>
+  >();
+
+  function restartTransientAnimation(
+    element: HTMLElement | null,
+    className: string,
+    duration = 420,
+  ) {
+    if (!element) return;
+
+    const existingTimeout = transientAnimationTimers.get(element);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    element.classList.remove(className);
+    if (document.body.classList.contains('no-animations')) {
+      return;
+    }
+
+    void element.offsetWidth;
+    element.classList.add(className);
+
+    const effectiveDuration = document.body.classList.contains(
+      'reduced-animations',
+    )
+      ? Math.min(duration, 220)
+      : duration;
+
+    const timeout = setTimeout(() => {
+      element.classList.remove(className);
+      transientAnimationTimers.delete(element);
+    }, effectiveDuration);
+
+    transientAnimationTimers.set(element, timeout);
+  }
+
+  function setAnimatedText(
+    element: HTMLElement | null,
+    nextText: string,
+    className = 'install-count-bump',
+    duration = 420,
+  ) {
+    if (!element) return;
+
+    const previousText = element.textContent ?? '';
+    element.textContent = nextText;
+
+    if (previousText !== nextText) {
+      restartTransientAnimation(element, className, duration);
+    }
+  }
+
+  function syncStackCardMotion(
+    card: HTMLElement,
+    stackIndex: number,
+    stackKey: string,
+    isNew: boolean,
+  ) {
+    const previousKey = card.dataset.stackKey ?? '';
+    const previousIndex = card.dataset.stackIndex ?? '';
+
+    card.classList.remove('install-stack-card-1', 'install-stack-card-2');
+    card.classList.add(`install-stack-card-${stackIndex}`);
+    card.dataset.stackKey = stackKey;
+    card.dataset.stackIndex = `${stackIndex}`;
+
+    if (isNew) {
+      restartTransientAnimation(card, 'install-stack-card-enter', 520);
+      return;
+    }
+
+    if (
+      previousKey &&
+      (previousKey !== stackKey || previousIndex !== `${stackIndex}`)
+    ) {
+      restartTransientAnimation(card, 'install-stack-card-shift', 560);
+    }
+  }
+
+  function createInstallFlightGhost(modal: HTMLElement) {
+    const rect = modal.getBoundingClientRect();
+    const ghost = modal.cloneNode(true) as HTMLElement;
+
+    ghost.removeAttribute('id');
+    ghost.classList.remove(
+      'closing',
+      'install-slide-out-top-right',
+      'install-slide-in-right',
+    );
+    ghost.classList.add('install-confirm-flight-ghost');
+
+    ghost.style.position = 'fixed';
+    ghost.style.top = `${rect.top}px`;
+    ghost.style.left = `${rect.left}px`;
+    ghost.style.width = `${rect.width}px`;
+    ghost.style.height = `${rect.height}px`;
+    ghost.style.minWidth = `${rect.width}px`;
+    ghost.style.maxWidth = `${rect.width}px`;
+    ghost.style.maxHeight = `${rect.height}px`;
+    ghost.style.margin = '0';
+    ghost.style.transform = 'none';
+    ghost.style.transformOrigin = 'center center';
+    ghost.style.pointerEvents = 'none';
+    ghost.style.zIndex = '10003';
+    ghost.style.willChange = 'transform, opacity, filter';
+
+    document.body.appendChild(ghost);
+    return { ghost, rect };
+  }
 
   M.prototype.openInstallConfirmModal = async function (url, downloadId, modId, modType = 'Mod') {
   this.installQueue.push({ url, downloadId, modId, modType });
@@ -84,7 +196,7 @@ M.prototype._updateInstallQueueUI = function () {
       const header = modal.querySelector('.modal-header h3');
       if (header) header.appendChild(badge);
     }
-    badge.textContent = `1 / ${total}`;
+    setAnimatedText(badge, `1 / ${total}`);
     badge.style.display = 'inline-flex';
   } else if (badge) {
     badge.style.display = 'none';
@@ -116,19 +228,20 @@ M.prototype._updateInstallQueueUI = function () {
       if (!card) {
           card = modal.cloneNode(true) as HTMLElement;
           card.removeAttribute('id');
-          card.className = `modal install-stack-card install-stack-card-${i} install-stack-card-enter`;
+          card.className = 'modal install-stack-card';
           modal.parentElement?.insertBefore(card, modal);
           isNew = true;
-          setTimeout(() => {
-            card.classList.remove('install-stack-card-enter');
-          }, 400);
       }
+
+      syncStackCardMotion(card, i, item.downloadId || item.url, isNew);
 
       const urlDisplay = card.querySelector('.install-url-display');
       if (urlDisplay) urlDisplay.textContent = item.url;
 
       const cardBadge = card.querySelector('.install-queue-badge');
-      if (cardBadge) cardBadge.textContent = `${i + 1} / ${total}`;
+      if (cardBadge) {
+        setAnimatedText(cardBadge as HTMLElement, `${i + 1} / ${total}`);
+      }
 
       const cardPreviewContainer = card.querySelector('.install-preview-container') as HTMLElement;
       const cardPreviewImage = card.querySelector('.install-preview-image') as HTMLImageElement;
@@ -238,9 +351,7 @@ M.prototype._advanceInstallQueue = function (useDynamicIsland = false) {
 
     if (useDynamicIsland) {
       const count = this.confirmedInstalls ? this.confirmedInstalls.length : 0;
-      bubble.textContent = `${count}`;
-      bubble.classList.add('install-bubble-pop');
-      setTimeout(() => bubble.classList.remove('install-bubble-pop'), 300);
+      setAnimatedText(bubble, `${count}`, 'install-bubble-pop', 420);
     }
 
     if (noAnimations) {
@@ -248,6 +359,11 @@ M.prototype._advanceInstallQueue = function (useDynamicIsland = false) {
       this._showInstallModal();
       return;
     }
+
+    const reducedAnimations =
+      document.body.classList.contains('reduced-animations');
+    const slideOutDuration = reducedAnimations ? 220 : 420;
+    const slideInDuration = reducedAnimations ? 260 : 520;
 
     modal.classList.add('install-slide-out-top-right');
 
@@ -259,8 +375,8 @@ M.prototype._advanceInstallQueue = function (useDynamicIsland = false) {
 
       setTimeout(() => {
         modal.classList.remove('install-slide-in-right');
-      }, 400);
-    }, 350);
+      }, slideInDuration);
+    }, slideOutDuration);
   } else {
     this._clearInstallQueueUI();
 
@@ -302,17 +418,60 @@ M.prototype._animateBubbleToStatusBar = function () {
   }
 
   const statusBarRect = statusBar.getBoundingClientRect();
+  const bubbleRect = bubble.getBoundingClientRect();
+  const reducedAnimations =
+    document.body.classList.contains('reduced-animations');
+  const targetLeft =
+    statusBarRect.left + Math.min(statusBarRect.width * 0.34, 190);
+  const targetTop =
+    statusBarRect.top + statusBarRect.height / 2 - bubbleRect.height / 2;
+  const deltaX = targetLeft - bubbleRect.left;
+  const deltaY = targetTop - bubbleRect.top;
+  const accentRgb =
+    getComputedStyle(document.documentElement)
+      .getPropertyValue('--accent-rgb')
+      .trim() || '90,90,122';
 
-  gsapRef.to(bubble, {
-    duration: 0.4,
-    left: statusBarRect.left + statusBarRect.width / 2,
-    top: statusBarRect.top + statusBarRect.height / 2,
-    scale: 0.3,
-    opacity: 0,
-    ease: 'power3.in',
+  gsapRef.set(bubble, {
+    left: bubbleRect.left,
+    top: bubbleRect.top,
+    right: 'auto',
+    x: 0,
+    y: 0,
+    transformOrigin: 'center center',
+    filter: 'blur(0px)',
+  });
+
+  const tl = gsapRef.timeline({
     onComplete: () => {
       bubble.remove();
     },
+  });
+
+  tl.to(bubble, {
+    duration: reducedAnimations ? 0.12 : 0.18,
+    scale: reducedAnimations ? 1.04 : 1.1,
+    boxShadow: `0 10px 30px rgba(${accentRgb}, 0.22), 0 0 0 8px rgba(${accentRgb}, 0.12)`,
+    ease: 'power2.out',
+  });
+
+  tl.to(bubble, {
+    duration: reducedAnimations ? 0.24 : 0.4,
+    x: deltaX,
+    y: deltaY - (reducedAnimations ? 2 : 10),
+    scale: reducedAnimations ? 0.5 : 0.38,
+    opacity: reducedAnimations ? 0.36 : 0.2,
+    filter: reducedAnimations ? 'blur(1px)' : 'blur(4px)',
+    ease: 'power2.in',
+  });
+
+  tl.to(bubble, {
+    duration: reducedAnimations ? 0.12 : 0.18,
+    y: deltaY,
+    scale: 0.16,
+    opacity: 0,
+    filter: reducedAnimations ? 'blur(5px)' : 'blur(10px)',
+    ease: 'power3.in',
   });
 };
 
@@ -344,6 +503,8 @@ M.prototype._animateModalToStatusBar = function () {
   }
 
   const noAnimations = document.body.classList.contains('no-animations');
+  const reducedAnimations =
+    document.body.classList.contains('reduced-animations');
   if (noAnimations) {
     this.closeModal('install-confirm-modal', {
       onModalClosed: () => this._resetInstallPreview(),
@@ -361,21 +522,41 @@ M.prototype._animateModalToStatusBar = function () {
     }
   }
 
-  modal.style.animation = 'none';
-  modal.style.transition = 'none';
-  modal.style.overflow = 'hidden';
+  const { ghost, rect: modalRect } = createInstallFlightGhost(modal);
+
+  modal.style.visibility = 'hidden';
+  modal.style.pointerEvents = 'none';
 
   const statusBarRect = statusBar.getBoundingClientRect();
-  const targetX = statusBarRect.left + 210;
-  const targetY = statusBarRect.top;
+  const targetCenterX =
+    statusBarRect.left + Math.min(statusBarRect.width * 0.34, 210);
+  const targetCenterY = statusBarRect.top + statusBarRect.height / 2;
+  const modalCenterX = modalRect.left + modalRect.width / 2;
+  const modalCenterY = modalRect.top + modalRect.height / 2;
+  const deltaX = targetCenterX - modalCenterX;
+  const deltaY = targetCenterY - modalCenterY;
+  const targetScale = Math.max(
+    (reducedAnimations ? 112 : 84) / modalRect.width,
+    reducedAnimations ? 0.16 : 0.12,
+  );
 
   const overlay = document.querySelector<HTMLElement>('#modal-overlay');
 
   const gsapRef = (window as any).gsap;
+  if (!gsapRef) {
+    this.closeModal('install-confirm-modal', {
+      onModalClosed: () => this._resetInstallPreview(),
+    });
+    return;
+  }
 
-  gsapRef.set(modal, {
+  gsapRef.set(ghost, {
     opacity: 1,
     scale: 1,
+    x: 0,
+    y: 0,
+    rotation: 0,
+    transformOrigin: 'center center',
     filter: 'blur(0px)',
   });
 
@@ -383,6 +564,7 @@ M.prototype._animateModalToStatusBar = function () {
 
   const tl = gsapRef.timeline({
     onComplete: () => {
+      ghost.remove();
       modal.style.display = 'none';
       modal.removeAttribute('style');
       modal.style.display = 'none';
@@ -395,6 +577,9 @@ M.prototype._animateModalToStatusBar = function () {
       }
 
       const accentRgb = getComputedStyle(document.documentElement).getPropertyValue('--accent-rgb').trim() || '90,90,122';
+      statusBar.classList.remove('island-pulse');
+      void statusBar.offsetHeight;
+      statusBar.classList.add('island-pulse');
       gsapRef.fromTo(statusBar, {
         boxShadow: `0 -2px 25px 6px rgba(${accentRgb}, 0.6)`,
         filter: 'brightness(1.2)',
@@ -406,6 +591,7 @@ M.prototype._animateModalToStatusBar = function () {
         onComplete: () => {
           statusBar.style.boxShadow = '';
           statusBar.style.filter = '';
+          statusBar.classList.remove('island-pulse');
         },
       });
 
@@ -419,22 +605,31 @@ M.prototype._animateModalToStatusBar = function () {
     },
   });
 
-  tl.to(modal, {
-    duration: 0.45,
-    top: targetY,
-    left: targetX,
-    scale: 0.12,
+  tl.to(ghost, {
+    duration: reducedAnimations ? 0.14 : 0.18,
+    y: reducedAnimations ? -8 : -14,
+    scale: 0.992,
+    boxShadow: '0 28px 70px rgba(0, 0, 0, 0.28)',
+    ease: 'power2.out',
+  });
+
+  tl.to(ghost, {
+    duration: reducedAnimations ? 0.28 : 0.42,
+    x: deltaX,
+    y: deltaY - (reducedAnimations ? 4 : 12),
+    scale: targetScale * (reducedAnimations ? 1.08 : 1.18),
     borderRadius: '24px',
-    opacity: 0.7,
-    filter: 'blur(2px)',
+    opacity: reducedAnimations ? 0.56 : 0.72,
+    filter: reducedAnimations ? 'blur(1px)' : 'blur(2px)',
     ease: 'power3.in',
   });
 
-  tl.to(modal, {
-    duration: 0.12,
+  tl.to(ghost, {
+    duration: reducedAnimations ? 0.12 : 0.2,
+    y: deltaY,
     opacity: 0,
-    scale: 0.05,
-    filter: 'blur(12px)',
+    scale: targetScale * 0.64,
+    filter: reducedAnimations ? 'blur(6px)' : 'blur(12px)',
     ease: 'power2.in',
   });
 
@@ -442,7 +637,7 @@ M.prototype._animateModalToStatusBar = function () {
     overlay.style.animation = 'none';
     overlay.style.transition = 'none';
     gsapRef.to(overlay, {
-      duration: 0.4,
+      duration: reducedAnimations ? 0.18 : 0.32,
       opacity: 0,
       ease: 'power2.inOut',
     });

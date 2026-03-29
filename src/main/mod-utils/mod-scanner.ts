@@ -176,6 +176,8 @@ export const ModScanner = {
     let detectedFighterName: string | null = null;
     let isFighterSlotFolder = false;
     let includesFighterSlotFolder = false;
+    const fileName = path.basename(filePath);
+    const fileDirectory = path.dirname(filePath);
 
     const pathParts = filePath.split(/[/\\]/);
     const fighterIndex = pathParts.indexOf('fighter');
@@ -197,21 +199,28 @@ export const ModScanner = {
     }
 
     const cXXMatchRegex = /(c)(\d{2,3})/i;
+    const cXXGlobalMatchRegex = /(c)(\d{2,3})/gi;
     const dotXXMatchRegex = /_(.+?)_(?:[a-z]+_)?(c)?(\d{2,3})(\.[^.]+)$/i;
 
-    const charaMatchRegex = /chara_\d+_([a-z_]+?)_(\d{2,3})(\.[^.]+)$/i;
-    const charaMatch = filePath.match(charaMatchRegex);
+    const charaMatchRegex = /^chara_\d+_([a-z_]+?)_(\d{2,3})(\.[^.]+)$/i;
+    const charaMatch = fileName.match(charaMatchRegex);
 
     if (charaMatch) {
       detectedFighterName = charaMatch[1];
 
       const charaSlot = 'c' + charaMatch[2];
-      const charaNormalizedPath = filePath.replace(
+      const normalizedFileName = fileName
+        .replace(
         charaMatchRegex,
         (match, fighter, slotNum, ext) => {
           return match.replace(new RegExp(`_${slotNum}(${ext.replace('.', '\\.')})$`), '_###$1');
-        }
-      );
+        },
+        )
+        .replace(cXXGlobalMatchRegex, '$1###');
+
+      const charaNormalizedPath = path
+        .join(fileDirectory, normalizedFileName)
+        .replace(/\\/g, '/');
 
       return {
         slot: charaSlot,
@@ -226,7 +235,7 @@ export const ModScanner = {
     }
 
     const cMatch = filePath.match(cXXMatchRegex);
-    const dotMatch = filePath.match(dotXXMatchRegex);
+    const dotMatch = fileName.match(dotXXMatchRegex);
 
     if (dotMatch && (!detectedFighterName || detectedFighterName.includes('.'))) {
       detectedFighterName = dotMatch[1];
@@ -238,10 +247,16 @@ export const ModScanner = {
         ? 'c' + dotMatch[3]
         : null;
 
-    const normalizedPath = cMatch
-      ? filePath.replace(cXXMatchRegex, '$1###')
-      : dotMatch
-        ? filePath.replace(dotXXMatchRegex, `_$1_${dotMatch[2] || ''}###$4`)
+    const normalizedPath = dotMatch
+      ? path
+          .join(
+            fileDirectory,
+            fileName.replace(dotXXMatchRegex, `_$1_${dotMatch[2] || ''}###$4`),
+          )
+          .replace(/\\/g, '/')
+          .replace(cXXGlobalMatchRegex, '$1###')
+      : cMatch
+        ? filePath.replace(cXXGlobalMatchRegex, '$1###')
         : null;
 
     return {
