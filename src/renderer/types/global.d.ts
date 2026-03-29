@@ -99,6 +99,8 @@ declare global {
 
     lottie: LottiePlayer;
     gsap: typeof gsap;
+    Flip?: any;
+    __flipPluginRegistered?: boolean;
 
     SSBU_CHARACTERS: SSBUCharacters;
     CHARACTER_IMAGES: SSBUCharacterImages;

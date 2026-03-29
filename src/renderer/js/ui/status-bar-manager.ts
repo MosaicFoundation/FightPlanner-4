@@ -60,6 +60,11 @@ export class StatusBarManager {
   private temporaryStatusTimeout: ReturnType<typeof setTimeout> | null = null;
   private islandPulseTimeout: ReturnType<typeof setTimeout> | null = null;
   private islandSettleTimeout: ReturnType<typeof setTimeout> | null = null;
+  private islandGsapTimeline: any = null;
+  private transientElementTimers = new WeakMap<
+    HTMLElement,
+    ReturnType<typeof setTimeout>
+  >();
 
   constructor() {
     this.updateInterval = null;
@@ -126,6 +131,686 @@ export class StatusBarManager {
     if (this.islandSettleTimeout) {
       clearTimeout(this.islandSettleTimeout);
       this.islandSettleTimeout = null;
+    }
+  }
+
+  private clearIslandGsapTimeline() {
+    if (this.islandGsapTimeline) {
+      this.islandGsapTimeline.kill();
+      this.islandGsapTimeline = null;
+    }
+  }
+
+  private resetIslandAnimationStyles(...elements: Array<HTMLElement | null>) {
+    elements.forEach((element) => {
+      if (!element) {
+        return;
+      }
+
+      element.style.removeProperty('transform');
+      element.style.removeProperty('opacity');
+      element.style.removeProperty('filter');
+      element.style.removeProperty('clip-path');
+      element.style.removeProperty('visibility');
+      element.style.removeProperty('will-change');
+    });
+  }
+
+  private renderDownloadCardWithFlip(
+    content: HTMLElement,
+    render: () => void,
+  ) {
+    const { gsapRef, flipRef } = this.resolveFlipRuntime();
+
+    if (
+      !gsapRef ||
+      !flipRef ||
+      document.body.classList.contains('no-animations')
+    ) {
+      render();
+      return;
+    }
+
+    try {
+      if (window.__flipPluginRegistered !== true) {
+        gsapRef.registerPlugin(flipRef);
+        window.__flipPluginRegistered = true;
+      }
+
+      this.ensureDownloadFlipIds(content);
+
+      const currentTargets = Array.from(
+        content.querySelectorAll<HTMLElement>('[data-flip-id]'),
+      );
+
+      if (currentTargets.length === 0) {
+        render();
+        return;
+      }
+
+      const state = flipRef.getState(currentTargets);
+      render();
+      this.ensureDownloadFlipIds(content);
+
+      const nextTargets = Array.from(
+        content.querySelectorAll<HTMLElement>('[data-flip-id]'),
+      );
+
+      if (nextTargets.length === 0) {
+        return;
+      }
+
+      flipRef.from(state, {
+        duration: document.body.classList.contains('reduced-animations')
+          ? 0.2
+          : 0.42,
+        ease: 'power2.out',
+        nested: true,
+        scale: true,
+        simple: true,
+      });
+    } catch (error) {
+      render();
+    }
+  }
+
+  private resolveFlipRuntime() {
+    let gsapRef = window.gsap as any;
+    let flipRef = window.Flip as any;
+
+    if ((!gsapRef || !flipRef) && typeof require === 'function') {
+      try {
+        const gsapModule = require('gsap');
+        const flipModule = require('gsap/Flip');
+
+        gsapRef =
+          gsapRef ||
+          gsapModule?.gsap ||
+          gsapModule?.default ||
+          gsapModule;
+        flipRef =
+          flipRef ||
+          flipModule?.Flip ||
+          flipModule?.default ||
+          flipModule;
+
+        if (!window.gsap && gsapRef) {
+          window.gsap = gsapRef;
+        }
+
+        if (!window.Flip && flipRef) {
+          window.Flip = flipRef;
+        }
+      } catch (error) {
+        // Keep the window globals path as the primary runtime.
+      }
+    }
+
+    return { gsapRef, flipRef };
+  }
+
+  private ensureDownloadFlipIds(content: HTMLElement) {
+    const idMap: Array<[string, string]> = [
+      ['.ext-status-badge', 'download-badge'],
+      ['.ext-filename, .ext-download-title', 'download-title'],
+      ['.ext-progress-row, .ext-multi-dl-list', 'download-body'],
+    ];
+
+    idMap.forEach(([selector, flipId]) => {
+      const element = content.querySelector<HTMLElement>(selector);
+      if (element) {
+        element.setAttribute('data-flip-id', flipId);
+      }
+    });
+  }
+
+  private getMultiDownloadViewData(dl: DownloadItem) {
+    const progress = Math.round(dl.progress || 0);
+    const displayName = this._getDownloadDisplayName(dl);
+    let pctText = `${progress}%`;
+
+    if (dl.statusText) {
+      const lowerStatus = dl.statusText.toLowerCase();
+      if (lowerStatus.includes('extract')) pctText = 'Extracting...';
+      else if (lowerStatus.includes('verif')) pctText = 'Verifying...';
+    }
+
+    return { progress, displayName, pctText };
+  }
+
+  private createMultiDownloadItemElement(dl: DownloadItem) {
+    const item = document.createElement('div');
+    const { progress, displayName, pctText } = this.getMultiDownloadViewData(dl);
+
+    item.className = 'ext-multi-dl-item';
+    item.dataset.dlId = dl.id;
+    item.innerHTML = `
+      <div class="ext-multi-dl-info">
+        <span class="ext-multi-dl-name" title="${displayName}">${displayName}</span>
+        <span class="ext-multi-dl-pct">${pctText}</span>
+      </div>
+      <div class="ext-multi-dl-bar">
+        <div class="ext-multi-dl-fill" style="width: ${progress}%"></div>
+      </div>
+    `;
+
+    return item;
+  }
+
+  private updateMultiDownloadItemElement(itemEl: HTMLElement, dl: DownloadItem) {
+    const { progress, displayName, pctText } = this.getMultiDownloadViewData(dl);
+    const nameEl = itemEl.querySelector('.ext-multi-dl-name');
+    const pctEl = itemEl.querySelector('.ext-multi-dl-pct');
+    const fillEl = itemEl.querySelector('.ext-multi-dl-fill') as HTMLElement | null;
+
+    itemEl.dataset.dlId = dl.id;
+    if (nameEl) {
+      nameEl.textContent = displayName;
+      (nameEl as HTMLElement).title = displayName;
+    }
+    if (pctEl) pctEl.textContent = pctText;
+    if (fillEl) fillEl.style.width = `${progress}%`;
+  }
+
+  private animateMultiDownloadListChanges(
+    content: HTMLElement,
+    downloads: DownloadItem[],
+  ) {
+    const { gsapRef, flipRef } = this.resolveFlipRuntime();
+    const listEl = content.querySelector<HTMLElement>('.ext-multi-dl-list');
+    const badgeEl = content.querySelector('.ext-status-badge');
+
+    if (!listEl) {
+      return false;
+    }
+
+    const existingItems = Array.from(
+      listEl.querySelectorAll<HTMLElement>('.ext-multi-dl-item'),
+    );
+    const existingById = new Map(
+      existingItems.map((item) => [item.dataset.dlId || '', item]),
+    );
+    const nextIds = new Set(downloads.map((dl) => dl.id));
+    const reducedAnimations =
+      document.body.classList.contains('reduced-animations');
+    const canAnimate =
+      !!gsapRef &&
+      !!flipRef &&
+      !document.body.classList.contains('no-animations');
+
+    if (badgeEl) {
+      this.setAnimatedElementText(
+        badgeEl as HTMLElement,
+        `${downloads.length} Downloads`,
+      );
+    }
+
+    if (!canAnimate) {
+      listEl.innerHTML = '';
+      downloads.forEach((dl) => {
+        listEl.appendChild(this.createMultiDownloadItemElement(dl));
+      });
+      return true;
+    }
+
+    if (window.__flipPluginRegistered !== true) {
+      gsapRef.registerPlugin(flipRef);
+      window.__flipPluginRegistered = true;
+    }
+
+    const listState = flipRef.getState(existingItems);
+    const listRect = listEl.getBoundingClientRect();
+    const leavingClones: HTMLElement[] = [];
+
+    existingItems.forEach((item) => {
+      const id = item.dataset.dlId;
+      if (!id || nextIds.has(id)) {
+        return;
+      }
+
+      const itemRect = item.getBoundingClientRect();
+      const clone = item.cloneNode(true) as HTMLElement;
+      clone.style.position = 'absolute';
+      clone.style.left = `${itemRect.left - listRect.left}px`;
+      clone.style.top = `${itemRect.top - listRect.top}px`;
+      clone.style.width = `${itemRect.width}px`;
+      clone.style.height = `${itemRect.height}px`;
+      clone.style.margin = '0';
+      clone.style.pointerEvents = 'none';
+      clone.style.zIndex = '3';
+      listEl.appendChild(clone);
+      leavingClones.push(clone);
+      item.remove();
+    });
+
+    const enteringItems: HTMLElement[] = [];
+
+    downloads.forEach((dl) => {
+      const existingItem = existingById.get(dl.id);
+      if (existingItem) {
+        this.updateMultiDownloadItemElement(existingItem, dl);
+        listEl.appendChild(existingItem);
+        return;
+      }
+
+      const newItem = this.createMultiDownloadItemElement(dl);
+      newItem.classList.add('entering');
+      listEl.appendChild(newItem);
+      enteringItems.push(newItem);
+    });
+
+    const remainingItems = Array.from(
+      listEl.querySelectorAll<HTMLElement>('.ext-multi-dl-item:not(.entering)'),
+    );
+
+    flipRef.from(listState, {
+      targets: remainingItems,
+      duration: reducedAnimations ? 0.18 : 0.34,
+      ease: 'power2.out',
+      nested: true,
+      simple: true,
+    });
+
+    if (enteringItems.length > 0) {
+      gsapRef.fromTo(
+        enteringItems,
+        {
+          autoAlpha: 0,
+          y: reducedAnimations ? 4 : 10,
+        },
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: reducedAnimations ? 0.16 : 0.24,
+          ease: 'power2.out',
+          stagger: reducedAnimations ? 0.015 : 0.04,
+          onComplete: () => {
+            enteringItems.forEach((item) => item.classList.remove('entering'));
+          },
+        },
+      );
+    }
+
+    if (leavingClones.length > 0) {
+      gsapRef.to(leavingClones, {
+        autoAlpha: 0,
+        y: reducedAnimations ? -4 : -10,
+        duration: reducedAnimations ? 0.14 : 0.22,
+        ease: 'power1.in',
+        stagger: reducedAnimations ? 0.01 : 0.03,
+        onComplete: () => {
+          leavingClones.forEach((clone) => clone.remove());
+        },
+      });
+    }
+
+    return true;
+  }
+
+  private animateExtendedBarEntrance(bottomBar: HTMLElement, content: HTMLElement) {
+    const gsapRef = window.gsap as any;
+    const statusBarContent =
+      bottomBar.querySelector<HTMLElement>('.status-bar-content');
+
+    if (
+      !gsapRef ||
+      !statusBarContent ||
+      document.body.classList.contains('no-animations')
+    ) {
+      bottomBar.classList.remove('gsap-island-animating');
+      return;
+    }
+
+    this.clearIslandGsapTimeline();
+    bottomBar.classList.add('gsap-island-animating');
+
+    const reducedAnimations =
+      document.body.classList.contains('reduced-animations');
+    const card = content.firstElementChild as HTMLElement | null;
+    const iconContainer =
+      card?.querySelector<HTMLElement>('.ext-card-icon-container') || null;
+    const details = card?.querySelector<HTMLElement>('.ext-card-details') || null;
+    const primaryMeta =
+      card?.querySelector<HTMLElement>(
+        '.ext-progress-row, .ext-card-meta, .ext-conflict-message, .ext-multi-dl-list',
+      ) || null;
+    const actionButton =
+      card?.querySelector<HTMLElement>('.ext-action-btn') || null;
+    const rows = card
+      ? Array.from(card.querySelectorAll<HTMLElement>('.ext-multi-dl-item'))
+      : [];
+    const transformOrigin = bottomBar.classList.contains('conflict-mode')
+      ? 'right bottom'
+      : 'left bottom';
+    const timeline = gsapRef.timeline({
+      defaults: { overwrite: 'auto' },
+      onComplete: () => {
+        this.resetIslandAnimationStyles(bottomBar, statusBarContent, content);
+        bottomBar.classList.remove('gsap-island-animating');
+        this.islandGsapTimeline = null;
+      },
+    });
+
+    this.islandGsapTimeline = timeline;
+    bottomBar.style.willChange = 'transform';
+    statusBarContent.style.willChange = 'transform, opacity, filter';
+    content.style.willChange = 'transform, opacity, filter, clip-path';
+
+    timeline
+      .fromTo(
+        bottomBar,
+        { y: 0, scaleY: 1 },
+        {
+          y: -1,
+          scaleY: 1.01,
+          duration: reducedAnimations ? 0.18 : 0.54,
+          ease: reducedAnimations ? 'power2.out' : 'back.out(1.08)',
+          clearProps: 'transform',
+        },
+        0,
+      )
+      .fromTo(
+        content,
+        {
+          transformOrigin,
+          y: reducedAnimations ? 8 : 16,
+          scaleX: 0.968,
+          scaleY: 0.8,
+          autoAlpha: 0,
+          filter: 'blur(10px) saturate(0.92)',
+          clipPath: 'inset(100% -50px 0 -50px)',
+        },
+        {
+          y: 0,
+          scaleX: 1,
+          scaleY: 1,
+          autoAlpha: 1,
+          filter: 'blur(0px) saturate(1)',
+          clipPath: 'inset(-50px -50px 0 -50px)',
+          duration: reducedAnimations ? 0.2 : 0.58,
+          ease: reducedAnimations ? 'power2.out' : 'back.out(1.02)',
+          clearProps: 'transform,opacity,filter,clipPath,visibility',
+        },
+        0,
+      )
+      .fromTo(
+        statusBarContent,
+        {
+          y: 0,
+          scale: 1,
+          autoAlpha: 1,
+        },
+        {
+          y: 1,
+          scale: 0.992,
+          autoAlpha: 0.92,
+          duration: reducedAnimations ? 0.16 : 0.44,
+          ease: 'power2.out',
+          clearProps: 'transform,opacity,visibility',
+        },
+        0,
+      );
+
+    if (iconContainer) {
+      timeline.fromTo(
+        iconContainer,
+        { y: reducedAnimations ? 4 : 8, scale: 0.84, autoAlpha: 0 },
+        {
+          y: -1,
+          scale: 1.02,
+          autoAlpha: 1,
+          duration: reducedAnimations ? 0.14 : 0.34,
+          ease: reducedAnimations ? 'power2.out' : 'back.out(1.28)',
+          clearProps: 'transform,opacity,visibility',
+        },
+        reducedAnimations ? 0.02 : 0.05,
+      );
+    }
+
+    if (details) {
+      timeline.fromTo(
+        details,
+        { y: reducedAnimations ? 4 : 10, autoAlpha: 0 },
+        {
+          y: 0,
+          autoAlpha: 1,
+          duration: reducedAnimations ? 0.14 : 0.28,
+          ease: 'power3.out',
+          clearProps: 'transform,opacity,visibility',
+        },
+        reducedAnimations ? 0.04 : 0.09,
+      );
+    }
+
+    if (primaryMeta && rows.length === 0) {
+      timeline.fromTo(
+        primaryMeta,
+        { y: reducedAnimations ? 2 : 6, autoAlpha: 0 },
+        {
+          y: 0,
+          autoAlpha: 1,
+          duration: reducedAnimations ? 0.12 : 0.22,
+          ease: 'power2.out',
+          clearProps: 'transform,opacity,visibility',
+        },
+        reducedAnimations ? 0.06 : 0.14,
+      );
+    }
+
+    if (rows.length > 0) {
+      timeline.fromTo(
+        rows,
+        { y: reducedAnimations ? 2 : 6, autoAlpha: 0 },
+        {
+          y: 0,
+          autoAlpha: 1,
+          stagger: reducedAnimations ? 0.02 : 0.045,
+          duration: reducedAnimations ? 0.12 : 0.22,
+          ease: 'power2.out',
+          clearProps: 'transform,opacity,visibility',
+        },
+        reducedAnimations ? 0.06 : 0.14,
+      );
+    }
+
+    if (actionButton) {
+      timeline.fromTo(
+        actionButton,
+        { y: reducedAnimations ? 2 : 6, autoAlpha: 0 },
+        {
+          y: 0,
+          autoAlpha: 1,
+          duration: reducedAnimations ? 0.12 : 0.22,
+          ease: 'power2.out',
+          clearProps: 'transform,opacity,visibility',
+        },
+        reducedAnimations ? 0.08 : 0.18,
+      );
+    }
+  }
+
+  private animateExtendedBarExit(
+    bottomBar: HTMLElement,
+    content: HTMLElement,
+    onComplete: () => void,
+  ) {
+    const gsapRef = window.gsap as any;
+    const statusBarContent =
+      bottomBar.querySelector<HTMLElement>('.status-bar-content');
+
+    if (
+      !gsapRef ||
+      !statusBarContent ||
+      document.body.classList.contains('no-animations')
+    ) {
+      bottomBar.classList.remove('gsap-island-animating');
+      this.clearIslandGsapTimeline();
+      onComplete();
+      return;
+    }
+
+    this.clearIslandGsapTimeline();
+    bottomBar.classList.add('gsap-island-animating');
+
+    const reducedAnimations =
+      document.body.classList.contains('reduced-animations');
+    const card = content.firstElementChild as HTMLElement | null;
+    const iconContainer =
+      card?.querySelector<HTMLElement>('.ext-card-icon-container') || null;
+    const detailBlocks = card
+      ? Array.from(card.querySelectorAll<HTMLElement>('.ext-card-details > *'))
+      : [];
+    const actionButton =
+      card?.querySelector<HTMLElement>('.ext-action-btn') || null;
+    const transformOrigin = bottomBar.classList.contains('conflict-mode')
+      ? 'right bottom'
+      : 'left bottom';
+    const timeline = gsapRef.timeline({
+      defaults: { overwrite: 'auto' },
+      onComplete: () => {
+        onComplete();
+        this.resetIslandAnimationStyles(bottomBar, statusBarContent, content);
+        bottomBar.classList.remove('gsap-island-animating');
+        this.islandGsapTimeline = null;
+      },
+    });
+
+    this.islandGsapTimeline = timeline;
+    bottomBar.style.willChange = 'transform';
+    statusBarContent.style.willChange = 'transform, opacity, filter';
+    content.style.willChange = 'transform, opacity, filter, clip-path';
+
+    if (detailBlocks.length > 0) {
+      timeline.to(
+        detailBlocks,
+        {
+          y: reducedAnimations ? 2 : 6,
+          autoAlpha: 0,
+          stagger: reducedAnimations ? 0.01 : 0.02,
+          duration: reducedAnimations ? 0.08 : 0.14,
+          ease: 'power1.in',
+        },
+        0,
+      );
+    }
+
+    if (actionButton) {
+      timeline.to(
+        actionButton,
+        {
+          y: reducedAnimations ? 2 : 5,
+          autoAlpha: 0,
+          duration: reducedAnimations ? 0.08 : 0.12,
+          ease: 'power1.in',
+        },
+        0,
+      );
+    }
+
+    if (iconContainer) {
+      timeline.to(
+        iconContainer,
+        {
+          y: reducedAnimations ? 3 : 6,
+          scale: 0.9,
+          autoAlpha: 0,
+          duration: reducedAnimations ? 0.1 : 0.16,
+          ease: 'power2.in',
+        },
+        0,
+      );
+    }
+
+    timeline
+      .to(
+        content,
+        {
+          transformOrigin,
+          y: reducedAnimations ? 8 : 14,
+          scaleX: 0.982,
+          scaleY: 0.82,
+          autoAlpha: 0,
+          filter: 'blur(12px) saturate(0.9)',
+          clipPath: 'inset(100% -50px 0 -50px)',
+          duration: reducedAnimations ? 0.16 : 0.34,
+          ease: 'power3.in',
+        },
+        0,
+      )
+      .to(
+        bottomBar,
+        {
+          y: 0,
+          scaleY: 1,
+          duration: reducedAnimations ? 0.16 : 0.32,
+          ease: 'power2.out',
+        },
+        0.02,
+      )
+      .to(
+        statusBarContent,
+        {
+          y: 0,
+          scale: 1,
+          autoAlpha: 1,
+          duration: reducedAnimations ? 0.14 : 0.28,
+          ease: 'power2.out',
+        },
+        0.02,
+      );
+  }
+
+  private restartTransientElementAnimation(
+    element: HTMLElement | null,
+    className: string,
+    duration: number,
+  ) {
+    if (!element) {
+      return;
+    }
+
+    const existingTimeout = this.transientElementTimers.get(element);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    element.classList.remove(className);
+    if (document.body.classList.contains('no-animations')) {
+      return;
+    }
+
+    void element.offsetWidth;
+    element.classList.add(className);
+
+    const effectiveDuration = document.body.classList.contains(
+      'reduced-animations',
+    )
+      ? Math.min(duration, 220)
+      : duration;
+
+    const timeout = setTimeout(() => {
+      element.classList.remove(className);
+      this.transientElementTimers.delete(element);
+    }, effectiveDuration);
+
+    this.transientElementTimers.set(element, timeout);
+  }
+
+  private setAnimatedElementText(
+    element: HTMLElement | null,
+    nextText: string,
+    className = 'ext-count-bump',
+    duration = 420,
+  ) {
+    if (!element) {
+      return;
+    }
+
+    const previousText = element.textContent ?? '';
+    element.textContent = nextText;
+
+    if (previousText !== nextText) {
+      this.restartTransientElementAnimation(element, className, duration);
     }
   }
 
@@ -287,6 +972,41 @@ export class StatusBarManager {
     ].join('|');
   }
 
+  private normalizeStatusContent(content: string) {
+    if (!content) {
+      return content;
+    }
+
+    let normalized = content;
+
+    if (/(?:Ã.|Â|â€¢|â€¦|â€)/.test(normalized)) {
+      try {
+        const bytes = new Uint8Array(
+          Array.from(normalized, (char) => char.charCodeAt(0) & 0xff),
+        );
+        const decoded = new TextDecoder('utf-8').decode(bytes);
+        if (!decoded.includes('\uFFFD')) {
+          normalized = decoded;
+        }
+      } catch (error) {
+        // Fall back to explicit replacements below.
+      }
+    }
+
+    return normalized
+      .replace(/Ã¢â‚¬Â¢|â€¢/g, '\u2022')
+      .replace(/Ã¢â‚¬Â¦|â€¦/g, '\u2026')
+      .replace(/Ã©/g, 'é')
+      .replace(/Ã¨/g, 'è')
+      .replace(/Ãª/g, 'ê')
+      .replace(/Ã /g, 'à')
+      .replace(/Ã§/g, 'ç')
+      .replace(/Ã»/g, 'û')
+      .replace(/Ã´/g, 'ô')
+      .replace(/Ã®/g, 'î')
+      .replace(/Â/g, '');
+  }
+
   private renderStatus(
     snapshot: StatusSnapshot,
     options: { force?: boolean } = {},
@@ -300,20 +1020,24 @@ export class StatusBarManager {
       return false;
     }
 
-    const signature = this.buildStatusSignature(snapshot);
+    const normalizedSnapshot = {
+      ...snapshot,
+      content: this.normalizeStatusContent(snapshot.content),
+    };
+    const signature = this.buildStatusSignature(normalizedSnapshot);
     statusText.classList.toggle(
       'status-downloading',
-      snapshot.downloading === true,
+      normalizedSnapshot.downloading === true,
     );
 
     if (this.renderedStatusSignature === signature) {
       return true;
     }
 
-    if (snapshot.useInnerHTML) {
-      statusText.innerHTML = snapshot.content;
+    if (normalizedSnapshot.useInnerHTML) {
+      statusText.innerHTML = normalizedSnapshot.content;
     } else {
-      statusText.textContent = snapshot.content;
+      statusText.textContent = normalizedSnapshot.content;
     }
 
     this.renderedStatusSignature = signature;
@@ -329,9 +1053,13 @@ export class StatusBarManager {
       return;
     }
 
-    const signature = this.buildStatusSignature(snapshot);
+    const normalizedSnapshot = {
+      ...snapshot,
+      content: this.normalizeStatusContent(snapshot.content),
+    };
+    const signature = this.buildStatusSignature(normalizedSnapshot);
     if (this.renderedStatusSignature === signature && !options.force) {
-      this.renderStatus(snapshot, options);
+      this.renderStatus(normalizedSnapshot, options);
       return;
     }
 
@@ -343,7 +1071,7 @@ export class StatusBarManager {
         return;
       }
 
-      this.renderStatus(snapshot, options);
+      this.renderStatus(normalizedSnapshot, options);
     };
 
     if (options.animate) {
@@ -638,8 +1366,20 @@ export class StatusBarManager {
 
     this.animationCounter++;
     const myCounter = this.animationCounter;
+    const cleanupAnimation = () => {
+      statusText.style.transition = '';
+      statusText.style.opacity = '';
+      statusText.style.transform = '';
+      statusText.style.filter = '';
+      statusText.style.willChange = '';
+      statusText.classList.remove('status-changing');
+      if (bottomBar && !bottomBar.classList.contains('expanded')) {
+        bottomBar.classList.remove('collapsed-status-swap');
+      }
+    };
 
     statusText.classList.add('status-changing');
+    statusText.style.willChange = 'opacity, transform, filter';
     if (bottomBar && !bottomBar.classList.contains('expanded')) {
       bottomBar.classList.remove('collapsed-status-swap');
       bottomBar.offsetHeight;
@@ -648,10 +1388,10 @@ export class StatusBarManager {
 
     if (isReducedAnimations) {
       statusText.style.transition =
-        'opacity 0.12s ease, transform 0.12s ease, filter 0.12s ease';
+        'opacity 0.12s ease-out, transform 0.12s ease-out, filter 0.12s ease-out';
       statusText.style.opacity = '0';
-      statusText.style.transform = 'translateX(-6px) scale(0.992)';
-      statusText.style.filter = 'blur(3px)';
+      statusText.style.transform = 'translate3d(0, 4px, 0) scale(0.994)';
+      statusText.style.filter = 'blur(2px)';
 
       this.animationTimeout = setTimeout(() => {
         if (myCounter !== this.animationCounter) return;
@@ -660,36 +1400,29 @@ export class StatusBarManager {
 
         statusText.style.transition = 'none';
         statusText.style.opacity = '0';
-        statusText.style.transform = 'translateX(8px) scale(1.006)';
-        statusText.style.filter = 'blur(3px)';
+        statusText.style.transform = 'translate3d(0, -4px, 0) scale(1.004)';
+        statusText.style.filter = 'blur(2px)';
 
         requestAnimationFrame(() => {
           if (myCounter !== this.animationCounter) return;
           statusText.style.transition =
-            'opacity 0.14s ease, transform 0.14s ease, filter 0.14s ease';
+            'opacity 0.16s ease-out, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), filter 0.16s ease-out';
           statusText.style.opacity = '1';
-          statusText.style.transform = 'translateX(0) scale(1)';
+          statusText.style.transform = 'translate3d(0, 0, 0) scale(1)';
           statusText.style.filter = 'blur(0)';
 
           setTimeout(() => {
             if (myCounter !== this.animationCounter) return;
-            statusText.style.transition = '';
-            statusText.style.opacity = '';
-            statusText.style.transform = '';
-            statusText.style.filter = '';
-            statusText.classList.remove('status-changing');
-            if (bottomBar && !bottomBar.classList.contains('expanded')) {
-              bottomBar.classList.remove('collapsed-status-swap');
-            }
-          }, 140);
+            cleanupAnimation();
+          }, 180);
         });
-      }, 120);
+      }, 110);
     } else {
       statusText.style.transition =
-        'opacity 0.18s ease, transform 0.18s ease, filter 0.18s ease';
+        'opacity 0.16s ease-in, transform 0.18s cubic-bezier(0.55, 0, 0.75, 0), filter 0.16s ease-in';
       statusText.style.opacity = '0';
-      statusText.style.transform = 'translateX(-10px) scale(0.986)';
-      statusText.style.filter = 'blur(4px)';
+      statusText.style.transform = 'translate3d(0, 7px, 0) scale(0.986)';
+      statusText.style.filter = 'blur(5px)';
 
       this.animationTimeout = setTimeout(() => {
         if (myCounter !== this.animationCounter) return;
@@ -698,30 +1431,23 @@ export class StatusBarManager {
 
         statusText.style.transition = 'none';
         statusText.style.opacity = '0';
-        statusText.style.transform = 'translateX(12px) scale(1.01)';
-        statusText.style.filter = 'blur(4px)';
+        statusText.style.transform = 'translate3d(0, -9px, 0) scale(1.012)';
+        statusText.style.filter = 'blur(6px)';
 
         requestAnimationFrame(() => {
           if (myCounter !== this.animationCounter) return;
           statusText.style.transition =
-            'opacity 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), filter 0.24s ease';
+            'opacity 0.24s ease-out, transform 0.34s cubic-bezier(0.16, 1, 0.3, 1), filter 0.26s ease-out';
           statusText.style.opacity = '1';
-          statusText.style.transform = 'translateX(0) scale(1)';
+          statusText.style.transform = 'translate3d(0, 0, 0) scale(1)';
           statusText.style.filter = 'blur(0)';
 
           setTimeout(() => {
             if (myCounter !== this.animationCounter) return;
-            statusText.style.transition = '';
-            statusText.style.opacity = '';
-            statusText.style.transform = '';
-            statusText.style.filter = '';
-            statusText.classList.remove('status-changing');
-            if (bottomBar && !bottomBar.classList.contains('expanded')) {
-              bottomBar.classList.remove('collapsed-status-swap');
-            }
-          }, 240);
+            cleanupAnimation();
+          }, 340);
         });
-      }, 180);
+      }, 150);
     }
   }
 
@@ -974,7 +1700,7 @@ export class StatusBarManager {
             statusContent = this.t('statusBar.ftpSending', {
               current: '',
               total: '',
-            }).replace(' â€¢ / mods', '');
+            }).replace(` \u2022 / mods`, '');
           }
 
           this.renderStatus(
@@ -1062,9 +1788,9 @@ export class StatusBarManager {
         const activeIndicator =
           activeDownloads.length > 1 ? ` [${activeDownloads.length} active]` : '';
 
-        const progressPart = progressText ? ` â€¢ ${progressText}` : '';
-        const sizePart = sizeInfo ? ` â€¢ ${sizeInfo}` : '';
-        const speedPart = speedText ? ` â€¢ ${speedText}` : '';
+        const progressPart = progressText ? ` \u2022 ${progressText}` : '';
+        const sizePart = sizeInfo ? ` \u2022 ${sizeInfo}` : '';
+        const speedPart = speedText ? ` \u2022 ${speedText}` : '';
 
         this.renderStatus(
           {
@@ -1134,20 +1860,42 @@ export class StatusBarManager {
         this.userDismissedExtendedBar = true;
       }
 
-      if (content) (content as HTMLElement).style.display = 'none';
-
       if (bottomBar.classList.contains('expanded')) {
         this.triggerIslandCollapse(bottomBar);
-        bottomBar.classList.remove('expanded');
-        setTimeout(() => {
-          if (!bottomBar.classList.contains('expanded')) {
-            bottomBar.classList.remove('download-mode', 'conflict-mode', 'success-mode');
-            bottomBar.dataset.islandMode = 'idle';
+        const finalizeCollapse = () => {
+          bottomBar.classList.remove('expanded');
+          bottomBar.classList.remove(
+            'download-mode',
+            'conflict-mode',
+            'success-mode',
+          );
+          bottomBar.dataset.islandMode = 'idle';
+
+          if (content) {
+            delete (content as HTMLElement).dataset.extendedSignature;
+            (content as HTMLElement).style.display = 'none';
           }
-        }, 300);
+        };
+
+        if (content) {
+          this.animateExtendedBarExit(
+            bottomBar,
+            content as HTMLElement,
+            finalizeCollapse,
+          );
+        } else {
+          finalizeCollapse();
+        }
+      } else if (content) {
+        delete (content as HTMLElement).dataset.extendedSignature;
+        (content as HTMLElement).style.display = 'none';
       }
       return;
-    }    if (update.type === 'download') {
+    }
+
+    if (update.type === 'download') {
+      delete (content as HTMLElement).dataset.extendedSignature;
+
       if (!bottomBar.classList.contains('download-mode')) {
         bottomBar.classList.remove('conflict-mode', 'success-mode');
         bottomBar.classList.add('download-mode');
@@ -1161,7 +1909,9 @@ export class StatusBarManager {
         bottomBar.classList.add('expanded');
       }
 
-      if (!wasExpanded || previousMode !== 'download') {
+      const shouldAnimateEntrance = !wasExpanded || previousMode !== 'download';
+
+      if (shouldAnimateEntrance) {
         this.triggerIslandPulse(bottomBar, 'download');
       }
 
@@ -1206,7 +1956,10 @@ export class StatusBarManager {
             const speedEl = content.querySelector('.ext-speed');
             const badgeEl = content.querySelector('.ext-status-badge');
             const iconEl = content.querySelector('.ext-card-icon i');
-            const separatorEl = content.querySelector('.ext-separator') as HTMLElement;
+            const metaEl = content.querySelector('.ext-download-meta') as HTMLElement;
+            const phaseEl = content.querySelector('.ext-download-phase');
+            const separatorEl = content.querySelector('.ext-separator');
+            const glareEl = content.querySelector('.ext-progress-glare');
             
             if (fileNameEl) {
                 fileNameEl.textContent = displayName;
@@ -1214,7 +1967,9 @@ export class StatusBarManager {
             }
             if (progressFillEl) progressFillEl.style.width = `${progress}%`;
             
-            if (badgeEl) badgeEl.textContent = phaseText;
+            if (badgeEl) {
+                this.setAnimatedElementText(badgeEl as HTMLElement, phaseText);
+            }
             if (iconEl && iconEl.className !== `bi ${iconClass}`) {
                 iconEl.className = `bi ${iconClass}`;
             }
@@ -1222,45 +1977,67 @@ export class StatusBarManager {
             if (isExtractingOrVerifying) {
               if (percentageEl) percentageEl.textContent = phaseText;
               if (speedEl) speedEl.textContent = '';
-              if (separatorEl) separatorEl.style.display = 'none';
             } else {
               if (percentageEl) percentageEl.textContent = `${progress}%`;
               if (speedEl) speedEl.textContent = speed;
-              if (separatorEl) separatorEl.style.display = 'inline';
             }
+
+            if (metaEl) {
+              metaEl.style.display = speed ? 'flex' : 'none';
+            }
+
+            phaseEl?.remove();
+            separatorEl?.remove();
+            glareEl?.remove();
         } else {
-            content.innerHTML = `
-              <div class="ext-download-card">
-                  <button class="ext-close-btn" onclick="window.statusBarManager.updateExtendedBar('none')" title="Close">
+            this.renderDownloadCardWithFlip(content as HTMLElement, () => {
+              content.innerHTML = `
+              <div class="ext-download-card" data-flip-id="download-shell">
+                  <button class="ext-close-btn" data-flip-id="download-close" onclick="window.statusBarManager.updateExtendedBar('none')" title="Close">
                       <i class="bi bi-chevron-down"></i>
                   </button>
-                  <div class="ext-card-icon-container">
+                  <div class="ext-card-icon-container" data-flip-id="download-icon">
                       <div class="ext-card-icon">
                           <i class="bi ${iconClass}"></i>
                       </div>
                   </div>
-                  <div class="ext-card-details">
-                      <div class="ext-card-header">
-                          <span class="ext-status-badge">${phaseText}</span>
-                          <span class="ext-filename" title="${displayName}">${displayName}</span>
+                  <div class="ext-card-details" data-flip-id="download-details">
+                      <div class="ext-download-topline" data-flip-id="download-topline">
+                          <span class="ext-status-badge" data-flip-id="download-badge">${phaseText}</span>
+                      </div>
+                      <div class="ext-card-header ext-download-header" data-flip-id="download-header">
+                          <span class="ext-filename" data-flip-id="download-title" title="${displayName}">${displayName}</span>
                       </div>
                       
-                      <div class="ext-progress-container">
-                          <div class="ext-progress-track">
-                              <div class="ext-progress-fill" style="width: ${progress}%">
-                                  <div class="ext-progress-glare"></div>
+                      <div class="ext-progress-row" data-flip-id="download-body">
+                          <div class="ext-progress-container">
+                              <div class="ext-progress-track">
+                                  <div class="ext-progress-fill" style="width: ${progress}%"></div>
                               </div>
                           </div>
+                          <span class="ext-percentage">${isExtractingOrVerifying ? phaseText : progress + '%'}</span>
                       </div>
                       
-                      <div class="ext-card-meta">
-                          <span class="ext-percentage">${isExtractingOrVerifying ? phaseText : progress + '%'}</span>
-                          <span class="ext-separator" style="display: ${isExtractingOrVerifying ? 'none' : 'inline'}">•</span>
+                      <div class="ext-card-meta ext-download-meta">
                           <span class="ext-speed">${speed}</span>
+                          <span class="ext-separator" style="display: ${isExtractingOrVerifying ? 'none' : 'inline'}">•</span>
+                          <span class="ext-download-phase">${phaseText}</span>
                       </div>
                   </div>
               </div>
             `;
+
+              const metaEl = content.querySelector('.ext-download-meta') as HTMLElement | null;
+              const phaseEl = content.querySelector('.ext-download-phase');
+              const separatorEl = content.querySelector('.ext-separator');
+
+              if (metaEl) {
+                metaEl.style.display = speed ? 'flex' : 'none';
+              }
+
+              phaseEl?.remove();
+              separatorEl?.remove();
+            });
         }
       } else {
         const existingItems = content.querySelectorAll('.ext-multi-dl-item');
@@ -1283,49 +2060,54 @@ export class StatusBarManager {
         }
 
         if (needsFullRebuild) {
-          const itemsHtml = downloads.map((dl) => {
-            const progress = Math.round(dl.progress || 0);
-            const displayName = this._getDownloadDisplayName(dl);
-            let pctText = `${progress}%`;
-            
-            if (dl.statusText) {
-              const lowerStatus = dl.statusText.toLowerCase();
-              if (lowerStatus.includes('extract')) pctText = 'Extracting...';
-              else if (lowerStatus.includes('verif')) pctText = 'Verifying...';
-            }
+          if (
+            content.querySelector('.ext-multi-download-card') &&
+            this.animateMultiDownloadListChanges(content as HTMLElement, downloads)
+          ) {
+            // The list update is animated internally without rebuilding the panel.
+          } else {
+            const itemsHtml = downloads.map((dl) => {
+              const { progress, displayName, pctText } =
+                this.getMultiDownloadViewData(dl);
 
-            return `
-              <div class="ext-multi-dl-item" data-dl-id="${dl.id}">
-                <div class="ext-multi-dl-info">
-                  <span class="ext-multi-dl-name" title="${displayName}">${displayName}</span>
-                  <span class="ext-multi-dl-pct">${pctText}</span>
-                </div>
-                <div class="ext-multi-dl-bar">
-                  <div class="ext-multi-dl-fill" style="width: ${progress}%"></div>
-                </div>
-              </div>`;
-          }).join('');
+              return `
+                <div class="ext-multi-dl-item" data-dl-id="${dl.id}">
+                  <div class="ext-multi-dl-info">
+                    <span class="ext-multi-dl-name" title="${displayName}">${displayName}</span>
+                    <span class="ext-multi-dl-pct">${pctText}</span>
+                  </div>
+                  <div class="ext-multi-dl-bar">
+                    <div class="ext-multi-dl-fill" style="width: ${progress}%"></div>
+                  </div>
+                </div>`;
+            }).join('');
 
-          content.innerHTML = `
-            <div class="ext-multi-download-card ext-download-card">
-                <button class="ext-close-btn" onclick="window.statusBarManager.updateExtendedBar('none')" title="Close">
+            this.renderDownloadCardWithFlip(content as HTMLElement, () => {
+            content.innerHTML = `
+            <div class="ext-multi-download-card ext-download-card" data-flip-id="download-shell">
+                <button class="ext-close-btn" data-flip-id="download-close" onclick="window.statusBarManager.updateExtendedBar('none')" title="Close">
                     <i class="bi bi-chevron-down"></i>
                 </button>
-                <div class="ext-card-icon-container">
+                <div class="ext-card-icon-container" data-flip-id="download-icon">
                     <div class="ext-card-icon">
                         <i class="bi bi-cloud-arrow-down-fill"></i>
                     </div>
                 </div>
-                <div class="ext-card-details">
-                    <div class="ext-card-header">
-                        <span class="ext-status-badge">${downloads.length} Downloads</span>
+                <div class="ext-card-details" data-flip-id="download-details">
+                    <div class="ext-download-topline" data-flip-id="download-topline">
+                        <span class="ext-status-badge" data-flip-id="download-badge">${downloads.length} Downloads</span>
                     </div>
-                    <div class="ext-multi-dl-list">
+                    <div class="ext-card-header ext-download-header" data-flip-id="download-header">
+                        <span class="ext-download-title" data-flip-id="download-title">Multiple active downloads</span>
+                    </div>
+                    <div class="ext-multi-dl-list" data-flip-id="download-body">
                       ${itemsHtml}
                     </div>
                 </div>
             </div>
           `;
+            });
+          }
         } else {
           downloads.forEach((dl) => {
             const itemEl = content.querySelector(`.ext-multi-dl-item[data-dl-id="${dl.id}"]`);
@@ -1349,10 +2131,21 @@ export class StatusBarManager {
           });
 
           const badgeEl = content.querySelector('.ext-status-badge');
-          if (badgeEl) badgeEl.textContent = `${downloads.length} Downloads`;
+          if (badgeEl) {
+            this.setAnimatedElementText(
+              badgeEl as HTMLElement,
+              `${downloads.length} Downloads`,
+            );
+          }
         }
       }
+
+      if (shouldAnimateEntrance) {
+        this.animateExtendedBarEntrance(bottomBar, content as HTMLElement);
+      }
     } else if (update.type === 'success') {
+      delete (content as HTMLElement).dataset.extendedSignature;
+
       if (!bottomBar.classList.contains('success-mode')) {
         bottomBar.classList.remove('download-mode', 'conflict-mode');
         bottomBar.classList.add('success-mode');
@@ -1362,7 +2155,9 @@ export class StatusBarManager {
         bottomBar.classList.add('expanded');
       }
 
-      if (!wasExpanded || previousMode !== 'success') {
+      const shouldAnimateEntrance = !wasExpanded || previousMode !== 'success';
+
+      if (shouldAnimateEntrance) {
         this.triggerIslandPulse(bottomBar, 'success');
       }
 
@@ -1391,7 +2186,14 @@ export class StatusBarManager {
                 </div>
             </div>
         `;
+
+      if (shouldAnimateEntrance) {
+        this.animateExtendedBarEntrance(bottomBar, content as HTMLElement);
+      }
     } else if (update.type === 'conflict') {
+      const contentEl = content as HTMLElement;
+      const conflictSignature = `conflict:${update.conflictCount}:${update.modsWithConflictsCount}`;
+
       if (!bottomBar.classList.contains('conflict-mode')) {
         bottomBar.classList.remove('download-mode', 'success-mode');
         bottomBar.classList.add('conflict-mode');
@@ -1401,36 +2203,45 @@ export class StatusBarManager {
         bottomBar.classList.add('expanded');
       }
 
-      if (!wasExpanded || previousMode !== 'conflict') {
+      const shouldAnimateEntrance = !wasExpanded || previousMode !== 'conflict';
+
+      if (shouldAnimateEntrance) {
         this.triggerIslandPulse(bottomBar, 'conflict');
       }
 
       // Ensure content is visible
-      (content as HTMLElement).style.display = 'flex';
+      contentEl.style.display = 'flex';
 
-      content.innerHTML = `  
-        <div class="ext-conflict-card">
-            <button class="ext-close-btn" onclick="window.statusBarManager.updateExtendedBar('none')" title="Close">
-                <i class="bi bi-chevron-down"></i>
-            </button>
-            <div class="ext-card-icon-container icon-warning">
-                <div class="ext-card-icon">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                </div>
-            </div>
-            <div class="ext-card-details">
-                <div class="ext-card-header">
-                     <span class="ext-status-badge badge-warning">Conflicts Detected</span>
-                </div>
-                <div class="ext-conflict-message">
-                    ${update.modsWithConflictsCount} mod${update.modsWithConflictsCount !== 1 ? 's' : ''} have ${update.conflictCount} conflicting files.
-                </div>
-                <button class="ext-action-btn" onclick="window.conflictModalManager.showConflictModal()">
-                    Resolve Now
-                </button>
-            </div>
-        </div>
-      `;
+      if (contentEl.dataset.extendedSignature !== conflictSignature) {
+        content.innerHTML = `  
+          <div class="ext-conflict-card">
+              <button class="ext-close-btn" onclick="window.statusBarManager.updateExtendedBar('none')" title="Close">
+                  <i class="bi bi-chevron-down"></i>
+              </button>
+              <div class="ext-card-icon-container icon-warning">
+                  <div class="ext-card-icon">
+                      <i class="bi bi-exclamation-triangle-fill"></i>
+                  </div>
+              </div>
+              <div class="ext-card-details">
+                  <div class="ext-card-header">
+                       <span class="ext-status-badge badge-warning">Conflicts Detected</span>
+                  </div>
+                  <div class="ext-conflict-message">
+                      ${update.modsWithConflictsCount} mod${update.modsWithConflictsCount !== 1 ? 's' : ''} have ${update.conflictCount} conflicting files.
+                  </div>
+                  <button class="ext-action-btn" onclick="window.conflictModalManager.showConflictModal()">
+                      Resolve Now
+                  </button>
+              </div>
+          </div>
+        `;
+        contentEl.dataset.extendedSignature = conflictSignature;
+      }
+
+      if (shouldAnimateEntrance) {
+        this.animateExtendedBarEntrance(bottomBar, contentEl);
+      }
     }
   }
 

@@ -19,9 +19,9 @@
   font-size: 13px;
   font-weight: 500;
   transition:
-    opacity 0.2s ease,
-    transform 0.2s ease,
-    filter 0.2s ease,
+    opacity 0.22s ease,
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.22s ease,
     color 0.3s ease;
   white-space: nowrap;
   overflow: hidden;
@@ -35,9 +35,9 @@
 .bottom-text.status-changing,
 .bottom-text-left.status-changing {
   transition:
-    opacity 0.2s ease,
-    transform 0.2s ease,
-    filter 0.2s ease;
+    opacity 0.22s ease,
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.22s ease;
 }
 
 body.no-animations .bottom-text.status-changing,
@@ -119,38 +119,38 @@ body.reduced-animations .bottom-text-left.status-changing {
   0%,
   100% {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateX(0) scale(1);
     filter: blur(0);
   }
 
-  35% {
-    opacity: 0.92;
-    transform: translateX(1px);
-    filter: blur(0.2px);
+  45% {
+    opacity: 0.88;
+    transform: translateX(1.5px) scale(0.995);
+    filter: blur(0.25px);
   }
 
-  60% {
-    opacity: 0.84;
-    transform: translateX(3px);
-    filter: blur(0.35px);
+  72% {
+    opacity: 0.96;
+    transform: translateX(0) scale(1.005);
+    filter: blur(0);
   }
 }
 
 @keyframes bounceDown {
   0%,
   100% {
-    transform: translateY(0);
-    opacity: 0.9;
+    transform: translateY(0) scale(1);
+    opacity: 0.92;
   }
 
-  45% {
-    transform: translateY(2px) scale(0.96);
+  35% {
+    transform: translateY(3px) scale(0.94);
     opacity: 1;
   }
 
-  70% {
-    transform: translateY(1px) scale(1.03);
-    opacity: 0.92;
+  65% {
+    transform: translateY(0.5px) scale(1.02);
+    opacity: 0.96;
   }
 }
 
@@ -559,6 +559,7 @@ body.reduced-animations .bottom-text-left.status-changing {
 /* Bottom Bar - Main Container */
 .bottom-bar {
   --island-accent-rgb: var(--accent-rgb);
+  --extended-panel-width: 420px;
   position: relative;
   margin-left: 70px;
   flex-shrink: 0;
@@ -601,24 +602,7 @@ body.reduced-animations .bottom-text-left.status-changing {
 }
 
 .bottom-bar::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.08) 0%,
-      rgba(255, 255, 255, 0.02) 32%,
-      transparent 78%
-    );
-  opacity: 0;
-  transform: translateX(0) scaleX(1);
-  filter: none;
-  transition:
-    opacity 0.32s ease,
-    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-  z-index: 0;
+  content: none;
 }
 
 .bottom-bar.expanded {
@@ -626,20 +610,12 @@ body.reduced-animations .bottom-text-left.status-changing {
   box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.24);
 }
 
-.bottom-bar.expanded::after {
-  opacity: 0.24;
-}
-
 .bottom-bar:not(.expanded).collapsed-status-swap {
-  animation: collapsedStatusBarSwap 0.44s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: collapsedStatusBarSwap 0.56s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .bottom-bar.island-pulse {
   animation: dynamicIslandPulse 0.72s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.bottom-bar.island-pulse::after {
-  animation: dynamicIslandShimmer 0.9s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .bottom-bar.island-settle {
@@ -655,22 +631,34 @@ body.reduced-animations .bottom-text-left.status-changing {
   content: '';
   position: absolute;
   top: -1px; /* Align with original border position */
-  left: 420px;
-  width: 0;
+  left: min(var(--extended-panel-width), calc(100% - 1px));
+  right: 0;
+  width: auto;
   height: 2px;
   background-color: transparent;
-  transition: width 0.3s ease-in, background-color 0.3s ease;
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: left center;
+  border-radius: 999px;
+  clip-path: inset(0 0 0 0 round 999px);
+  transition:
+    transform 0.75s cubic-bezier(0.25, 1.15, 0.3, 1) 0.1s,
+    opacity 0.24s ease,
+    background-color 0.3s ease;
   z-index: 102;
 }
 
 .bottom-bar.expanded::before {
-  width: calc(100% - 420px);
   background-color: var(--accent-color);
-  transition: width 0.75s cubic-bezier(0.25, 1.15, 0.3, 1) 0.1s, background-color 0.3s ease;
+  opacity: 1;
+  transform: scaleX(1);
 }
 
 .bottom-bar.expanded.conflict-mode::before {
+  left: 0;
+  right: min(var(--extended-panel-width), calc(100% - 1px));
   background-color: var(--warning-color);
+  transform-origin: right center;
 }
 
 .bottom-bar.expanded.success-mode::before {
@@ -700,13 +688,29 @@ body.reduced-animations .bottom-text-left.status-changing {
   filter: saturate(1.05);
 }
 
+.bottom-bar.gsap-island-animating,
+.bottom-bar.gsap-island-animating::before,
+.bottom-bar.gsap-island-animating::after,
+.bottom-bar.gsap-island-animating .status-bar-content,
+.bottom-bar.gsap-island-animating .extended-content,
+.bottom-bar.gsap-island-animating .ext-download-card,
+.bottom-bar.gsap-island-animating .ext-conflict-card,
+.bottom-bar.gsap-island-animating .ext-multi-dl-item,
+.bottom-bar.gsap-island-animating .ext-card-icon-container,
+.bottom-bar.gsap-island-animating .ext-card-icon i,
+.bottom-bar.gsap-island-animating .ext-progress-glare,
+.bottom-bar.gsap-island-animating .ext-progress-fill::after {
+  transition: none !important;
+  animation: none !important;
+}
+
 /* Extended Content Container — floating dynamic island */
 .extended-content {
   position: absolute;
   bottom: calc(100% - 1px);
   left: 0;
-  width: 420px;
-  display: flex !important;
+  width: var(--extended-panel-width);
+  display: flex;
   align-items: stretch;
   padding: 16px 20px;
   background: repeating-linear-gradient(-45deg,
@@ -781,13 +785,183 @@ body.reduced-animations .bottom-text-left.status-changing {
     4px 0 12px rgba(0, 0, 0, 0.1);
 }
 
+.bottom-bar.expanded.download-mode .ext-download-card {
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.bottom-bar.expanded.download-mode .ext-card-details {
+  gap: 10px;
+}
+
+.bottom-bar.expanded.download-mode .ext-download-topline {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.bottom-bar.expanded.download-mode .ext-download-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.bottom-bar.expanded.download-mode .ext-download-header {
+  display: block;
+}
+
+.bottom-bar.expanded.download-mode .ext-download-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.bottom-bar.expanded.download-mode .ext-filename {
+  display: block;
+  max-width: none;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.bottom-bar.expanded.download-mode .ext-progress-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.bottom-bar.expanded.download-mode .ext-progress-container {
+  height: 8px;
+  border-radius: 999px;
+}
+
+.bottom-bar.expanded.download-mode .ext-progress-fill {
+  border-radius: 999px;
+}
+
+.bottom-bar.expanded.download-mode .ext-percentage {
+  min-width: 54px;
+  text-align: right;
+  font-size: 12px;
+  letter-spacing: -0.02em;
+}
+
+.bottom-bar.expanded.download-mode .ext-download-meta {
+  gap: 10px;
+  min-height: 16px;
+}
+
+.bottom-bar.expanded.download-mode .ext-download-phase {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.bottom-bar.expanded.download-mode .ext-speed {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.bottom-bar.expanded.download-mode .ext-multi-dl-list {
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.bottom-bar.expanded.download-mode .ext-multi-dl-item {
+  gap: 5px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.bottom-bar.expanded.download-mode .ext-multi-dl-info {
+  align-items: baseline;
+}
+
+.bottom-bar.expanded.download-mode .ext-multi-dl-name {
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.bottom-bar.expanded.download-mode .ext-multi-dl-pct {
+  min-width: 72px;
+  font-size: 10.5px;
+}
+
+.bottom-bar.expanded.download-mode .ext-multi-dl-bar {
+  height: 4px;
+  border-radius: 999px;
+}
+
+.bottom-bar.expanded.download-mode .ext-multi-dl-fill {
+  border-radius: 999px;
+}
+
+.bottom-bar.conflict-mode .extended-content {
+  left: auto;
+  right: 0;
+  border-radius: 14px 0 0 0;
+  transform-origin: right bottom;
+}
+
 .bottom-bar.expanded.conflict-mode .extended-content {
   border-top: 2px solid var(--warning-color);
-  border-right: 2px solid var(--warning-color);
+  border-left: 2px solid var(--warning-color);
+  border-right: 1px solid var(--border-color);
   box-shadow:
     0 -16px 38px rgba(var(--warning-color-rgb), 0.16),
     0 -8px 24px rgba(0, 0, 0, 0.3),
-    4px 0 12px rgba(0, 0, 0, 0.1);
+    -4px 0 12px rgba(0, 0, 0, 0.1);
+}
+
+.bottom-bar.conflict-mode .extended-content::before {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.12) 0%,
+      rgba(255, 255, 255, 0.03) 28%,
+      transparent 62%
+    ),
+    radial-gradient(
+      140px 80px at 84% 18%,
+      rgba(var(--warning-color-rgb), 0.22),
+      transparent 72%
+    );
+}
+
+.bottom-bar.expanded.conflict-mode .ext-conflict-card {
+  flex-direction: row-reverse;
+  align-items: flex-start;
+  transform-origin: right bottom;
+}
+
+.bottom-bar.expanded.conflict-mode .ext-card-details {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.bottom-bar.expanded.conflict-mode .ext-card-header {
+  justify-content: flex-end;
+}
+
+.bottom-bar.expanded.conflict-mode .ext-conflict-message {
+  text-align: right;
+  max-width: 280px;
+}
+
+.bottom-bar.expanded.conflict-mode .ext-action-btn {
+  align-self: flex-end;
+}
+
+.bottom-bar.expanded.conflict-mode .ext-close-btn {
+  left: -8px;
+  right: auto;
 }
 
 .bottom-bar.expanded.success-mode .extended-content {
@@ -829,26 +1003,31 @@ body.reduced-animations .bottom-text-left.status-changing {
   width: 100%;
   gap: 16px;
   position: relative;
-  animation: islandCardEnter 0.62s cubic-bezier(0.22, 1, 0.36, 1);
   transform-origin: left bottom;
 }
 
 .ext-multi-dl-list {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  transition: all 0.3s ease;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  min-height: 1px;
 }
 
 .ext-multi-dl-item {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  transition: all 0.3s ease;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    max-height 0.18s ease,
+    padding 0.18s ease,
+    margin 0.18s ease;
   overflow: hidden;
   max-height: 50px;
   opacity: 1;
-  animation: islandCardRowEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .ext-multi-dl-item.removing {
@@ -941,6 +1120,8 @@ body.reduced-animations .bottom-text-left.status-changing {
   color: var(--accent-color);
   border: 1px solid rgba(var(--accent-rgb), 0.2);
   flex-shrink: 0;
+  transform-origin: center center;
+  will-change: transform, opacity, filter;
 }
 
 .ext-status-badge.badge-warning {
@@ -977,32 +1158,33 @@ body.reduced-animations .bottom-text-left.status-changing {
 .ext-progress-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--accent-color), var(--accent-hover));
-  transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: width 0.22s ease;
   position: relative;
   border-radius: 4px;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
-    0 0 18px rgba(var(--accent-rgb), 0.22);
+  overflow: hidden;
+  box-shadow: none;
 }
 
-.ext-progress-fill .ext-progress-glare {
+.ext-progress-fill::after {
+  content: '';
   position: absolute;
-  top: 0;
-  left: -45%;
-  width: 45%;
-  height: 100%;
+  inset: 0;
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.28),
+    rgba(255, 255, 255, 0.26),
     transparent
   );
-  border-radius: 4px 4px 0 0;
-  transform: skewX(-18deg);
+  transform: translateX(-100%);
+  pointer-events: none;
 }
 
-.bottom-bar.expanded.download-mode .ext-progress-glare {
-  animation: dynamicIslandProgressSweep 1.7s linear infinite;
+.ext-progress-fill .ext-progress-glare {
+  display: none;
+}
+
+.bottom-bar.expanded.download-mode .ext-progress-fill::after {
+  animation: extProgressShimmer 1.5s linear infinite;
 }
 
 .bottom-bar.expanded .ext-card-icon-container {
@@ -1134,6 +1316,7 @@ body.reduced-animations .bottom-text-left.status-changing {
   flex-shrink: 0;
   min-width: 30px;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .ext-multi-dl-bar {
@@ -1148,6 +1331,10 @@ body.reduced-animations .bottom-text-left.status-changing {
   background: var(--accent-color);
   border-radius: 2px;
   transition: width 0.3s ease;
+}
+
+.ext-count-bump {
+  animation: extCountBump 0.42s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes dynamicIslandPulse {
@@ -1175,18 +1362,43 @@ body.reduced-animations .bottom-text-left.status-changing {
 @keyframes collapsedStatusBarSwap {
   0% {
     transform: translateY(0) scale(1, 1);
+    filter: brightness(1);
   }
 
-  30% {
-    transform: translateY(-0.5px) scale(0.997, 0.985);
+  24% {
+    transform: translateY(0.5px) scale(0.998, 0.972);
+    filter: brightness(0.985);
   }
 
-  68% {
-    transform: translateY(0) scale(1.003, 1.012);
+  62% {
+    transform: translateY(-0.5px) scale(1.004, 1.014);
+    filter: brightness(1.03);
   }
 
   100% {
     transform: translateY(0) scale(1, 1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes collapsedStatusBarSweep {
+  0% {
+    opacity: 0;
+    transform: translateX(-18%) scaleX(0.96);
+  }
+
+  32% {
+    opacity: 0.14;
+  }
+
+  60% {
+    opacity: 0.32;
+    transform: translateX(2%) scaleX(1.02);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(18%) scaleX(1);
   }
 }
 
@@ -1261,6 +1473,23 @@ body.reduced-animations .bottom-text-left.status-changing {
   }
 }
 
+@keyframes extCountBump {
+  0% {
+    transform: scale(1);
+    filter: blur(0);
+  }
+
+  38% {
+    transform: translateY(-1px) scale(1.08);
+    filter: blur(0.2px);
+  }
+
+  100% {
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
 @keyframes dynamicIslandProgressSweep {
   0% {
     transform: translateX(0) skewX(-18deg);
@@ -1268,6 +1497,16 @@ body.reduced-animations .bottom-text-left.status-changing {
 
   100% {
     transform: translateX(330%) skewX(-18deg);
+  }
+}
+
+@keyframes extProgressShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
   }
 }
 
@@ -1281,11 +1520,13 @@ body.reduced-animations .bottom-bar.island-pulse,
 body.reduced-animations .bottom-bar.island-settle,
 body.reduced-animations .bottom-bar.island-collapse,
 body.reduced-animations .bottom-bar.collapsed-status-swap,
+body.reduced-animations .bottom-bar.collapsed-status-swap::after,
 body.reduced-animations .bottom-bar.island-pulse::after,
-body.reduced-animations .bottom-bar.expanded.download-mode .ext-progress-glare,
 body.reduced-animations .ext-download-card,
 body.reduced-animations .ext-conflict-card,
-body.reduced-animations .ext-multi-dl-item {
+body.reduced-animations .ext-multi-dl-item,
+body.reduced-animations .ext-count-bump,
+body.reduced-animations .bottom-bar.expanded.download-mode .ext-progress-fill::after {
   animation-duration: 0.18s !important;
 }
 
@@ -1298,7 +1539,8 @@ body.no-animations .status-bar-content,
 body.no-animations .ext-download-card,
 body.no-animations .ext-conflict-card,
 body.no-animations .ext-multi-dl-item,
-body.no-animations .bottom-bar.expanded.download-mode .ext-progress-glare {
+body.no-animations .ext-count-bump,
+body.no-animations .bottom-bar.expanded.download-mode .ext-progress-fill::after {
   animation: none !important;
   transition: none !important;
   filter: none !important;

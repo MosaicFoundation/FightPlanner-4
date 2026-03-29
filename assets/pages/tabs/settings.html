@@ -1292,13 +1292,21 @@
             <span>Reload Window</span>
           </button>
         </div>
-        <div class="settings-input-group" style="gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-          <button class="settings-btn-action" id="ui-test-statusbar-download" style="flex: 1;"
+        <div class="settings-input-group" style="gap: 10px; margin-top: 10px; flex-wrap: nowrap;">
+          <button class="settings-btn-action" id="ui-test-statusbar-download" style="flex: 1 1 0;"
             onclick="if(window.statusBarManager) { let p=0; const iv = setInterval(() => { p+=5; if(p>100) { clearInterval(iv); window.statusBarManager.updateExtendedBar({ type: 'success', fileName: 'test_mod.zip' }); setTimeout(() => window.statusBarManager.updateExtendedBar({ type: 'none' }), 3000); return; } window.statusBarManager.updateExtendedBar({ type: 'download', fileName: 'test_mod.zip', progress: p, speedText: '2.4 MB/s' }); }, 200); }">
             <i class="bi bi-cloud-arrow-down" style="color: #f59e0b;"></i>
             <div class="settings-btn-action-content">
               <span class="settings-btn-action-title">Simulate Download</span>
               <span class="settings-btn-action-desc">Simulate a download progress bar in the status bar (0-100%)</span>
+            </div>
+          </button>
+          <button class="settings-btn-action" id="ui-test-statusbar-conflicts" style="flex: 1 1 0;"
+            onclick="if(window.statusBarManager) { window.statusBarManager.userDismissedExtendedBar = false; window.statusBarManager.updateExtendedBar({ type: 'conflict', conflictCount: 7, modsWithConflictsCount: 3 }); }">
+            <i class="bi bi-exclamation-triangle" style="color: #f59e0b;"></i>
+            <div class="settings-btn-action-content">
+              <span class="settings-btn-action-title">Simulate Conflicts</span>
+              <span class="settings-btn-action-desc">Show a persistent conflicts state in the status bar until dismissed</span>
             </div>
           </button>
         </div>
