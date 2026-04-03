@@ -41,6 +41,7 @@
       "url": "URL",
       "noDescription": "No description available",
       "noInformation": "No information available",
+      "selectedCount": "{{count}} mod(s) selected",
       "loading": "Loading...",
       "failedToLoad": "Failed to load mod information",
       "noInfoToml": "No info.toml file found",

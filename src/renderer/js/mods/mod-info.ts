@@ -121,6 +121,31 @@ ${escapeHtml(modData.url)}
     }
   }
 
+  displaySelectionCount(count: number) {
+    const container = this.getContainer();
+    if (!container) return;
+
+    const t = (key, params = {}) => {
+      return window.i18n && window.i18n.t ? window.i18n.t(key, params) : key;
+    };
+
+    container.style.animation = 'none';
+    container.offsetHeight;
+    container.style.animation = '';
+    container.innerHTML = `
+<div class="mod-info-item">
+<div class="mod-info-value">${t('tools.modInfo.selectedCount', { count })}</div>
+</div>`;
+
+    this.currentModPath = null;
+    this.currentModData = null;
+
+    const editBtn = document.querySelector<HTMLElement>('#edit-info-btn');
+    if (editBtn) {
+      editBtn.style.display = 'none';
+    }
+  }
+
   clearModInfo() {
     const container = this.getContainer();
     if (!container) return;

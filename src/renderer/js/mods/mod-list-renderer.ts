@@ -114,7 +114,12 @@ class ModListRenderer {
     modItem.appendChild(statusIcon);
     modItem.appendChild(textContainer);
 
-    modItem.addEventListener('click', () => this.modManager.selectMod(mod.id));
+    modItem.addEventListener('click', (event: MouseEvent) =>
+      this.modManager.selectMod(mod.id, {
+        multi: event.ctrlKey || event.metaKey,
+        range: event.shiftKey,
+      }),
+    );
     modItem.addEventListener('contextmenu', (e) => {
       if (this.modManager.contextMenuHandler) {
         this.modManager.contextMenuHandler.showContextMenu(e, mod);

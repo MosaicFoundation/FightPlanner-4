@@ -187,12 +187,14 @@ body.reduced-animations .preview-area.no-preview {
   height: 80px !important;
 }
 
-body.reduced-animations .preview-area img {
-  transition: opacity 0.12s ease !important;
+body.reduced-animations .preview-stack-card,
+body.reduced-animations .preview-stack-card img {
+  transition: none !important;
+  animation: none !important;
 }
 
-body.reduced-animations .preview-area img.preview-exit {
-  animation: previewExitAnimationReduced 0.12s ease forwards !important;
+body.reduced-animations .preview-stack-card {
+  filter: none !important;
 }
 
 @keyframes previewExitAnimationReduced {
@@ -213,12 +215,12 @@ body.no-animations .preview-area {
   transition: none !important;
 }
 
-body.no-animations .preview-area img {
+body.no-animations .preview-stack-card,
+body.no-animations .preview-stack-card img {
   transition: none !important;
   animation: none !important;
 }
 
-body.no-animations .preview-area img.preview-exit {
-  animation: none !important;
-  opacity: 0 !important;
+body.no-animations .preview-stack-card {
+  filter: none !important;
 }
