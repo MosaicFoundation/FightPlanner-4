@@ -121,6 +121,94 @@ ${escapeHtml(modData.url)}
     }
   }
 
+  displaySelectionCount(count: number) {
+    const container = this.getContainer();
+    if (!container) return;
+
+    const t = (key, params = {}) => {
+      return window.i18n && window.i18n.t ? window.i18n.t(key, params) : key;
+    };
+    const selectedMods = window.modManager?.getCurrentSelectedMods?.() || [];
+    const visibleMods = selectedMods.slice(0, 5);
+    const remainingCount = Math.max(selectedMods.length - visibleMods.length, 0);
+    const effectiveCount = selectedMods.length || count;
+
+    container.style.animation = 'none';
+    container.offsetHeight;
+    container.style.animation = '';
+    container.innerHTML = `
+<div class="mod-selection-summary">
+  <div class="mod-selection-header">
+    <div class="mod-selection-count">${t('tools.modInfo.selectedCount', {
+      count: effectiveCount,
+    })}</div>
+    <button type="button" class="mod-selection-action-btn mod-selection-action-btn-danger" id="mod-selection-uninstall-btn">
+      <i class="bi bi-trash3"></i>
+      <span>${t('tools.modInfo.uninstallSelected', {
+        count: effectiveCount,
+        plural: effectiveCount > 1 ? 's' : '',
+      })}</span>
+    </button>
+  </div>
+  <p class="mod-selection-hint">${t('tools.modInfo.selectedHint')}</p>
+  <div class="mod-selection-list" id="mod-selection-list"></div>
+</div>`;
+
+    const selectionList = container.querySelector<HTMLElement>(
+      '#mod-selection-list',
+    );
+
+    if (selectionList) {
+      visibleMods.forEach((mod, index) => {
+        const item = document.createElement('div');
+        item.className = 'mod-selection-list-item';
+
+        const indexBadge = document.createElement('span');
+        indexBadge.className = 'mod-selection-list-index';
+        indexBadge.textContent = `${index + 1}`;
+
+        const name = document.createElement('span');
+        name.className = 'mod-selection-list-name';
+        name.textContent = mod.name;
+        name.title = mod.name;
+
+        item.appendChild(indexBadge);
+        item.appendChild(name);
+        selectionList.appendChild(item);
+      });
+
+      if (remainingCount > 0) {
+        const more = document.createElement('div');
+        more.className = 'mod-selection-list-more';
+        more.textContent = t('tools.modInfo.selectedMore', {
+          count: remainingCount,
+        });
+        selectionList.appendChild(more);
+      }
+    }
+
+    const uninstallBtn = container.querySelector<HTMLElement>(
+      '#mod-selection-uninstall-btn',
+    );
+    uninstallBtn?.addEventListener('click', async () => {
+      const modsToUninstall = window.modManager?.getCurrentSelectedMods?.() || [];
+
+      if (modsToUninstall.length === 0) {
+        return;
+      }
+
+      await window.modManager?.operations?.uninstallMods(modsToUninstall);
+    });
+
+    this.currentModPath = null;
+    this.currentModData = null;
+
+    const editBtn = document.querySelector<HTMLElement>('#edit-info-btn');
+    if (editBtn) {
+      editBtn.style.display = 'none';
+    }
+  }
+
   clearModInfo() {
     const container = this.getContainer();
     if (!container) return;

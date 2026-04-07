@@ -7,6 +7,54 @@ class ModOperations {
     this.modManager = modManager;
   }
 
+  getUniqueMods(mods: Mod[]) {
+    return mods.filter(
+      (mod, index, allMods) =>
+        allMods.findIndex(
+          (candidate) =>
+            candidate.id === mod.id ||
+            (candidate.path && candidate.path === mod.path),
+        ) === index,
+    );
+  }
+
+  async deleteMods(mods: Mod[]) {
+    const failedMods: Array<{ mod: Mod; error: string }> = [];
+    let successCount = 0;
+
+    for (const mod of mods) {
+      if (!mod.path) {
+        failedMods.push({
+          mod,
+          error: 'Missing mod path',
+        });
+        continue;
+      }
+
+      if (!window.electronAPI?.deleteMod) {
+        failedMods.push({
+          mod,
+          error: 'deleteMod API unavailable',
+        });
+        continue;
+      }
+
+      const result = await window.electronAPI.deleteMod(mod.path);
+
+      if (result.success) {
+        successCount++;
+        this.modManager.removeModFromSelection(mod.id);
+      } else {
+        failedMods.push({
+          mod,
+          error: result.error || 'Unknown error',
+        });
+      }
+    }
+
+    return { successCount, failedMods };
+  }
+
   async renameMod(mod: Mod) {
     if (!mod.path) {
       if (window.toastManager) {
@@ -109,46 +157,68 @@ class ModOperations {
 
     if (window.modalManager) {
       window.modalManager.openUninstallModal(mod, async () => {
-        if (window.electronAPI && window.electronAPI.deleteMod) {
-          const result = await window.electronAPI.deleteMod(mod.path);
+        const { successCount, failedMods } = await this.deleteMods([mod]);
 
-          if (result.success) {
-            console.log('Mod uninstalled successfully');
+        if (successCount > 0) {
+          console.log('Mod uninstalled successfully');
 
-            if (
-              this.modManager.selectedMod &&
-              this.modManager.selectedMod.id === mod.id
-            ) {
-              this.modManager.selectedMod = null;
-
-              const previewArea =
-                document.querySelector<HTMLElement>('.preview-area');
-
-              if (previewArea) {
-                previewArea.innerHTML =
-                  '<p style="color: #666; text-align: center;">No preview available</p>';
-              }
-
-              if (window.modInfoManager) {
-                window.modInfoManager.clearModInfo();
-              }
-            }
-
-            if (window.toastManager) {
-              window.toastManager.success('toasts.modUninstalled');
-            }
-
-            this.modManager.fetchMods();
-          } else {
-            if (window.toastManager) {
-              window.toastManager.error('toasts.failedToUninstallMod', 3000, {
-                error: result.error,
-              });
-            }
+          if (window.toastManager) {
+            window.toastManager.success('toasts.modUninstalled');
           }
+
+          await this.modManager.fetchMods();
+          return;
+        }
+
+        if (window.toastManager && failedMods.length > 0) {
+          window.toastManager.error('toasts.failedToUninstallMod', 3000, {
+            error: failedMods[0].error,
+          });
         }
       });
     }
+  }
+
+  async uninstallMods(mods: Mod[]) {
+    const uniqueMods = this.getUniqueMods(mods).filter((mod) => !!mod.path);
+
+    if (uniqueMods.length === 0) {
+      window.toastManager?.error('toasts.cannotUninstallMod');
+      return;
+    }
+
+    if (uniqueMods.length === 1) {
+      await this.uninstallMod(uniqueMods[0]);
+      return;
+    }
+
+    if (!window.modalManager) {
+      return;
+    }
+
+    window.modalManager.openUninstallModal(uniqueMods, async () => {
+      const { successCount, failedMods } = await this.deleteMods(uniqueMods);
+
+      if (successCount > 0 && failedMods.length === 0) {
+        window.toastManager?.success('toasts.modsUninstalled', 3000, {
+          count: successCount,
+          plural: successCount > 1 ? 's' : '',
+        });
+      } else if (successCount > 0) {
+        window.toastManager?.warning('toasts.modsUninstalledPartial', 4000, {
+          success: successCount,
+          error: failedMods.length,
+        });
+      } else if (failedMods.length > 0) {
+        window.toastManager?.error('toasts.failedToUninstallMods', 4000, {
+          error: failedMods[0].error,
+        });
+      }
+
+      if (successCount > 0) {
+        await this.modManager.fetchMods();
+      }
+    });
   }
 
   async startChangeSlotsFlow(mod: Mod) {

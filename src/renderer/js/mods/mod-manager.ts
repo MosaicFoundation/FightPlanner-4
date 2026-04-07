@@ -22,14 +22,24 @@ export interface SimpleMod {
   path: Mod['path'];
 }
 
+interface SelectModOptions {
+  forceUpdate?: boolean;
+  multi?: boolean;
+  range?: boolean;
+}
+
 class ModManager {
   mods: Mod[];
   selectedMod: Mod | null;
+  selectedMods: Mod[];
   modListContainer: HTMLElement | null;
   modsPath: string | null;
   searchQuery: string;
   categoryFilter: string;
   renderedModIds: Set<string>;
+  selectionAnchorId: string | null;
+  selectionUpdateToken: number;
+  previewTimeline: any | null;
   conflictGroups: {
     fighter: string;
     slot: string;
@@ -51,11 +61,15 @@ class ModManager {
   constructor() {
     this.mods = [];
     this.selectedMod = null;
+    this.selectedMods = [];
     this.modListContainer = null;
     this.modsPath = null;
     this.searchQuery = '';
     this.categoryFilter = '';
     this.renderedModIds = new Set();
+    this.selectionAnchorId = null;
+    this.selectionUpdateToken = 0;
+    this.previewTimeline = null;
     this.conflictGroups = [];
     this.isCheckingConflicts = false;
 
@@ -222,10 +236,7 @@ class ModManager {
       batchManager?.modal && document.body.contains(batchManager.modal)
     );
 
-    return !!(
-      isModalOpen ||
-      batchManager?.isRestoring
-    );
+    return !!(isModalOpen || batchManager?.isRestoring);
   }
 
   applyBatchTestingState(modsData: Mod[], modsPath: string | null) {
@@ -287,13 +298,68 @@ class ModManager {
     );
     this.renderedModIds = currentModIds;
 
-    this.restoreSelectedMod();
+    this.reapplySelectionState();
+    if (this.selectedMods.length === 0) {
+      this.restoreSelectedMod();
+    }
 
     setTimeout(() => {
       if (this.listRenderer) {
         this.listRenderer.showNonVisibleInstantly();
       }
     }, 1000);
+  }
+
+  reapplySelectionState() {
+    const hadSelection = this.selectedMods.length > 0 || !!this.selectedMod;
+    const selectedIds = new Set(this.selectedMods.map((mod) => mod.id));
+    const selectedPaths = new Set(
+      this.selectedMods
+        .map((mod) => mod.path)
+        .filter((path): path is string => Boolean(path)),
+    );
+
+    if (selectedIds.size === 0 && selectedPaths.size === 0) {
+      this.applySelectionClasses();
+      return;
+    }
+
+    const refreshedSelection = this.mods.filter((mod) =>
+      selectedIds.has(mod.id) || selectedPaths.has(mod.path),
+    );
+
+    if (refreshedSelection.length === 0) {
+      this.selectedMods = [];
+      this.selectedMod = null;
+      this.selectionAnchorId = null;
+      localStorage.removeItem('selectedModId');
+      this.applySelectionClasses();
+
+      if (hadSelection) {
+        const updateToken = ++this.selectionUpdateToken;
+        void this.updateSelectionInfo([], updateToken);
+        void this.updatePreview([], updateToken);
+      }
+
+      return;
+    }
+
+    const primaryMod =
+      refreshedSelection.find((mod) => mod.id === this.selectedMod?.id) ||
+      refreshedSelection[0];
+
+    this.selectedMods = this.prioritizeSelection(
+      refreshedSelection,
+      primaryMod,
+    );
+    this.selectedMod = primaryMod;
+    this.selectionAnchorId =
+      this.selectionAnchorId &&
+      refreshedSelection.some((mod) => mod.id === this.selectionAnchorId)
+        ? this.selectionAnchorId
+        : primaryMod.id;
+
+    this.applySelectionClasses();
   }
 
   restoreSelectedMod() {
@@ -305,196 +371,743 @@ class ModManager {
     }
   }
 
-  async selectMod(modId: string, forceUpdate = false) {
-    const mod = this.mods.find((m) => m.id === modId);
-    if (!mod) return;
+  normalizeSelectOptions(
+    forceUpdateOrOptions: boolean | SelectModOptions = false,
+  ) {
+    if (typeof forceUpdateOrOptions === 'boolean') {
+      return { forceUpdate: forceUpdateOrOptions };
+    }
 
-    const isSameMod = this.selectedMod && this.selectedMod.id === modId;
+    return forceUpdateOrOptions;
+  }
 
+  getCurrentSelectedMods() {
+    return this.selectedMods
+      .map(
+        (selectedMod) =>
+          this.mods.find(
+            (mod) =>
+              mod.id === selectedMod.id ||
+              (selectedMod.path && mod.path === selectedMod.path),
+          ) || null,
+      )
+      .filter((mod): mod is Mod => Boolean(mod));
+  }
+
+  getSelectionSignature(mods: Mod[]) {
+    return mods.map((mod) => mod.id).join('|');
+  }
+
+  prioritizeSelection(mods: Mod[], primaryMod: Mod | null) {
+    const dedupedMods = mods.filter(
+      (mod, index, allMods) =>
+        allMods.findIndex((candidate) => candidate.id === mod.id) === index,
+    );
+
+    if (!primaryMod) {
+      return dedupedMods;
+    }
+
+    return [
+      primaryMod,
+      ...dedupedMods.filter((mod) => mod.id !== primaryMod.id),
+    ];
+  }
+
+  getVisibleModsInOrder() {
+    if (!this.modListContainer) {
+      return this.mods;
+    }
+
+    const visibleModIds = Array.from(
+      this.modListContainer.querySelectorAll<HTMLElement>('.mod-item'),
+    )
+      .filter((item) => item.style.display !== 'none')
+      .map((item) => item.dataset.modId)
+      .filter((modId): modId is string => Boolean(modId));
+
+    const visibleMods = visibleModIds
+      .map((modId) => this.mods.find((mod) => mod.id === modId) || null)
+      .filter((mod): mod is Mod => Boolean(mod));
+
+    return visibleMods.length > 0 ? visibleMods : this.mods;
+  }
+
+  applySelectionClasses() {
+    if (!this.modListContainer) return;
+
+    const selectedMods = this.getCurrentSelectedMods();
+    const selectedIds = new Set(selectedMods.map((mod) => mod.id));
+    const selectionIndexes = new Map(
+      selectedMods.map((mod, index) => [mod.id, index + 1]),
+    );
+    const showSelectionIndexes = selectedMods.length > 1;
     const allModItems =
-      this.modListContainer!.querySelectorAll<HTMLElement>('.mod-item');
+      this.modListContainer.querySelectorAll<HTMLElement>('.mod-item');
+
     allModItems.forEach((item) => {
-      if (item.dataset.modId === modId) {
-        item.classList.add('selected');
+      const modId = item.dataset.modId;
+      const isSelected = !!modId && selectedIds.has(modId);
+
+      item.classList.toggle(
+        'selected',
+        isSelected,
+      );
+
+      if (isSelected && modId && showSelectionIndexes) {
+        item.dataset.selectionIndex = `${selectionIndexes.get(modId)}`;
       } else {
-        item.classList.remove('selected');
+        delete item.dataset.selectionIndex;
       }
     });
+  }
 
-    if (isSameMod && !forceUpdate) {
+  arePreviewAnimationsDisabled() {
+    return (
+      document.body.classList.contains('reduced-animations') ||
+      document.body.classList.contains('no-animations')
+    );
+  }
+
+  getGsapRuntime() {
+    if (window.gsap) {
+      return window.gsap as any;
+    }
+
+    if (typeof require === 'function') {
+      try {
+        const gsapModule = require('gsap');
+        const gsapRef =
+          gsapModule?.gsap || gsapModule?.default || gsapModule || null;
+
+        if (gsapRef && !window.gsap) {
+          window.gsap = gsapRef;
+        }
+
+        return gsapRef;
+      } catch (error) {
+        console.warn('[ModManager] Failed to resolve GSAP runtime:', error);
+      }
+    }
+
+    return null;
+  }
+
+  openPreviewZoom(previewPath: string) {
+    const zoomOverlay = document.getElementById('image-zoom-overlay');
+    const zoomImg = document.getElementById(
+      'image-zoom-img',
+    ) as HTMLImageElement | null;
+
+    if (!zoomOverlay || !zoomImg) {
       return;
     }
 
-    this.selectedMod = mod;
-    localStorage.setItem('selectedModId', modId);
+    zoomImg.src = previewPath;
+    zoomOverlay.style.display = 'flex';
 
-    this.updatePreview(mod);
+    void zoomOverlay.offsetWidth;
 
-    if (window.modInfoManager) {
-      window.modInfoManager.showLoading();
+    zoomOverlay.classList.add('active');
 
-      if (mod.path && window.electronAPI && window.electronAPI.getModInfo) {
-        try {
-          console.log('Loading mod info for:', mod.path);
-          const modInfo = await window.electronAPI.getModInfo(mod.path);
-          console.log('Received mod info from main process:', modInfo);
+    const closeBtn = document.getElementById('image-zoom-close');
+    const closeZoom = () => {
+      zoomOverlay.classList.remove('active');
+      setTimeout(() => {
+        zoomOverlay.style.display = 'none';
+        zoomImg.src = '';
+      }, 300);
+    };
 
-          if (modInfo) {
-            console.log('Displaying mod info:', modInfo);
-            window.modInfoManager.displayModInfo(modInfo, mod.path);
-          } else {
-            console.log('No mod info found, showing fallback');
-
-            const t = (key) => {
-              return window.i18n && window.i18n.t ? window.i18n.t(key) : key;
-            };
-            window.modInfoManager.displayModInfo(
-              {
-                display_name: mod.name,
-                description: t('tools.modInfo.noInfoToml'),
-              },
-              mod.path,
-            );
-          }
-        } catch (error) {
-          console.error('Error loading mod info:', error);
-          const t = (key) => {
-            return window.i18n && window.i18n.t ? window.i18n.t(key) : key;
-          };
-          window.modInfoManager.showError(t('tools.modInfo.failedToLoad'));
+    closeBtn?.addEventListener('click', closeZoom, { once: true });
+    zoomOverlay.addEventListener(
+      'click',
+      (event) => {
+        if (event.target === zoomOverlay) {
+          closeZoom();
         }
-      } else {
-        console.log('No folderPath or electronAPI, showing fallback');
-        const t = (key) => {
-          return window.i18n && window.i18n.t ? window.i18n.t(key) : key;
-        };
-        window.modInfoManager.displayModInfo(
-          {
-            display_name: mod.name,
-            description: t('tools.modInfo.noDetailedInfo'),
-          },
-          null,
-        );
+      },
+      { once: true },
+    );
+
+    const escHandler = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeZoom();
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+
+    document.addEventListener('keydown', escHandler);
+  }
+
+  clearPreviewArea(previewArea: HTMLElement, showPlaceholder = false) {
+    if (this.previewTimeline?.kill) {
+      this.previewTimeline.kill();
+    }
+
+    const finishClear = () => {
+      this.previewTimeline = null;
+      previewArea.style.removeProperty('height');
+      previewArea.classList.add('no-preview');
+      previewArea.classList.remove('has-stacked-preview');
+      previewArea.innerHTML = showPlaceholder
+        ? '<p style="color: #666; text-align: center;">No preview available</p>'
+        : '';
+    };
+
+    const stack = previewArea.querySelector<HTMLElement>('.preview-stack');
+    const cards = stack
+      ? Array.from(stack.querySelectorAll<HTMLElement>('.preview-stack-card'))
+      : [];
+    const gsapRef = this.getGsapRuntime();
+
+    if (cards.length === 0 || !gsapRef || this.arePreviewAnimationsDisabled()) {
+      finishClear();
+      return;
+    }
+
+    gsapRef.set(cards, {
+      transformOrigin: 'center top',
+      willChange: 'transform, opacity, filter',
+    });
+
+    this.previewTimeline = gsapRef.timeline({
+      defaults: {
+        duration: 0.24,
+        ease: 'power3.in',
+      },
+      onComplete: finishClear,
+    });
+
+    this.previewTimeline.to(cards, {
+      x: (index: number) => 18 + index * 8,
+      y: (index: number) => -14 + index * 6,
+      scale: (index: number) => Math.max(0.72 - index * 0.04, 0.56),
+      opacity: 0,
+      filter: 'blur(14px)',
+      stagger: {
+        each: 0.03,
+        from: 'end',
+      },
+      clearProps: 'willChange',
+    });
+  }
+
+  getPreviewStackTargetState(index: number, totalCards = 1) {
+    const isStackedPreview = totalCards > 1;
+    const offsetX = isStackedPreview ? 2 : 10;
+    const offsetY = isStackedPreview ? 30 : 16;
+    const scaleStep = isStackedPreview ? 0.06 : 0.08;
+    const opacityStep = isStackedPreview ? 0.08 : 0.12;
+    const blurStep = isStackedPreview ? 0.18 : 0.35;
+
+    return {
+      x: index * offsetX,
+      y: index * offsetY,
+      scale: Math.max(1 - index * scaleStep, 0.72),
+      opacity: Math.max(1 - index * opacityStep, 0.5),
+      filter: `blur(${Math.min(index * blurStep, 0.9)}px)`,
+      zIndex: 10 - index,
+    };
+  }
+
+  getPreviewStackCollapseState(index: number, remainingCards = 1) {
+    const anchorState =
+      remainingCards > 1
+        ? this.getPreviewStackTargetState(
+            Math.min(remainingCards - 1, 2),
+            remainingCards,
+          )
+        : { x: 0, y: 0, scale: 1, zIndex: 10 };
+
+    return {
+      x: Math.max(anchorState.x - 1, 0),
+      y: anchorState.y + 10 + index * 8,
+      scale: Math.max(anchorState.scale - 0.08 - index * 0.03, 0.74),
+      opacity: 0,
+      filter: `blur(${Math.min(8 + index * 1.5, 12)}px)`,
+      zIndex: Math.max(anchorState.zIndex - index - 2, 1),
+    };
+  }
+
+  createPreviewCard(preview: { mod: Mod; previewPath: string }) {
+    const card = document.createElement('div');
+    card.className = 'preview-stack-card';
+
+    const img = document.createElement('img');
+    card.appendChild(img);
+
+    this.syncPreviewCard(card, preview, 0);
+
+    return card;
+  }
+
+  syncPreviewCard(
+    card: HTMLElement,
+    preview: { mod: Mod; previewPath: string },
+    index: number,
+  ) {
+    card.dataset.previewPath = preview.previewPath;
+    card.dataset.modId = preview.mod.id;
+    card.style.setProperty('--stack-index', String(index));
+
+    if (index > 0) {
+      card.setAttribute('data-stacked', 'true');
+      card.onclick = null;
+    } else {
+      card.removeAttribute('data-stacked');
+      card.onclick = () => this.openPreviewZoom(preview.previewPath);
+    }
+
+    const img = card.querySelector('img');
+    if (img instanceof HTMLImageElement) {
+      img.alt = preview.mod.name || 'Preview';
+      if (img.src !== preview.previewPath) {
+        img.src = preview.previewPath;
       }
     }
   }
 
-  async updatePreview(mod: Mod) {
+  async getPreviewAreaHeight(previewArea: HTMLElement, previewPath: string) {
+    const dimensions = await new Promise<{ width: number; height: number }>(
+      (resolve, reject) => {
+        const previewImg = new Image();
+
+        previewImg.onload = () => {
+          resolve({
+            width: previewImg.naturalWidth,
+            height: previewImg.naturalHeight,
+          });
+        };
+
+        previewImg.onerror = reject;
+        previewImg.src = previewPath;
+      },
+    );
+
+    const aspectRatio = dimensions.height / dimensions.width;
+    const containerWidth = previewArea.offsetWidth;
+    let optimalHeight = containerWidth * aspectRatio;
+
+    optimalHeight = Math.max(150, Math.min(400, optimalHeight));
+
+    return optimalHeight;
+  }
+
+  async selectMod(
+    modId: string,
+    forceUpdateOrOptions: boolean | SelectModOptions = false,
+  ) {
+    const mod = this.mods.find((candidate) => candidate.id === modId);
+    if (!mod) return;
+
+    const {
+      forceUpdate = false,
+      multi = false,
+      range = false,
+    } = this.normalizeSelectOptions(forceUpdateOrOptions);
+
+    const currentSelection = this.getCurrentSelectedMods();
+    let nextSelection: Mod[] = [];
+
+    if (range) {
+      const visibleMods = this.getVisibleModsInOrder();
+      const anchorId = this.selectionAnchorId || this.selectedMod?.id || modId;
+      const anchorIndex = visibleMods.findIndex((item) => item.id === anchorId);
+      const targetIndex = visibleMods.findIndex((item) => item.id === modId);
+
+      if (anchorIndex >= 0 && targetIndex >= 0) {
+        const startIndex = Math.min(anchorIndex, targetIndex);
+        const endIndex = Math.max(anchorIndex, targetIndex);
+        nextSelection = this.prioritizeSelection(
+          visibleMods.slice(startIndex, endIndex + 1),
+          mod,
+        );
+      } else {
+        nextSelection = this.prioritizeSelection([mod], mod);
+      }
+    } else if (multi) {
+      const isAlreadySelected = currentSelection.some(
+        (selectedMod) => selectedMod.id === modId,
+      );
+
+      if (isAlreadySelected) {
+        const remainingSelection = currentSelection.filter(
+          (selectedMod) => selectedMod.id !== modId,
+        );
+        const fallbackPrimary =
+          remainingSelection.find(
+            (selectedMod) => selectedMod.id === this.selectedMod?.id,
+          ) || remainingSelection[0];
+
+        nextSelection = fallbackPrimary
+          ? this.prioritizeSelection(remainingSelection, fallbackPrimary)
+          : [];
+      } else {
+        nextSelection = this.prioritizeSelection(
+          [...currentSelection, mod],
+          mod,
+        );
+      }
+    } else {
+      nextSelection = this.prioritizeSelection([mod], mod);
+    }
+
+    const nextPrimaryMod = nextSelection[0] || null;
+    const nextSelectionSignature = this.getSelectionSignature(nextSelection);
+    const currentSelectionSignature = this.getSelectionSignature(
+      this.selectedMods,
+    );
+    const isSamePrimary = this.selectedMod?.id === nextPrimaryMod?.id;
+
+    this.selectionAnchorId = nextPrimaryMod?.id || null;
+
+    if (
+      !forceUpdate &&
+      isSamePrimary &&
+      nextSelectionSignature === currentSelectionSignature
+    ) {
+      this.applySelectionClasses();
+      return;
+    }
+
+    this.selectedMods = nextSelection;
+    this.selectedMod = nextPrimaryMod;
+
+    if (this.selectedMod) {
+      localStorage.setItem('selectedModId', this.selectedMod.id);
+    } else {
+      localStorage.removeItem('selectedModId');
+    }
+
+    this.applySelectionClasses();
+
+    const updateToken = ++this.selectionUpdateToken;
+    await Promise.all([
+      this.updateSelectionInfo(nextSelection, updateToken),
+      this.updatePreview(nextSelection, updateToken),
+    ]);
+  }
+
+  async updateSelectionInfo(selectedMods: Mod[], updateToken: number) {
+    if (!window.modInfoManager) {
+      return;
+    }
+
+    if (selectedMods.length === 0) {
+      if (updateToken !== this.selectionUpdateToken) return;
+      window.modInfoManager.clearModInfo();
+      return;
+    }
+
+    if (selectedMods.length > 1) {
+      if (updateToken !== this.selectionUpdateToken) return;
+      window.modInfoManager.displaySelectionCount(selectedMods.length);
+      return;
+    }
+
+    const mod = selectedMods[0];
+    window.modInfoManager.showLoading();
+
+    if (mod.path && window.electronAPI?.getModInfo) {
+      try {
+        console.log('Loading mod info for:', mod.path);
+        const modInfo = await window.electronAPI.getModInfo(mod.path);
+
+        if (updateToken !== this.selectionUpdateToken) return;
+
+        console.log('Received mod info from main process:', modInfo);
+
+        if (modInfo) {
+          console.log('Displaying mod info:', modInfo);
+          window.modInfoManager.displayModInfo(modInfo, mod.path);
+          return;
+        }
+
+        const t = (key) => {
+          return window.i18n && window.i18n.t ? window.i18n.t(key) : key;
+        };
+
+        window.modInfoManager.displayModInfo(
+          {
+            display_name: mod.name,
+            description: t('tools.modInfo.noInfoToml'),
+          },
+          mod.path,
+        );
+        return;
+      } catch (error) {
+        console.error('Error loading mod info:', error);
+
+        if (updateToken !== this.selectionUpdateToken) return;
+
+        const t = (key) => {
+          return window.i18n && window.i18n.t ? window.i18n.t(key) : key;
+        };
+
+        window.modInfoManager.showError(t('tools.modInfo.failedToLoad'));
+        return;
+      }
+    }
+
+    if (updateToken !== this.selectionUpdateToken) return;
+
+    const t = (key) => {
+      return window.i18n && window.i18n.t ? window.i18n.t(key) : key;
+    };
+
+    window.modInfoManager.displayModInfo(
+      {
+        display_name: mod.name,
+        description: t('tools.modInfo.noDetailedInfo'),
+      },
+      null,
+    );
+  }
+
+  async updatePreview(selectedMods: Mod[], updateToken: number) {
     const previewArea = document.querySelector<HTMLElement>('.preview-area');
     if (!previewArea) return;
 
     previewArea.classList.add('loading');
 
-    if (mod.path && window.electronAPI && window.electronAPI.getPreviewImage) {
-      try {
-        const previewPath = await window.electronAPI.getPreviewImage(mod.path);
+    if (selectedMods.length === 0) {
+      if (updateToken !== this.selectionUpdateToken) return;
+      this.clearPreviewArea(previewArea);
+      previewArea.classList.remove('loading');
+      return;
+    }
 
-        if (previewPath) {
-          // Animate out existing image if present
-          const existingImg = previewArea.querySelector<HTMLElement>('img');
+    const previewCandidates = selectedMods.slice(0, 3);
+    const previewResults = await Promise.all(
+      previewCandidates.map(async (selectedMod) => {
+        if (!selectedMod.path || !window.electronAPI?.getPreviewImage) {
+          return null;
+        }
 
-          if (existingImg) {
-            existingImg.style.opacity = '0';
+        try {
+          const previewPath = await window.electronAPI.getPreviewImage(
+            selectedMod.path,
+          );
+
+          if (!previewPath) {
+            return null;
           }
 
-          previewArea.classList.remove('no-preview');
-
-          const img = document.createElement('img');
-
-          img.style.opacity = '0';
-          img.alt = 'Preview';
-
-          await new Promise<void>((resolve, reject) => {
-            img.onload = () => {
-              // Calculate optimal height based on image aspect ratio
-              const aspectRatio = img.naturalHeight / img.naturalWidth;
-              const containerWidth = previewArea.offsetWidth;
-              let optimalHeight = containerWidth * aspectRatio;
-
-              // Clamp between min and max
-              optimalHeight = Math.max(150, Math.min(400, optimalHeight));
-
-              previewArea.style.height = `${optimalHeight}px`;
-              resolve();
-            };
-
-            img.onerror = reject;
-            img.src = previewPath;
-          });
-
-          img.style.cursor = 'zoom-in';
-          previewArea.innerHTML = '';
-          previewArea.appendChild(img);
-
-          // Add click event for zooming
-          img.addEventListener('click', () => {
-            const zoomOverlay = document.getElementById('image-zoom-overlay');
-            const zoomImg = document.getElementById('image-zoom-img') as HTMLImageElement;
-            
-            if (zoomOverlay && zoomImg) {
-              zoomImg.src = previewPath;
-              zoomOverlay.style.display = 'flex';
-              
-              // Trigger reflow
-              void zoomOverlay.offsetWidth;
-              
-              zoomOverlay.classList.add('active');
-              
-              // Handle closing
-              const closeBtn = document.getElementById('image-zoom-close');
-              const closeZoom = () => {
-                zoomOverlay.classList.remove('active');
-                setTimeout(() => {
-                  zoomOverlay.style.display = 'none';
-                  zoomImg.src = '';
-                }, 300); // match transition duration
-              };
-              
-              closeBtn?.addEventListener('click', closeZoom, { once: true });
-              zoomOverlay.addEventListener('click', (e) => {
-                if (e.target === zoomOverlay) closeZoom();
-              }, { once: true });
-              
-              // Escape key to close
-              const escHandler = (e: KeyboardEvent) => {
-                if (e.key === 'Escape') {
-                  closeZoom();
-                  document.removeEventListener('keydown', escHandler);
-                }
-              };
-              document.addEventListener('keydown', escHandler);
-            }
-          });
-
-          setTimeout(() => {
-            img.style.opacity = '1';
-            previewArea.classList.remove('loading');
-          }, 10);
-
-          return;
+          return {
+            mod: selectedMod,
+            previewPath,
+          };
+        } catch (error) {
+          console.error('Error loading preview:', error);
+          return null;
         }
-      } catch (error) {
-        console.error('Error loading preview:', error);
-      }
+      }),
+    );
+
+    if (updateToken !== this.selectionUpdateToken) return;
+
+    const availablePreviews = previewResults.filter(
+      (
+        preview,
+      ): preview is {
+        mod: Mod;
+        previewPath: string;
+      } => Boolean(preview),
+    );
+
+    if (availablePreviews.length === 0) {
+      this.clearPreviewArea(previewArea, true);
+      previewArea.classList.remove('loading');
+      return;
     }
 
-    // Animate out existing image if present before showing "No preview"
-    const existingImg = previewArea.querySelector<HTMLElement>('img');
-    if (existingImg) {
-      existingImg.classList.add('preview-exit');
+    try {
+      const previewHeight = await this.getPreviewAreaHeight(
+        previewArea,
+        availablePreviews[0].previewPath,
+      );
 
-      // Shrink immediately while image fades out
-      previewArea.classList.add('no-preview');
+      if (updateToken !== this.selectionUpdateToken) return;
 
-      await new Promise((resolve) => setTimeout(resolve, 150));
-    } else {
-      // No existing image, just shrink
-      previewArea.classList.add('no-preview');
+      previewArea.style.height = `${previewHeight}px`;
+    } catch (error) {
+      console.error('Error sizing preview:', error);
+      previewArea.style.removeProperty('height');
     }
 
-    previewArea.innerHTML =
-      '<p style="color: #666; text-align: center;">No preview available</p>';
+    this.renderPreviewStack(previewArea, availablePreviews);
     previewArea.classList.remove('loading');
+  }
+
+  renderPreviewStack(
+    previewArea: HTMLElement,
+    previews: Array<{ mod: Mod; previewPath: string }>,
+  ) {
+    if (this.previewTimeline?.kill) {
+      this.previewTimeline.kill();
+    }
+    this.previewTimeline = null;
+
+    const gsapRef = this.getGsapRuntime();
+    const animationsDisabled = !gsapRef || this.arePreviewAnimationsDisabled();
+
+    previewArea.classList.remove('no-preview');
+    previewArea.classList.toggle('has-stacked-preview', previews.length > 1);
+    previewArea.style.setProperty(
+      '--preview-stack-visible-count',
+      String(Math.max(previews.length, 1)),
+    );
+
+    let stack = previewArea.querySelector<HTMLElement>('.preview-stack');
+    if (!stack) {
+      stack = document.createElement('div');
+      stack.className = 'preview-stack';
+      previewArea.innerHTML = '';
+      previewArea.appendChild(stack);
+    }
+
+    const existingCards = Array.from(
+      stack.querySelectorAll<HTMLElement>('.preview-stack-card'),
+    );
+    const existingCardsByPath = new Map(
+      existingCards.map((card) => [card.dataset.previewPath || '', card]),
+    );
+    const nextCards: HTMLElement[] = [];
+    const newCards: HTMLElement[] = [];
+
+    previews.forEach((preview, index) => {
+      const existingCard = existingCardsByPath.get(preview.previewPath);
+      const card = existingCard || this.createPreviewCard(preview);
+
+      if (existingCard) {
+        existingCardsByPath.delete(preview.previewPath);
+      } else {
+        newCards.push(card);
+      }
+
+      this.syncPreviewCard(card, preview, index);
+      stack!.appendChild(card);
+      nextCards.push(card);
+    });
+
+    const removedCards = Array.from(existingCardsByPath.values());
+
+    if (animationsDisabled) {
+      removedCards.forEach((card) => card.remove());
+      if (stack.childElementCount === 0) {
+        previewArea.innerHTML = '';
+      }
+      return;
+    }
+
+    gsapRef.set([...nextCards, ...removedCards], {
+      transformOrigin: 'center top',
+      willChange: 'transform, opacity, filter',
+    });
+
+    if (newCards.length > 0) {
+      gsapRef.set(newCards, {
+        x: -18,
+        y: -24,
+        scale: 0.88,
+        opacity: 0,
+        filter: 'blur(12px)',
+      });
+    }
+
+    this.previewTimeline = gsapRef.timeline({
+      defaults: {
+        duration: 0.44,
+        ease: 'power3.out',
+      },
+      onComplete: () => {
+        removedCards.forEach((card) => card.remove());
+        nextCards.forEach((card) => card.style.removeProperty('will-change'));
+        if (stack && stack.childElementCount === 0) {
+          previewArea.innerHTML = '';
+        }
+      },
+    });
+
+    if (removedCards.length > 0) {
+      this.previewTimeline.to(
+        removedCards,
+        {
+          x: (index: number) =>
+            this.getPreviewStackCollapseState(index, previews.length).x,
+          y: (index: number) =>
+            this.getPreviewStackCollapseState(index, previews.length).y,
+          scale: (index: number) =>
+            this.getPreviewStackCollapseState(index, previews.length).scale,
+          opacity: (index: number) =>
+            this.getPreviewStackCollapseState(index, previews.length).opacity,
+          filter: (index: number) =>
+            this.getPreviewStackCollapseState(index, previews.length).filter,
+          zIndex: (index: number) =>
+            this.getPreviewStackCollapseState(index, previews.length).zIndex,
+          duration: 0.3,
+          ease: 'power2.inOut',
+          stagger: 0.03,
+        },
+        0,
+      );
+    }
+
+    this.previewTimeline.to(
+      nextCards,
+      {
+        x: (index: number) =>
+          this.getPreviewStackTargetState(index, previews.length).x,
+        y: (index: number) =>
+          this.getPreviewStackTargetState(index, previews.length).y,
+        scale: (index: number) =>
+          this.getPreviewStackTargetState(index, previews.length).scale,
+        opacity: (index: number) =>
+          this.getPreviewStackTargetState(index, previews.length).opacity,
+        filter: (index: number) =>
+          this.getPreviewStackTargetState(index, previews.length).filter,
+        zIndex: (index: number) =>
+          this.getPreviewStackTargetState(index, previews.length).zIndex,
+        stagger: 0.04,
+        clearProps: 'willChange',
+      },
+      0,
+    );
+  }
+
+  removeModFromSelection(modId: string) {
+    if (!this.selectedMods.some((selectedMod) => selectedMod.id === modId)) {
+      return;
+    }
+
+    const remainingSelection = this.selectedMods.filter(
+      (selectedMod) => selectedMod.id !== modId,
+    );
+    const nextPrimaryMod =
+      remainingSelection.find(
+        (selectedMod) => selectedMod.id === this.selectedMod?.id,
+      ) ||
+      remainingSelection[0] ||
+      null;
+
+    this.selectedMods = nextPrimaryMod
+      ? this.prioritizeSelection(remainingSelection, nextPrimaryMod)
+      : [];
+    this.selectedMod = nextPrimaryMod;
+    this.selectionAnchorId = nextPrimaryMod?.id || null;
+
+    if (this.selectedMod) {
+      localStorage.setItem('selectedModId', this.selectedMod.id);
+    } else {
+      localStorage.removeItem('selectedModId');
+    }
+
+    this.applySelectionClasses();
+
+    const updateToken = ++this.selectionUpdateToken;
+    void this.updateSelectionInfo(this.selectedMods, updateToken);
+    void this.updatePreview(this.selectedMods, updateToken);
   }
 
   loadExampleMods() {
@@ -564,7 +1177,9 @@ class ModManager {
 
   async loadModsFromFolder(modsPath: string) {
     if (this.isBatchTestingLocked()) {
-      console.log('[ModManager] Skipping folder refresh while batch testing is active');
+      console.log(
+        '[ModManager] Skipping folder refresh while batch testing is active',
+      );
       return;
     }
 
@@ -701,7 +1316,7 @@ class ModManager {
             categoryMap[category.toLowerCase()] || category;
           mod.category = normalizedCategory;
         }
-      } catch (error) { }
+      } catch (error) {}
     }
 
     this.updateVisibility();
@@ -1069,15 +1684,15 @@ class ModManager {
       const filters =
         format === 'md'
           ? [
-            { name: 'Markdown Files', extensions: ['md'] },
-            { name: 'Text Files', extensions: ['txt'] },
-            { name: 'All Files', extensions: ['*'] },
-          ]
+              { name: 'Markdown Files', extensions: ['md'] },
+              { name: 'Text Files', extensions: ['txt'] },
+              { name: 'All Files', extensions: ['*'] },
+            ]
           : [
-            { name: 'Text Files', extensions: ['txt'] },
-            { name: 'Markdown Files', extensions: ['md'] },
-            { name: 'All Files', extensions: ['*'] },
-          ];
+              { name: 'Text Files', extensions: ['txt'] },
+              { name: 'Markdown Files', extensions: ['md'] },
+              { name: 'All Files', extensions: ['*'] },
+            ];
 
       const result = await window.electronAPI.saveFileDialog(fileName, filters);
 
