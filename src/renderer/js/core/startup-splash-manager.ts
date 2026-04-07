@@ -8,6 +8,8 @@ class StartupSplashManager {
   splashSoundEnabled: boolean;
   startupLaunch: boolean;
   postTutorialIntro: boolean;
+  animationWarmupPromise: Promise<void> | null;
+  preloadedLottiePaths: Set<string>;
 
   constructor() {
     this.overlay = null;
@@ -19,6 +21,8 @@ class StartupSplashManager {
     this.splashSoundEnabled = true;
     this.startupLaunch = false;
     this.postTutorialIntro = false;
+    this.animationWarmupPromise = null;
+    this.preloadedLottiePaths = new Set();
   }
 
   isStartupLaunch() {
@@ -39,6 +43,8 @@ class StartupSplashManager {
 
     await this.loadPreferences();
 
+    this.animationWarmupPromise = this.warmupAnimationAssets();
+
     const bootPromise = this.waitForBoot();
 
     if (this.splashEnabled) {
@@ -47,6 +53,7 @@ class StartupSplashManager {
       await this.playLoadingOnlySequence(bootPromise);
     }
 
+    await this.prepareAppIntro();
     await this.finishStartup();
   }
 
@@ -173,6 +180,95 @@ class StartupSplashManager {
     await bootPromise;
   }
 
+  async warmupAnimationAssets() {
+    const warmupTasks: Promise<unknown>[] = [];
+
+    if (window.animationManager?.preloadAssets) {
+      warmupTasks.push(window.animationManager.preloadAssets());
+    }
+
+    warmupTasks.push(this.preloadLottieAnimation('../images/loading.json'));
+
+    await Promise.allSettled(warmupTasks);
+  }
+
+  async preloadLottieAnimation(path: string) {
+    if (!window.lottie || !this.overlay || this.preloadedLottiePaths.has(path)) {
+      return;
+    }
+
+    this.preloadedLottiePaths.add(path);
+
+    const preloadContainer = document.createElement('div');
+    preloadContainer.style.cssText = [
+      'position: absolute',
+      'width: 1px',
+      'height: 1px',
+      'opacity: 0',
+      'pointer-events: none',
+      'overflow: hidden',
+      'inset: auto',
+    ].join(';');
+
+    this.overlay.appendChild(preloadContainer);
+
+    await new Promise<void>((resolve) => {
+      let settled = false;
+      let preloadAnimation: any;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+      const resolveOnce = () => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+
+        preloadAnimation?.removeEventListener('DOMLoaded', resolveOnce);
+        preloadAnimation?.removeEventListener('data_failed', resolveOnce);
+        preloadAnimation?.destroy();
+        preloadContainer.remove();
+        resolve();
+      };
+
+      preloadAnimation = window.lottie.loadAnimation({
+        container: preloadContainer,
+        renderer: 'svg',
+        loop: false,
+        autoplay: false,
+        path,
+        rendererSettings: {
+          preserveAspectRatio: 'xMidYMid meet',
+        },
+      });
+
+      preloadAnimation.addEventListener('DOMLoaded', resolveOnce);
+      preloadAnimation.addEventListener('data_failed', resolveOnce);
+      timeoutId = setTimeout(resolveOnce, 4000);
+    });
+  }
+
+  async prepareAppIntro() {
+    if (!this.splashEnabled || !window.animationManager?.prepareIntroAnimation) {
+      return;
+    }
+
+    if (this.animationWarmupPromise) {
+      await Promise.race([
+        this.animationWarmupPromise,
+        new Promise((resolve) => setTimeout(resolve, 500)),
+      ]);
+    }
+
+    window.animationManager.prepareIntroAnimation();
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+  }
+
   async loadAnimation(
     path: string,
     options: {
@@ -278,10 +374,6 @@ class StartupSplashManager {
   }
 
   async finishStartup() {
-    if (this.splashEnabled && window.animationManager?.prepareIntroAnimation) {
-      window.animationManager.prepareIntroAnimation();
-    }
-
     document.body.classList.remove('startup-boot-pending');
 
     if (this.overlay) {

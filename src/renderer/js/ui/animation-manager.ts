@@ -1,16 +1,23 @@
 class AnimationManager {
   isReducedMotion: boolean;
   initialized: boolean;
+  introAudio: HTMLAudioElement | null;
+  assetWarmupPromise: Promise<void> | null;
+  gsapWarmedUp: boolean;
 
   constructor() {
     this.isReducedMotion = false;
     this.initialized = false;
+    this.introAudio = null;
+    this.assetWarmupPromise = null;
+    this.gsapWarmedUp = false;
   }
 
   initialize() {
     if (this.initialized) return;
 
     this.checkReducedMotion();
+    void this.preloadAssets();
     this.setupListeners();
     this.checkInitialAnimation();
     this.initialized = true;
@@ -44,40 +51,137 @@ class AnimationManager {
     }
   }
 
+  preloadAssets() {
+    this.checkReducedMotion();
+
+    if (this.isReducedMotion) {
+      return Promise.resolve();
+    }
+
+    if (this.assetWarmupPromise) {
+      return this.assetWarmupPromise;
+    }
+
+    this.warmupGsapRuntime();
+
+    this.assetWarmupPromise = new Promise<void>((resolve) => {
+      try {
+        if (!this.introAudio) {
+          this.introAudio = new Audio('../../assets/sounds/endtutorial.mp3');
+          this.introAudio.preload = 'auto';
+        }
+
+        let settled = false;
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+        const resolveOnce = () => {
+          if (settled) {
+            return;
+          }
+
+          settled = true;
+
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
+
+          this.introAudio?.removeEventListener('canplaythrough', resolveOnce);
+          this.introAudio?.removeEventListener('loadeddata', resolveOnce);
+          this.introAudio?.removeEventListener('error', resolveOnce);
+          resolve();
+        };
+
+        this.introAudio.addEventListener('canplaythrough', resolveOnce);
+        this.introAudio.addEventListener('loadeddata', resolveOnce);
+        this.introAudio.addEventListener('error', resolveOnce);
+
+        timeoutId = setTimeout(resolveOnce, 1500);
+        this.introAudio.load();
+      } catch (error) {
+        console.warn('[AnimationManager] Failed to warm intro assets:', error);
+        resolve();
+      }
+    });
+
+    return this.assetWarmupPromise;
+  }
+
+  warmupGsapRuntime() {
+    if (this.gsapWarmedUp || typeof gsap === 'undefined') {
+      return;
+    }
+
+    try {
+      const timeline = gsap.timeline({ paused: true });
+      timeline.to({}, { duration: 0 });
+      timeline.kill();
+      this.gsapWarmedUp = true;
+    } catch (error) {
+      console.warn('[AnimationManager] Failed to warm GSAP runtime:', error);
+    }
+  }
+
+  playIntroAudio() {
+    const introAudio =
+      this.introAudio || new Audio('../../assets/sounds/endtutorial.mp3');
+
+    try {
+      introAudio.currentTime = 0;
+      introAudio.play().catch((error) => {
+        console.error(
+          '[AnimationManager] Error playing intro audio:',
+          error,
+        );
+      });
+    } catch (error) {
+      console.error('[AnimationManager] Failed to initialize intro audio:', error);
+    }
+  }
+
   prepareIntroAnimation() {
+    this.checkReducedMotion();
+
     if (this.isReducedMotion) {
       return;
     }
 
+    void this.preloadAssets();
     document.body.classList.remove('app-entrance-animation');
     document.body.classList.add('app-entrance-prepared');
+    void document.body.offsetWidth;
   }
 
   playIntroAnimation(playAudio = true) {
+    this.checkReducedMotion();
+
     if (this.isReducedMotion) return Promise.resolve();
 
+    void this.preloadAssets();
     console.log('Playing entrance animation sequence (manual trigger)');
 
     if (playAudio) {
-      try {
-        const introAudio = new Audio('../../assets/sounds/endtutorial.mp3');
-        introAudio.play().catch(e => console.error('[AnimationManager] Error playing intro audio:', e));
-      } catch (e) {
-        console.error('[AnimationManager] Failed to initialize intro audio:', e);
-      }
+      this.playIntroAudio();
     }
 
     return new Promise<void>((resolve) => {
       requestAnimationFrame(() => {
-        document.body.classList.remove('app-entrance-animation');
-        document.body.classList.add('app-entrance-prepared');
+        const body = document.body;
+        const wasPrepared = body.classList.contains('app-entrance-prepared');
+
+        body.classList.remove('app-entrance-animation');
+        if (!wasPrepared) {
+          body.classList.add('app-entrance-prepared');
+        }
+
         void document.body.offsetWidth;
-        document.body.classList.remove('app-entrance-prepared');
-        document.body.classList.add('app-entrance-animation');
+
+        body.classList.remove('app-entrance-prepared');
+        body.classList.add('app-entrance-animation');
 
         setTimeout(() => {
-          document.body.classList.remove('app-entrance-animation');
-          document.body.classList.remove('app-entrance-prepared');
+          body.classList.remove('app-entrance-animation');
+          body.classList.remove('app-entrance-prepared');
           console.log('Entrance animation sequence completed');
           resolve();
         }, 2500);
