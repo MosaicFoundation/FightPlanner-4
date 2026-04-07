@@ -313,14 +313,19 @@ class ModManager {
   reapplySelectionState() {
     const hadSelection = this.selectedMods.length > 0 || !!this.selectedMod;
     const selectedIds = new Set(this.selectedMods.map((mod) => mod.id));
+    const selectedPaths = new Set(
+      this.selectedMods
+        .map((mod) => mod.path)
+        .filter((path): path is string => Boolean(path)),
+    );
 
-    if (selectedIds.size === 0) {
+    if (selectedIds.size === 0 && selectedPaths.size === 0) {
       this.applySelectionClasses();
       return;
     }
 
     const refreshedSelection = this.mods.filter((mod) =>
-      selectedIds.has(mod.id),
+      selectedIds.has(mod.id) || selectedPaths.has(mod.path),
     );
 
     if (refreshedSelection.length === 0) {
@@ -380,7 +385,11 @@ class ModManager {
     return this.selectedMods
       .map(
         (selectedMod) =>
-          this.mods.find((mod) => mod.id === selectedMod.id) || null,
+          this.mods.find(
+            (mod) =>
+              mod.id === selectedMod.id ||
+              (selectedMod.path && mod.path === selectedMod.path),
+          ) || null,
       )
       .filter((mod): mod is Mod => Boolean(mod));
   }
@@ -427,15 +436,29 @@ class ModManager {
   applySelectionClasses() {
     if (!this.modListContainer) return;
 
-    const selectedIds = new Set(this.selectedMods.map((mod) => mod.id));
+    const selectedMods = this.getCurrentSelectedMods();
+    const selectedIds = new Set(selectedMods.map((mod) => mod.id));
+    const selectionIndexes = new Map(
+      selectedMods.map((mod, index) => [mod.id, index + 1]),
+    );
+    const showSelectionIndexes = selectedMods.length > 1;
     const allModItems =
       this.modListContainer.querySelectorAll<HTMLElement>('.mod-item');
 
     allModItems.forEach((item) => {
+      const modId = item.dataset.modId;
+      const isSelected = !!modId && selectedIds.has(modId);
+
       item.classList.toggle(
         'selected',
-        !!item.dataset.modId && selectedIds.has(item.dataset.modId),
+        isSelected,
       );
+
+      if (isSelected && modId && showSelectionIndexes) {
+        item.dataset.selectionIndex = `${selectionIndexes.get(modId)}`;
+      } else {
+        delete item.dataset.selectionIndex;
+      }
     });
   }
 

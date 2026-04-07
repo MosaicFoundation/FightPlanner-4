@@ -41,6 +41,9 @@
       "noDescription": "Aucune description disponible",
       "noInformation": "Aucune information disponible",
       "selectedCount": "{{count}} mod(s) selectionnes",
+      "selectedHint": "Ctrl/Cmd + clic ajoute ou retire des mods, Maj + clic selectionne une plage. Appuyez sur Suppr pour desinstaller la selection.",
+      "selectedMore": "+{{count}} de plus",
+      "uninstallSelected": "Desinstaller {{count}} mod{{plural}} selectionne{{plural}}",
       "loading": "Chargement...",
       "failedToLoad": "Échec du chargement des informations du mod",
       "noInfoToml": "Fichier info.toml introuvable",
@@ -374,7 +377,12 @@
     "uninstall": {
       "title": "Désinstaller le Mod",
       "warning": "Êtes-vous sûr de vouloir désinstaller",
-      "hint": "Cela supprimera définitivement le dossier du mod et ne peut pas être annulé."
+      "hint": "Cela supprimera définitivement le dossier du mod et ne peut pas être annulé.",
+      "titleMultiple": "Desinstaller {{count}} mods",
+      "warningMultiple": "Etes-vous sur de vouloir desinstaller ces {{count}} mods ?",
+      "hintMultiple": "Cela supprimera definitivement les dossiers des mods selectionnes et ne peut pas etre annule.",
+      "confirmMultiple": "Desinstaller {{count}} mods",
+      "moreSelected": "+{{count}} autre(s) mod(s)"
     },
     "deletePlugin": {
       "title": "Supprimer le Plugin",
@@ -491,7 +499,8 @@
     "enable": "Activer",
     "disable": "Désactiver",
     "openFolder": "Ouvrir le Dossier",
-    "uninstall": "Désinstaller"
+    "uninstall": "Désinstaller",
+    "uninstallSelected": "Desinstaller la selection ({{count}})"
   },
   "social": {
     "getStarted": "Commencer",
@@ -707,7 +716,10 @@
     "failedToOpenFolder": "Échec de l'ouverture du dossier : {{error}}",
     "cannotUninstallMod": "Impossible de désinstaller le mod - chemin du dossier introuvable",
     "modUninstalled": "Mod désinstallé avec succès",
+    "modsUninstalled": "{{count}} mod{{plural}} desinstalle{{plural}} avec succes",
+    "modsUninstalledPartial": "{{success}} mod(s) desinstalles, {{error}} erreur(s)",
     "failedToUninstallMod": "Échec de la désinstallation du mod : {{error}}",
+    "failedToUninstallMods": "Echec de la desinstallation des mods selectionnes : {{error}}",
     "slotChanged": "Slot changé avec succès",
     "failedToChangeSlot": "Échec du changement de slot : {{error}}",
     "noModsToChange": "Aucun mod à modifier",

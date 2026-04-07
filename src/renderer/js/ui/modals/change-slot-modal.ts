@@ -92,6 +92,71 @@ function getFighterDisplayName(fighterNameOrGroup: string): string {
   return characterInfo?.name || fighterNameOrGroup;
 }
 
+const SLOT_DROPDOWN_OFFSET_PX = 5;
+const SLOT_DROPDOWN_VIEWPORT_PADDING_PX = 12;
+const SLOT_DROPDOWN_MAX_HEIGHT_PX = 300;
+
+function getDropdownHiddenTransform(dropdown: HTMLElement): string {
+  return dropdown.dataset.openDirection === 'up'
+    ? 'translateY(10px)'
+    : 'translateY(-10px)';
+}
+
+function hideSlotDropdown(dropdown: HTMLElement) {
+  dropdown.style.opacity = '0';
+  dropdown.style.pointerEvents = 'none';
+  dropdown.style.visibility = 'hidden';
+  dropdown.style.transform = getDropdownHiddenTransform(dropdown);
+}
+
+function positionSlotDropdown(
+  selectContainer: HTMLElement,
+  selectDropdown: HTMLElement,
+) {
+  const rect = selectContainer.getBoundingClientRect();
+  const viewportHeight = window.innerHeight;
+  const viewportWidth = window.innerWidth;
+  const spaceAbove = rect.top - SLOT_DROPDOWN_VIEWPORT_PADDING_PX;
+  const spaceBelow =
+    viewportHeight - rect.bottom - SLOT_DROPDOWN_VIEWPORT_PADDING_PX;
+
+  selectDropdown.style.width = `${rect.width}px`;
+  selectDropdown.style.left = `${Math.min(
+    Math.max(SLOT_DROPDOWN_VIEWPORT_PADDING_PX, rect.left),
+    Math.max(
+      SLOT_DROPDOWN_VIEWPORT_PADDING_PX,
+      viewportWidth - rect.width - SLOT_DROPDOWN_VIEWPORT_PADDING_PX,
+    ),
+  )}px`;
+  selectDropdown.style.top = '0px';
+  selectDropdown.style.maxHeight = `${SLOT_DROPDOWN_MAX_HEIGHT_PX}px`;
+
+  const naturalHeight = Math.min(
+    selectDropdown.scrollHeight,
+    SLOT_DROPDOWN_MAX_HEIGHT_PX,
+  );
+  const opensUpward =
+    naturalHeight > spaceBelow && spaceAbove > spaceBelow;
+  const availableSpace = Math.max(opensUpward ? spaceAbove : spaceBelow, 1);
+  const maxHeight = Math.min(
+    SLOT_DROPDOWN_MAX_HEIGHT_PX,
+    Math.max(availableSpace - SLOT_DROPDOWN_OFFSET_PX, 1),
+  );
+
+  selectDropdown.style.maxHeight = `${maxHeight}px`;
+  selectDropdown.dataset.openDirection = opensUpward ? 'up' : 'down';
+
+  const dropdownHeight = Math.min(selectDropdown.scrollHeight, maxHeight);
+  const top = opensUpward
+    ? rect.top - dropdownHeight - SLOT_DROPDOWN_OFFSET_PX
+    : rect.bottom + SLOT_DROPDOWN_OFFSET_PX;
+
+  selectDropdown.style.top = `${Math.max(
+    SLOT_DROPDOWN_VIEWPORT_PADDING_PX,
+    top,
+  )}px`;
+}
+
 M.prototype.openChangeSlotModal = function (mod, modData, callback) {
   this.currentMod = mod;
   this.changeSlotCallback = callback;
@@ -790,10 +855,7 @@ M.prototype._renderSlotList = function () {
         });
 
         selectContainer.classList.remove('open');
-        selectDropdown.style.opacity = '0';
-        selectDropdown.style.pointerEvents = 'none';
-        selectDropdown.style.visibility = 'hidden';
-        selectDropdown.style.transform = 'translateY(-10px)';
+        hideSlotDropdown(selectDropdown);
 
         const allOptions = selectDropdown.querySelectorAll<HTMLElement>(
           '.custom-select-option',
@@ -829,10 +891,7 @@ M.prototype._renderSlotList = function () {
             );
 
             if (drop) {
-              drop.style.opacity = '0';
-              drop.style.pointerEvents = 'none';
-              drop.style.visibility = 'hidden';
-              drop.style.transform = 'translateY(-10px)';
+              hideSlotDropdown(drop);
             }
           }
         });
@@ -840,15 +899,12 @@ M.prototype._renderSlotList = function () {
       if (!wasOpen) {
         selectContainer.classList.add('open');
 
-        const rect = selectContainer.getBoundingClientRect();
-        selectDropdown.style.top = `${rect.bottom + 5}px`;
-        selectDropdown.style.left = `${rect.left}px`;
-        selectDropdown.style.width = `${rect.width}px`;
+        positionSlotDropdown(selectContainer, selectDropdown);
         selectDropdown.style.zIndex = '100005';
 
         selectDropdown.style.transition = 'none';
         selectDropdown.style.opacity = '0';
-        selectDropdown.style.transform = 'translateY(-10px)';
+        selectDropdown.style.transform = getDropdownHiddenTransform(selectDropdown);
         selectDropdown.style.pointerEvents = 'all';
         selectDropdown.style.visibility = 'visible';
 
@@ -863,10 +919,7 @@ M.prototype._renderSlotList = function () {
         });
       } else {
         selectContainer.classList.remove('open');
-        selectDropdown.style.opacity = '0';
-        selectDropdown.style.pointerEvents = 'none';
-        selectDropdown.style.visibility = 'hidden';
-        selectDropdown.style.transform = 'translateY(-10px)';
+        hideSlotDropdown(selectDropdown);
       }
     });
 
@@ -879,10 +932,7 @@ M.prototype._renderSlotList = function () {
       ) {
         if (selectContainer.classList.contains('open')) {
           selectContainer.classList.remove('open');
-          selectDropdown.style.opacity = '0';
-          selectDropdown.style.pointerEvents = 'none';
-          selectDropdown.style.visibility = 'hidden';
-          selectDropdown.style.transform = 'translateY(-10px)';
+          hideSlotDropdown(selectDropdown);
         }
       }
     });

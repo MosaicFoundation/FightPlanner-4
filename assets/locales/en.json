@@ -42,6 +42,9 @@
       "noDescription": "No description available",
       "noInformation": "No information available",
       "selectedCount": "{{count}} mod(s) selected",
+      "selectedHint": "Ctrl/Cmd+click adds or removes mods, Shift+click selects a range. Press Delete to uninstall the selection.",
+      "selectedMore": "+{{count}} more",
+      "uninstallSelected": "Uninstall {{count}} selected mod{{plural}}",
       "loading": "Loading...",
       "failedToLoad": "Failed to load mod information",
       "noInfoToml": "No info.toml file found",
@@ -391,7 +394,12 @@
     "uninstall": {
       "title": "Uninstall Mod",
       "warning": "Are you sure you want to uninstall",
-      "hint": "This will permanently delete the mod folder and cannot be undone."
+      "hint": "This will permanently delete the mod folder and cannot be undone.",
+      "titleMultiple": "Uninstall {{count}} Mods",
+      "warningMultiple": "Are you sure you want to uninstall these {{count}} mods?",
+      "hintMultiple": "This will permanently delete the selected mod folders and cannot be undone.",
+      "confirmMultiple": "Uninstall {{count}} Mods",
+      "moreSelected": "+{{count}} more mod(s)"
     },
     "deletePlugin": {
       "title": "Delete Plugin",
@@ -491,7 +499,8 @@
     "enable": "Enable",
     "disable": "Disable",
     "openFolder": "Open Folder",
-    "uninstall": "Uninstall"
+    "uninstall": "Uninstall",
+    "uninstallSelected": "Uninstall Selected ({{count}})"
   },
   "social": {
     "getStarted": "Get Started",
@@ -707,7 +716,10 @@
     "failedToOpenFolder": "Failed to open folder: {{error}}",
     "cannotUninstallMod": "Cannot uninstall mod - folder path not found",
     "modUninstalled": "Mod uninstalled successfully",
+    "modsUninstalled": "{{count}} mod{{plural}} uninstalled successfully",
+    "modsUninstalledPartial": "{{success}} mod(s) uninstalled, {{error}} failed",
     "failedToUninstallMod": "Failed to uninstall mod: {{error}}",
+    "failedToUninstallMods": "Failed to uninstall selected mods: {{error}}",
     "slotChanged": "Slot changed successfully",
     "failedToChangeSlot": "Failed to change slot: {{error}}",
     "noModsToChange": "No mods to change",

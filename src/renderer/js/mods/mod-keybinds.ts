@@ -35,7 +35,8 @@ class ModKeybindsHandler {
         return;
       }
 
-      const selectedMod = this.modManager.selectedMod;
+      const selectedMods = this.modManager.getCurrentSelectedMods();
+      const selectedMod = selectedMods[0] || this.modManager.selectedMod;
 
       if (!selectedMod) {
         return;
@@ -49,7 +50,7 @@ class ModKeybindsHandler {
         case 'Backspace':
           if (isCtrlOrCmd || e.key === 'Delete') {
             e.preventDefault();
-            await this.handleDelete(selectedMod);
+            await this.handleDelete(selectedMods.length > 0 ? selectedMods : [selectedMod]);
           }
           break;
 
@@ -90,9 +91,13 @@ class ModKeybindsHandler {
     });
   }
 
-  async handleDelete(selectedMod: Mod) {
+  async handleDelete(selectedMods: Mod[]) {
     if (this.modManager.operations) {
-      await this.modManager.operations.uninstallMod(selectedMod);
+      if (selectedMods.length > 1) {
+        await this.modManager.operations.uninstallMods(selectedMods);
+      } else if (selectedMods[0]) {
+        await this.modManager.operations.uninstallMod(selectedMods[0]);
+      }
     }
   }
 

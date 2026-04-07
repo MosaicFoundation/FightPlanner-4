@@ -241,18 +241,21 @@
     <div class="modal-header modal-header-danger">
       <h3>
         <i class="bi bi-exclamation-triangle"></i>
-        <span data-i18n="modals.uninstall.title">Uninstall Mod</span>
+        <span id="uninstall-modal-title" data-i18n="modals.uninstall.title">
+          Uninstall Mod
+        </span>
       </h3>
       <button class="modal-close" onclick="window.modalManager.closeUninstallModal()">
         <i class="bi bi-x-lg"></i>
       </button>
     </div>
     <div class="modal-body">
-      <p class="modal-warning">
-        <span data-i18n="modals.uninstall.warning">Are you sure you want to uninstall</span>
+      <p class="modal-warning" id="uninstall-warning-text">
+        Are you sure you want to uninstall
         <strong id="uninstall-mod-name"></strong>?
       </p>
-      <p class="modal-hint" data-i18n="modals.uninstall.hint">
+      <div id="uninstall-mod-list" class="uninstall-mod-list"></div>
+      <p class="modal-hint" id="uninstall-modal-hint" data-i18n="modals.uninstall.hint">
         This will permanently delete the mod folder and cannot be undone.
       </p>
     </div>
@@ -262,7 +265,9 @@
         Cancel
       </button>
       <button class="modal-btn modal-btn-danger" onclick="window.modalManager.confirmUninstall()">
-        <span data-i18n="common.uninstall">Uninstall</span>
+        <span id="uninstall-confirm-label" data-i18n="common.uninstall">
+          Uninstall
+        </span>
         <i class="bi bi-arrow-return-left" style="margin-left: 6px; opacity: 0.7"></i>
       </button>
     </div>

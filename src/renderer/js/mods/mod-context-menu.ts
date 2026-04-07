@@ -36,6 +36,7 @@ class ModContextMenuHandler {
 
         const action = item.dataset.action;
         const modId = contextMenu.dataset.modId;
+        const useSelection = contextMenu.dataset.useSelection === 'true';
         const mod = this.modManager.mods.find((m) => m.id === modId);
 
         if (!mod) return;
@@ -57,7 +58,13 @@ class ModContextMenuHandler {
               await this.modManager.operations.openModFolder(mod);
               break;
             case 'uninstall':
-              await this.modManager.operations.uninstallMod(mod);
+              if (useSelection) {
+                await this.modManager.operations.uninstallMods(
+                  this.modManager.getCurrentSelectedMods(),
+                );
+              } else {
+                await this.modManager.operations.uninstallMod(mod);
+              }
               break;
           }
         }
@@ -93,10 +100,17 @@ class ModContextMenuHandler {
 
     const toggleText = document.querySelector<HTMLElement>('#toggle-text');
     const toggleIcon = document.querySelector<HTMLElement>('#toggle-icon');
+    const uninstallText = contextMenu.querySelector<HTMLElement>(
+      '[data-action="uninstall"] span',
+    );
 
-    const t = (key) => {
-      return window.i18n && window.i18n.t ? window.i18n.t(key) : key;
+    const t = (key, params = {}) => {
+      return window.i18n && window.i18n.t ? window.i18n.t(key, params) : key;
     };
+    const selectedMods = this.modManager.getCurrentSelectedMods();
+    const useSelection =
+      selectedMods.length > 1 &&
+      selectedMods.some((selectedMod) => selectedMod.id === mod.id);
 
     if (mod.status === 'disabled') {
       if (toggleText) toggleText.textContent = t('contextMenu.enable');
@@ -107,6 +121,15 @@ class ModContextMenuHandler {
     }
 
     contextMenu.dataset.modId = mod.id;
+    contextMenu.dataset.useSelection = useSelection ? 'true' : 'false';
+
+    if (uninstallText) {
+      uninstallText.textContent = useSelection
+        ? t('contextMenu.uninstallSelected', {
+            count: selectedMods.length,
+          })
+        : t('contextMenu.uninstall');
+    }
 
     contextMenu.style.visibility = 'hidden';
     contextMenu.style.display = 'block';
