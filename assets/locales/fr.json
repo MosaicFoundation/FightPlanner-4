@@ -774,6 +774,7 @@
     "failedToLoadCustomCss": "Échec du chargement du CSS personnalisé",
     "customJsLoaded": "JavaScript personnalisé chargé avec succès",
     "failedToLoadCustomJs": "Échec du chargement du JavaScript personnalisé",
+    "animationPreferenceRestartRequired": "La préférence d'animation a été mise à jour. L'effet complet sera appliqué après le redémarrage de l'application.",
     "failedToRestartApp": "Impossible de redémarrer FightPlanner",
     "cssFileRemoved": "Fichier CSS supprimé",
     "jsFileRemoved": "Fichier JS supprimé. Veuillez redémarrer pour un effet complet.",

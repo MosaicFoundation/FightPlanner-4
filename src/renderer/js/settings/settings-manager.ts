@@ -2138,8 +2138,19 @@ ${t('settings.okUnderstand')}
 
   async setAnimationPreference(preference) {
     try {
+      const currentPreference =
+        ((await window.electronAPI.store.get('animationPreference')) as
+          | string
+          | null) || 'full';
+
+      if (currentPreference === preference) {
+        this.applyAnimationPreference(preference);
+        return;
+      }
+
       await window.electronAPI.store.set('animationPreference', preference);
       this.applyAnimationPreference(preference);
+      this.showAnimationPreferenceRestartToast();
     } catch (error) {
       console.error('Failed to save animation preference:', error);
     }
@@ -2184,6 +2195,36 @@ ${t('settings.okUnderstand')}
       document.body.classList.add('no-animations');
       document.body.classList.add('reduced-animations');
     }
+  }
+
+  showAnimationPreferenceRestartToast() {
+    if (!window.toastManager) {
+      return;
+    }
+
+    const restartLabel = window.i18n?.t?.('common.restart') || 'Restart';
+
+    window.toastManager.info(
+      'toasts.animationPreferenceRestartRequired',
+      8000,
+      {},
+      {
+        actionButton: {
+          text: restartLabel,
+          onClick: async () => {
+            try {
+              await window.electronAPI?.relaunchApp?.();
+            } catch (error) {
+              console.error(
+                'Failed to relaunch app after animation preference change:',
+                error,
+              );
+              window.toastManager?.error('toasts.failedToRestartApp');
+            }
+          },
+        },
+      },
+    );
   }
 
   async loadInstallConfirmSetting() {

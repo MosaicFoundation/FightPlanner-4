@@ -774,6 +774,7 @@
     "failedToLoadCustomCss": "Failed to load custom CSS",
     "customJsLoaded": "Custom JavaScript loaded successfully",
     "failedToLoadCustomJs": "Failed to load custom JavaScript",
+    "animationPreferenceRestartRequired": "Animation preference updated. Full effect will apply after restarting the app.",
     "failedToRestartApp": "Failed to restart FightPlanner",
     "cssFileRemoved": "CSS file removed",
     "jsFileRemoved": "JS file removed. Please restart for full effect.",
