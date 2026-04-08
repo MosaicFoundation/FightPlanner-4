@@ -7,8 +7,9 @@ build/
 out/
 *.tsbuildinfo
 
-# Changelog
+# Changelog/todo
 changelog.md
+todo.md
 
 # Logs
 *.log

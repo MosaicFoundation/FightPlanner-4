@@ -611,7 +611,41 @@
     "charactersCount": "personnages"
   },
   "stages": {
-    "title": "Arènes"
+    "title": "Arenes",
+    "subtitle": "Reorganisez la grille des stages, faites un clic droit sur un stage pour le masquer, puis sauvegardez pour regenerer le Stage Layout.",
+    "defaultPresetName": "Layout par defaut",
+    "currentLayoutName": "Layout actuel",
+    "newPresetName": "Nouveau layout",
+    "saveLayout": "Appliquer le layout",
+    "loading": "Chargement des stages...",
+    "sourceSaved": "Disposition sauvegardee",
+    "sourceCanonical": "Disposition par defaut",
+    "statsTitle": "Disposition actuelle",
+    "statsMovable": "Stages deplacables",
+    "statsMeta": "{{hidden}} masques • {{random}} random fixes • {{rows}} lignes",
+    "instructions": "Glissez un stage visible apres les cases Random, ou faites un clic droit sur un stage pour le masquer. Utilisez le bouton des stages masques pour le restaurer.",
+    "noteOverflow": "Les donnees de stages embarquees ont besoin de {{rows}} lignes pour tout afficher.",
+    "hiddenTitle": "Stages masques",
+    "hiddenEmpty": "Aucun stage masque.",
+    "showHidden": "Stages masques",
+    "hiddenModalHint": "Utilisez le bouton Restaurer sous un stage masque pour le reafficher.",
+    "hide": "Masquer",
+    "unhide": "Restaurer",
+    "presetChooserTitle": "Presets de layout",
+    "presetChooserHint": "Chargez un preset de layout, creez-en un nouveau ou sauvegardez l'agencement actuel.",
+    "presetEmpty": "Aucun preset de layout sauvegarde pour le moment.",
+    "presetCurrent": "Actuel",
+    "presetUpdatedAt": "Mis a jour {{date}}",
+    "presetNew": "Nouveau",
+    "presetSave": "Sauvegarder",
+    "presetNameTitle": "Sauvegarder le preset",
+    "presetNameLabel": "Nom du preset",
+    "presetNamePlaceholder": "Entrez un nom pour ce layout",
+    "presetNameEmpty": "Le nom du preset ne peut pas etre vide.",
+    "presetSaveFailed": "Impossible de sauvegarder le preset",
+    "loadFailed": "Impossible de charger la disposition des stages",
+    "saveFailed": "Impossible de sauvegarder la disposition des stages",
+    "modBadge": "Stages"
   },
   "fightplanner": {
     "subtitle": "Un gestionnaire de mods moderne pour Super Smash Bros. Ultimate",
@@ -698,6 +732,11 @@
     "noEnabledModsToExport": "Aucun mod activé à exporter",
     "modListExportedSuccessfully": "Liste de mods exportée avec succès vers : {{filePath}}",
     "failedToExportModList": "Échec de l'export de la liste de mods : {{error}}",
+    "stagesLayoutSaved": "Disposition des stages sauvegardee et exportee avec succes",
+    "stagePresetSaved": "Preset de layout sauvegarde avec succes",
+    "stagePresetLoaded": "Preset de layout charge",
+    "failedToLoadStages": "Impossible de charger les stages : {{error}}",
+    "failedToSaveStages": "Impossible de sauvegarder les stages : {{error}}",
     "downloadStarted": "Téléchargement démarré...",
     "modInstalledSuccess": "Mod installé avec succès ! 🎉",
     "installationFailed": "Échec de l'installation : {{error}}",
@@ -873,3 +912,5 @@
     }
   }
 }
+
+

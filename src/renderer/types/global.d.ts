@@ -28,6 +28,7 @@ import { ProtocolListener } from '../js/protocol/protocol-listener';
 import { DiscordRPCClient } from '../js/core/discord-rpc-client';
 import { ModDragDropHandler } from '../js/mods/mod-drag-drop';
 import { SmartRenameManager } from '../js/mods/smart-rename-manager';
+import { StagesManager } from '../js/stages/stages-manager';
 import { I18nClient } from '../js/i18n/i18n-client';
 
 import { ModOperations } from '../js/mods/mod-operations';
@@ -74,6 +75,7 @@ declare global {
     discordRPCClient: DiscordRPCClient;
     modDragDropHandler: ModDragDropHandler;
     smartRenameManager: SmartRenameManager;
+    stagesManager: StagesManager;
 
     ModOperations: typeof ModOperations;
     ModContextMenuHandler: typeof ModContextMenuHandler;

@@ -389,6 +389,16 @@ function initializeTabFeatures(tabName) {
     }
   }
 
+  if (tabName === 'stages') {
+    if (window.stagesManager) {
+      void window.stagesManager.initialize();
+    }
+
+    if (window.i18n) {
+      window.i18n.updateDOM();
+    }
+  }
+
   if (tabName === 'settings' && window.settingsManager) {
     window.settingsManager.setupEventListeners();
 
