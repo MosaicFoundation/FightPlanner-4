@@ -62,6 +62,14 @@ class ModListRenderer {
     modItem.classList.add('mod-item');
     modItem.dataset.modId = mod.id;
 
+    const isStagesLayoutMod =
+      typeof mod.name === 'string' &&
+      mod.name.trim().toLowerCase() === 'stages layout';
+
+    if (isStagesLayoutMod) {
+      modItem.classList.add('mod-special-stage-layout');
+    }
+
     modItem.dataset.processed = 'false';
 
     // Set CSS variable for staggered animation
@@ -103,6 +111,14 @@ class ModListRenderer {
 
     textContainer.appendChild(modName);
 
+    if (isStagesLayoutMod) {
+      const badge = document.createElement('span');
+      badge.className = 'mod-special-badge';
+      badge.textContent =
+        window.i18n?.t('stages.modBadge') || 'Stages Layout';
+      textContainer.appendChild(badge);
+    }
+
     if (mod.hash && window.settingsManager?.settings?.devShowModHash) {
       const modHash = document.createElement('span');
       modHash.style.fontSize = '11px';
@@ -113,6 +129,10 @@ class ModListRenderer {
 
     modItem.appendChild(statusIcon);
     modItem.appendChild(textContainer);
+
+    modItem.addEventListener('selectstart', (event: Event) => {
+      event.preventDefault();
+    });
 
     modItem.addEventListener('click', (event: MouseEvent) =>
       this.modManager.selectMod(mod.id, {

@@ -611,7 +611,41 @@
     "charactersCount": "characters"
   },
   "stages": {
-    "title": "Stages"
+    "title": "Stages",
+    "subtitle": "Reorder the stage grid, right-click a stage to hide it, then save to regenerate the Stage Layout.",
+    "defaultPresetName": "Default Layout",
+    "currentLayoutName": "Current Layout",
+    "newPresetName": "New Layout",
+    "saveLayout": "Apply Layout",
+    "loading": "Loading stages...",
+    "sourceSaved": "Saved layout",
+    "sourceCanonical": "Default layout",
+    "statsTitle": "Current layout",
+    "statsMovable": "Movable stages",
+    "statsMeta": "{{hidden}} hidden • {{random}} fixed random • {{rows}} rows",
+    "instructions": "Drag any visible stage after the Random cells, or right-click a stage to hide it. Use the hidden stages button to restore it.",
+    "noteOverflow": "Current embedded stage data needs {{rows}} rows to display every stage.",
+    "hiddenTitle": "Hidden stages",
+    "hiddenEmpty": "No hidden stages.",
+    "showHidden": "Hidden stages",
+    "hiddenModalHint": "Use the restore button under a hidden stage to show it again.",
+    "hide": "Hide",
+    "unhide": "Unhide",
+    "presetChooserTitle": "Stage Layout Presets",
+    "presetChooserHint": "Load a saved stage layout preset, start a fresh one, or save your current arrangement.",
+    "presetEmpty": "No saved stage layout presets yet.",
+    "presetCurrent": "Current",
+    "presetUpdatedAt": "Updated {{date}}",
+    "presetNew": "New",
+    "presetSave": "Save",
+    "presetNameTitle": "Save Stage Layout Preset",
+    "presetNameLabel": "Preset name",
+    "presetNamePlaceholder": "Enter a name for this layout",
+    "presetNameEmpty": "Preset name cannot be empty.",
+    "presetSaveFailed": "Failed to save preset",
+    "loadFailed": "Failed to load stage layout",
+    "saveFailed": "Failed to save stage layout",
+    "modBadge": "Stages"
   },
   "fightplanner": {
     "subtitle": "A modern mod manager for Super Smash Bros. Ultimate",
@@ -698,6 +732,11 @@
     "noEnabledModsToExport": "No enabled mods to export",
     "modListExportedSuccessfully": "Mod list exported successfully to: {{filePath}}",
     "failedToExportModList": "Failed to export mod list: {{error}}",
+    "stagesLayoutSaved": "Stages layout saved and exported successfully",
+    "stagePresetSaved": "Stage layout preset saved successfully",
+    "stagePresetLoaded": "Stage layout preset loaded",
+    "failedToLoadStages": "Failed to load stages: {{error}}",
+    "failedToSaveStages": "Failed to save stages: {{error}}",
     "downloadStarted": "Download started...",
     "modInstalledSuccess": "Mod installed successfully! 🎉",
     "installationFailed": "Installation failed: {{error}}",
@@ -873,3 +912,4 @@
     }
   }
 }
+

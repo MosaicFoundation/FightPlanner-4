@@ -71,6 +71,13 @@
         "filter": [
           "7zz"
         ]
+      },
+      {
+        "from": "tools",
+        "to": "tools",
+        "filter": [
+          "ParamXML/**/*"
+        ]
       }
     ],
     "protocols": [

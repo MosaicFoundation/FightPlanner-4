@@ -12,6 +12,7 @@ import { UpdateHandlers } from './ipc/handlers/update-handlers';
 import { TutorialHandlers } from './ipc/handlers/tutorial-handlers';
 import { MigrationHandlers } from './ipc/handlers/migration-handlers';
 import { FppHandlers } from './ipc/handlers/fpp-handlers';
+import { StageHandlers } from './ipc/handlers/stage-handlers';
 import { ParamsWithoutFirstArg } from './types/common';
 import { WindowHandlers } from './ipc/handlers/window-handlers';
 import { DiscordHandlers } from './ipc/handlers/discord-handlers';
@@ -80,6 +81,7 @@ const invokeWindowHandler = wrapInvoke<WindowHandlers>();
 const invokeDiscordHandler = wrapInvoke<DiscordHandlers>();
 const invokeAnalyticsHandler = wrapInvoke<AnalyticsHandlers>();
 const invokeFppHandler = wrapInvoke<FppHandlers>();
+const invokeStageHandler = wrapInvoke<StageHandlers>();
 
 const registerProtocolCallback = wrapEventCallback<ProtocolHandlerEvents>();
 const registerMainCallback = wrapEventCallback<MainEvents>();
@@ -166,6 +168,10 @@ const electronAPI = {
   readFpp: (fppPath: string) => ipcRenderer.invoke('read-fpp', fppPath),
   installFpp: invokeFppHandler('install-fpp'),
   selectFppFile: invokeFppHandler('select-fpp-file'),
+  getStageLayout: invokeStageHandler('get-stage-layout'),
+  saveStageLayout: invokeStageHandler('save-stage-layout'),
+  loadStageLayoutPreset: invokeStageHandler('load-stage-layout-preset'),
+  saveStageLayoutPreset: invokeStageHandler('save-stage-layout-preset'),
 
   store: {
     get: invokeStoreHandler('store-get'),
