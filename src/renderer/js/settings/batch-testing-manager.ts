@@ -127,6 +127,10 @@ type BatchTestingUiHelpersCtor = new (deps: {
 
 type BatchTestingStateHelpersLike = {
   collectSnapshots: () => Promise<Record<BatchCategory, CategorySnapshot>>;
+  ensureCategoryAvailable: (
+    category: BatchCategory,
+    basePath: string,
+  ) => Promise<void>;
   readCategoryState: (
     category: BatchCategory,
     basePath: string,
@@ -384,7 +388,17 @@ class BatchTestingManager {
       return;
     }
 
-    const snapshots = await this.state.collectSnapshots();
+    let snapshots: Record<BatchCategory, CategorySnapshot>;
+    try {
+      snapshots = await this.state.collectSnapshots();
+    } catch (error) {
+      this.showToast(
+        error instanceof Error ? error.message : String(error || 'Unknown error'),
+        'warning',
+      );
+      return;
+    }
+
     const activeMods = snapshots.mods.originalActiveNames.length;
     const activePlugins = snapshots.plugins.originalActiveNames.length;
 
@@ -511,18 +525,26 @@ class BatchTestingManager {
           label: this.t('settings.batchTestingButton', 'Batch Testing'),
           type: 'primary',
           onClick: async () => {
-            await this.startSession(firstCategory, snapshots);
+            await this.startSession(firstCategory);
           },
         },
       ],
     );
   }
 
-  async startSession(
-    firstCategory: BatchCategory,
-    snapshots?: Record<BatchCategory, CategorySnapshot>,
-  ) {
-    const sessionSnapshots = snapshots || (await this.state.collectSnapshots());
+  async startSession(firstCategory: BatchCategory) {
+    let sessionSnapshots: Record<BatchCategory, CategorySnapshot>;
+
+    try {
+      sessionSnapshots = await this.state.collectSnapshots();
+    } catch (error) {
+      this.showToast(
+        error instanceof Error ? error.message : String(error || 'Unknown error'),
+        'warning',
+      );
+      return;
+    }
+
     const order =
       firstCategory === 'mods'
         ? (['mods', 'plugins'] as BatchCategory[])
@@ -650,6 +672,13 @@ class BatchTestingManager {
       this.renderNoCauseResult();
     } catch (error) {
       console.error('[BatchTesting] Failed:', error);
+
+      if (error instanceof Error && this.isUnavailableFolderError(error)) {
+        this.showToast(error.message, 'warning');
+        await this.persistSession();
+        return;
+      }
+
       await this.restoreOriginalState();
       this.showToast(
         this.t(
@@ -768,9 +797,22 @@ class BatchTestingManager {
 
     const prompt = this.session.pendingPrompt;
     const progress = this.session.diagnosis[prompt.category];
+    const snapshot = this.session.snapshots[prompt.category];
 
     if (!progress) {
       return;
+    }
+
+    if (snapshot?.basePath) {
+      try {
+        await this.state.ensureCategoryAvailable(prompt.category, snapshot.basePath);
+      } catch (error) {
+        this.showToast(
+          error instanceof Error ? error.message : String(error || 'Unknown error'),
+          'warning',
+        );
+        return;
+      }
     }
 
     this.session.pendingPrompt = null;
@@ -1562,6 +1604,14 @@ class BatchTestingManager {
     }
 
     window.toastManager.info(message);
+  }
+
+  isUnavailableFolderError(error: Error) {
+    const normalizedMessage = error.message.toLowerCase();
+    return (
+      normalizedMessage.includes('folder is not available')
+      || normalizedMessage.includes('make sure this folder exists')
+    );
   }
 
   escapeHtml(value: string) {

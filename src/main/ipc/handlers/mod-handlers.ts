@@ -65,6 +65,25 @@ const ModHandlers = {
     }
   },
 
+  ['ensure-mods-folder-available']: async (
+    common: BaseHandlerArg,
+    modsPath: string,
+  ): HandlerResponse => {
+    try {
+      if (!modsPath || !fs.existsSync(modsPath) || !fs.statSync(modsPath).isDirectory()) {
+        return createErrorResponse(
+          ErrorCodes.FOLDER_NOT_FOUND,
+          `Mods folder is not available. Reconnect your Switch and make sure this folder exists: ${modsPath}`,
+        );
+      }
+
+      return { success: true };
+    } catch (error) {
+      handleError(error, 'ensure-mods-folder-available');
+      return createErrorResponse(ErrorCodes.FOLDER_NOT_FOUND, error.message);
+    }
+  },
+
   ['get-preview-image']: async (common: BaseHandlerArg, modPath: string) => {
     try {
       const previewPath = ModUtils.getPreviewImagePath(modPath);

@@ -21,6 +21,34 @@ class CharactersManager {
     console.log('Characters Manager created');
   }
 
+  closeCharacterModal(
+    modal: HTMLElement,
+    escapeHandler?: (e: KeyboardEvent) => void,
+  ) {
+    if (!modal || modal.classList.contains('closing')) {
+      return;
+    }
+
+    if (escapeHandler) {
+      document.removeEventListener('keydown', escapeHandler);
+    }
+
+    const isNoAnimations = document.body.classList.contains('no-animations');
+    const modalContent = modal.querySelector<HTMLElement>('.character-modal');
+
+    if (isNoAnimations) {
+      modal.remove();
+      return;
+    }
+
+    modal.classList.add('closing');
+    modalContent?.classList.add('closing');
+
+    window.setTimeout(() => {
+      modal.remove();
+    }, 300);
+  }
+
   async initialize() {
     if (this.initialized) {
       console.log('Characters already initialized, skipping refresh.');
@@ -339,14 +367,16 @@ ${char.mods
     }
 
     const closeBtn = modal.querySelector<HTMLElement>('.character-modal-close');
+    let escapeHandler: ((e: KeyboardEvent) => void) | null = null;
+
     closeBtn!.addEventListener('click', (e) => {
       e.stopPropagation();
-      modal.remove();
+      this.closeCharacterModal(modal, escapeHandler || undefined);
     });
 
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
-        modal.remove();
+        this.closeCharacterModal(modal, escapeHandler || undefined);
       }
     });
 
@@ -363,15 +393,14 @@ ${char.mods
     modItems.forEach((item) => {
       item.addEventListener('click', () => {
         const modPath = item.dataset.modPath;
-        modal.remove();
+        this.closeCharacterModal(modal, escapeHandler || undefined);
         this.openModInToolsTab(modPath);
       });
     });
 
-    const escapeHandler = (e) => {
+    escapeHandler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        modal.remove();
-        document.removeEventListener('keydown', escapeHandler);
+        this.closeCharacterModal(modal, escapeHandler || undefined);
       }
     };
     document.addEventListener('keydown', escapeHandler);

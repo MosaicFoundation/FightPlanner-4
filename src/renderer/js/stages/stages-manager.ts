@@ -51,6 +51,12 @@ class StagesManager {
   draggedStageName: string | null;
   stageThumbObserver: IntersectionObserver | null;
   contextMenuInitialized: boolean;
+  thumbObserverSetupFrame: number | null;
+  thumbObserverSetupTimeout: number | null;
+  thumbBatchFrame: number | null;
+  activationFrame: number | null;
+  activationTimeout: number | null;
+  boundGridElement: HTMLElement | null;
 
   constructor() {
     this.root = null;
@@ -89,6 +95,12 @@ class StagesManager {
     this.draggedStageName = null;
     this.stageThumbObserver = null;
     this.contextMenuInitialized = false;
+    this.thumbObserverSetupFrame = null;
+    this.thumbObserverSetupTimeout = null;
+    this.thumbBatchFrame = null;
+    this.activationFrame = null;
+    this.activationTimeout = null;
+    this.boundGridElement = null;
 
     this.setupContextMenu();
   }
@@ -222,6 +234,80 @@ class StagesManager {
     }
 
     this.presetButtonLabel = document.querySelector<HTMLElement>('#stages-preset-btn-label');
+    this.bindGridInteractions();
+  }
+
+  bindGridInteractions() {
+    if (!this.grid || this.boundGridElement === this.grid) {
+      return;
+    }
+
+    this.boundGridElement = this.grid;
+
+    this.grid.addEventListener('dragstart', (event) => {
+      const target = event.target as HTMLElement | null;
+      const cell = target?.closest<HTMLElement>('.stages-grid-cell.is-stage') || null;
+      const stageName = cell?.dataset.stageName || null;
+
+      if (!cell || !stageName) {
+        return;
+      }
+
+      this.handleDragStart(event, stageName, cell);
+    });
+
+    this.grid.addEventListener('dragend', () => {
+      this.handleDragEnd();
+    });
+
+    this.grid.addEventListener('dragover', (event) => {
+      const target = event.target as HTMLElement | null;
+      const cell = target?.closest<HTMLElement>('.stages-grid-cell.is-stage') || null;
+      const targetIndex = Number(cell?.dataset.stageIndex);
+
+      if (!cell || Number.isNaN(targetIndex)) {
+        return;
+      }
+
+      this.handleDragOver(event, targetIndex, cell);
+    });
+
+    this.grid.addEventListener('drop', (event) => {
+      const target = event.target as HTMLElement | null;
+      const cell = target?.closest<HTMLElement>('.stages-grid-cell.is-stage') || null;
+      const targetIndex = Number(cell?.dataset.stageIndex);
+
+      if (!cell || Number.isNaN(targetIndex)) {
+        return;
+      }
+
+      this.handleDrop(event, targetIndex, cell);
+    });
+
+    this.grid.addEventListener('dragleave', (event) => {
+      const target = event.target as HTMLElement | null;
+      const cell = target?.closest<HTMLElement>('.stages-grid-cell.is-drop-target') || null;
+      const relatedTarget = event.relatedTarget as Node | null;
+
+      if (!cell || (relatedTarget && cell.contains(relatedTarget))) {
+        return;
+      }
+
+      cell.classList.remove('is-drop-target');
+    });
+
+    this.grid.addEventListener('contextmenu', (event) => {
+      const target = event.target as HTMLElement | null;
+      const cell = target?.closest<HTMLElement>('.stages-grid-cell.is-stage') || null;
+      const stageName = cell?.dataset.stageName || null;
+      const stage = stageName ? this.findStage(stageName) : null;
+
+      if (!cell || !stage) {
+        return;
+      }
+
+      this.showStageContextMenu(event, stage, 'hide');
+    });
   }
 
   applyLayoutResult(result: {
@@ -451,6 +537,8 @@ class StagesManager {
       return;
     }
 
+    this.beginTabActivation();
+
     if (this.movableStages.length === 0 && this.hiddenStages.length === 0 && !this.isLoading) {
       await this.loadLayout();
       return;
@@ -579,7 +667,7 @@ class StagesManager {
     }
 
     this.grid.replaceChildren(fragment);
-    this.setupThumbObserver();
+    this.queueThumbObserverSetup();
   }
 
   openHiddenStagesModal() {
@@ -617,15 +705,40 @@ class StagesManager {
         thumbFrame.className = 'stages-hidden-thumb-frame';
 
         const thumb = this.createStageThumb(stage);
+        const orderChip = document.createElement('span');
+        orderChip.className = 'stages-order-chip stages-hidden-order-chip';
+        orderChip.textContent = String(stage.canonicalOrder);
+
+        const copyGroup = document.createElement('div');
+        copyGroup.className = 'stages-hidden-card-copy';
 
         const label = document.createElement('span');
         label.className = 'stages-hidden-stage-name';
         label.textContent = stage.displayName;
 
+        const meta = document.createElement('span');
+        meta.className = 'stages-hidden-stage-meta';
+        meta.textContent = this.t(
+          'stages.hiddenCardMeta',
+          'Hidden from layout',
+        );
+
         const actionButton = document.createElement('button');
         actionButton.type = 'button';
         actionButton.className = 'input-btn stages-hidden-action';
-        actionButton.textContent = this.t('stages.unhide', 'Unhide');
+        actionButton.setAttribute(
+          'aria-label',
+          this.t('stages.unhideStageAria', 'Restore {{stage}}', {
+            stage: stage.displayName,
+          }),
+        );
+
+        const actionIcon = document.createElement('i');
+        actionIcon.className = 'bi bi-eye';
+
+        const actionLabel = document.createElement('span');
+        actionLabel.textContent = this.t('stages.unhide', 'Unhide');
+
         actionButton.addEventListener('click', () => {
           this.unhideStage(stage.xmlName);
 
@@ -637,9 +750,15 @@ class StagesManager {
           renderList();
         });
 
+        thumbFrame.appendChild(orderChip);
         thumbFrame.appendChild(thumb);
+        copyGroup.appendChild(label);
+        copyGroup.appendChild(meta);
+        actionButton.appendChild(actionIcon);
+        actionButton.appendChild(actionLabel);
+
         card.appendChild(thumbFrame);
-        card.appendChild(label);
+        card.appendChild(copyGroup);
         card.appendChild(actionButton);
         fragment.appendChild(card);
       });
@@ -653,6 +772,7 @@ class StagesManager {
     modal = window.modalManager.showCustomModal({
       title: this.t('stages.hiddenTitle', 'Hidden stages'),
       body,
+      size: 'large',
       buttons: [
         {
           text: this.t('common.cancel', 'Close'),
@@ -722,21 +842,6 @@ class StagesManager {
     cell.dataset.stageName = stage.xmlName;
     cell.dataset.stageIndex = String(movableIndex);
     cell.title = stage.displayName;
-
-    cell.addEventListener('dragstart', (event) =>
-      this.handleDragStart(event, stage.xmlName),
-    );
-    cell.addEventListener('dragend', () => this.handleDragEnd());
-    cell.addEventListener('dragover', (event) =>
-      this.handleDragOver(event, movableIndex),
-    );
-    cell.addEventListener('drop', (event) => this.handleDrop(event, movableIndex));
-    cell.addEventListener('dragleave', () => {
-      cell.classList.remove('is-drop-target');
-    });
-    cell.addEventListener('contextmenu', (event) => {
-      this.showStageContextMenu(event, stage, 'hide');
-    });
 
     const thumb = this.createStageThumb(stage);
 
@@ -1108,6 +1213,21 @@ class StagesManager {
       this.stageThumbObserver.disconnect();
       this.stageThumbObserver = null;
     }
+
+    if (this.thumbObserverSetupFrame !== null) {
+      window.cancelAnimationFrame(this.thumbObserverSetupFrame);
+      this.thumbObserverSetupFrame = null;
+    }
+
+    if (this.thumbObserverSetupTimeout !== null) {
+      window.clearTimeout(this.thumbObserverSetupTimeout);
+      this.thumbObserverSetupTimeout = null;
+    }
+
+    if (this.thumbBatchFrame !== null) {
+      window.cancelAnimationFrame(this.thumbBatchFrame);
+      this.thumbBatchFrame = null;
+    }
   }
 
   loadThumbImage(image: HTMLImageElement) {
@@ -1127,9 +1247,111 @@ class StagesManager {
       container.querySelectorAll<HTMLImageElement>('.stages-stage-thumb-image[data-image-url]'),
     );
 
-    images.forEach((image) => {
-      this.loadThumbImage(image);
-    });
+    this.loadThumbImagesInBatches(images, 10);
+  }
+
+  beginTabActivation() {
+    if (!this.root) {
+      return;
+    }
+
+    this.root.classList.add('is-activating');
+    const prefersReducedMotion =
+      document.body.classList.contains('no-animations')
+      || document.body.classList.contains('reduced-animations');
+
+    if (this.activationFrame !== null) {
+      window.cancelAnimationFrame(this.activationFrame);
+      this.activationFrame = null;
+    }
+
+    if (this.activationTimeout !== null) {
+      window.clearTimeout(this.activationTimeout);
+      this.activationTimeout = null;
+    }
+
+    if (prefersReducedMotion) {
+      this.activationFrame = window.requestAnimationFrame(() => {
+        this.activationFrame = window.requestAnimationFrame(() => {
+          this.activationFrame = null;
+          this.root?.classList.remove('is-activating');
+        });
+      });
+      return;
+    }
+
+    this.activationTimeout = window.setTimeout(() => {
+      this.activationTimeout = null;
+      this.root?.classList.remove('is-activating');
+    }, 260);
+  }
+
+  queueThumbObserverSetup() {
+    if (!this.root) {
+      return;
+    }
+
+    if (this.thumbObserverSetupFrame !== null) {
+      window.cancelAnimationFrame(this.thumbObserverSetupFrame);
+    }
+
+    if (this.thumbObserverSetupTimeout !== null) {
+      window.clearTimeout(this.thumbObserverSetupTimeout);
+      this.thumbObserverSetupTimeout = null;
+    }
+
+    const setup = () => {
+      this.thumbObserverSetupFrame = window.requestAnimationFrame(() => {
+        this.thumbObserverSetupFrame = null;
+        this.setupThumbObserver();
+      });
+    };
+
+    const shouldDelaySetup =
+      this.root.classList.contains('is-activating')
+      && !document.body.classList.contains('no-animations')
+      && !document.body.classList.contains('reduced-animations');
+
+    if (shouldDelaySetup) {
+      this.thumbObserverSetupTimeout = window.setTimeout(() => {
+        this.thumbObserverSetupTimeout = null;
+        setup();
+      }, 140);
+      return;
+    }
+
+    setup();
+  }
+
+  loadThumbImagesInBatches(images: HTMLImageElement[], batchSize: number) {
+    if (images.length === 0) {
+      return;
+    }
+
+    if (this.thumbBatchFrame !== null) {
+      window.cancelAnimationFrame(this.thumbBatchFrame);
+      this.thumbBatchFrame = null;
+    }
+
+    let index = 0;
+
+    const flushBatch = () => {
+      const end = Math.min(index + batchSize, images.length);
+
+      for (let currentIndex = index; currentIndex < end; currentIndex += 1) {
+        this.loadThumbImage(images[currentIndex]);
+      }
+
+      index = end;
+
+      if (index < images.length) {
+        this.thumbBatchFrame = window.requestAnimationFrame(flushBatch);
+      } else {
+        this.thumbBatchFrame = null;
+      }
+    };
+
+    flushBatch();
   }
 
   setupThumbObserver() {
@@ -1148,11 +1370,9 @@ class StagesManager {
 
     const eagerImageCount = Math.min(
       stageImages.length,
-      Math.max(this.gridColumns * 3, 24),
+      Math.max(this.gridColumns * 2, 12),
     );
-    stageImages.slice(0, eagerImageCount).forEach((image) => {
-      this.loadThumbImage(image);
-    });
+    this.loadThumbImagesInBatches(stageImages.slice(0, eagerImageCount), 6);
 
     const deferredImages = stageImages.slice(eagerImageCount);
     if (deferredImages.length === 0) {
@@ -1160,9 +1380,7 @@ class StagesManager {
     }
 
     if (typeof IntersectionObserver === 'undefined') {
-      deferredImages.forEach((image) => {
-        this.loadThumbImage(image);
-      });
+      this.loadThumbImagesInBatches(deferredImages, 8);
       return;
     }
 
@@ -1188,13 +1406,13 @@ class StagesManager {
     });
   }
 
-  handleDragStart(event: DragEvent, stageName: string) {
+  handleDragStart(event: DragEvent, stageName: string, cell?: HTMLElement | null) {
     this.draggedStageName = stageName;
     event.dataTransfer?.setData('text/plain', stageName);
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move';
     }
-    (event.currentTarget as HTMLElement | null)?.classList.add('is-dragging');
+    cell?.classList.add('is-dragging');
   }
 
   handleDragEnd() {
@@ -1206,7 +1424,7 @@ class StagesManager {
       });
   }
 
-  handleDragOver(event: DragEvent, targetIndex: number) {
+  handleDragOver(event: DragEvent, targetIndex: number, cell?: HTMLElement | null) {
     if (!this.draggedStageName) {
       return;
     }
@@ -1215,13 +1433,12 @@ class StagesManager {
     if (event.dataTransfer) {
       event.dataTransfer.dropEffect = 'move';
     }
-    (event.currentTarget as HTMLElement | null)?.classList.add('is-drop-target');
+    cell?.classList.add('is-drop-target');
   }
 
-  handleDrop(event: DragEvent, targetIndex: number) {
+  handleDrop(event: DragEvent, targetIndex: number, cell?: HTMLElement | null) {
     event.preventDefault();
-    const target = event.currentTarget as HTMLElement | null;
-    target?.classList.remove('is-drop-target');
+    cell?.classList.remove('is-drop-target');
 
     const stageName =
       this.draggedStageName || event.dataTransfer?.getData('text/plain') || null;
