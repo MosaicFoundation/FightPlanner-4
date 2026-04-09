@@ -337,6 +337,21 @@
   }
 }
 
+.character-modal-overlay.closing {
+  animation: characterModalOverlayFadeOut 0.25s cubic-bezier(0.4, 0, 0.2, 1)
+    forwards;
+}
+
+@keyframes characterModalOverlayFadeOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
 .character-modal {
   background: linear-gradient(
     135deg,
@@ -366,6 +381,22 @@
   to {
     transform: scale(1) translateY(-50%) translateX(-50%);
     opacity: 1;
+  }
+}
+
+.character-modal.closing {
+  animation: characterModalSlideOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes characterModalSlideOut {
+  from {
+    transform: scale(1) translateY(-50%) translateX(-50%);
+    opacity: 1;
+  }
+
+  to {
+    transform: scale(0.96) translateY(calc(-50% - 18px)) translateX(-50%);
+    opacity: 0;
   }
 }
 

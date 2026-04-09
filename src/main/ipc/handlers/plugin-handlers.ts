@@ -1,5 +1,6 @@
 import { BrowserWindow, dialog, IpcMain } from 'electron';
 import * as path from 'path';
+import * as fs from 'fs';
 import PluginUtils, { SimplePlugin } from '../../plugin-utils';
 import PluginUpdateChecker, {
   PluginUpdateResult,
@@ -59,6 +60,29 @@ const PluginHandlers = {
         ErrorCodes.PLUGIN_READ_ERROR,
         error.message,
       );
+    }
+  },
+
+  ['ensure-plugins-folder-available']: async (
+    common: BaseHandlerArg,
+    pluginsPath: string,
+  ): HandlerResponse => {
+    try {
+      if (
+        !pluginsPath
+        || !fs.existsSync(pluginsPath)
+        || !fs.statSync(pluginsPath).isDirectory()
+      ) {
+        return createErrorResponse(
+          ErrorCodes.FOLDER_NOT_FOUND,
+          `Plugins folder is not available. Reconnect your Switch and make sure this folder exists: ${pluginsPath}`,
+        );
+      }
+
+      return { success: true };
+    } catch (error) {
+      handleError(error, 'ensure-plugins-folder-available');
+      return createErrorResponse(ErrorCodes.FOLDER_NOT_FOUND, error.message);
     }
   },
 

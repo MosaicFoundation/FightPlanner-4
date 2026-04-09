@@ -72,10 +72,43 @@ class BatchTestingStateHelpers {
     };
   }
 
+  async ensureCategoryAvailable(
+    category: BatchTestingCategory,
+    basePath: string,
+  ) {
+    if (category === 'mods') {
+      const result = await window.electronAPI.ensureModsFolderAvailable(basePath);
+      if (!result.success) {
+        throw new Error(
+          result.error
+            || this.t(
+              'toasts.batchTestingModsFolderUnavailable',
+              'Mods folder is not available. Reconnect your Switch and make sure the folder exists.',
+            ),
+        );
+      }
+
+      return;
+    }
+
+    const result = await window.electronAPI.ensurePluginsFolderAvailable(basePath);
+    if (!result.success) {
+      throw new Error(
+        result.error
+          || this.t(
+            'toasts.batchTestingPluginsFolderUnavailable',
+            'Plugins folder is not available. Reconnect your Switch and make sure the folder exists.',
+          ),
+      );
+    }
+  }
+
   async readCategoryState(
     category: BatchTestingCategory,
     basePath: string,
   ): Promise<BatchTestingCategoryState> {
+    await this.ensureCategoryAvailable(category, basePath);
+
     if (category === 'mods') {
       const result = await window.electronAPI.readModsFolder(basePath);
       if (!result.success) {
@@ -106,6 +139,8 @@ class BatchTestingStateHelpers {
     if (!snapshot.basePath) {
       return;
     }
+
+    await this.ensureCategoryAvailable(snapshot.category, snapshot.basePath);
 
     if (snapshot.category === 'mods') {
       const nextState = await window.electronAPI.applyModBatchState(
