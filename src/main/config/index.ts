@@ -25,6 +25,7 @@ export const PATHS = {
   tempDir: () => app.getPath('temp'),
   localesDir: () => path.join(app.getAppPath(), 'assets', 'locales'),
   dataDir: () => path.join(app.getAppPath(), 'assets', 'data'),
+  testDir: () => path.join(app.getAppPath(), 'assets', 'test'),
 };
 
 export const ENV = {

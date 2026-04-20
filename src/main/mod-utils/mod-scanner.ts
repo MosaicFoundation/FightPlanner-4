@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { PATHS } from '../config';
 import { ModFileOperations } from '../mod-file-operations';
+import './prc-parser';
 
 /**
  * The full scan mod result for a given mod path.

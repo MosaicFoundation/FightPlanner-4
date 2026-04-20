@@ -356,6 +356,7 @@ export class SlotChanger {
                   slotCustomNames && Object.keys(slotCustomNames).length;
 
                 const nxyIndex = !hasCustomNames ? 0 : slotNum + 8;
+                console.log('nxyIndex :: ', nxyIndex);
 
                 // Add nXY_index parameter
                 structParams.push(
@@ -409,10 +410,14 @@ export class SlotChanger {
         );
       }
 
+      console.log('slotCustomNames :: ', slotCustomNames);
+
       // Update msg_name.xmsbt with custom names if provided (for all slots)
       if (
-        (fighterName && hasAnySlotAboveC07) ||
-        (slotCustomNames && Object.keys(slotCustomNames).length > 0)
+        fighterName &&
+        hasAnySlotAboveC07 &&
+        slotCustomNames &&
+        Object.keys(slotCustomNames).length > 0
       ) {
         await SlotChanger.updateMsgName(
           modPath,
@@ -420,6 +425,11 @@ export class SlotChanger {
           finalSlots,
           slotCustomNames,
           defaultCustomNames,
+        );
+      } else {
+        await ModFileOperations.deleteModFile(
+          modPath,
+          '/ui/message/msg_name.xmsbt',
         );
       }
 
