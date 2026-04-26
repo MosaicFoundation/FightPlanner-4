@@ -88,7 +88,8 @@ const ModHandlers = {
     try {
       const previewPath = ModUtils.getPreviewImagePath(modPath);
       if (previewPath) {
-        return ModUtils.pathToFileUrl(previewPath);
+        const mtime = fs.statSync(previewPath).mtimeMs;
+        return `${ModUtils.pathToFileUrl(previewPath)}?t=${Math.round(mtime)}`;
       }
       return null;
     } catch (error) {
@@ -156,6 +157,36 @@ const ModHandlers = {
       return { success: true };
     } catch (error) {
       handleError(error, 'save-mod-info-raw');
+      return createErrorResponse(ErrorCodes.MOD_SAVE_ERROR, error.message);
+    }
+  },
+
+  ['save-mod-preview']: async (
+    common: BaseHandlerArg,
+    modPath: string,
+    previewData: ArrayBuffer | Uint8Array,
+  ): HandlerResponse<{ previewPath: string }> => {
+    try {
+      if (!modPath || !fs.existsSync(modPath) || !fs.statSync(modPath).isDirectory()) {
+        return createErrorResponse(
+          ErrorCodes.MOD_NOT_FOUND,
+          'Mod folder does not exist',
+        );
+      }
+
+      const previewPath = path.join(modPath, 'preview.webp');
+      const buffer = Buffer.from(previewData instanceof Uint8Array
+        ? previewData
+        : new Uint8Array(previewData));
+
+      fs.writeFileSync(previewPath, buffer);
+
+      return {
+        success: true,
+        previewPath: ModUtils.pathToFileUrl(previewPath) || previewPath,
+      };
+    } catch (error) {
+      handleError(error, 'save-mod-preview');
       return createErrorResponse(ErrorCodes.MOD_SAVE_ERROR, error.message);
     }
   },

@@ -453,6 +453,9 @@
       "urlPlaceholder": "https://...",
       "description": "Description",
       "descriptionPlaceholder": "Description du mod",
+      "preview": "Image de preview",
+      "importPreview": "Importer un preview",
+      "previewHint": "Les PNG, JPG, GIF et autres images sont convertis automatiquement en preview.webp.",
       "advanced": "Avancé"
     },
     "pluginIntro": {
@@ -730,6 +733,8 @@
     "noModsFoundInConflicts": "Aucun mod trouvé dans les conflits",
     "infoTomlSaved": "Info.toml enregistré avec succès",
     "failedToSaveInfoToml": "Échec de l'enregistrement d'info.toml : {{error}}",
+    "previewSaved": "Preview enregistré avec succès",
+    "failedToSavePreview": "Échec de l'enregistrement du preview : {{error}}",
     "failedToStartInstallation": "Échec du démarrage de l'installation",
     "noEnabledModsToExport": "Aucun mod activé à exporter",
     "modListExportedSuccessfully": "Liste de mods exportée avec succès vers : {{filePath}}",

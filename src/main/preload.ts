@@ -94,6 +94,7 @@ const electronAPI = {
   selectEmulatorFile: invokeFileHandler('select-emulator-file'),
   readModsFolder: invokeModHandler('read-mods-folder'),
   getPreviewImage: invokeModHandler('get-preview-image'),
+  saveModPreview: invokeModHandler('save-mod-preview'),
   getModInfo: invokeModHandler('get-mod-info'),
   saveModInfo: invokeModHandler('save-mod-info'),
   readModInfoRaw: invokeModHandler('read-mod-info-raw'),
@@ -215,6 +216,8 @@ const electronAPI = {
     ipcRenderer.on('fpp-download-link', (event, data) => callback(data)),
   onOpenFppFile: (callback: (data: { filePath: string }) => void) =>
     ipcRenderer.on('open-fpp-file', (event, data) => callback(data)),
+  onFtpTransferProgress: (callback: (data: any) => void) =>
+    ipcRenderer.on('ftp-transfer-progress', (event, data) => callback(data)),
 
   onUpdateChecking: registerRendererCallback('update-checking'),
   onUpdateAvailable: registerRendererCallback('update-available'),

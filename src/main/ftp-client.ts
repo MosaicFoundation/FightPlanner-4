@@ -3,6 +3,25 @@ import { enterPassiveModeIPv4 } from 'basic-ftp';
 import * as fs from 'fs';
 import * as path from 'path';
 
+export interface UploadProgressUpdate {
+  currentFileName: string;
+  currentModIndex?: number;
+  totalMods?: number;
+  currentModName?: string;
+  transferredCount: number;
+  totalFiles?: number;
+  progress: number;
+}
+
+export interface UploadDirectoryOptions {
+  baseTransferredCount?: number;
+  totalFiles?: number;
+  currentModIndex?: number;
+  totalMods?: number;
+  currentModName?: string;
+  onFileUploaded?: (update: UploadProgressUpdate) => void;
+}
+
 export default class FTPClient {
   client: ftp.Client;
 
@@ -37,7 +56,11 @@ export default class FTPClient {
     }
   }
 
-  async uploadDirectory(localPath, remotePath) {
+  async uploadDirectory(
+    localPath,
+    remotePath,
+    options: UploadDirectoryOptions = {},
+  ) {
     try {
       remotePath = remotePath.replace(/\\/g, '/');
       console.log(`Uploading directory: ${localPath} -> ${remotePath}`);
@@ -60,6 +83,11 @@ export default class FTPClient {
           const count = await this.uploadDirectory(
             localFilePath,
             remoteFilePath,
+            {
+              ...options,
+              baseTransferredCount:
+                (options.baseTransferredCount || 0) + uploadedCount,
+            },
           );
           uploadedCount += count;
         } else if (fileStats.isFile()) {
@@ -72,6 +100,26 @@ export default class FTPClient {
 
           await this.client.uploadFrom(localFilePath, remoteFilePath);
           uploadedCount++;
+          const transferredCount =
+            (options.baseTransferredCount || 0) + uploadedCount;
+          const progress =
+            options.totalFiles && options.totalFiles > 0
+              ? Math.min(
+                  100,
+                  Math.round((transferredCount / options.totalFiles) * 100),
+                )
+              : 0;
+
+          options.onFileUploaded?.({
+            currentFileName: path.basename(localFilePath),
+            currentModIndex: options.currentModIndex,
+            totalMods: options.totalMods,
+            currentModName: options.currentModName,
+            transferredCount,
+            totalFiles: options.totalFiles,
+            progress,
+          });
+
           console.log(`Uploaded: ${remoteFilePath}`);
         }
       }

@@ -15,6 +15,18 @@ interface Download {
   subItems?: string[];
 }
 
+interface FtpTransferState {
+  id: string;
+  status: string;
+  currentMod: number;
+  totalMods: number;
+  transferredCount: number;
+  totalFiles: number;
+  progress: number;
+  currentModName?: string;
+  currentFileName?: string;
+}
+
 class DownloadManager {
   activeDownloads: Map<string, Download>;
   completedDownloads: Download[];
@@ -26,12 +38,7 @@ class DownloadManager {
   sendToSwitchBtn: HTMLButtonElement | null;
   initialized: boolean;
 
-  ftpTransfer: {
-    status: string;
-    currentMod: number;
-    totalMods: number;
-    transferredCount: number;
-  } | null;
+  ftpTransfer: FtpTransferState | null;
 
   constructor() {
     this.activeDownloads = new Map();
@@ -44,6 +51,34 @@ class DownloadManager {
     this.sendToSwitchBtn = null;
     this.initialized = false;
     this.ftpTransfer = null;
+    this.setupFtpProgressListener();
+  }
+
+  setupFtpProgressListener() {
+    if (!window.electronAPI?.onFtpTransferProgress) {
+      return;
+    }
+
+    window.electronAPI.onFtpTransferProgress((data: any) => {
+      const currentState = this.ftpTransfer;
+
+      this.ftpTransfer = {
+        id: currentState?.id || Date.now().toString(),
+        status: data.status || currentState?.status || 'uploading',
+        currentMod: data.currentMod ?? currentState?.currentMod ?? 0,
+        totalMods: data.totalMods ?? currentState?.totalMods ?? 0,
+        transferredCount:
+          data.transferredCount ?? currentState?.transferredCount ?? 0,
+        totalFiles: data.totalFiles ?? currentState?.totalFiles ?? 0,
+        progress: data.progress ?? currentState?.progress ?? 0,
+        currentModName: data.currentModName ?? currentState?.currentModName,
+        currentFileName: data.currentFileName ?? currentState?.currentFileName,
+      };
+
+      if (window.statusBarManager) {
+        window.statusBarManager.checkAndUpdateForDownloads();
+      }
+    });
   }
 
   initialize() {
@@ -782,10 +817,13 @@ ${subItemsHtml}
 
       // Update FTP transfer status
       this.ftpTransfer = {
+        id: Date.now().toString(),
         status: 'uploading',
         currentMod: 0,
         totalMods: recentDownloads.length || 0,
         transferredCount: 0,
+        totalFiles: 0,
+        progress: 0,
       };
 
       if (window.statusBarManager) {
