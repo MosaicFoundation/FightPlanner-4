@@ -464,6 +464,30 @@
     </div>
     <div class="modal-body">
       <form id="mod-info-form">
+        <div class="form-group edit-info-preview-editor">
+          <label data-i18n="modals.editInfo.preview">Preview image</label>
+          <div class="edit-info-preview-row">
+            <div class="edit-info-preview-frame">
+              <img id="edit-info-preview-image" alt="Preview" />
+              <div id="edit-info-preview-placeholder" class="edit-info-preview-placeholder">
+                <i class="bi bi-image"></i>
+              </div>
+            </div>
+            <div class="edit-info-preview-actions">
+              <button type="button" class="modal-btn modal-btn-secondary"
+                onclick="window.modalManager.openEditInfoPreviewPicker()">
+                <i class="bi bi-upload"></i>
+                <span data-i18n="modals.editInfo.importPreview">Import preview</span>
+              </button>
+              <p class="modal-hint" data-i18n="modals.editInfo.previewHint">
+                PNG, JPG, GIF and other image files are converted to preview.webp automatically.
+              </p>
+              <span id="edit-info-preview-status" class="edit-info-preview-status"></span>
+            </div>
+            <input id="edit-info-preview-input" type="file" accept="image/*" hidden
+              onchange="window.modalManager.handleEditInfoPreviewSelected(this)" />
+          </div>
+        </div>
         <div class="form-group">
           <label data-i18n="modals.editInfo.displayName">Display Name</label>
           <input type="text" name="display_name" id="edit-info-display-name"

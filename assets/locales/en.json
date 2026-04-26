@@ -389,6 +389,9 @@
       "urlPlaceholder": "https://...",
       "description": "Description",
       "descriptionPlaceholder": "Mod description",
+      "preview": "Preview image",
+      "importPreview": "Import preview",
+      "previewHint": "PNG, JPG, GIF and other image files are converted to preview.webp automatically.",
       "advanced": "Advanced"
     },
     "uninstall": {
@@ -730,6 +733,8 @@
     "noModsFoundInConflicts": "No mods found in conflicts",
     "infoTomlSaved": "Info.toml saved successfully",
     "failedToSaveInfoToml": "Failed to save info.toml: {{error}}",
+    "previewSaved": "Preview saved successfully",
+    "failedToSavePreview": "Failed to save preview: {{error}}",
     "failedToStartInstallation": "Failed to start installation",
     "noEnabledModsToExport": "No enabled mods to export",
     "modListExportedSuccessfully": "Mod list exported successfully to: {{filePath}}",
