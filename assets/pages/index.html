@@ -965,6 +965,64 @@
     </div>
   </div>
 
+  <!-- Echo Create Wizard -->
+  <div id="echo-create-wizard" class="echo-character-menu" style="display: none">
+    <div class="echo-character-menu-card echo-wizard-card">
+      <div class="echo-character-menu-header">
+        <div>
+          <h3 class="echo-character-menu-title">Create Echo Fighter</h3>
+          <p id="echo-wizard-character-label" class="echo-character-menu-mod-meta"></p>
+          <p id="echo-wizard-mod-label" class="echo-character-menu-mod-meta"></p>
+        </div>
+        <button class="echo-character-menu-close" id="echo-wizard-close">&times;</button>
+      </div>
+      <div class="echo-character-menu-body">
+        <!-- Step 1: Echo ID -->
+        <div id="echo-wizard-step-1" class="echo-wizard-step active">
+          <div class="form-group">
+            <label>Echo ID <span style="font-size:11px;color:var(--text-muted)">(internal, a-z0-9, max 10 chars)</span></label>
+            <input type="text" id="echo-wizard-id-input" class="modal-input" maxlength="10" placeholder="myecho" style="width:100%;margin-top:6px" />
+          </div>
+        </div>
+        <!-- Step 2: Display Names -->
+        <div id="echo-wizard-step-2" class="echo-wizard-step">
+          <div class="form-group">
+            <label>Display Name</label>
+            <input type="text" id="echo-wizard-ui-input" class="modal-input" maxlength="32" placeholder="My Echo" style="width:100%;margin-top:6px" />
+          </div>
+          <div class="form-group" style="margin-top:12px">
+            <label>Intro / VS Screen Name</label>
+            <input type="text" id="echo-wizard-intro-input" class="modal-input" maxlength="32" placeholder="My Echo" style="width:100%;margin-top:6px" />
+          </div>
+        </div>
+        <!-- Step 3: Slot assignment hint -->
+        <div id="echo-wizard-step-3" class="echo-wizard-step">
+          <p class="echo-section-hint">After confirming, you will be prompted to assign a slot for this echo fighter. The slot determines which position the character occupies on the character select screen.</p>
+        </div>
+        <!-- Step 4: Review -->
+        <div id="echo-wizard-step-4" class="echo-wizard-step">
+          <div id="echo-wizard-review"></div>
+        </div>
+      </div>
+      <div class="echo-character-menu-actions" style="padding:10px 12px;border-top:1px solid var(--border-hover)">
+        <button class="modal-btn modal-btn-secondary" id="echo-wizard-back-btn" disabled>Back</button>
+        <button class="modal-btn modal-btn-secondary" id="echo-wizard-next-btn">Next</button>
+        <button class="modal-btn modal-btn-primary" id="echo-wizard-create-btn" style="display:none">Create Echo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Echo Character Quick Menu -->
+  <div id="echo-character-menu" class="echo-character-menu" style="display: none">
+    <div class="echo-character-menu-card">
+      <div class="echo-character-menu-header">
+        <h3 class="echo-character-menu-title" id="echo-character-menu-title"></h3>
+        <button class="echo-character-menu-close" id="echo-character-menu-close">&times;</button>
+      </div>
+      <div class="echo-character-menu-body" id="echo-character-menu-body"></div>
+    </div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="../../out/renderer/js/i18n/i18n-client.js"></script>
   <script src="../../out/renderer/js/i18n/language-selector.js"></script>

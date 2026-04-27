@@ -558,6 +558,44 @@
   border-radius: 0 3px 3px 0;
 }
 
+/* Echo mod styling in character cards */
+.character-mod-item.echo-mod {
+  border-left: 3px solid var(--accent-color);
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.08) 0%, var(--bg-transparent-03) 100%);
+}
+
+.character-mod-item.echo-mod .mod-name {
+  color: var(--text-primary);
+}
+
+.echo-create-btn,
+.echo-details-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border-hover);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.echo-create-btn:hover {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: #fff;
+}
+
+.echo-details-btn:hover {
+  background: rgba(var(--accent-rgb), 0.15);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
 .settings-content-area {
   flex: 1;
   overflow-y: auto;

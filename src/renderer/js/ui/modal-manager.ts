@@ -220,7 +220,7 @@ class ModalManager {
   closeDeletePluginModal() {}
   confirmDeletePlugin() {}
 
-  openChangeSlotModal(_mod, _modData, _callback) {}
+  openChangeSlotModal(_mod, _modData, _callback, _options?: Record<string, unknown>) {}
   closeChangeSlotModal() {}
   confirmChangeSlots() {}
 

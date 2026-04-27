@@ -1,9 +1,11 @@
-import { Mod } from '../../../main/mod-utils';
+// Minimum shape needed from mods returned by electronAPI.readModsFolder
+type ScanMod = { name: string; path: string; status?: string; category?: string; hash?: string };
 
 interface Character {
   id: string;
+  name: string;
   info: { name: string; number: string };
-  mods: { name: string; path: string; status: string }[];
+  mods: { name: string; path: string; status: string; type?: string }[];
 }
 
 class CharactersManager {
@@ -60,7 +62,7 @@ class CharactersManager {
     this.renderFilteredCharacters(filtered);
   }
 
-  renderFilteredCharacters(characters) {
+  renderFilteredCharacters(characters: Character[]) {
     const container = document.querySelector<HTMLElement>('#characters-grid');
     if (!container) return;
 
@@ -130,7 +132,7 @@ class CharactersManager {
     }
   }
 
-  async scanModForCharacters(mod: Mod, status: 'active' | 'disabled') {
+  async scanModForCharacters(mod: ScanMod, status: 'active' | 'disabled') {
     if (!window.electronAPI || !window.electronAPI.scanMod) {
       return;
     }
@@ -152,11 +154,12 @@ class CharactersManager {
           resolvedIds.add(fighterId);
 
           if (!this.characters.has(fighterId)) {
-            const charInfo = window.SSBU_CHARACTERS[fighterId];
+            const charInfo = (window.SSBU_CHARACTERS as Record<string, { name: string; number: string; series: string }>)[fighterId];
 
             if (charInfo) {
               this.characters.set(fighterId, {
                 id: fighterId,
+                name: charInfo.name,
                 info: charInfo,
                 mods: [],
               });
@@ -169,16 +172,18 @@ class CharactersManager {
 
           const char = this.characters.get(fighterId);
           if (char) {
-            // Try to get type from mod, fallback to echo eligibility
-            let type = mod.type;
-            if (!type && window.echoManager && typeof window.echoManager.isEligibleFighterMod === 'function') {
-              if (window.echoManager.isEligibleFighterMod(mod)) {
+            // Determine mod type: use echoManager eligibility check or name heuristic
+            let type = '';
+            if (window.echoManager && typeof (window.echoManager as any).isEligibleFighterMod === 'function') {
+              if ((window.echoManager as any).isEligibleFighterMod(mod)) {
                 type = 'fighter';
               } else if (mod.name && mod.name.toLowerCase().includes('echo')) {
                 type = 'echo';
-              } else {
-                type = '';
               }
+            } else if (mod.name && mod.name.toLowerCase().includes('echo')) {
+              type = 'echo';
+            } else if (mod.category && mod.category.toLowerCase().includes('echo')) {
+              type = 'echo';
             }
             char.mods.push({
               name: mod.name,
@@ -222,20 +227,20 @@ class CharactersManager {
     this.updateCharacterCount(this.allCharacters.length);
   }
 
-  updateCharacterCount(count) {
+  updateCharacterCount(count: number) {
     const countEl = document.querySelector<HTMLElement>('#characters-count');
     if (countEl) {
       countEl.textContent = `${count} character${count !== 1 ? 's' : ''}`;
     }
   }
 
-  createCharacterCard(char) {
+  createCharacterCard(char: Character) {
     const card = document.createElement('div');
     card.className = 'character-card';
     card.dataset.characterId = char.id;
 
     const imageUrl =
-      window.CHARACTER_IMAGES[char.id] ||
+      (window.CHARACTER_IMAGES as Record<string, string>)[char.id] ||
       'https://www.smashbros.com/assets_v2/img/fighter/mario/main.png';
     const escapedName = this.escapeHtml(char.info.name);
 
@@ -265,11 +270,11 @@ class CharactersManager {
         let isEligible = false;
         let echoBtn = '';
         // Try to get echo eligibility from EchoManager if available
-        if (window.echoManager && typeof window.echoManager.isEligibleFighterMod === 'function') {
-          isEligible = window.echoManager.isEligibleFighterMod(mod);
+        if (window.echoManager && typeof (window.echoManager as any).isEligibleFighterMod === 'function') {
+          isEligible = (window.echoManager as any).isEligibleFighterMod(mod);
         }
         // Heuristic: treat as echo if name or path contains 'echo' or type is 'echo'
-        isEcho = (mod.type === 'echo') || (mod.name && mod.name.toLowerCase().includes('echo'));
+        isEcho = (mod.type === 'echo') || !!(mod.name && mod.name.toLowerCase().includes('echo'));
         // Distinct styling for echo mods
         let modClass = `character-mod-item ${mod.status}`;
         if (isEcho) modClass += ' echo-mod';
@@ -306,18 +311,39 @@ class CharactersManager {
     // Add click handlers for echo buttons
     const echoCreateBtns = card.querySelectorAll<HTMLElement>('.echo-create-btn');
     echoCreateBtns.forEach((btn) => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const modPath = btn.getAttribute('data-echo-create');
-        if (window.echoManager && typeof window.echoManager.createEchoDraftFromVisualSelection === 'function') {
-          // Try to find the visual entry for this character
-          if (window.echoManager.visualCharactersByKey && window.echoManager.visualCharactersByKey.has(char.id)) {
-            window.echoManager.visualSelectedCharacter = char.id;
-          }
-          window.echoManager.createEchoDraftFromVisualSelection(modPath);
-        } else {
+        if (!window.echoManager || !modPath) {
           window.toastManager?.warning('Echo creation not available.');
+          return;
         }
+        // Ensure a synthetic visual entry exists for this character so the wizard flow works
+        // without requiring the visual planner to have been separately initialized.
+        if (!window.echoManager.visualCharactersByKey.has(char.id)) {
+          const mod = window.modManager?.mods?.find((m) => m.path === modPath);
+          const synthFighterMod = mod
+            ? { id: mod.path, name: mod.name, path: mod.path, status: mod.status, type: 'fighter' as const, fighterKeys: [char.id], previewUrl: null }
+            : null;
+          const synthEntry = {
+            fighterKey: char.id,
+            name: char.name,
+            imageUrl: '',
+            modPreviewUrl: null,
+            cardKind: 'fighter' as const,
+            baseFighterKey: char.id,
+            sourceModPath: null,
+            fighterMods: synthFighterMod ? [synthFighterMod] : [],
+            movesetMods: [],
+            echoMods: [],
+          };
+          window.echoManager.visualCharactersByKey.set(char.id, synthEntry);
+          if (!window.echoManager.visualCharacterOrder.includes(char.id)) {
+            window.echoManager.visualCharacterOrder.push(char.id);
+          }
+        }
+        window.echoManager.visualSelectedCharacter = char.id;
+        await (window.echoManager as any).createEchoDraftFromVisualSelection(modPath);
       });
     });
     const echoDetailsBtns = card.querySelectorAll<HTMLElement>('.echo-details-btn');
@@ -325,17 +351,37 @@ class CharactersManager {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const modPath = btn.getAttribute('data-echo-details');
-        if (window.echoManager && typeof window.echoManager.openEchoWizard === 'function') {
-          // Try to find the visual entry for this character
-          if (window.echoManager.visualCharactersByKey && window.echoManager.visualCharactersByKey.has(char.id)) {
-            const entry = window.echoManager.visualCharactersByKey.get(char.id);
-            window.echoManager.openEchoWizard(entry, modPath);
-          } else {
-            window.toastManager?.warning('Echo details unavailable.');
-          }
-        } else {
+        if (!window.echoManager || !modPath) {
           window.toastManager?.warning('Echo details not available.');
+          return;
         }
+        // Build the echo card key for this mod so the character quick menu can find the entry.
+        const echoCardKey = typeof (window.echoManager as any).createEchoCardKey === 'function'
+          ? (window.echoManager as any).createEchoCardKey(char.id, modPath)
+          : `echo:${char.id}:${modPath}`;
+        if (!window.echoManager.visualCharactersByKey.has(echoCardKey)) {
+          const mod = window.modManager?.mods?.find((m) => m.path === modPath);
+          const synthEchoMod = mod
+            ? { id: mod.path, name: mod.name, path: mod.path, status: mod.status, type: 'echo' as const, fighterKeys: [char.id], previewUrl: null }
+            : null;
+          const synthEchoEntry = {
+            fighterKey: echoCardKey,
+            name: mod?.name || char.name,
+            imageUrl: '',
+            modPreviewUrl: null,
+            cardKind: 'echo' as const,
+            baseFighterKey: char.id,
+            sourceModPath: modPath,
+            fighterMods: [],
+            movesetMods: [],
+            echoMods: synthEchoMod ? [synthEchoMod] : [],
+          };
+          window.echoManager.visualCharactersByKey.set(echoCardKey, synthEchoEntry);
+          if (!window.echoManager.visualCharacterOrder.includes(echoCardKey)) {
+            window.echoManager.visualCharacterOrder.push(echoCardKey);
+          }
+        }
+        (window.echoManager as any).openCharacterQuickMenu(echoCardKey);
       });
     });
 
@@ -346,7 +392,7 @@ class CharactersManager {
     return card;
   }
 
-  showCharacterDetails(char) {
+  showCharacterDetails(char: Character) {
     const existingModal = document.querySelector<HTMLElement>(
       '.character-modal-overlay',
     );
@@ -438,7 +484,7 @@ ${char.mods
       });
     });
 
-    const escapeHandler = (e) => {
+    const escapeHandler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         modal.remove();
         document.removeEventListener('keydown', escapeHandler);
@@ -447,7 +493,7 @@ ${char.mods
     document.addEventListener('keydown', escapeHandler);
   }
 
-  openModInToolsTab(modPath) {
+  openModInToolsTab(modPath: string | undefined) {
     console.log('Opening mod in tools tab:', modPath);
 
     const toolsBtn = document.querySelector<HTMLElement>('[data-tab="tools"]');
@@ -536,7 +582,7 @@ ${char.mods
     this.updateCharacterCount(0);
   }
 
-  escapeHtml(text) {
+  escapeHtml(text: string): string {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;

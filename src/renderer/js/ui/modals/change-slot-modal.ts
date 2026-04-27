@@ -92,7 +92,7 @@ function getFighterDisplayName(fighterNameOrGroup: string): string {
   return characterInfo?.name || fighterNameOrGroup;
 }
 
-M.prototype.openChangeSlotModal = function (mod, modData, callback) {
+M.prototype.openChangeSlotModal = function (mod, modData, callback, _options?: Record<string, unknown>) {
   this.currentMod = mod;
   this.changeSlotCallback = callback;
 

@@ -34,6 +34,7 @@ type StatusTab =
   | 'plugins'
   | 'settings'
   | 'characters'
+  | 'echo'
   | 'stages'
   | 'fightplanner';
 

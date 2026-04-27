@@ -123,106 +123,42 @@ class EchoManager {
    * Session cache for visual planner grid: { hash, html }
    */
   _visualPlannerCache = { hash: '', html: '' };
-  initialized: boolean;
-  selectedEchoModPath: string | null;
-  lastAnalyzedModPath: string | null;
-  isEchoFighter: boolean;
-  nameSuggestions: string[];
-  takenNames: EchoTakenName[];
-  modEligibilityByPath: Map<string, boolean>;
-  uiCompatibilityPlan: EchoUiCompatibilityPlan | null;
-  uiCompatibilityState: EchoUiCompatibilityState | null;
-  visualCharacterOrder: string[];
-  visualDisabledCharacters: Set<string>;
-  visualSelectedCharacter: string | null;
-  visualCharactersByKey: Map<string, VisualCharacterEntry>;
-  visualMods: VisualModEntry[];
-  visualUnmappedMods: VisualModEntry[];
-  visualLoading: boolean;
-  visualDraggedCharacter: string | null;
-  renderVisualPlanner() {
-    const container = document.querySelector<HTMLElement>('#echo-visual-content');
-    if (!container) return;
+  initialized = false;
+  selectedEchoModPath: string | null = null;
+  lastAnalyzedModPath: string | null = null;
+  isEchoFighter = false;
+  nameSuggestions: string[] = [];
+  takenNames: EchoTakenName[] = [];
+  modEligibilityByPath: Map<string, boolean> = new Map();
+  uiCompatibilityPlan: EchoUiCompatibilityPlan | null = null;
+  uiCompatibilityState: EchoUiCompatibilityState | null = null;
+  visualCharacterOrder: string[] = [];
+  visualDisabledCharacters: Set<string> = new Set();
+  visualSelectedCharacter: string | null = null;
+  visualCharactersByKey: Map<string, VisualCharacterEntry> = new Map();
+  visualMods: VisualModEntry[] = [];
+  visualUnmappedMods: VisualModEntry[] = [];
+  visualLoading = false;
+  visualDraggedCharacter: string | null = null;
+  activeSubview: string = 'planner';
+  builderCompletedModPath: string | null = null;
+  echoWizardStep = 1;
+  echoPreferredNameValue = '';
+  echoPreferredDisplayNameValue = '';
+  echoPreferredIntroName = '';
 
-    // Hash the current visual planner state for cache key
-    const stateHash = JSON.stringify({
-      order: this.visualCharacterOrder,
-      byKey: Array.from(this.visualCharactersByKey.entries()),
-      unmapped: this.visualUnmappedMods.map((m) => m.id || m.name || m.path),
-      disabled: Array.from(this.visualDisabledCharacters),
-    });
+  visualCharacterImageCache: Map<string, string> = new Map();
+  visualImagePreloadSet: Set<string> = new Set();
+  visualModScanCache: Map<string, VisualModScanCacheEntry> = new Map();
+  uiCharaInspectorData: EchoUiCharaInspectorData | null = null;
+  uiCharaInspectorLoading = false;
+  uiCharaInspectorError: string | null = null;
+  visualSearchQuery = '';
+  echoWizardCharacterKey: string | null = null;
+  echoWizardSourceModPath: string | null = null;
 
-    if (this._visualPlannerCache.hash === stateHash) {
-      container.innerHTML = this._visualPlannerCache.html;
-      return;
-    }
-
-    if (this.visualLoading) {
-      container.innerHTML = `<p class="echo-loading">${this.t('echo.loading')}</p>`;
-      return;
-    }
-
-    const selectedEntry = this.getSelectedVisualEntry();
-    const selectedTitle = selectedEntry ? this.getVisualCardTitle(selectedEntry) : '';
-    const selectedSubtitle = selectedEntry
-      ? this.getVisualCardSubtitle(selectedEntry)
-      : '';
-    const selectedLabel = selectedSubtitle
-      ? `${selectedTitle} - ${selectedSubtitle}`
-      : selectedTitle;
-    const selectedText = selectedEntry
-      ? this.t('echo.visualSelectedCharacter', { name: selectedLabel })
-      : this.t('echo.visualNoCharacterSelected');
-
-    const selectedMods = selectedEntry
-      ? [...selectedEntry.fighterMods, ...selectedEntry.movesetMods, ...selectedEntry.echoMods]
-      : [];
-    const selectedSummary = selectedEntry
-      ? `${selectedText} (${selectedMods.length})`
-      : selectedText;
-
-    const renderTile = (fighterKey: string, isDisabledArea = false) => {
-      // ...existing code...
-      // return /* tile HTML */; (REMOVED: placeholder, not valid JS)
-    };
-
-    const activeOrder = this.visualCharacterOrder.filter(
-      (fighterKey) => !this.visualDisabledCharacters.has(fighterKey),
-    );
-    const disabledOrder = this.visualCharacterOrder.filter((fighterKey) =>
-      this.visualDisabledCharacters.has(fighterKey),
-    );
-
-    const activeTilesHtml = activeOrder.map((fighterKey) => renderTile(fighterKey)).join('');
-    const disabledTilesHtml = disabledOrder
-      .map((fighterKey) => renderTile(fighterKey, true))
-      .join('');
-
-    const unmappedModsHtml =
-      this.visualUnmappedMods.length === 0
-        ? ''
-        : `
-            <div class="echo-visual-unmapped">
-              <p class="echo-visual-unmapped-title">${this.t('echo.visualUnmappedMods')}</p>
-              <div class="echo-visual-mod-list">
-                ${this.visualUnmappedMods
-                  .slice(0, 10)
-                  .map((mod) => this.renderUnmappedModItem(mod))
-                  .join('')}
-              </div>
-            </div>
-          `;
-
-    const html = `
-      <div class="echo-visual-board">
-        ${activeTilesHtml}
-        ${disabledTilesHtml}
-      </div>
-      ${unmappedModsHtml}
-    `;
-    container.innerHTML = html;
-    this._visualPlannerCache = { hash: stateHash, html };
-  }
+  t(key: string, params: Record<string, string> = {}): string {
+    return window.i18n && window.i18n.t ? window.i18n.t(key, params) : key;
   }
 
   async loadSubviewState() {
@@ -3619,10 +3555,10 @@ class EchoManager {
       mod,
       scanResult.data,
       async (
-        slotAssignments,
-        deletedSlots,
-        slotCustomNamesByFighter,
-        echoOperationOptions,
+        slotAssignments: Map<string, Map<string, string>>,
+        deletedSlots: Map<string, Set<string>>,
+        slotCustomNamesByFighter: Record<string, Record<string, { cspName?: string; vsName?: string; boxingRing?: string; announcer?: string }>>,
+        echoOperationOptions: Record<string, unknown>,
       ) => {
         const changeSlotsResult = await window.electronAPI.changeSlots(
           mod.path,
