@@ -52,7 +52,14 @@ class ModContextMenuHandler {
               await this.modManager.operations.startChangeSlotsFlow(mod);
               break;
             case 'toggle':
-              await this.modManager.operations.toggleModStatus(mod);
+              if (useSelection) {
+                await this.modManager.operations.toggleModsStatus(
+                  this.modManager.getCurrentSelectedMods(),
+                  mod.status === 'disabled' ? 'active' : 'disabled',
+                );
+              } else {
+                await this.modManager.operations.toggleModStatus(mod);
+              }
               break;
             case 'open-folder':
               await this.modManager.operations.openModFolder(mod);
@@ -113,10 +120,22 @@ class ModContextMenuHandler {
       selectedMods.some((selectedMod) => selectedMod.id === mod.id);
 
     if (mod.status === 'disabled') {
-      if (toggleText) toggleText.textContent = t('contextMenu.enable');
+      if (toggleText) {
+        toggleText.textContent = useSelection
+          ? t('contextMenu.enableSelected', {
+              count: selectedMods.length,
+            })
+          : t('contextMenu.enable');
+      }
       if (toggleIcon) toggleIcon.className = 'bi bi-toggle-off';
     } else {
-      if (toggleText) toggleText.textContent = t('contextMenu.disable');
+      if (toggleText) {
+        toggleText.textContent = useSelection
+          ? t('contextMenu.disableSelected', {
+              count: selectedMods.length,
+            })
+          : t('contextMenu.disable');
+      }
       if (toggleIcon) toggleIcon.className = 'bi bi-toggle-on';
     }
 
