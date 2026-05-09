@@ -17,6 +17,7 @@ const MigrationHandlers = {
     completed: boolean | null;
     from: string | null;
     date: string | null;
+    settingKeys: string[];
   }> => {
     try {
       const status = await getMigrationStatus();

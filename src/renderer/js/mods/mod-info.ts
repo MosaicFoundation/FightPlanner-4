@@ -142,13 +142,6 @@ ${escapeHtml(modData.url)}
     <div class="mod-selection-count">${t('tools.modInfo.selectedCount', {
       count: effectiveCount,
     })}</div>
-    <button type="button" class="mod-selection-action-btn mod-selection-action-btn-danger" id="mod-selection-uninstall-btn">
-      <i class="bi bi-trash3"></i>
-      <span>${t('tools.modInfo.uninstallSelected', {
-        count: effectiveCount,
-        plural: effectiveCount > 1 ? 's' : '',
-      })}</span>
-    </button>
   </div>
   <p class="mod-selection-hint">${t('tools.modInfo.selectedHint')}</p>
   <div class="mod-selection-list" id="mod-selection-list"></div>
@@ -186,19 +179,6 @@ ${escapeHtml(modData.url)}
         selectionList.appendChild(more);
       }
     }
-
-    const uninstallBtn = container.querySelector<HTMLElement>(
-      '#mod-selection-uninstall-btn',
-    );
-    uninstallBtn?.addEventListener('click', async () => {
-      const modsToUninstall = window.modManager?.getCurrentSelectedMods?.() || [];
-
-      if (modsToUninstall.length === 0) {
-        return;
-      }
-
-      await window.modManager?.operations?.uninstallMods(modsToUninstall);
-    });
 
     this.currentModPath = null;
     this.currentModData = null;
