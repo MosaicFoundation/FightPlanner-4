@@ -58,7 +58,9 @@ class ModKeybindsHandler {
         case 'Space':
           if (!isCtrlOrCmd && !isShift) {
             e.preventDefault();
-            await this.handleToggle(selectedMod);
+            await this.handleToggle(
+              selectedMods.length > 0 ? selectedMods : [selectedMod],
+            );
           }
           break;
 
@@ -101,9 +103,16 @@ class ModKeybindsHandler {
     }
   }
 
-  async handleToggle(selectedMod: Mod) {
+  async handleToggle(selectedMods: Mod[]) {
     if (this.modManager.operations) {
-      await this.modManager.operations.toggleModStatus(selectedMod);
+      if (selectedMods.length > 1) {
+        await this.modManager.operations.toggleModsStatus(
+          selectedMods,
+          selectedMods[0].status === 'disabled' ? 'active' : 'disabled',
+        );
+      } else if (selectedMods[0]) {
+        await this.modManager.operations.toggleModStatus(selectedMods[0]);
+      }
     }
   }
 

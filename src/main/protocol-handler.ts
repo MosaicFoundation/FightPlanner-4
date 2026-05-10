@@ -206,12 +206,14 @@ export default class ProtocolHandler {
             recursive: true,
           });
 
-          // Build Exec line
-          let execLine = process.execPath;
+          const quoteDesktopExecArg = (arg: string) =>
+            `"${arg.replace(/["\\`$]/g, '\\$&')}"`;
+
+          // Build Exec line. Paths can contain spaces on Linux, so every
+          // executable/script argument must be quoted for the .desktop spec.
+          let execLine = `${quoteDesktopExecArg(process.execPath)} %u`;
           if (electronAppMainScriptPath) {
-            execLine = `${process.execPath} ${electronAppMainScriptPath} %u`;
-          } else {
-            execLine = `${process.execPath} %u`;
+            execLine = `${quoteDesktopExecArg(process.execPath)} ${quoteDesktopExecArg(electronAppMainScriptPath)} %u`;
           }
 
           const desktopFileContent = [

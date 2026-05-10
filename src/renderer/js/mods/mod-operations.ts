@@ -126,6 +126,90 @@ class ModOperations {
     }
   }
 
+  async toggleModsStatus(
+    mods: Mod[],
+    targetStatus?: 'active' | 'disabled',
+  ) {
+    const uniqueMods = this.getUniqueMods(mods).filter((mod) => !!mod.path);
+
+    if (uniqueMods.length === 0 || !this.modManager.modsPath) {
+      window.toastManager?.error('toasts.cannotToggleModStatus');
+      return;
+    }
+
+    if (uniqueMods.length === 1) {
+      await this.toggleModStatus(uniqueMods[0]);
+      return;
+    }
+
+    const nextStatus =
+      targetStatus ||
+      (uniqueMods[0].status === 'disabled' ? 'active' : 'disabled');
+    const modsToToggle = uniqueMods.filter((mod) => mod.status !== nextStatus);
+
+    if (modsToToggle.length === 0) {
+      window.toastManager?.success(
+        nextStatus === 'active' ? 'toasts.modsEnabled' : 'toasts.modsDisabled',
+        3000,
+        {
+          count: uniqueMods.length,
+          plural: uniqueMods.length > 1 ? 's' : '',
+        },
+      );
+      return;
+    }
+
+    if (!window.electronAPI?.toggleMod) {
+      window.toastManager?.error('toasts.failedToToggleMods', 3000, {
+        error: 'toggleMod API unavailable',
+      });
+      return;
+    }
+
+    const failedMods: Array<{ mod: Mod; error: string }> = [];
+    let successCount = 0;
+
+    for (const mod of modsToToggle) {
+      const result = await window.electronAPI.toggleMod(
+        mod.path!,
+        this.modManager.modsPath,
+      );
+
+      if (result.success) {
+        successCount++;
+      } else {
+        failedMods.push({
+          mod,
+          error: result.error || 'Unknown error',
+        });
+      }
+    }
+
+    if (successCount > 0 && failedMods.length === 0) {
+      window.toastManager?.success(
+        nextStatus === 'active' ? 'toasts.modsEnabled' : 'toasts.modsDisabled',
+        3000,
+        {
+          count: uniqueMods.length,
+          plural: uniqueMods.length > 1 ? 's' : '',
+        },
+      );
+    } else if (successCount > 0) {
+      window.toastManager?.warning('toasts.modsToggledPartial', 4000, {
+        success: successCount,
+        error: failedMods.length,
+      });
+    } else if (failedMods.length > 0) {
+      window.toastManager?.error('toasts.failedToToggleMods', 4000, {
+        error: failedMods[0].error,
+      });
+    }
+
+    if (successCount > 0) {
+      await this.modManager.fetchMods();
+    }
+  }
+
   async openModFolder(mod: Mod) {
     if (!mod.path) {
       if (window.toastManager) {

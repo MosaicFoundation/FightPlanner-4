@@ -389,6 +389,9 @@
       "urlPlaceholder": "https://...",
       "description": "Description",
       "descriptionPlaceholder": "Mod description",
+      "preview": "Preview image",
+      "importPreview": "Import preview",
+      "previewHint": "PNG, JPG, GIF and other image files are converted to preview.webp automatically.",
       "advanced": "Advanced"
     },
     "uninstall": {
@@ -498,6 +501,8 @@
     "toggle": "Toggle",
     "enable": "Enable",
     "disable": "Disable",
+    "enableSelected": "Enable Selected ({{count}})",
+    "disableSelected": "Disable Selected ({{count}})",
     "openFolder": "Open Folder",
     "uninstall": "Uninstall",
     "uninstallSelected": "Uninstall Selected ({{count}})"
@@ -730,6 +735,8 @@
     "noModsFoundInConflicts": "No mods found in conflicts",
     "infoTomlSaved": "Info.toml saved successfully",
     "failedToSaveInfoToml": "Failed to save info.toml: {{error}}",
+    "previewSaved": "Preview saved successfully",
+    "failedToSavePreview": "Failed to save preview: {{error}}",
     "failedToStartInstallation": "Failed to start installation",
     "noEnabledModsToExport": "No enabled mods to export",
     "modListExportedSuccessfully": "Mod list exported successfully to: {{filePath}}",
@@ -747,6 +754,10 @@
     "cannotToggleModStatus": "Cannot toggle mod status - paths not found",
     "modEnabled": "Mod enabled successfully",
     "modDisabled": "Mod disabled successfully",
+    "modsEnabled": "{{count}} mod{{plural}} enabled successfully",
+    "modsDisabled": "{{count}} mod{{plural}} disabled successfully",
+    "modsToggledPartial": "{{success}} mod(s) toggled, {{error}} failed",
+    "failedToToggleMods": "Failed to toggle selected mods: {{error}}",
     "allModsEnabled": "All mods enabled successfully",
     "allModsDisabled": "All mods disabled successfully",
     "noDisabledModsToEnable": "There are no disabled mods to enable",

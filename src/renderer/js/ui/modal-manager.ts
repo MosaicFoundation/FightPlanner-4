@@ -185,6 +185,10 @@ class ModalManager {
 
   openAdvancedInfoModal(_modPath, _currentTomlContent) {}
   closeAdvancedInfoModal() {}
+  refreshEditInfoPreview?() {}
+  openEditInfoPreviewPicker?() {}
+  handleEditInfoPreviewSelected?(_input) {}
+  preparePreviewWebpData?(_file) {}
   async confirmAdvancedInfo() {}
 
   async openInstallConfirmModal(_url, _downloadId, _modId, _modType = 'Mod') {}

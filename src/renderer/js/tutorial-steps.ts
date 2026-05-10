@@ -2342,7 +2342,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const migrationStatus = await window.tutorialAPI.getMigrationStatus();
         console.log('ðŸ” Migration status received:', migrationStatus);
 
-        if (migrationStatus.success && migrationStatus.completed) {
+        const migratedSettingKeys =
+          migrationStatus.success && Array.isArray(migrationStatus.settingKeys)
+            ? migrationStatus.settingKeys
+            : [];
+        const migrationFrom = migrationStatus.success
+          ? migrationStatus.from
+          : null;
+        const hasFightPlanner3Migration =
+          migrationStatus.success &&
+          migrationStatus.completed &&
+          migrationFrom === 'FightPlanner 3' &&
+          migratedSettingKeys.length > 0;
+
+        if (hasFightPlanner3Migration) {
           console.log('✅ Migration detected! Adding migration step...');
 
           const migrationStep = {
@@ -2387,6 +2400,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           console.log('â„¹ï¸ No migration detected or already processed');
           console.log('   - success:', migrationStatus.success);
+          console.log('   - from:', migrationFrom);
+          console.log('   - imported settings:', migratedSettingKeys.length);
           console.log(
             '   - completed:',
             'completed' in migrationStatus && migrationStatus.completed,

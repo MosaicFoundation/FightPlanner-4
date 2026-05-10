@@ -20,6 +20,8 @@ interface DownloadItem {
   statusText?: string;
   progress: number;
   speedText?: string;
+  phaseLabel?: string;
+  iconClass?: string;
 }
 
 interface DownloadUpdate {
@@ -1689,6 +1691,19 @@ export class StatusBarManager {
           const ftp = window.downloadManager.ftpTransfer;
           const dots = '.'.repeat(animationFrame % 4);
           animationFrame += 1;
+          const details: string[] = [];
+          const progress = Math.max(
+            0,
+            Math.min(
+              100,
+              Math.round(
+                ftp.progress ||
+                  (ftp.totalFiles > 0
+                    ? (ftp.transferredCount / ftp.totalFiles) * 100
+                    : 0),
+              ),
+            ),
+          );
 
           let statusContent;
           if (ftp.totalMods > 0) {
@@ -1703,9 +1718,28 @@ export class StatusBarManager {
             }).replace(` \u2022 / mods`, '');
           }
 
+          if (ftp.totalFiles > 0) {
+            details.push(`${ftp.transferredCount}/${ftp.totalFiles} files`);
+          }
+
+          if (progress > 0) {
+            details.push(`${progress}%`);
+          }
+
+          if (ftp.currentFileName) {
+            const shortFileName =
+              ftp.currentFileName.length > 26
+                ? `${ftp.currentFileName.substring(0, 23)}...`
+                : ftp.currentFileName;
+            details.push(shortFileName);
+          }
+
+          const detailsSuffix =
+            details.length > 0 ? ` • ${details.join(' • ')}` : '';
+
           this.renderStatus(
             {
-              content: `${statusContent}${dots}`,
+              content: `${statusContent}${detailsSuffix}${dots}`,
               downloading: true,
             },
             { force: true },
@@ -1926,11 +1960,11 @@ export class StatusBarManager {
         let speed = dl.speedText || '';
         const displayName = this._getDownloadDisplayName(dl);
 
-        let phaseText = 'Downloading';
-        let iconClass = 'bi-cloud-arrow-down-fill';
+        let phaseText = dl.phaseLabel || 'Downloading';
+        let iconClass = dl.iconClass || 'bi-cloud-arrow-down-fill';
         let isExtractingOrVerifying = false;
 
-        if (dl.statusText) {
+        if (!dl.phaseLabel && dl.statusText) {
           const lowerStatus = dl.statusText.toLowerCase();
           if (lowerStatus.includes('extract')) {
             phaseText = 'Extracting...';
@@ -2251,8 +2285,57 @@ export class StatusBarManager {
 
       // Check for FTP transfer first
       if (window.downloadManager.ftpTransfer) {
-        // FTP transfer is active, but we don't want it to block other status updates
-        // The FTP status is handled by updateDownloadsStatus
+        const ftp = window.downloadManager.ftpTransfer;
+        const progress = Math.max(
+          0,
+          Math.min(
+            100,
+            Math.round(
+              ftp.progress ||
+                (ftp.totalFiles > 0
+                  ? (ftp.transferredCount / ftp.totalFiles) * 100
+                  : 0),
+            ),
+          ),
+        );
+        const currentMod = ftp.currentMod || 0;
+        const totalMods = ftp.totalMods || 0;
+        const transferKey = `ftp:${ftp.id}`;
+
+        this.hasActiveDownloads = true;
+
+        if (this.lastExtendedBarData !== transferKey) {
+          this.userDismissedExtendedBar = false;
+          this.lastExtendedBarData = transferKey;
+        }
+
+        if (!this.userDismissedExtendedBar) {
+          const metaParts: string[] = [];
+          if (totalMods > 0) {
+            metaParts.push(`Mod ${currentMod}/${totalMods}`);
+          }
+          if (ftp.totalFiles > 0) {
+            metaParts.push(`${ftp.transferredCount}/${ftp.totalFiles} files`);
+          }
+
+          this.updateExtendedBar({
+            type: 'download',
+            downloads: [
+              {
+                id: ftp.id,
+                fileName:
+                  ftp.currentFileName ||
+                  ftp.currentModName ||
+                  'Sending to Switch...',
+                progress,
+                speedText: metaParts.join(' • '),
+                phaseLabel: 'Sending to Switch',
+                iconClass: 'bi-cloud-arrow-up-fill',
+              },
+            ],
+          });
+        }
+
         return true;
       }
 
