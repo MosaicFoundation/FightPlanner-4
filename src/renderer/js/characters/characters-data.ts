@@ -211,7 +211,7 @@ const CHARACTER_IMAGES = {
   packun:
     'https://www.smashbros.com/assets_v2/img/fighter/piranha_plant/main.png',
   jack: 'https://www.smashbros.com/assets_v2/img/fighter/joker/main.png',
-  brave: 'https://www.smashbros.com/assets_v2/img/fighter/hero/main.png',
+  brave: 'https://www.smashbros.com/assets_v2/img/fighter/dq_hero/main.png',
   buddy:
     'https://www.smashbros.com/assets_v2/img/fighter/banjo_and_kazooie/main.png',
   dolly: 'https://www.smashbros.com/assets_v2/img/fighter/terry/main.png',

@@ -12,8 +12,9 @@ import { BaseHandlerArg, GenericHandler } from '../../types/common';
 import { AppHandlers } from './app-handlers';
 
 interface TransferItem {
-  localModPath: string;
-  modName: string;
+  localPath: string;
+  itemName: string;
+  kind: 'directory' | 'file';
   fileCount: number;
 }
 
@@ -68,6 +69,74 @@ function _countFilesRecursive(dirPath: string): number {
   return count;
 }
 
+function _collectModDirectories(modsPath?: string | null): TransferItem[] {
+  if (!modsPath || !fs.existsSync(modsPath)) {
+    return [];
+  }
+
+  const items: TransferItem[] = [];
+  for (const file of fs.readdirSync(modsPath)) {
+    const localPath = path.join(modsPath, file);
+
+    if (!fs.statSync(localPath).isDirectory()) {
+      continue;
+    }
+
+    items.push({
+      localPath,
+      itemName: file,
+      kind: 'directory',
+      fileCount: _countFilesRecursive(localPath),
+    });
+  }
+
+  return items;
+}
+
+function _collectPluginFiles(pluginsPath?: string | null): TransferItem[] {
+  if (!pluginsPath || !fs.existsSync(pluginsPath)) {
+    return [];
+  }
+
+  const items: TransferItem[] = [];
+  for (const file of fs.readdirSync(pluginsPath)) {
+    const localPath = path.join(pluginsPath, file);
+    const stats = fs.statSync(localPath);
+
+    if (!stats.isFile() || path.extname(file).toLowerCase() !== '.nro') {
+      continue;
+    }
+
+    items.push({
+      localPath,
+      itemName: file,
+      kind: 'file',
+      fileCount: 1,
+    });
+  }
+
+  return items;
+}
+
+function _normalizeRemotePath(
+  remotePath: string | null | undefined,
+  defaultPath: string,
+): string {
+  let normalized = (remotePath || defaultPath).trim().replace(/\\/g, '/');
+
+  if (!normalized || normalized === '/' || normalized === '/switch') {
+    normalized = defaultPath;
+  }
+
+  if (!normalized.startsWith('/')) {
+    normalized = '/' + normalized;
+  }
+
+  normalized = normalized.replace(/\/+$/g, '');
+
+  return normalized;
+}
+
 /**
  * Send mods to Switch via local drive.
  */
@@ -104,114 +173,52 @@ async function _sendModsToDrive(config: Config) {
       throw new Error(`Drive path ${drivePath} not found or not accessible`);
     }
 
-    const targetBasePath = path.join(drivePath, 'ultimate', 'mods');
+    const targetModsPath = path.join(drivePath, 'ultimate', 'mods');
+    const targetPluginsPath = path.join(
+      drivePath,
+      'ultimate',
+      'contents',
+      '01006A800016E000',
+      'romfs',
+      'skyline',
+      'plugins',
+    );
 
-    if (!fs.existsSync(targetBasePath)) {
-      fs.mkdirSync(targetBasePath, { recursive: true });
-      console.log(`Created directory: ${targetBasePath}`);
+    if (!fs.existsSync(targetModsPath)) {
+      fs.mkdirSync(targetModsPath, { recursive: true });
+      console.log(`Created directory: ${targetModsPath}`);
     }
 
     let transferredCount = 0;
 
-    if (config.recentDownloads && config.recentDownloads.length > 0) {
-      for (const download of config.recentDownloads) {
-        try {
-          let localModPath: string | null = null;
+    for (const item of _collectModDirectories(config.modsPath)) {
+      const targetModPath = path.join(targetModsPath, item.itemName);
 
-          if (download.folderPath && fs.existsSync(download.folderPath)) {
-            localModPath = download.folderPath;
-          } else {
-            const modFolderName = download.modName || download.id;
-            localModPath = path.join(config.modsPath, modFolderName);
-          }
-
-          if (
-            localModPath &&
-            fs.existsSync(localModPath) &&
-            fs.statSync(localModPath).isDirectory()
-          ) {
-            const targetModPath = path.join(
-              targetBasePath,
-              path.basename(localModPath),
-            );
-
-            if (fs.existsSync(targetModPath)) {
-              fs.rmSync(targetModPath, {
-                recursive: true,
-                force: true,
-              });
-            }
-
-            _copyRecursiveSync(localModPath, targetModPath);
-
-            // Count files transferred
-            const countFiles = (dir) => {
-              let count = 0;
-              const items = fs.readdirSync(dir);
-              for (const item of items) {
-                const itemPath = path.join(dir, item);
-                if (fs.statSync(itemPath).isDirectory()) {
-                  count += countFiles(itemPath);
-                } else {
-                  count++;
-                }
-              }
-              return count;
-            };
-
-            const fileCount = countFiles(targetModPath);
-            transferredCount += fileCount;
-            console.log(
-              `Successfully copied mod: ${path.basename(localModPath)} (${fileCount} files)`,
-            );
-          } else {
-            console.warn(`Mod folder not found: ${localModPath}`);
-          }
-        } catch (modError) {
-          console.error(`Error copying mod ${download.modName}:`, modError);
-        }
+      if (fs.existsSync(targetModPath)) {
+        fs.rmSync(targetModPath, {
+          recursive: true,
+          force: true,
+        });
       }
-    } else {
-      if (fs.existsSync(config.modsPath)) {
-        const files = fs.readdirSync(config.modsPath);
 
-        for (const file of files) {
-          const localModPath = path.join(config.modsPath, file);
+      _copyRecursiveSync(item.localPath, targetModPath);
+      transferredCount += item.fileCount;
+      console.log(
+        `Successfully copied mod: ${item.itemName} (${item.fileCount} files)`,
+      );
+    }
 
-          if (fs.statSync(localModPath).isDirectory()) {
-            const targetModPath = path.join(targetBasePath, file);
+    const pluginItems = _collectPluginFiles(config.pluginsPath);
+    if (pluginItems.length > 0 && !fs.existsSync(targetPluginsPath)) {
+      fs.mkdirSync(targetPluginsPath, { recursive: true });
+      console.log(`Created directory: ${targetPluginsPath}`);
+    }
 
-            if (fs.existsSync(targetModPath)) {
-              fs.rmSync(targetModPath, {
-                recursive: true,
-                force: true,
-              });
-            }
-
-            _copyRecursiveSync(localModPath, targetModPath);
-
-            const countFiles = (dir) => {
-              let count = 0;
-              const items = fs.readdirSync(dir);
-              for (const item of items) {
-                const itemPath = path.join(dir, item);
-                if (fs.statSync(itemPath).isDirectory()) {
-                  count += countFiles(itemPath);
-                } else {
-                  count++;
-                }
-              }
-              return count;
-            };
-
-            const fileCount = countFiles(targetModPath);
-            transferredCount += fileCount;
-            console.log(
-              `Successfully copied mod: ${file} (${fileCount} files)`,
-            );
-          }
-        }
-      }
+    for (const item of pluginItems) {
+      const targetPluginPath = path.join(targetPluginsPath, item.itemName);
+      fs.copyFileSync(item.localPath, targetPluginPath);
+      transferredCount += item.fileCount;
+      console.log(`Successfully copied plugin: ${item.itemName}`);
     }
 
     console.log(
@@ -229,10 +236,15 @@ export type FtpHandlers = typeof FtpHandlers;
 export interface Config {
   switchIp: string;
   switchPort: number;
-  switchFtpPath: string;
+  switchFtpUser?: string | null;
+  switchFtpPassword?: string | null;
+  switchFtpPath?: string | null;
+  switchFtpModsPath?: string | null;
+  switchFtpPluginsPath?: string | null;
   switchDriveLetter: string;
   switchTransferMethod: 'ftp' | 'drive';
   modsPath: string;
+  pluginsPath?: string | null;
   recentDownloads: Array<{
     id: string;
     modName: string;
@@ -257,54 +269,24 @@ const FtpHandlers = {
     let transferredCount = 0;
 
     try {
-      let remoteBasePath = (config.switchFtpPath || '/switch').replace(
-        /\\/g,
-        '/',
+      const remoteModsPath = _normalizeRemotePath(
+        config.switchFtpModsPath || config.switchFtpPath,
+        '/ultimate/mods',
       );
-      if (!remoteBasePath.startsWith('/')) {
-        remoteBasePath = '/' + remoteBasePath;
-      }
-
-      const transferItems: TransferItem[] = [];
-
-      if (config.recentDownloads && config.recentDownloads.length > 0) {
-        for (const download of config.recentDownloads) {
-          let localModPath: string | null = null;
-
-          if (download.folderPath && fs.existsSync(download.folderPath)) {
-            localModPath = download.folderPath;
-          } else {
-            const modFolderName = download.modName || download.id;
-            localModPath = path.join(config.modsPath, modFolderName);
-          }
-
-          if (
-            localModPath &&
-            fs.existsSync(localModPath) &&
-            fs.statSync(localModPath).isDirectory()
-          ) {
-            transferItems.push({
-              localModPath,
-              modName: path.basename(localModPath),
-              fileCount: _countFilesRecursive(localModPath),
-            });
-          } else {
-            console.warn(`Mod folder not found: ${localModPath}`);
-          }
-        }
-      } else if (fs.existsSync(config.modsPath)) {
-        const files = fs.readdirSync(config.modsPath);
-        for (const file of files) {
-          const localModPath = path.join(config.modsPath, file);
-          if (fs.statSync(localModPath).isDirectory()) {
-            transferItems.push({
-              localModPath,
-              modName: file,
-              fileCount: _countFilesRecursive(localModPath),
-            });
-          }
-        }
-      }
+      const remotePluginsPath = _normalizeRemotePath(
+        config.switchFtpPluginsPath,
+        '/ultimate/contents/01006A800016E000/romfs/skyline/plugins',
+      );
+      const transferItems = [
+        ..._collectModDirectories(config.modsPath).map((item) => ({
+          ...item,
+          remoteBasePath: remoteModsPath,
+        })),
+        ..._collectPluginFiles(config.pluginsPath).map((item) => ({
+          ...item,
+          remoteBasePath: remotePluginsPath,
+        })),
+      ];
 
       const totalMods = transferItems.length;
       const totalFiles = transferItems.reduce(
@@ -318,10 +300,17 @@ const FtpHandlers = {
       console.log('Starting FTP transfer to Switch:', {
         ip: config.switchIp,
         port: config.switchPort,
-        remotePath: remoteBasePath,
+        user: config.switchFtpUser || 'ftp',
+        remoteModsPath,
+        remotePluginsPath,
       });
 
-      await ftpClient.connect(config.switchIp, config.switchPort);
+      await ftpClient.connect(
+        config.switchIp,
+        config.switchPort,
+        config.switchFtpUser || 'ftp',
+        config.switchFtpPassword || 'ftp',
+      );
 
       if (totalMods > 0) {
         sendProgress({
@@ -331,13 +320,13 @@ const FtpHandlers = {
           transferredCount: 0,
           totalFiles,
           progress: 0,
-          currentModName: transferItems[0].modName,
+          currentModName: transferItems[0].itemName,
         });
       }
 
       for (const [index, item] of transferItems.entries()) {
         try {
-          const remoteModPath = `${remoteBasePath}/${path.basename(item.localModPath)}`;
+          const remoteItemPath = `${item.remoteBasePath}/${item.itemName}`;
 
           sendProgress({
             status: 'uploading',
@@ -352,39 +341,63 @@ const FtpHandlers = {
                     Math.round((transferredCount / totalFiles) * 100),
                   )
                 : 0,
-            currentModName: item.modName,
+            currentModName: item.itemName,
           });
 
-          const count = await ftpClient.uploadDirectory(
-            item.localModPath,
-            remoteModPath,
-            {
-              baseTransferredCount: transferredCount,
-              totalFiles,
-              currentModIndex: index + 1,
-              totalMods,
-              currentModName: item.modName,
-              onFileUploaded: (progressUpdate) => {
-                sendProgress({
-                  status: 'uploading',
-                  currentMod: progressUpdate.currentModIndex || index + 1,
-                  totalMods: progressUpdate.totalMods || totalMods,
-                  transferredCount: progressUpdate.transferredCount,
-                  totalFiles: progressUpdate.totalFiles || totalFiles,
-                  progress: progressUpdate.progress,
-                  currentModName: progressUpdate.currentModName || item.modName,
-                  currentFileName: progressUpdate.currentFileName,
-                });
+          let count = 0;
+          if (item.kind === 'directory') {
+            count = await ftpClient.uploadDirectory(
+              item.localPath,
+              remoteItemPath,
+              {
+                baseTransferredCount: transferredCount,
+                totalFiles,
+                currentModIndex: index + 1,
+                totalMods,
+                currentModName: item.itemName,
+                onFileUploaded: (progressUpdate) => {
+                  sendProgress({
+                    status: 'uploading',
+                    currentMod: progressUpdate.currentModIndex || index + 1,
+                    totalMods: progressUpdate.totalMods || totalMods,
+                    transferredCount: progressUpdate.transferredCount,
+                    totalFiles: progressUpdate.totalFiles || totalFiles,
+                    progress: progressUpdate.progress,
+                    currentModName:
+                      progressUpdate.currentModName || item.itemName,
+                    currentFileName: progressUpdate.currentFileName,
+                  });
+                },
               },
-            },
-          );
+            );
+          } else {
+            await ftpClient.uploadFile(item.localPath, remoteItemPath);
+            count = 1;
+            const nextTransferredCount = transferredCount + count;
+            sendProgress({
+              status: 'uploading',
+              currentMod: index + 1,
+              totalMods,
+              transferredCount: nextTransferredCount,
+              totalFiles,
+              progress:
+                totalFiles > 0
+                  ? Math.min(
+                      100,
+                      Math.round((nextTransferredCount / totalFiles) * 100),
+                    )
+                  : 0,
+              currentModName: item.itemName,
+              currentFileName: item.itemName,
+            });
+          }
 
           transferredCount += count;
           console.log(
-            `Successfully sent mod: ${path.basename(item.localModPath)} (${count} files)`,
+            `Successfully sent ${item.kind}: ${item.itemName} (${count} files)`,
           );
         } catch (modError) {
-          console.error(`Error sending mod ${item.modName}:`, modError);
+          console.error(`Error sending ${item.itemName}:`, modError);
         }
       }
 
@@ -396,7 +409,7 @@ const FtpHandlers = {
           transferredCount,
           totalFiles,
           progress: totalFiles > 0 ? 100 : 0,
-          currentModName: transferItems[totalMods - 1].modName,
+          currentModName: transferItems[totalMods - 1].itemName,
         });
       }
 

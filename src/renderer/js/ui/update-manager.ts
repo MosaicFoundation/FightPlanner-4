@@ -47,6 +47,7 @@ class UpdateManager {
 
     window.electronAPI.onUpdateError((data) => {
       console.error('[UpdateManager] Update error:', data.message);
+      window.appSoundManager?.stop('downloading', { force: true });
       if (window.toastManager) {
         window.toastManager.error('toasts.updateError', 5000, {
           error: data.message,
@@ -158,6 +159,7 @@ class UpdateManager {
     downloadingContent!.style.display = 'block';
     availableActions!.style.display = 'none';
     downloadingActions!.style.display = 'flex';
+    window.appSoundManager?.play('downloading');
 
     const progressFill = document.querySelector<HTMLElement>(
       '#update-progress-fill',
@@ -176,6 +178,7 @@ class UpdateManager {
       }
     } catch (error) {
       console.error('Failed to start download:', error);
+      window.appSoundManager?.stop('downloading');
       if (window.toastManager) {
         window.toastManager.error('toasts.updateDownloadFailed', 5000);
       }
@@ -225,6 +228,8 @@ class UpdateManager {
     downloadedContent!.style.display = 'block';
     downloadingActions!.style.display = 'none';
     downloadedActions!.style.display = 'flex';
+    window.appSoundManager?.stop('downloading');
+    window.appSoundManager?.play('complete');
 
     if (window.toastManager) {
       window.toastManager.success('toasts.updateDownloaded', 5000, {
@@ -277,6 +282,7 @@ class UpdateManager {
 
   async checkForUpdatesManually() {
     console.log('[UpdateManager] Manual update check initiated');
+    window.appSoundManager?.play('loading', { volume: 0.55 });
 
     if (window.toastManager) {
       window.toastManager.info('toasts.checkingForUpdates', 3000);
@@ -318,6 +324,8 @@ class UpdateManager {
       if (window.toastManager) {
         window.toastManager.error('toasts.updateCheckFailed', 5000);
       }
+    } finally {
+      window.appSoundManager?.stop('loading');
     }
   }
 }

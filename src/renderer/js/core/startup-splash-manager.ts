@@ -6,6 +6,7 @@ class StartupSplashManager {
   currentAnimation: any;
   splashEnabled: boolean;
   splashSoundEnabled: boolean;
+  splashSoundPath: string | null;
   startupLaunch: boolean;
   postTutorialIntro: boolean;
   animationWarmupPromise: Promise<void> | null;
@@ -19,6 +20,7 @@ class StartupSplashManager {
     this.currentAnimation = null;
     this.splashEnabled = true;
     this.splashSoundEnabled = true;
+    this.splashSoundPath = null;
     this.startupLaunch = false;
     this.postTutorialIntro = false;
     this.animationWarmupPromise = null;
@@ -101,9 +103,16 @@ class StartupSplashManager {
       const splashSoundEnabled = await window.electronAPI.store.get(
         'startupSplashSoundEnabled',
       );
+      const splashSoundPath = await window.electronAPI.store.get(
+        'startupSplashSoundPath',
+      );
 
       this.splashEnabled = splashEnabled !== false;
       this.splashSoundEnabled = splashSoundEnabled !== false;
+      this.splashSoundPath =
+        typeof splashSoundPath === 'string' && splashSoundPath.trim()
+          ? splashSoundPath
+          : null;
     } catch (error) {
       console.error('[StartupSplash] Failed to load preferences:', error);
     }
@@ -357,14 +366,47 @@ class StartupSplashManager {
     }
 
     try {
-      const audio = new Audio('../sounds/SplashScreen.mp3');
+      const defaultSound = '../sounds/SplashScreen.mp3';
+      const audio = new Audio(
+        this.splashSoundPath
+          ? this.localPathToFileUrl(this.splashSoundPath)
+          : defaultSound,
+      );
       audio.volume = 0.8;
+      audio.addEventListener(
+        'error',
+        () => {
+          if (!this.splashSoundPath) {
+            return;
+          }
+
+          const fallbackAudio = new Audio(defaultSound);
+          fallbackAudio.volume = 0.8;
+          fallbackAudio.play().catch((error) => {
+            console.warn('[StartupSplash] Fallback splash audio blocked:', error);
+          });
+        },
+        { once: true },
+      );
       audio.play().catch((error) => {
         console.warn('[StartupSplash] Splash audio blocked:', error);
       });
     } catch (error) {
       console.warn('[StartupSplash] Could not start splash audio:', error);
     }
+  }
+
+  localPathToFileUrl(filePath: string) {
+    const normalizedPath = filePath.replace(/\\/g, '/');
+    const isWindowsPath = /^[A-Za-z]:\//.test(normalizedPath);
+    const prefixedPath = isWindowsPath ? `/${normalizedPath}` : normalizedPath;
+
+    return `file://${prefixedPath
+      .split('/')
+      .map((segment) =>
+        /^[A-Za-z]:$/.test(segment) ? segment : encodeURIComponent(segment),
+      )
+      .join('/')}`;
   }
 
   setStatus(text: string) {

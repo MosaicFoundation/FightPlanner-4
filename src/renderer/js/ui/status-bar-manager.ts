@@ -76,6 +76,7 @@ export class StatusBarManager {
     this.userDismissedExtendedBar = false;
     this.lastExtendedBarData = null;
     this.claimManagedStatusNode();
+    this.setupCollapsedStatusClickHandler();
 
     // Start global monitoring for downloads
     setInterval(() => {
@@ -115,6 +116,41 @@ export class StatusBarManager {
     }
 
     return statusText;
+  }
+
+  private isEnhancedStatusBarEnabled() {
+    return window.settingsManager?.settings.enhancedStatusBar !== false;
+  }
+
+  private setupCollapsedStatusClickHandler() {
+    const bottomBar = document.getElementById('main-status-bar');
+    if (!bottomBar || bottomBar.dataset.collapsedClickAttached === 'true') {
+      return;
+    }
+
+    bottomBar.addEventListener('click', (event) => {
+      if (!this.isEnhancedStatusBarEnabled()) {
+        return;
+      }
+
+      if (bottomBar.classList.contains('expanded')) {
+        return;
+      }
+
+      const target = event.target as HTMLElement;
+      if (!target.closest('.bottom-text-left')) {
+        return;
+      }
+
+      if (!this.hasDownloadsInProgress()) {
+        return;
+      }
+
+      this.userDismissedExtendedBar = false;
+      this.checkActiveDownloads();
+    });
+
+    bottomBar.dataset.collapsedClickAttached = 'true';
   }
 
   private clearUpdateLoop() {
@@ -1865,6 +1901,50 @@ export class StatusBarManager {
     }, 500);
   }
 
+  completeFtpTransfer(transferredCount = 0) {
+    this.clearUpdateLoop();
+    this.hasActiveDownloads = false;
+
+    const statusText = this.getStatusTextElement();
+    if (statusText) {
+      statusText.classList.remove('status-downloading');
+    }
+
+    const label =
+      transferredCount > 0
+        ? `Switch transfer completed (${transferredCount} files)`
+        : 'Switch transfer completed';
+    const completedStatus =
+      transferredCount > 0
+        ? this.t('statusBar.ftpCompletedWithFiles', {
+            count: transferredCount,
+          })
+        : this.t('statusBar.ftpCompleted');
+
+    this.showTemporaryStatus(completedStatus, { autoRestoreMs: 2600 });
+
+    if (this.isEnhancedStatusBarEnabled()) {
+      this.userDismissedExtendedBar = false;
+      this.lastExtendedBarData = `ftp-complete:${Date.now()}`;
+      this.updateExtendedBar({
+        type: 'success',
+        fileName: label,
+      });
+
+      setTimeout(() => {
+        const bottomBar = document.getElementById('main-status-bar');
+        if (bottomBar?.classList.contains('success-mode')) {
+          this.updateExtendedBar({ type: 'none' });
+        }
+        this.refreshStandardStatus();
+      }, 2200);
+      return;
+    }
+
+    this.updateExtendedBar({ type: 'none' });
+    this.refreshStandardStatus();
+  }
+
   _getDownloadDisplayName(dl: DownloadItem): string {
     if (dl.modName) return dl.modName;
     if (dl.statusText && !dl.statusText.toLowerCase().includes('downloading')) return dl.statusText;
@@ -1884,8 +1964,7 @@ export class StatusBarManager {
     if (!bottomBar) return;
 
     const content = bottomBar.querySelector('.extended-content');
-    const enabled =
-      window.settingsManager?.settings.enhancedStatusBar !== false;
+    const enabled = this.isEnhancedStatusBarEnabled();
     const wasExpanded = bottomBar.classList.contains('expanded');
     const previousMode = this.getIslandMode(bottomBar);
 
@@ -1908,6 +1987,7 @@ export class StatusBarManager {
           if (content) {
             delete (content as HTMLElement).dataset.extendedSignature;
             (content as HTMLElement).style.display = 'none';
+            (content as HTMLElement).innerHTML = '';
           }
         };
 
@@ -1923,6 +2003,7 @@ export class StatusBarManager {
       } else if (content) {
         delete (content as HTMLElement).dataset.extendedSignature;
         (content as HTMLElement).style.display = 'none';
+        (content as HTMLElement).innerHTML = '';
       }
       return;
     }
@@ -1983,7 +2064,13 @@ export class StatusBarManager {
 
         const isActiveDownloadCard = content.querySelector('.ext-download-card .ext-progress-container');
         const isMultiCard = content.querySelector('.ext-multi-download-card');
-        if (isActiveDownloadCard && !isMultiCard) {
+        const canPatchExistingCard =
+          wasExpanded &&
+          previousMode === 'download' &&
+          isActiveDownloadCard &&
+          !isMultiCard;
+
+        if (canPatchExistingCard) {
             const fileNameEl = content.querySelector('.ext-filename');
             const progressFillEl = content.querySelector('.ext-progress-fill') as HTMLElement;
             const percentageEl = content.querySelector('.ext-percentage');

@@ -59,6 +59,8 @@ async function switchTab(tabName) {
 
   if (currentTab === selectedTab) return;
 
+  window.appSoundManager?.play('switchTab', { volume: 0.65 });
+
   if (window.tabLoader) {
     window.tabLoader.loadTabContent(tabName);
   }

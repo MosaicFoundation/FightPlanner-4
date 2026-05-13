@@ -10,6 +10,36 @@ import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
 export type FileHandlers = typeof FileHandlers;
 
+const getEmulatorDialogOptions = () => {
+  if (process.platform === 'darwin') {
+    return {
+      properties: ['openFile', 'openDirectory'] as ('openFile' | 'openDirectory')[],
+      filters: [
+        { name: 'Applications', extensions: ['app'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    };
+  }
+
+  if (process.platform === 'linux') {
+    return {
+      properties: ['openFile'] as ('openFile')[],
+      filters: [
+        { name: 'Linux Executables', extensions: ['AppImage', 'sh'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    };
+  }
+
+  return {
+    properties: ['openFile'] as ('openFile')[],
+    filters: [
+      { name: 'Executable Files', extensions: ['exe'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+  };
+};
+
 const FileHandlers = {
   ['select-folder']: async (common: BaseHandlerArg) => {
     const win = BrowserWindow.fromWebContents(common.event.sender)!;
@@ -22,13 +52,7 @@ const FileHandlers = {
 
   ['select-emulator-file']: async (common: BaseHandlerArg) => {
     const win = BrowserWindow.fromWebContents(common.event.sender)!;
-    const result = await dialog.showOpenDialog(win, {
-      properties: ['openFile'],
-      filters: [
-        { name: 'Executable Files', extensions: ['exe'] },
-        { name: 'All Files', extensions: ['*'] },
-      ],
-    });
+    const result = await dialog.showOpenDialog(win, getEmulatorDialogOptions());
     return result.canceled ? null : result.filePaths[0];
   },
 

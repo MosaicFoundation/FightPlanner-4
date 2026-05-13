@@ -5,6 +5,7 @@ class SettingsManager {
   drivesLoaded: boolean;
   switchTabTimeout: any;
   readyPromise: Promise<void>;
+  lastModsPathWarningPath: string | null;
 
   constructor() {
     this.settings = {
@@ -16,7 +17,11 @@ class SettingsManager {
       emulatorFullscreen: false,
       switchIp: null,
       switchPort: '5000',
+      switchFtpUser: null,
+      switchFtpPassword: null,
       switchFtpPath: null,
+      switchFtpModsPath: null,
+      switchFtpPluginsPath: null,
       switchTransferMethod: 'none',
       switchDriveLetter: null,
       conflictDetectionEnabled: true,
@@ -31,10 +36,13 @@ class SettingsManager {
       enhancedStatusBar: true,
       startupSplashEnabled: true,
       startupSplashSoundEnabled: true,
+      startupSplashSoundPath: null,
+      appSoundPaths: {},
     };
     this.initialized = false;
     this.tabSwitchingAttached = false;
     this.drivesLoaded = false;
+    this.lastModsPathWarningPath = null;
     this.readyPromise = this.initSettings();
     this.initializeUI();
   }
@@ -42,17 +50,18 @@ class SettingsManager {
   async initSettings() {
     this.settings = await this.loadSettings();
     this.applyTheme(this.settings.theme);
+    this.applyAppSoundSettings();
+    this.initialized = true;
+    this.setupEventListeners();
   }
 
   initializeUI() {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         this.setupEventListeners();
-        this.initialized = true;
       });
     } else {
       this.setupEventListeners();
-      this.initialized = true;
     }
   }
 
@@ -128,9 +137,141 @@ class SettingsManager {
         this.settings.startupSplashSoundEnabled =
           startupSplashSoundToggle.checked;
         this.saveSettings();
+        this.updateStartupSplashSoundUI();
       });
       startupSplashSoundToggle.dataset.listenerAttached = 'true';
     }
+
+    const startupSplashSoundFile = document.querySelector<HTMLInputElement>(
+      '#startup-splash-sound-file',
+    );
+    const browseStartupSplashSound = document.querySelector<HTMLElement>(
+      '#browse-startup-splash-sound',
+    );
+    if (
+      startupSplashSoundFile &&
+      browseStartupSplashSound &&
+      !browseStartupSplashSound.dataset.listenerAttached
+    ) {
+      browseStartupSplashSound.addEventListener('click', () => {
+        startupSplashSoundFile.value = '';
+        startupSplashSoundFile.click();
+      });
+      browseStartupSplashSound.dataset.listenerAttached = 'true';
+    }
+
+    if (
+      startupSplashSoundFile &&
+      !startupSplashSoundFile.dataset.listenerAttached
+    ) {
+      startupSplashSoundFile.addEventListener('change', () => {
+        const file = startupSplashSoundFile.files?.[0];
+        if (!file) {
+          return;
+        }
+
+        const filePath = window.electronAPI?.getPathForFile?.(file);
+        if (!filePath) {
+          window.toastManager?.error?.('Unable to read the selected audio path');
+          return;
+        }
+
+        this.settings.startupSplashSoundPath = filePath;
+        this.settings.startupSplashSoundEnabled = true;
+        this.saveSettings();
+        this.updateStartupSplashSoundUI();
+      });
+      startupSplashSoundFile.dataset.listenerAttached = 'true';
+    }
+
+    const resetStartupSplashSound = document.querySelector<HTMLElement>(
+      '#reset-startup-splash-sound',
+    );
+    if (
+      resetStartupSplashSound &&
+      !resetStartupSplashSound.dataset.listenerAttached
+    ) {
+      resetStartupSplashSound.addEventListener('click', () => {
+        this.settings.startupSplashSoundPath = null;
+        this.saveSettings();
+        this.updateStartupSplashSoundUI();
+      });
+      resetStartupSplashSound.dataset.listenerAttached = 'true';
+    }
+
+    document.querySelectorAll<HTMLElement>('.app-sound-browse').forEach((button) => {
+      if (button.dataset.listenerAttached) {
+        return;
+      }
+
+      button.addEventListener('click', () => {
+        const soundName = button.dataset.soundName;
+        if (!soundName) {
+          return;
+        }
+
+        const fileInput = document.querySelector<HTMLInputElement>(
+          `#app-sound-file-${soundName}`,
+        );
+        if (!fileInput) {
+          return;
+        }
+
+        fileInput.value = '';
+        fileInput.click();
+      });
+      button.dataset.listenerAttached = 'true';
+    });
+
+    document.querySelectorAll<HTMLInputElement>('input[id^="app-sound-file-"]').forEach((input) => {
+      if (input.dataset.listenerAttached) {
+        return;
+      }
+
+      input.addEventListener('change', () => {
+        const soundName = input.dataset.soundName;
+        const file = input.files?.[0];
+        if (!soundName || !file) {
+          return;
+        }
+
+        const filePath = window.electronAPI?.getPathForFile?.(file);
+        if (!filePath) {
+          window.toastManager?.error?.('Unable to read the selected audio path');
+          return;
+        }
+
+        this.settings.appSoundPaths = {
+          ...(this.settings.appSoundPaths || {}),
+          [soundName]: filePath,
+        };
+        window.appSoundManager?.setCustomSound?.(soundName as any, filePath);
+        this.saveSettings();
+        this.updateAppSoundsUI();
+      });
+      input.dataset.listenerAttached = 'true';
+    });
+
+    document.querySelectorAll<HTMLElement>('.app-sound-reset').forEach((button) => {
+      if (button.dataset.listenerAttached) {
+        return;
+      }
+
+      button.addEventListener('click', () => {
+        const soundName = button.dataset.soundName;
+        if (!soundName) {
+          return;
+        }
+
+        const nextSoundPaths = { ...(this.settings.appSoundPaths || {}) };
+        delete nextSoundPaths[soundName];
+        this.settings.appSoundPaths = nextSoundPaths;
+        window.appSoundManager?.setCustomSound?.(soundName as any, null);
+        this.saveSettings();
+        this.updateAppSoundsUI();
+      });
+      button.dataset.listenerAttached = 'true';
+    });
 
     const enhancedStatusBarToggle = document.querySelector<HTMLInputElement>(
       '#enhanced-status-bar-enabled',
@@ -371,14 +512,49 @@ class SettingsManager {
       switchPort.dataset.listenerAttached = 'true';
     }
 
+    const switchFtpUser =
+      document.querySelector<HTMLInputElement>('#switch-ftp-user');
+    if (switchFtpUser && !switchFtpUser.dataset.listenerAttached) {
+      switchFtpUser.addEventListener('change', () => {
+        this.settings.switchFtpUser = switchFtpUser.value.trim() || null;
+        this.saveSettings();
+      });
+      switchFtpUser.dataset.listenerAttached = 'true';
+    }
+
+    const switchFtpPassword =
+      document.querySelector<HTMLInputElement>('#switch-ftp-password');
+    if (switchFtpPassword && !switchFtpPassword.dataset.listenerAttached) {
+      switchFtpPassword.addEventListener('change', () => {
+        this.settings.switchFtpPassword = switchFtpPassword.value || null;
+        this.saveSettings();
+      });
+      switchFtpPassword.dataset.listenerAttached = 'true';
+    }
+
     const switchFtpPath =
       document.querySelector<HTMLInputElement>('#switch-ftp-path');
     if (switchFtpPath && !switchFtpPath.dataset.listenerAttached) {
       switchFtpPath.addEventListener('change', () => {
-        this.settings.switchFtpPath = switchFtpPath.value;
+        this.settings.switchFtpModsPath = switchFtpPath.value.trim() || null;
         this.saveSettings();
       });
       switchFtpPath.dataset.listenerAttached = 'true';
+    }
+
+    const switchFtpPluginsPath = document.querySelector<HTMLInputElement>(
+      '#switch-ftp-plugins-path',
+    );
+    if (
+      switchFtpPluginsPath &&
+      !switchFtpPluginsPath.dataset.listenerAttached
+    ) {
+      switchFtpPluginsPath.addEventListener('change', () => {
+        this.settings.switchFtpPluginsPath =
+          switchFtpPluginsPath.value.trim() || null;
+        this.saveSettings();
+      });
+      switchFtpPluginsPath.dataset.listenerAttached = 'true';
     }
 
     const switchTransferMethodSelect = document.querySelector<HTMLElement>(
@@ -788,6 +964,7 @@ class SettingsManager {
     this.updateEnhancedStatusBarUI();
     this.updateStartupSplashUI();
     this.updateStartupSplashSoundUI();
+    this.updateAppSoundsUI();
     this.updateDeveloperModeUI();
 
     // Analytics toggle
@@ -1230,6 +1407,7 @@ class SettingsManager {
           contentArea.scrollTop = 0;
         }
 
+        this.maybeWarnForCurrentModsPath();
         this.switchTabTimeout = null;
       }, 200);
     } else {
@@ -1260,6 +1438,8 @@ class SettingsManager {
       if (contentArea) {
         contentArea.scrollTop = 0;
       }
+
+      this.maybeWarnForCurrentModsPath();
     }
   }
 
@@ -1271,33 +1451,64 @@ class SettingsManager {
 
     const folder = await window.electronAPI.selectFolder();
     if (folder) {
-      const oldPath = this.settings.modsPath;
       this.settings.modsPath = folder;
       this.saveSettings();
       this.updateModsFolderUI();
-
-      if (oldPath !== folder) {
-        this.checkModsPath(folder);
-      }
+      await this.refreshModsListForPath(folder);
+      this.checkModsPath(folder, { force: true });
     }
   }
 
-  checkModsPath(path) {
-    if (!path) return;
-
-    const normalizedPath = path.toLowerCase().replace(/\\/g, '/');
-    const hasCorrectStructure =
-      normalizedPath.includes('ultimate/mods') ||
-      normalizedPath.includes('ultimate\\mods');
-
-    if (!hasCorrectStructure) {
-      this.showPathWarningModal(path);
+  async refreshModsListForPath(modsPath) {
+    if (!modsPath || !window.modManager?.loadModsFromFolder) {
+      return;
     }
+
+    try {
+      await window.modManager.loadModsFromFolder(modsPath);
+    } catch (error) {
+      console.error('Failed to refresh mods after path change:', error);
+    }
+  }
+
+  maybeWarnForCurrentModsPath() {
+    const libraryTab = document.querySelector<HTMLElement>('#settings-library');
+    if (!libraryTab?.classList.contains('active')) {
+      return;
+    }
+
+    if (this.settings.modsPath) {
+      this.checkModsPath(this.settings.modsPath);
+    }
+  }
+
+  hasExpectedModsPathStructure(path) {
+    const normalizedPath = path.toLowerCase().replace(/\\/g, '/');
+    return (
+      normalizedPath.includes('ultimate/mods') ||
+      normalizedPath.includes('ultimate\\mods')
+    );
+  }
+
+  checkModsPath(path, options: { force?: boolean } = {}) {
+    if (!path || this.hasExpectedModsPathStructure(path)) return;
+
+    if (
+      !options.force &&
+      this.lastModsPathWarningPath === path
+    ) {
+      return;
+    }
+
+    if (document.querySelector('.mods-path-warning-modal')) {
+      return;
+    }
+
+    this.lastModsPathWarningPath = path;
+    this.showPathWarningModal(path);
   }
 
   showPathWarningModal(path) {
-    if (!window.modalManager) return;
-
     const t = (key, params = {}) => {
       return window.i18n && window.i18n.t ? window.i18n.t(key, params) : key;
     };
@@ -1309,9 +1520,10 @@ class SettingsManager {
     };
 
     const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
+    modal.className = 'modal-overlay mods-path-warning-modal';
+    modal.style.display = 'block';
     modal.innerHTML = `
-<div class="modal">
+<div class="modal" style="display: block">
 <div class="modal-header">
 <i class="bi bi-exclamation-triangle" style="color: #f59e0b; font-size: 24px; margin-right: 10px;"></i>
 <h2>${t('settings.pathWarning')}</h2>
@@ -1404,6 +1616,7 @@ ${t('settings.okUnderstand')}
     if (input && this.settings.modsPath) {
       input.value = this.settings.modsPath;
     }
+    this.maybeWarnForCurrentModsPath();
   }
 
   updatePluginsFolderUI() {
@@ -1521,10 +1734,32 @@ ${t('settings.okUnderstand')}
       switchPortInput.value = this.settings.switchPort;
     }
 
+    const switchFtpUserInput =
+      document.querySelector<HTMLInputElement>('#switch-ftp-user');
+    if (switchFtpUserInput) {
+      switchFtpUserInput.value = this.settings.switchFtpUser || '';
+    }
+
+    const switchFtpPasswordInput =
+      document.querySelector<HTMLInputElement>('#switch-ftp-password');
+    if (switchFtpPasswordInput) {
+      switchFtpPasswordInput.value = this.settings.switchFtpPassword || '';
+    }
+
     const switchFtpPathInput =
       document.querySelector<HTMLInputElement>('#switch-ftp-path');
-    if (switchFtpPathInput && this.settings.switchFtpPath) {
-      switchFtpPathInput.value = this.settings.switchFtpPath;
+    if (switchFtpPathInput) {
+      switchFtpPathInput.value =
+        this.settings.switchFtpModsPath ||
+        this.settings.switchFtpPath ||
+        '';
+    }
+
+    const switchFtpPluginsPathInput = document.querySelector<HTMLInputElement>(
+      '#switch-ftp-plugins-path',
+    );
+    if (switchFtpPluginsPathInput) {
+      switchFtpPluginsPathInput.value = this.settings.switchFtpPluginsPath || '';
     }
   }
 
@@ -1814,6 +2049,83 @@ ${t('settings.okUnderstand')}
       splashSoundLabel.style.opacity =
         this.settings.startupSplashEnabled !== false ? '1' : '0.55';
     }
+
+    const splashSoundPathInput = document.querySelector<HTMLInputElement>(
+      '#startup-splash-sound-path',
+    );
+    if (splashSoundPathInput) {
+      const defaultSoundLabel =
+        window.i18n?.t?.(
+          'settings.startupSplashSoundPathPlaceholder',
+        ) || 'Default FightPlanner sound';
+      splashSoundPathInput.value =
+        this.settings.startupSplashSoundPath || defaultSoundLabel;
+      splashSoundPathInput.disabled = this.settings.startupSplashEnabled === false;
+    }
+
+    const browseStartupSplashSound = document.querySelector<HTMLButtonElement>(
+      '#browse-startup-splash-sound',
+    );
+    if (browseStartupSplashSound) {
+      browseStartupSplashSound.disabled =
+        this.settings.startupSplashEnabled === false;
+    }
+
+    const resetStartupSplashSound = document.querySelector<HTMLButtonElement>(
+      '#reset-startup-splash-sound',
+    );
+    if (resetStartupSplashSound) {
+      resetStartupSplashSound.disabled =
+        this.settings.startupSplashEnabled === false ||
+        !this.settings.startupSplashSoundPath;
+    }
+  }
+
+  updateAppSoundsUI() {
+    const defaultSoundLabel =
+      window.i18n?.t?.('settings.defaultSoundPath') || 'Default sound';
+    const appSoundPaths = this.settings.appSoundPaths || {};
+
+    this.getAppSoundNames().forEach((soundName) => {
+      const pathInput = document.querySelector<HTMLInputElement>(
+        `#app-sound-path-${soundName}`,
+      );
+      if (pathInput) {
+        pathInput.value = appSoundPaths[soundName] || defaultSoundLabel;
+      }
+
+      const resetButton = document.querySelector<HTMLButtonElement>(
+        `.app-sound-reset[data-sound-name="${soundName}"]`,
+      );
+      if (resetButton) {
+        resetButton.disabled = !appSoundPaths[soundName];
+      }
+    });
+  }
+
+  applyAppSoundSettings() {
+    if (!window.appSoundManager) {
+      return;
+    }
+
+    const appSoundPaths = this.settings.appSoundPaths || {};
+    this.getAppSoundNames().forEach((soundName) => {
+      window.appSoundManager.setCustomSound(
+        soundName as any,
+        appSoundPaths[soundName] || null,
+      );
+    });
+  }
+
+  getAppSoundNames() {
+    return [
+      'notification',
+      'error',
+      'complete',
+      'downloading',
+      'loading',
+      'switchTab',
+    ];
   }
 
   async updateAppVersionUI() {
@@ -1916,7 +2228,17 @@ ${t('settings.okUnderstand')}
         await window.electronAPI.store.get('emulatorFullscreen');
       const switchIp = await window.electronAPI.store.get('switchIp');
       const switchPort = await window.electronAPI.store.get('switchPort');
+      const switchFtpUser = await window.electronAPI.store.get('switchFtpUser');
+      const switchFtpPassword = await window.electronAPI.store.get(
+        'switchFtpPassword',
+      );
       const switchFtpPath = await window.electronAPI.store.get('switchFtpPath');
+      const switchFtpModsPath = await window.electronAPI.store.get(
+        'switchFtpModsPath',
+      );
+      const switchFtpPluginsPath = await window.electronAPI.store.get(
+        'switchFtpPluginsPath',
+      );
       const switchTransferMethod = await window.electronAPI.store.get(
         'switchTransferMethod',
       );
@@ -1943,6 +2265,12 @@ ${t('settings.okUnderstand')}
       const startupSplashSoundEnabled = await window.electronAPI.store.get(
         'startupSplashSoundEnabled',
       );
+      const startupSplashSoundPath = await window.electronAPI.store.get(
+        'startupSplashSoundPath',
+      );
+      const appSoundPaths = await window.electronAPI.store.get(
+        'appSoundPaths',
+      );
       return {
         modsPath: modsPath || null,
         pluginsPath: pluginsPath || null,
@@ -1952,7 +2280,11 @@ ${t('settings.okUnderstand')}
         emulatorFullscreen: emulatorFullscreen || false,
         switchIp: switchIp || null,
         switchPort: switchPort || '5000',
+        switchFtpUser: switchFtpUser || null,
+        switchFtpPassword: switchFtpPassword || null,
         switchFtpPath: switchFtpPath || null,
+        switchFtpModsPath: switchFtpModsPath || switchFtpPath || null,
+        switchFtpPluginsPath: switchFtpPluginsPath || null,
         switchTransferMethod: switchTransferMethod || 'none',
         switchDriveLetter: switchDriveLetter || null,
         conflictDetectionEnabled: conflictDetectionEnabled !== false,
@@ -1963,6 +2295,15 @@ ${t('settings.okUnderstand')}
         disableAllModsOnDownload: disableAllModsOnDownload || false,
         startupSplashEnabled: startupSplashEnabled !== false,
         startupSplashSoundEnabled: startupSplashSoundEnabled !== false,
+        startupSplashSoundPath:
+          typeof startupSplashSoundPath === 'string' &&
+          startupSplashSoundPath.trim()
+            ? startupSplashSoundPath
+            : null,
+        appSoundPaths:
+          appSoundPaths && typeof appSoundPaths === 'object'
+            ? appSoundPaths
+            : {},
       };
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -1975,7 +2316,11 @@ ${t('settings.okUnderstand')}
         emulatorFullscreen: false,
         switchIp: null,
         switchPort: '5000',
+        switchFtpUser: null,
+        switchFtpPassword: null,
         switchFtpPath: null,
+        switchFtpModsPath: null,
+        switchFtpPluginsPath: null,
         switchTransferMethod: 'none',
         switchDriveLetter: null,
         conflictDetectionEnabled: true,
@@ -1986,11 +2331,18 @@ ${t('settings.okUnderstand')}
         disableAllModsOnDownload: false,
         startupSplashEnabled: true,
         startupSplashSoundEnabled: true,
+        startupSplashSoundPath: null,
+        appSoundPaths: {},
       };
     }
   }
 
   async saveSettings() {
+    if (!this.initialized) {
+      console.warn('Skipping settings save before stored settings are loaded');
+      return;
+    }
+
     try {
       await window.electronAPI.store.set('modsPath', this.settings.modsPath);
       await window.electronAPI.store.set(
@@ -2016,8 +2368,24 @@ ${t('settings.okUnderstand')}
         this.settings.switchPort,
       );
       await window.electronAPI.store.set(
+        'switchFtpUser',
+        this.settings.switchFtpUser,
+      );
+      await window.electronAPI.store.set(
+        'switchFtpPassword',
+        this.settings.switchFtpPassword,
+      );
+      await window.electronAPI.store.set(
         'switchFtpPath',
-        this.settings.switchFtpPath,
+        this.settings.switchFtpModsPath || this.settings.switchFtpPath,
+      );
+      await window.electronAPI.store.set(
+        'switchFtpModsPath',
+        this.settings.switchFtpModsPath,
+      );
+      await window.electronAPI.store.set(
+        'switchFtpPluginsPath',
+        this.settings.switchFtpPluginsPath,
       );
       await window.electronAPI.store.set(
         'switchTransferMethod',
@@ -2055,6 +2423,14 @@ ${t('settings.okUnderstand')}
       await window.electronAPI.store.set(
         'startupSplashSoundEnabled',
         this.settings.startupSplashSoundEnabled,
+      );
+      await window.electronAPI.store.set(
+        'startupSplashSoundPath',
+        this.settings.startupSplashSoundPath,
+      );
+      await window.electronAPI.store.set(
+        'appSoundPaths',
+        this.settings.appSoundPaths || {},
       );
     } catch (error) {
       console.error('Failed to save settings:', error);
@@ -2113,8 +2489,24 @@ ${t('settings.okUnderstand')}
     return this.settings.switchPort || '5000';
   }
 
+  getSwitchFtpUser() {
+    return this.settings.switchFtpUser || null;
+  }
+
+  getSwitchFtpPassword() {
+    return this.settings.switchFtpPassword || null;
+  }
+
   getSwitchFtpPath() {
-    return this.settings.switchFtpPath || null;
+    return this.settings.switchFtpModsPath || this.settings.switchFtpPath || null;
+  }
+
+  getSwitchFtpModsPath() {
+    return this.settings.switchFtpModsPath || this.settings.switchFtpPath || null;
+  }
+
+  getSwitchFtpPluginsPath() {
+    return this.settings.switchFtpPluginsPath || null;
   }
 
   hasSwitchConfig() {

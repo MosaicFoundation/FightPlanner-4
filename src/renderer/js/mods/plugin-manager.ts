@@ -266,7 +266,7 @@ class PluginManager {
     this.updatePluginCount(this.plugins.length);
   }
 
-  navigateToPluginsSettings() {
+  async navigateToPluginsSettings() {
     // Navigate to settings tab
     const settingsBtn = document.querySelector<HTMLElement>(
       '[data-tab="settings"]',
@@ -275,11 +275,15 @@ class PluginManager {
       settingsBtn.click();
     }
 
-    // Wait for settings to load, then switch to mods/paths tab and highlight plugins path
+    if (window.tabLoader) {
+      await window.tabLoader.loadTabContent('settings');
+    }
+
+    // Wait for settings to finish initializing, then switch to Library and highlight plugins path.
     setTimeout(() => {
       if (window.settingsManager) {
-        // The paths tab is actually called 'mods' in the settings
-        window.settingsManager.switchSettingsTab('mods');
+        window.settingsManager.setupEventListeners();
+        window.settingsManager.switchSettingsTab('library');
 
         // Wait for the tab to show and highlight the plugins path field
         setTimeout(() => {
