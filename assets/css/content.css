@@ -2246,7 +2246,6 @@ body.no-animations .mod-info-item {
   transition: all 0.2s ease;
 }
 
-<<<<<<< HEAD
 .advanced-textarea:focus {
   outline: none;
   border-color: var(--accent-color);
@@ -2312,73 +2311,6 @@ body.no-animations .mod-info-item {
   color: var(--text-muted);
   font-size: 12px;
 }
-=======
-.advanced-textarea:focus {
-  outline: none;
-  border-color: var(--accent-color);
-  background-color: var(--bg-input);
-}
-
-.edit-info-preview-editor {
-  margin-bottom: 18px;
-}
-
-.edit-info-preview-row {
-  display: grid;
-  grid-template-columns: 160px 1fr;
-  gap: 14px;
-  align-items: center;
-}
-
-.edit-info-preview-frame {
-  width: 160px;
-  aspect-ratio: 16 / 9;
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-hover);
-  border-radius: 8px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.edit-info-preview-frame img {
-  display: none;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.edit-info-preview-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  font-size: 26px;
-}
-
-.edit-info-preview-actions {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-start;
-}
-
-.edit-info-preview-actions .modal-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.edit-info-preview-status {
-  min-height: 16px;
-  color: var(--text-muted);
-  font-size: 12px;
-}
->>>>>>> 4ed27c1 (Improve multi-mod actions and fix Linux 1-click install)
 
 .modal-footer .modal-btn-secondary {
   margin-right: auto;
