@@ -2618,12 +2618,47 @@ body.no-animations .mod-info-item {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
+}
+
+.credits-person-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .credits-person-name {
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.credits-support-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 5px 9px;
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  border-radius: 7px;
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent-color);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.credits-support-btn:hover {
+  background: rgba(var(--accent-rgb), 0.2);
+  border-color: rgba(var(--accent-rgb), 0.55);
+  transform: translateY(-1px);
+}
+
+.credits-support-btn i {
+  font-size: 12px;
+  line-height: 1;
 }
 
 .credits-person-role {

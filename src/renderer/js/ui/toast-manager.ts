@@ -115,6 +115,7 @@ class ToastManager {
     }
 
     this.toastHistory.set(toastKey, now);
+    this.playToastSound(type);
 
     for (const [key, timestamp] of this.toastHistory.entries()) {
       if (now - timestamp > 10000) {
@@ -242,6 +243,24 @@ ${actionButtonHtml}
 
       this.updateStackState();
     }, delay);
+  }
+
+  playToastSound(type) {
+    if (!window.appSoundManager) {
+      return;
+    }
+
+    switch (type) {
+      case 'success':
+        window.appSoundManager.play('complete');
+        break;
+      case 'error':
+        window.appSoundManager.play('error');
+        break;
+      default:
+        window.appSoundManager.play('notification');
+        break;
+    }
   }
 
   success(message, duration?, params?, options?) {

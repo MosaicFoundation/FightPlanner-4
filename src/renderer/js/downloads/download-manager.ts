@@ -171,6 +171,7 @@ class DownloadManager {
     };
 
     this.activeDownloads.set(downloadId, download);
+    window.appSoundManager?.play('downloading');
 
     if (this.initialized) {
       this.renderActiveDownload(download);
@@ -360,6 +361,8 @@ class DownloadManager {
 
     this.updateUI();
     this.updateBadge();
+    window.appSoundManager?.stop('downloading');
+    window.appSoundManager?.play('complete');
 
     if (window.statusBarManager) {
       window.statusBarManager.checkAndUpdateForDownloads();
@@ -382,6 +385,8 @@ class DownloadManager {
 
     download.status = 'failed';
     download.error = error;
+    window.appSoundManager?.stop('downloading');
+    window.appSoundManager?.play('error');
 
     const element = document.querySelector<HTMLElement>(
       `[data-download-id="${downloadId}"]`,
@@ -739,7 +744,7 @@ ${subItemsHtml}
       if (window.toastManager) {
         window.toastManager.error('toasts.switchSettingsNotConfigured', 5000, {}, {
           actionButton: {
-            text: 'Settings',
+            text: window.i18n?.t?.('toasts.settings') || 'Settings',
             onClick: () => this.navigateToSetting('advanced', '#switch-transfer-method-select'),
           },
         });
@@ -753,7 +758,7 @@ ${subItemsHtml}
       if (window.toastManager) {
         window.toastManager.error('toasts.switchSettingsNotConfigured', 5000, {}, {
           actionButton: {
-            text: 'Settings',
+            text: window.i18n?.t?.('toasts.settings') || 'Settings',
             onClick: () => this.navigateToSetting('advanced', '#switch-transfer-method-select'),
           },
         });
@@ -763,15 +768,22 @@ ${subItemsHtml}
 
     const switchIp = window.settingsManager.getSwitchIp();
     const switchPort = parseInt(window.settingsManager.getSwitchPort());
-    const switchFtpPath =
-      window.settingsManager.getSwitchFtpPath() || '/switch';
+    const switchFtpUser = window.settingsManager.getSwitchFtpUser();
+    const switchFtpPassword = window.settingsManager.getSwitchFtpPassword();
+    const switchFtpModsPath =
+      window.settingsManager.getSwitchFtpModsPath?.() ||
+      window.settingsManager.getSwitchFtpPath() ||
+      '/ultimate/mods';
+    const switchFtpPluginsPath =
+      window.settingsManager.getSwitchFtpPluginsPath?.() ||
+      '/ultimate/contents/01006A800016E000/romfs/skyline/plugins';
     const switchDriveLetter = window.settingsManager.getSwitchDriveLetter();
 
     if (!window.settingsManager || !window.settingsManager.hasModsPath()) {
       if (window.toastManager) {
         window.toastManager.error('toasts.modsFolderPathNotSet', 5000, {}, {
           actionButton: {
-            text: 'Settings',
+            text: window.i18n?.t?.('toasts.settings') || 'Settings',
             onClick: () => this.navigateToSetting('paths', '#mods-folder-path'),
           },
         });
@@ -780,19 +792,7 @@ ${subItemsHtml}
     }
 
     const modsPath = window.settingsManager.getModsPath();
-
-    // Get all recently completed downloads (newly installed mods)
-    const recentDownloads = this.completedDownloads.filter((download) => {
-      // Only include downloads completed in the last 24 hours
-      const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
-      return download.endTime && download.endTime > oneDayAgo;
-    });
-
-    if (recentDownloads.length === 0) {
-      if (window.toastManager) {
-        window.toastManager.info('toasts.noRecentDownloads');
-      }
-    }
+    const pluginsPath = window.settingsManager.getPluginsPath?.() || null;
 
     // Call the Electron API to send mods to Switch
     if (!window.electronAPI || !window.electronAPI.sendModsToSwitch) {
@@ -814,13 +814,14 @@ ${subItemsHtml}
           'downloads.sending',
         )}`;
       }
+      window.appSoundManager?.play('loading', { volume: 0.55 });
 
       // Update FTP transfer status
       this.ftpTransfer = {
         id: Date.now().toString(),
         status: 'uploading',
         currentMod: 0,
-        totalMods: recentDownloads.length || 0,
+        totalMods: 0,
         transferredCount: 0,
         totalFiles: 0,
         progress: 0,
@@ -838,14 +839,15 @@ ${subItemsHtml}
         switchTransferMethod: transferMethod,
         switchIp,
         switchPort,
-        switchFtpPath,
+        switchFtpUser,
+        switchFtpPassword,
+        switchFtpPath: switchFtpModsPath,
+        switchFtpModsPath,
+        switchFtpPluginsPath,
         switchDriveLetter,
         modsPath,
-        recentDownloads: recentDownloads.map((m) => ({
-          id: m.id,
-          modName: m.modName || m.fileName,
-          folderPath: m.folderPath || null,
-        })),
+        pluginsPath,
+        recentDownloads: [],
       });
 
       if (this.sendToSwitchBtn) {
@@ -861,12 +863,21 @@ ${subItemsHtml}
       this.ftpTransfer = null;
 
       if (result.success) {
+        window.appSoundManager?.stop('loading');
+        window.appSoundManager?.play('complete');
+        window.statusBarManager?.completeFtpTransfer?.(
+          result.transferredCount || 0,
+        );
         if (window.toastManager) {
           window.toastManager.success('toasts.modsSentToSwitch', 3000, {
             count: result.transferredCount || 0,
           });
         }
       } else {
+        window.appSoundManager?.stop('loading');
+        window.appSoundManager?.play('error');
+        window.statusBarManager?.updateExtendedBar?.({ type: 'none' });
+        window.statusBarManager?.refreshStandardStatus?.();
         if (window.toastManager) {
           window.toastManager.error('toasts.failedToSendMods', 3000, {
             error: result.error || 'Unknown error',
@@ -886,6 +897,9 @@ ${subItemsHtml}
         )}`;
       }
       this.ftpTransfer = null;
+      window.appSoundManager?.stop('loading');
+      window.statusBarManager?.updateExtendedBar?.({ type: 'none' });
+      window.statusBarManager?.refreshStandardStatus?.();
       if (window.toastManager) {
         window.toastManager.error('toasts.failedToSendMods', 3000, {
           error: error.message,
@@ -895,7 +909,7 @@ ${subItemsHtml}
       }
     }
 
-    if (window.statusBarManager) {
+    if (window.statusBarManager && this.ftpTransfer) {
       window.statusBarManager.checkAndUpdateForDownloads();
     }
   }

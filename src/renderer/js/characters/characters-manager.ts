@@ -75,6 +75,15 @@ class CharactersManager {
     }
   }
 
+  t(key: string, fallback: string, params: Record<string, string> = {}) {
+    const translated = window.i18n?.t?.(key, params);
+    return translated && translated !== key ? translated : fallback;
+  }
+
+  gameBananaLink() {
+    return '<a href="#" onclick="window.electronAPI.openUrl(\'https://gamebanana.com/games/6498\'); return false;" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">GameBanana</a>';
+  }
+
   filterCharacters() {
     if (!this.searchQuery) {
       this.renderCharacters();
@@ -96,8 +105,8 @@ class CharactersManager {
       container.innerHTML = `
 <div class="characters-empty-state">
 <i class="bi bi-search"></i>
-<h3>No characters found</h3>
-<p>Try a different search term</p>
+<h3>${this.t('characters.noSearchResults', 'No characters found')}</h3>
+<p>${this.t('characters.tryDifferentSearch', 'Try a different search term')}</p>
 </div>
 `;
       this.updateCharacterCount(0);
@@ -446,12 +455,14 @@ ${char.mods
     const container = document.querySelector<HTMLElement>('#characters-grid');
     if (!container) return;
 
+    const gameBananaLink = this.gameBananaLink();
+
     container.innerHTML = `
 <div class="characters-empty-state">
 <i class="bi bi-people-fill"></i>
-<h3>No Character Mods Found</h3>
-<p>Configure your mods folder in Settings to see characters with mods.</p>
-<span style="font-size: 13px; margin-top: 10px; color: var(--text-muted);">Go download some on <a href="#" onclick="window.electronAPI.openUrl('https://gamebanana.com/games/6498'); return false;" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">GameBanana</a>!</span>
+<h3>${this.t('characters.noCharacterMods', 'No Character Mods Found')}</h3>
+<p>${this.t('characters.configureModsFolder', 'Configure your mods folder in Settings to see characters with mods.')}</p>
+<span style="font-size: 13px; margin-top: 10px; color: var(--text-muted);">${this.t('characters.downloadOnGameBanana', `Go download some on ${gameBananaLink}!`, { site: gameBananaLink })}</span>
 </div>
 `;
   }

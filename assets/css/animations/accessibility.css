@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 4ed27c1 (Improve multi-mod actions and fix Linux 1-click install)
 body.reduced-animations * {
   animation-duration: 0.15s !important;
   transition-duration: 0.15s !important;
@@ -228,9 +224,7 @@ body.no-animations .preview-stack-card img {
 body.no-animations .preview-stack-card {
   filter: none !important;
 }
-<<<<<<< HEAD
-=======
-body.reduced-animations * {
+<<<<<<< HEAD ======= body.reduced-animations * {
   animation-duration: 0.15s !important;
   transition-duration: 0.15s !important;
 }
@@ -456,6 +450,3 @@ body.no-animations .preview-stack-card img {
 body.no-animations .preview-stack-card {
   filter: none !important;
 }
->>>>>>> 1aa9938 (Add feature to select multiple mods)
-=======
->>>>>>> 4ed27c1 (Improve multi-mod actions and fix Linux 1-click install)

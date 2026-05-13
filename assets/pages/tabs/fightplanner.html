@@ -23,7 +23,20 @@
           <img src="../images/credits/firexdf.png" class="credits-person-avatar"
             onerror="this.outerHTML='<i class=\'bi bi-person-circle\'></i>'" />
           <div class="credits-person-info">
-            <span class="credits-person-name">FIREXDF</span>
+            <div class="credits-person-name-row">
+              <span class="credits-person-name">FIREXDF</span>
+              <button
+                type="button"
+                class="credits-support-btn"
+                onclick="window.electronAPI.openUrl('https://ko-fi.com/firexdf')"
+                data-i18n-title
+                data-i18n="fightplanner.supportFirexdf"
+                title="Support FIREXDF"
+              >
+                <i class="bi bi-heart-fill"></i>
+                <span data-i18n="fightplanner.support">Support</span>
+              </button>
+            </div>
             <span class="credits-person-role" data-i18n="fightplanner.leadDeveloper">Lead Developer</span>
           </div>
         </div>

@@ -12,6 +12,21 @@ const tabConfigs = {
 // Track document click listeners to prevent duplicates
 let categoryFilterDocumentListener: ((e: Event) => void) | null = null;
 
+function getToastSettingsLabel() {
+  return window.i18n?.t?.('toasts.settings') || 'Settings';
+}
+
+function navigateToEmulatorSettings() {
+  const settingsTab = document.querySelector<HTMLElement>('[data-tab="settings"]');
+  if (settingsTab) {
+    settingsTab.click();
+  }
+
+  setTimeout(() => {
+    window.settingsManager?.switchSettingsTab?.('emulator');
+  }, 100);
+}
+
 function initializeTabFeatures(tabName) {
   console.log(`Initializing features for tab: ${tabName}`);
 
@@ -214,7 +229,17 @@ function initializeTabFeatures(tabName) {
 
             if (!emulatorPath || !gamePath) {
               if (window.toastManager) {
-                window.toastManager.warning('toasts.configureEmulatorPaths');
+                window.toastManager.warning(
+                  'toasts.configureEmulatorPaths',
+                  6000,
+                  {},
+                  {
+                    actionButton: {
+                      text: getToastSettingsLabel(),
+                      onClick: navigateToEmulatorSettings,
+                    },
+                  },
+                );
               }
               return;
             }
@@ -400,11 +425,13 @@ function initializeTabFeatures(tabName) {
   }
 
   if (tabName === 'settings' && window.settingsManager) {
-    window.settingsManager.setupEventListeners();
+    window.settingsManager.readyPromise.then(() => {
+      window.settingsManager.setupEventListeners();
 
-    if (window.i18n) {
-      window.i18n.updateDOM();
-    }
+      if (window.i18n) {
+        window.i18n.updateDOM();
+      }
+    });
   }
 
   if (tabName === 'fightplanner') {

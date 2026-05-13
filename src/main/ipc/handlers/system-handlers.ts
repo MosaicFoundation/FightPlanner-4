@@ -18,6 +18,24 @@ let emulatorProcess: ChildProcess | null = null;
 
 export type SystemHandlers = typeof SystemHandlers;
 
+const resolveMacAppExecutable = (appPath: string): string | null => {
+  const macOsDir = path.join(appPath, 'Contents', 'MacOS');
+
+  if (!fs.existsSync(macOsDir)) {
+    return null;
+  }
+
+  const executable = fs
+    .readdirSync(macOsDir)
+    .map((fileName) => path.join(macOsDir, fileName))
+    .find((filePath) => {
+      const stats = fs.statSync(filePath);
+      return stats.isFile() && (stats.mode & 0o111) !== 0;
+    });
+
+  return executable || null;
+};
+
 const SystemHandlers = {
   ['open-url']: async (common: BaseHandlerArg, url: string) => {
     try {
@@ -202,8 +220,21 @@ const SystemHandlers = {
         );
       }
 
+      const launchPath =
+        process.platform === 'darwin' &&
+        emulatorPath.toLowerCase().endsWith('.app')
+          ? resolveMacAppExecutable(emulatorPath)
+          : emulatorPath;
+
+      if (!launchPath) {
+        return createErrorResponse(
+          ErrorCodes.FILE_NOT_FOUND,
+          'Could not find an executable inside the selected macOS app bundle',
+        );
+      }
+
       console.log('[launch-emulator] Launching emulator:', emulatorType);
-      console.log('[launch-emulator] Emulator path:', emulatorPath);
+      console.log('[launch-emulator] Emulator path:', launchPath);
       console.log('[launch-emulator] With game:', gamePath);
       console.log('[launch-emulator] Fullscreen:', fullscreen);
 
@@ -214,7 +245,7 @@ const SystemHandlers = {
         args = ['-g', gamePath];
       }
 
-      emulatorProcess = spawn(emulatorPath, args, {
+      emulatorProcess = spawn(launchPath, args, {
         detached: true,
         stdio: 'ignore',
       });

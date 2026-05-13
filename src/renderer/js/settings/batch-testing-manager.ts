@@ -1340,12 +1340,16 @@ class BatchTestingManager {
 
   async launchConfiguredGame() {
     if (!this.hasConfiguredEmulator()) {
-      this.showToast(
-        this.t(
-          'toasts.configureEmulatorPaths',
-          'Please configure emulator and game paths in settings',
-        ),
-        'warning',
+      window.toastManager?.warning(
+        'toasts.configureEmulatorPaths',
+        6000,
+        {},
+        {
+          actionButton: {
+            text: window.i18n?.t?.('toasts.settings') || 'Settings',
+            onClick: () => this.navigateToEmulatorSettings(),
+          },
+        },
       );
       return;
     }
@@ -1604,6 +1608,17 @@ class BatchTestingManager {
     }
 
     window.toastManager.info(message);
+  }
+
+  navigateToEmulatorSettings() {
+    const settingsTab = document.querySelector<HTMLElement>('[data-tab="settings"]');
+    if (settingsTab) {
+      settingsTab.click();
+    }
+
+    setTimeout(() => {
+      window.settingsManager?.switchSettingsTab?.('emulator');
+    }, 100);
   }
 
   isUnavailableFolderError(error: Error) {

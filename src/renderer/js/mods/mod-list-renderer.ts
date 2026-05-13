@@ -11,6 +11,15 @@ class ModListRenderer {
     this.setupIntersectionObserver();
   }
 
+  t(key: string, fallback: string, params: Record<string, string> = {}) {
+    const translated = window.i18n?.t?.(key, params);
+    return translated && translated !== key ? translated : fallback;
+  }
+
+  gameBananaLink() {
+    return '<a href="#" onclick="window.electronAPI.openUrl(\'https://gamebanana.com/games/6498\'); return false;" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">GameBanana</a>';
+  }
+
   setupIntersectionObserver() {
     this.intersectionObserver = new IntersectionObserver(
       (entries) => {
@@ -177,11 +186,12 @@ class ModListRenderer {
     container.innerHTML = '';
 
     if (mods.length === 0) {
+      const gameBananaLink = this.gameBananaLink();
       container.innerHTML =
         '<div class="no-results-message" style="color: var(--text-muted); text-align: center; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px;">' +
         '<i class="bi bi-folder-x" style="font-size: 32px; opacity: 0.5;"></i>' +
-        '<span>No mods available.</span>' +
-        '<span style="font-size: 13px;">Go download some on <a href="#" onclick="window.electronAPI.openUrl(\'https://gamebanana.com/games/6498\'); return false;" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">GameBanana</a>!</span>' +
+        `<span>${this.t('tools.noModsAvailable', 'No mods available.')}</span>` +
+        `<span style="font-size: 13px;">${this.t('tools.downloadOnGameBanana', `Go download some on ${gameBananaLink}!`, { site: gameBananaLink })}</span>` +
         '</div>';
       return;
     }
@@ -209,11 +219,12 @@ class ModListRenderer {
     }
 
     if (filteredMods.length === 0) {
+      const gameBananaLink = this.gameBananaLink();
       container.innerHTML =
         '<div class="no-results-message" style="color: var(--text-muted); text-align: center; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px;">' +
         '<i class="bi bi-search" style="font-size: 32px; opacity: 0.5;"></i>' +
-        '<span>No mods found for this search/filter.</span>' +
-        '<span style="font-size: 13px;">Looking for something new? Check <a href="#" onclick="window.electronAPI.openUrl(\'https://gamebanana.com/games/6498\'); return false;" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">GameBanana</a>!</span>' +
+        `<span>${this.t('tools.noModsForFilter', 'No mods found for this search/filter.')}</span>` +
+        `<span style="font-size: 13px;">${this.t('tools.checkGameBanana', `Looking for something new? Check ${gameBananaLink}!`, { site: gameBananaLink })}</span>` +
         '</div>';
       return;
     }

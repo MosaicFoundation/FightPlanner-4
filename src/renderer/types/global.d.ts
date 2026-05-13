@@ -4,6 +4,7 @@ import * as gsap from 'gsap';
 import { ElectronAPI, TutorialAPI } from '../../main/preload';
 
 import { ToastManager } from '../js/ui/toast-manager';
+import { AppSoundManager } from '../js/ui/app-sound-manager';
 import { ModManager } from '../js/mods/mod-manager';
 import { ModalManager } from '../js/ui/modal-manager';
 import { UpdateManager } from '../js/ui/update-manager';
@@ -51,6 +52,7 @@ declare global {
 
     i18n: I18nClient;
     toastManager: ToastManager;
+    appSoundManager: AppSoundManager;
     modManager: ModManager;
     modalManager: ModalManager;
     updateManager: UpdateManager;
