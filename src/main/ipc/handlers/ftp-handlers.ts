@@ -297,56 +297,6 @@ const FtpHandlers = {
         common.event.sender.send('ftp-transfer-progress', payload);
       };
 
-      const transferItems: TransferItem[] = [];
-
-      if (config.recentDownloads && config.recentDownloads.length > 0) {
-        for (const download of config.recentDownloads) {
-          let localModPath: string | null = null;
-
-          if (download.folderPath && fs.existsSync(download.folderPath)) {
-            localModPath = download.folderPath;
-          } else {
-            const modFolderName = download.modName || download.id;
-            localModPath = path.join(config.modsPath, modFolderName);
-          }
-
-          if (
-            localModPath &&
-            fs.existsSync(localModPath) &&
-            fs.statSync(localModPath).isDirectory()
-          ) {
-            transferItems.push({
-              localModPath,
-              modName: path.basename(localModPath),
-              fileCount: _countFilesRecursive(localModPath),
-            });
-          } else {
-            console.warn(`Mod folder not found: ${localModPath}`);
-          }
-        }
-      } else if (fs.existsSync(config.modsPath)) {
-        const files = fs.readdirSync(config.modsPath);
-        for (const file of files) {
-          const localModPath = path.join(config.modsPath, file);
-          if (fs.statSync(localModPath).isDirectory()) {
-            transferItems.push({
-              localModPath,
-              modName: file,
-              fileCount: _countFilesRecursive(localModPath),
-            });
-          }
-        }
-      }
-
-      const totalMods = transferItems.length;
-      const totalFiles = transferItems.reduce(
-        (sum, item) => sum + item.fileCount,
-        0,
-      );
-      const sendProgress = (payload: FtpTransferProgressPayload) => {
-        common.event.sender.send('ftp-transfer-progress', payload);
-      };
-
       console.log('Starting FTP transfer to Switch:', {
         ip: config.switchIp,
         port: config.switchPort,
@@ -370,7 +320,7 @@ const FtpHandlers = {
           transferredCount: 0,
           totalFiles,
           progress: 0,
-            currentModName: transferItems[0].itemName,
+          currentModName: transferItems[0].itemName,
         });
       }
 
