@@ -166,9 +166,13 @@
   <div id="social-profile-container" class="social-profile-container" style="display: none">
     <!-- Navigation Menu -->
     <div class="social-nav-menu">
-      <div class="social-nav-item active" data-section="feed">
+      <div class="social-nav-item active" data-section="discover">
         <i class="bi bi-compass"></i>
         <span data-i18n="social.discover">Discover</span>
+      </div>
+      <div class="social-nav-item" data-section="people-downloads">
+        <i class="bi bi-cloud-download"></i>
+        <span data-i18n="social.downloadByPeople">Download by People</span>
       </div>
       <div class="social-nav-item" data-section="my-mods">
         <i class="bi bi-collection"></i>
@@ -186,14 +190,18 @@
 
     <!-- Content Sections -->
     <div class="social-main-content">
-      <!-- Feed Section -->
-      <div id="social-section-feed" class="social-section active">
+      <!-- Discover Section -->
+      <div id="social-section-discover" class="social-section active">
+      </div>
+
+      <!-- Downloads by People Section -->
+      <div id="social-section-people-downloads" class="social-section">
         <div class="social-section-header">
-          <h2 class="social-section-title" data-i18n="social.discoverMods">
-            Discover Mods
+          <h2 class="social-section-title" data-i18n="social.downloadByPeopleTitle">
+            Download by People
           </h2>
-          <p class="social-section-subtitle" data-i18n="social.exploreMods">
-            Explore mods shared by the community
+          <p class="social-section-subtitle" data-i18n="social.downloadByPeopleSubtitle">
+            See mods downloaded by the community
           </p>
         </div>
         <div id="social-feed-content" class="social-feed-content">

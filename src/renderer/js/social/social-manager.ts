@@ -1031,7 +1031,9 @@ class SocialManager {
     }, 200);
 
     switch (sectionName) {
-      case 'feed':
+      case 'discover':
+        break;
+      case 'people-downloads':
         setTimeout(() => this.loadFeed(), 250);
         break;
       case 'my-mods':
@@ -1493,7 +1495,7 @@ class SocialManager {
           if (
             document
               .querySelector<HTMLElement>(
-                '.social-nav-item[data-section="feed"]',
+                '.social-nav-item[data-section="people-downloads"]',
               )
               ?.classList.contains('active')
           ) {
@@ -1712,7 +1714,7 @@ class SocialManager {
       }
 
       if (clickedElement.closest('#social-back-btn')) {
-        this.switchSection('feed');
+        this.switchSection('people-downloads');
       }
 
       if (clickedElement.closest('#social-add-friend-btn')) {
