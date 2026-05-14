@@ -415,11 +415,644 @@
 }
 
 .social-feed-content,
+.social-discover-content,
 .social-mods-content,
 .social-friends-content {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.social-gamebanana-featured,
+.social-gamebanana-mods {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.social-gamebanana-carousel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.social-gamebanana-mods-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.social-gamebanana-section-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.social-gamebanana-carousel-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.social-gamebanana-pagination {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.social-gamebanana-carousel-btn,
+.social-gamebanana-open-btn,
+.social-gamebanana-page-btn {
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.social-gamebanana-carousel-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.social-gamebanana-page-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.social-gamebanana-carousel-btn:hover,
+.social-gamebanana-open-btn:hover,
+.social-gamebanana-page-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.social-gamebanana-page-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.social-gamebanana-page-label {
+  min-width: 94px;
+  text-align: center;
+}
+
+.social-gamebanana-carousel {
+  position: relative;
+  min-height: 430px;
+  overflow: visible;
+  perspective: 1000px;
+  padding-bottom: 18px;
+}
+
+.social-gamebanana-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.social-gamebanana-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.social-gamebanana-card:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-tertiary);
+  box-shadow: var(--shadow-md);
+}
+
+.social-gamebanana-card-featured {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(560px, 68%);
+  min-height: 340px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) scale(0.88);
+  transform-origin: center center;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.social-gamebanana-card-featured.is-active {
+  z-index: 3;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0) rotateY(0deg) scale(1);
+  box-shadow: var(--shadow-lg);
+}
+
+.social-gamebanana-card-featured.was-active {
+  z-index: 4;
+}
+
+.social-gamebanana-card-featured.is-previous {
+  z-index: 2;
+  opacity: 0.72;
+  pointer-events: auto;
+  transform: translateX(calc(-50% - 300px)) translateY(18px) rotateY(8deg) scale(0.88);
+}
+
+.social-gamebanana-card-featured.is-next {
+  z-index: 2;
+  opacity: 0.72;
+  pointer-events: auto;
+  transform: translateX(calc(-50% + 300px)) translateY(18px) rotateY(-8deg) scale(0.88);
+}
+
+.social-gamebanana-card-featured.is-hidden {
+  z-index: 1;
+  opacity: 0;
+  transform: translateX(-50%) translateY(32px) scale(0.8);
+}
+
+.social-gamebanana-card-featured:not(.is-active) {
+  filter: brightness(0.78);
+}
+
+.social-gamebanana-card-featured.is-previous:hover,
+.social-gamebanana-card-featured.is-next:hover {
+  filter: brightness(0.9);
+}
+
+.social-gamebanana-featured-image,
+.social-gamebanana-card-image,
+.social-gamebanana-image-placeholder {
+  width: 100%;
+  display: block;
+  background: var(--border-color);
+}
+
+.social-gamebanana-featured-image,
+.social-gamebanana-image-placeholder {
+  aspect-ratio: 16 / 8;
+  object-fit: cover;
+}
+
+.social-gamebanana-card-image {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.social-gamebanana-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 36px;
+}
+
+.social-gamebanana-featured-body,
+.social-gamebanana-card-body {
+  padding: 14px;
+}
+
+.social-gamebanana-meta,
+.social-gamebanana-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.social-gamebanana-meta {
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.social-gamebanana-card-category {
+  margin: 0 0 6px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.social-gamebanana-card-title {
+  min-height: 40px;
+  margin: 0 0 6px 0;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.social-gamebanana-card-creator {
+  margin: 0 0 12px 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.social-gamebanana-card-footer {
+  min-height: 32px;
+}
+
+.social-gamebanana-card-footer span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.social-gamebanana-open-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
+.social-gamebanana-mods-loading {
+  min-height: 260px;
+}
+
+.social-gamebanana-detail-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 100%;
+}
+
+.social-gamebanana-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 46%) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.social-gamebanana-detail-image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  max-height: 62vh;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--border-color);
+}
+
+.social-gamebanana-preview-flyout {
+  position: fixed;
+  z-index: 10000;
+  display: block;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  border-radius: 10px;
+  pointer-events: none;
+  border: 1px solid var(--border-color);
+  background: var(--border-color);
+  box-shadow: var(--shadow-lg);
+}
+
+.social-gamebanana-detail-info {
+  min-width: 0;
+}
+
+.social-gamebanana-detail-meta,
+.social-gamebanana-detail-stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.social-gamebanana-detail-name {
+  margin: 10px 0 6px 0;
+  color: var(--text-primary);
+  font-size: 30px;
+  line-height: 1.25;
+}
+
+.social-gamebanana-detail-author {
+  margin: 0 0 14px 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.social-gamebanana-detail-stats {
+  padding: 10px 0;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.social-gamebanana-detail-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.social-gamebanana-detail-description {
+  margin: 14px 0 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+
+.social-gamebanana-skeleton-block {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: 7px;
+  background: var(--bg-card);
+}
+
+.social-gamebanana-skeleton-block::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--bg-hover) 48%,
+    transparent 100%
+  );
+  opacity: 0.7;
+  animation: social-gamebanana-skeleton-shimmer 1.35s ease-in-out infinite;
+}
+
+.social-gamebanana-detail-image-skeleton {
+  border: 1px solid var(--border-color);
+}
+
+.social-gamebanana-skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.social-gamebanana-skeleton-pill {
+  width: 72px;
+  height: 14px;
+  border-radius: 999px;
+}
+
+.social-gamebanana-skeleton-pill-wide {
+  width: 132px;
+}
+
+.social-gamebanana-skeleton-title {
+  width: min(420px, 86%);
+  height: 36px;
+  margin: 12px 0 10px 0;
+}
+
+.social-gamebanana-skeleton-author {
+  width: 150px;
+  height: 14px;
+  margin-bottom: 14px;
+}
+
+.social-gamebanana-skeleton-stat {
+  width: 58px;
+  height: 14px;
+  border-radius: 999px;
+}
+
+.social-gamebanana-description-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.social-gamebanana-description-skeleton .social-gamebanana-skeleton-block {
+  width: 100%;
+  height: 14px;
+}
+
+.social-gamebanana-description-skeleton .social-gamebanana-skeleton-line-short {
+  width: 62%;
+}
+
+.social-gamebanana-file-card-skeleton {
+  cursor: default;
+}
+
+.social-gamebanana-file-card-skeleton .social-gamebanana-file-info {
+  flex: 1;
+}
+
+.social-gamebanana-skeleton-file-name {
+  width: min(280px, 72%);
+  height: 16px;
+  margin-bottom: 9px;
+}
+
+.social-gamebanana-skeleton-file-description {
+  width: min(360px, 92%);
+  height: 13px;
+  margin-bottom: 10px;
+}
+
+.social-gamebanana-skeleton-file-meta {
+  width: 78px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.social-gamebanana-skeleton-download-btn {
+  flex-shrink: 0;
+  width: 116px;
+  height: 38px;
+  border-radius: 8px;
+}
+
+@keyframes social-gamebanana-skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .social-gamebanana-skeleton-block::after {
+    animation: none;
+  }
+}
+
+.social-gamebanana-files {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-color);
+}
+
+.social-gamebanana-files-title {
+  margin: 0 0 12px 0;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.social-gamebanana-files-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.social-gamebanana-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.social-gamebanana-file-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-card);
+}
+
+.social-gamebanana-file-info {
+  min-width: 0;
+}
+
+.social-gamebanana-file-name {
+  margin: 0 0 5px 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.social-gamebanana-file-description {
+  margin: 0 0 8px 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.social-gamebanana-file-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.social-gamebanana-file-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.social-gamebanana-file-download-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 112px;
+  padding: 9px 12px;
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
+  border-radius: 8px;
+  background: var(--bg-accent-subtle);
+  color: var(--accent-color);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.social-gamebanana-file-download-btn:hover:not(:disabled) {
+  background: rgba(var(--accent-rgb), 0.2);
+  border-color: rgba(var(--accent-rgb), 0.5);
+  color: var(--accent-hover);
+}
+
+.social-gamebanana-file-download-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 720px) {
+  .social-gamebanana-carousel {
+    min-height: 370px;
+    padding-bottom: 16px;
+  }
+
+  .social-gamebanana-card-featured {
+    width: min(300px, 76%);
+    min-height: 310px;
+  }
+
+  .social-gamebanana-card-featured.is-previous {
+    transform: translateX(calc(-50% - 180px)) translateY(16px) rotateY(6deg) scale(0.86);
+  }
+
+  .social-gamebanana-card-featured.is-next {
+    transform: translateX(calc(-50% + 180px)) translateY(16px) rotateY(-6deg) scale(0.86);
+  }
+
+  .social-gamebanana-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .social-gamebanana-mods-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .social-gamebanana-detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .social-gamebanana-detail-name {
+    font-size: 24px;
+  }
+
+  .social-gamebanana-file-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .social-gamebanana-file-download-btn {
+    width: 100%;
+  }
 }
 
 .social-profile-header {

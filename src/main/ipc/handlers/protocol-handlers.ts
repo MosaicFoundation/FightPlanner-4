@@ -110,6 +110,113 @@ const ProtocolHandlers = {
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
   },
+
+  ['fetch-gamebanana-details']: async (
+    common: BaseHandlerArg,
+    modelName: string,
+    submissionId: string,
+  ): HandlerResponse<any> => {
+    try {
+      const safeModelName = encodeURIComponent(modelName || 'Mod');
+      const safeSubmissionId = encodeURIComponent(submissionId);
+      const apiUrl = `https://gamebanana.com/apiv11/${safeModelName}/${safeSubmissionId}/ProfilePage`;
+
+      return new Promise((resolve) => {
+        https
+          .get(apiUrl, (res) => {
+            let data = '';
+
+            res.on('data', (chunk) => {
+              data += chunk;
+            });
+
+            res.on('end', () => {
+              try {
+                const json = JSON.parse(data);
+
+                if (res.statusCode && res.statusCode >= 400) {
+                  resolve({
+                    success: false,
+                    error: `GameBanana returned ${res.statusCode}`,
+                  });
+                  return;
+                }
+
+                resolve({ success: true, data: json });
+              } catch (error) {
+                resolve(
+                  createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message),
+                );
+              }
+            });
+          })
+          .on('error', (error) => {
+            resolve(
+              createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message),
+            );
+          });
+      });
+    } catch (error) {
+      handleError(error, 'fetch-gamebanana-details');
+      return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
+    }
+  },
+
+  ['fetch-gamebanana-files']: async (
+    common: BaseHandlerArg,
+    modelName: string,
+    submissionId: string,
+  ): HandlerResponse<{ files: any[] }> => {
+    try {
+      const safeModelName = encodeURIComponent(modelName || 'Mod');
+      const safeSubmissionId = encodeURIComponent(submissionId);
+      const apiUrl = `https://gamebanana.com/apiv11/${safeModelName}/${safeSubmissionId}?_csvProperties=_aFiles`;
+
+      return new Promise((resolve) => {
+        https
+          .get(apiUrl, (res) => {
+            let data = '';
+
+            res.on('data', (chunk) => {
+              data += chunk;
+            });
+
+            res.on('end', () => {
+              try {
+                const json = JSON.parse(data);
+
+                if (res.statusCode && res.statusCode >= 400) {
+                  resolve({
+                    success: false,
+                    error: `GameBanana returned ${res.statusCode}`,
+                  });
+                  return;
+                }
+
+                const files = json?._aFiles;
+                const fileEntries = Array.isArray(files)
+                  ? files
+                  : Object.values(files || {});
+
+                resolve({ success: true, files: fileEntries });
+              } catch (error) {
+                resolve(
+                  createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message),
+                );
+              }
+            });
+          })
+          .on('error', (error) => {
+            resolve(
+              createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message),
+            );
+          });
+      });
+    } catch (error) {
+      handleError(error, 'fetch-gamebanana-files');
+      return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
+    }
+  },
 } as const;
 
 /**

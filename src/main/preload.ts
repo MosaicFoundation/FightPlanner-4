@@ -139,6 +139,8 @@ const electronAPI = {
   confirmProtocolInstall: invokeProtocolHandler('confirm-protocol-install'),
   cancelProtocolInstall: invokeProtocolHandler('cancel-protocol-install'),
   fetchGameBananaPreview: invokeProtocolHandler('fetch-gamebanana-preview'),
+  fetchGameBananaDetails: invokeProtocolHandler('fetch-gamebanana-details'),
+  fetchGameBananaFiles: invokeProtocolHandler('fetch-gamebanana-files'),
   launchEmulator: invokeSystemHandler('launch-emulator'),
   loadLocale: invokeSystemHandler('load-locale'),
   getAvailableDrives: invokeSystemHandler('get-available-drives'),
