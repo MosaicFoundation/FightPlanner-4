@@ -4,6 +4,8 @@ import Seven from 'node-7z';
 import child_process, { execSync } from 'child_process';
 import fs from 'fs';
 
+type ArchiveKind = 'zip' | 'rar' | '7z' | 'tar' | 'gzip' | 'bzip2' | 'xz' | 'unknown';
+
 export class FileExtractor {
   private static get7ZipPath(): string | undefined {
     const binaryNames =
@@ -73,23 +75,23 @@ export class FileExtractor {
 
   private static async extractWithTar(filePath: string, extractTo: string) {
     return new Promise<void>((resolve, reject) => {
-      child_process.exec(
-        `tar -xf "${filePath}" -C "${extractTo}"`,
-        async (error) => {
-          if (error) {
-            console.error('Tar extraction error:', error);
-            reject(error);
-            return;
-          }
+      const child = child_process.spawn('tar', ['-xf', filePath, '-C', extractTo]);
 
-          if (!this.verifyExtraction(extractTo)) {
-            reject(new Error('No files found after extraction'));
-            return;
-          }
+      child.on('close', (code) => {
+        if (code !== 0) {
+          reject(new Error(`tar extraction failed with code ${code}`));
+          return;
+        }
 
-          resolve();
-        },
-      );
+        if (!this.verifyExtraction(extractTo)) {
+          reject(new Error('No files found after extraction'));
+          return;
+        }
+
+        resolve();
+      });
+
+      child.on('error', reject);
     });
   }
 
@@ -131,6 +133,103 @@ export class FileExtractor {
     }
   }
 
+  private static getArchiveKind(filePath: string): ArchiveKind {
+    const ext = path.extname(filePath).toLowerCase();
+
+    try {
+      const buffer = fs.readFileSync(filePath);
+
+      if (buffer.length >= 4 && buffer[0] === 0x50 && buffer[1] === 0x4b) {
+        return 'zip';
+      }
+
+      if (buffer.length >= 7 && buffer.subarray(0, 7).toString('ascii') === 'Rar!\x1a\x07') {
+        return 'rar';
+      }
+
+      if (
+        buffer.length >= 6 &&
+        buffer[0] === 0x37 &&
+        buffer[1] === 0x7a &&
+        buffer[2] === 0xbc &&
+        buffer[3] === 0xaf &&
+        buffer[4] === 0x27 &&
+        buffer[5] === 0x1c
+      ) {
+        return '7z';
+      }
+
+      if (buffer.length >= 2 && buffer[0] === 0x1f && buffer[1] === 0x8b) {
+        return 'gzip';
+      }
+
+      if (buffer.length >= 3 && buffer.subarray(0, 3).toString('ascii') === 'BZh') {
+        return 'bzip2';
+      }
+
+      if (
+        buffer.length >= 6 &&
+        buffer[0] === 0xfd &&
+        buffer.subarray(1, 6).toString('ascii') === '7zXZ'
+      ) {
+        return 'xz';
+      }
+
+      if (buffer.length >= 262 && buffer.subarray(257, 262).toString('ascii') === 'ustar') {
+        return 'tar';
+      }
+    } catch (error) {
+      console.warn('[FileExtractor] Failed to inspect archive signature:', error);
+    }
+
+    if (ext === '.zip') return 'zip';
+    if (ext === '.rar') return 'rar';
+    if (ext === '.7z') return '7z';
+    if (ext === '.tar') return 'tar';
+    if (ext === '.gz' || ext === '.tgz') return 'gzip';
+    if (ext === '.bz2') return 'bzip2';
+    if (ext === '.xz') return 'xz';
+
+    return 'unknown';
+  }
+
+  private static async extractWithSystem7Zip(filePath: string, extractTo: string) {
+    const commands = ['7z', '7zz', '7za'];
+    let commandToUse: string | null = null;
+
+    for (const cmd of commands) {
+      try {
+        execSync(`which ${cmd}`, { stdio: 'ignore' });
+        commandToUse = cmd;
+        break;
+      } catch {
+        // Try the next binary name.
+      }
+    }
+
+    if (!commandToUse) {
+      throw new Error(
+        "Cannot extract this archive. Please install the 'p7zip-full' package (or equivalent) in your system.",
+      );
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      const child = child_process.spawn(commandToUse!, ['x', '-y', `-o${extractTo}`, filePath]);
+      child.on('close', (code) => {
+        if (code === 0 || code === 1 || code === 2) {
+          if (this.verifyExtraction(extractTo)) {
+            resolve();
+          } else {
+            reject(new Error(`System ${commandToUse} extracted successfully but output dir is empty`));
+          }
+        } else {
+          reject(new Error(`System ${commandToUse} failed with code ${code}`));
+        }
+      });
+      child.on('error', reject);
+    });
+  }
+
   static async extractArchive(filePath: string, extractTo: string) {
     if (!fs.existsSync(extractTo)) {
       fs.mkdirSync(extractTo, { recursive: true });
@@ -141,66 +240,43 @@ export class FileExtractor {
     } catch (sevenZipError: any) {
       console.log('[FileExtractor] bundled 7-Zip extraction failed or binary missing, trying fallback...', sevenZipError?.message || sevenZipError);
 
+      const archiveKind = this.getArchiveKind(filePath);
       const ext = path.extname(filePath).toLowerCase();
+      console.log(`[FileExtractor] Detected archive kind: ${archiveKind} (${ext || 'no extension'})`);
 
-      // For .zip on Linux/Mac, try native unzip
-      if ((process.platform === 'linux' || process.platform === 'darwin') && ext === '.zip') {
+      if (archiveKind === 'zip') {
         try {
           await this.extractWithUnzip(filePath, extractTo);
           return;
         } catch (unzipError: any) {
-          console.log('[FileExtractor] unzip fallback also failed, trying tar...', unzipError?.message || unzipError);
+          throw new Error(
+            `ZIP extraction failed. 7-Zip error: ${sevenZipError?.message || sevenZipError}. unzip error: ${unzipError?.message || unzipError}`,
+          );
         }
       }
 
-      // For .7z or .rar on Linux/Mac, try to use system installed p7zip-full (7z or 7za)
-      if ((process.platform === 'linux' || process.platform === 'darwin') && (ext === '.7z' || ext === '.rar')) {
-        console.log(`[FileExtractor] Trying to extract ${ext} using system 7z/7za...`);
+      if (archiveKind === '7z' || archiveKind === 'rar') {
+        console.log(`[FileExtractor] Trying to extract ${archiveKind} using system 7z/7zz/7za...`);
         try {
-          // Try '7z' first, then '7za'
-          const commands = ['7z', '7za'];
-          let commandToUse: string | null = null;
-
-          for (const cmd of commands) {
-            try {
-              execSync(`which ${cmd}`, { stdio: 'ignore' });
-              commandToUse = cmd;
-              break;
-            } catch (e) {
-              // Ignore failure, try next
-            }
-          }
-
-          if (commandToUse) {
-            return new Promise<void>((resolve, reject) => {
-              const child = child_process.spawn(commandToUse!, ['x', '-y', `-o${extractTo}`, filePath]);
-              child.on('close', (code) => {
-                if (code === 0 || code === 1 || code === 2) {
-                  if (this.verifyExtraction(extractTo)) {
-                    resolve();
-                  } else {
-                    reject(new Error(`System ${commandToUse} extracted successfully but output dir is empty`));
-                  }
-                } else {
-                  reject(new Error(`System ${commandToUse} failed with code ${code}`));
-                }
-              });
-              child.on('error', reject);
-            });
-          } else {
-            throw new Error("Cannot extract .7z or .rar archives. Please install the 'p7zip-full' package (or equivalent) in your system.");
-          }
+          await this.extractWithSystem7Zip(filePath, extractTo);
+          return;
         } catch (system7zError: any) {
           console.log('[FileExtractor] System 7z/7za fallback failed:', system7zError?.message || system7zError);
-          throw system7zError; // Rethrow since tar won't work on these formats
+          throw system7zError;
         }
       }
 
-      // For .tar, .tar.gz, .tgz, .tar.bz2 etc, tar works great
-      if (ext === '.zip' || ext.includes('.tar') || ext === '.gz' || ext === '.bz2' || ext === '.xz') {
+      if (
+        archiveKind === 'tar' ||
+        archiveKind === 'gzip' ||
+        archiveKind === 'bzip2' ||
+        archiveKind === 'xz'
+      ) {
         await this.extractWithTar(filePath, extractTo);
       } else {
-        throw new Error(`Archive format '${ext}' cannot be extracted by any available fallbacks.`);
+        throw new Error(
+          `Downloaded file is not a recognized archive (${ext || 'no extension'}). 7-Zip error: ${sevenZipError?.message || sevenZipError}`,
+        );
       }
     }
   }

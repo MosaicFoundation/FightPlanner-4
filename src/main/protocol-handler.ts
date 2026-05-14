@@ -391,7 +391,7 @@ export default class ProtocolHandler {
       const modId = this.extractModId(strippedUrl);
       const modType = this.extractModType(strippedUrl);
 
-      const downloadUrl = this.parseGameBananaUrl(strippedUrl);
+      const downloadUrl = await this.resolveGameBananaDownloadUrl(strippedUrl);
 
       if (!downloadUrl) {
         this.processingUrls.delete(dedupeKey);
@@ -651,6 +651,12 @@ export default class ProtocolHandler {
       if (mmdlMatch && mmdlMatch[1]) {
         return mmdlMatch[1];
       }
+
+      const pageMatch = url.match(/gamebanana\.com\/(?:mods|sounds)(?:\/download)?\/(\d+)/i);
+      if (pageMatch && pageMatch[1]) {
+        return pageMatch[1];
+      }
+
       return null;
     } catch (error) {
       console.error('Error extracting mod ID:', error);
@@ -664,12 +670,67 @@ export default class ProtocolHandler {
       if (typeMatch && typeMatch[1]) {
         return typeMatch[1];
       }
+
+      if (/gamebanana\.com\/sounds(?:\/download)?\//i.test(url)) {
+        return 'Sound';
+      }
+
       return 'Mod';
     } catch (error) {
       console.error('Error extracting mod type:', error);
       return 'Mod';
     }
   }
+
+  async resolveGameBananaDownloadUrl(url: string): Promise<string | null> {
+    const parsedUrl = this.parseGameBananaUrl(url);
+
+    if (!parsedUrl) {
+      return null;
+    }
+
+    const downloadPageMatch = parsedUrl.match(/gamebanana\.com\/(mods|sounds)\/download\/(\d+)/i);
+    if (!downloadPageMatch) {
+      return parsedUrl;
+    }
+
+    const modType = downloadPageMatch[1].toLowerCase() === 'sounds' ? 'Sound' : 'Mod';
+    const modId = downloadPageMatch[2];
+    const apiDownloadUrl = await this.fetchPrimaryGameBananaDownloadUrl(modId, modType);
+
+    return apiDownloadUrl || parsedUrl;
+  }
+
+  async fetchPrimaryGameBananaDownloadUrl(modId: string, modType = 'Mod'): Promise<string | null> {
+    try {
+      const apiUrl = `https://gamebanana.com/apiv11/${modType}/${modId}?_csvProperties=_aFiles`;
+      const response = await this.fetchWithTimeout(apiUrl, 10000);
+      const data = JSON.parse(response);
+      const files = data?._aFiles;
+      const fileEntries = Array.isArray(files)
+        ? files
+        : Object.values(files || {});
+
+      for (const fileEntry of fileEntries as any[]) {
+        const downloadUrl =
+          fileEntry?._sDownloadUrl ||
+          fileEntry?._sDownloadURL ||
+          fileEntry?._sFileUrl ||
+          fileEntry?._sFileURL;
+
+        if (typeof downloadUrl === 'string' && downloadUrl.startsWith('http')) {
+          return downloadUrl;
+        }
+      }
+
+      console.warn(`[protocol] No API file download URL found for ${modType} ${modId}`);
+      return null;
+    } catch (error) {
+      console.error(`[protocol] Failed to resolve GameBanana download URL for ${modType} ${modId}:`, error.message);
+      return null;
+    }
+  }
+
   parseGameBananaUrl(url) {
     try {
       const mmdlMatch = url.match(/mmdl\/(\d+)/);
@@ -679,6 +740,10 @@ export default class ProtocolHandler {
       }
 
       if (url.includes('/dl/')) {
+        return url;
+      }
+
+      if (/gamebanana\.com\/(?:mods|sounds)\/download\/\d+/i.test(url)) {
         return url;
       }
 
@@ -790,6 +855,19 @@ export default class ProtocolHandler {
 
         let finalFilePath = filePath;
         const contentType = response.headers['content-type'] || '';
+
+        if (String(contentType).toLowerCase().includes('text/html')) {
+          this.activeDownloads.delete(downloadId);
+          response.resume();
+          file.close();
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+
+          reject(new Error('Download returned a web page instead of an archive. GameBanana may have blocked or changed the download URL.'));
+          return;
+        }
+
         if (
           contentType.includes('application/x-rar-compressed') ||
           contentType.includes('application/vnd.rar')
