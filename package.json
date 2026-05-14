@@ -25,12 +25,12 @@
   "dependencies": {
     "@types/archiver": "^7.0.0",
     "archiver": "^7.0.1",
-    "basic-ftp": "^5.2.1",
+    "basic-ftp": "^5.3.1",
     "core-util-is": "^1.0.3",
     "discord-rpc": "^4.0.1",
     "electron-store": "^8.2.0",
     "electron-updater": "^6.3.9",
-    "fast-xml-parser": "^5.5.7",
+    "fast-xml-parser": "^5.7.0",
     "node-7z": "^3.0.0",
     "posthog-node": "^5.21.2",
     "semver": "^7.6.0"
@@ -38,7 +38,7 @@
   "devDependencies": {
     "@types/node-7z": "^2.1.11",
     "concurrently": "^9.2.1",
-    "electron": "^41.0.2",
+    "electron": "^41.1.0",
     "electron-builder": "^26.7.0",
     "gsap": "3.12.5",
     "lottie-web": "5.12.2",
