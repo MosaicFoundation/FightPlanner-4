@@ -126,8 +126,9 @@ function initializeTabFeatures(tabName) {
 
     actionButtons.forEach((btn) => {
       const title = btn.getAttribute('title');
+      const action = btn.dataset.action;
 
-      if (title === 'Add' && !btn.dataset.listenerAttached) {
+      if ((action === 'add-mod' || title === 'Add') && !btn.dataset.listenerAttached) {
         btn.dataset.listenerAttached = 'true';
         btn.addEventListener('click', async () => {
           try {
@@ -211,7 +212,7 @@ function initializeTabFeatures(tabName) {
         });
       }
 
-      if (title === 'Play' && !btn.dataset.listenerAttached) {
+      if ((action === 'launch-emulator' || title === 'Play') && !btn.dataset.listenerAttached) {
         btn.dataset.listenerAttached = 'true';
         btn.addEventListener('click', async () => {
           try {

@@ -16,6 +16,8 @@ import type { ChildProcess } from 'child_process';
 
 let emulatorProcess: ChildProcess | null = null;
 
+const EMULATOR_START_TIMEOUT_MS = 1500;
+
 export type SystemHandlers = typeof SystemHandlers;
 
 const resolveMacAppExecutable = (appPath: string): string | null => {
@@ -34,6 +36,83 @@ const resolveMacAppExecutable = (appPath: string): string | null => {
     });
 
   return executable || null;
+};
+
+const ensureExecutableOnLinux = (filePath: string) => {
+  if (process.platform !== 'linux') {
+    return;
+  }
+
+  const stats = fs.statSync(filePath);
+  if (stats.isFile() && (stats.mode & 0o111) === 0) {
+    fs.chmodSync(filePath, stats.mode | 0o755);
+  }
+};
+
+const getEmulatorArgs = (
+  emulatorType: string,
+  gamePath: string,
+  fullscreen: boolean,
+) => {
+  switch (emulatorType.toLowerCase()) {
+    case 'yuzu':
+      return fullscreen ? ['-f', '-g', gamePath] : ['-g', gamePath];
+    case 'ryujinx':
+      return [gamePath];
+    default:
+      return [gamePath];
+  }
+};
+
+const waitForProcessStart = (
+  childProcess: ChildProcess,
+): Promise<{ success: true } | { success: false; error: string }> => {
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const cleanup = () => {
+      clearTimeout(timer);
+      childProcess.off('error', onError);
+      childProcess.off('exit', onExit);
+      childProcess.off('spawn', onSpawn);
+    };
+
+    const settle = (result: { success: true } | { success: false; error: string }) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup();
+      resolve(result);
+    };
+
+    const timer = setTimeout(() => settle({ success: true }), EMULATOR_START_TIMEOUT_MS);
+
+    const onSpawn = () => {
+      if (childProcess.pid) {
+        console.log('[launch-emulator] Spawned emulator process PID:', childProcess.pid);
+      }
+    };
+
+    const onError = (error: Error) => {
+      settle({ success: false, error: error.message });
+    };
+
+    const onExit = (code: number | null, signal: NodeJS.Signals | null) => {
+      if (code === 0) {
+        settle({ success: true });
+        return;
+      }
+
+      const exitReason =
+        code !== null ? `exited immediately with code ${code}` : `exited immediately with signal ${signal}`;
+      settle({ success: false, error: `Emulator ${exitReason}` });
+    };
+
+    childProcess.once('spawn', onSpawn);
+    childProcess.once('error', onError);
+    childProcess.once('exit', onExit);
+  });
 };
 
 const SystemHandlers = {
@@ -233,35 +312,43 @@ const SystemHandlers = {
         );
       }
 
+      ensureExecutableOnLinux(launchPath);
+
       console.log('[launch-emulator] Launching emulator:', emulatorType);
       console.log('[launch-emulator] Emulator path:', launchPath);
       console.log('[launch-emulator] With game:', gamePath);
       console.log('[launch-emulator] Fullscreen:', fullscreen);
 
-      let args;
-      if (emulatorType === 'yuzu') {
-        args = fullscreen ? ['-f', '-g', gamePath] : ['-g', gamePath];
-      } else {
-        args = ['-g', gamePath];
-      }
+      const args = getEmulatorArgs(emulatorType, gamePath, fullscreen);
 
-      emulatorProcess = spawn(launchPath, args, {
+      const childProcess = spawn(launchPath, args, {
+        cwd: path.dirname(launchPath),
         detached: true,
         stdio: 'ignore',
       });
+      emulatorProcess = childProcess;
 
-      emulatorProcess.on('exit', () => {
+      childProcess.on('exit', () => {
         console.log('[launch-emulator] Emulator process exited');
         emulatorProcess = null;
       });
 
-      emulatorProcess.on('error', () => {
+      childProcess.on('error', () => {
         console.log('[launch-emulator] Emulator process error');
         emulatorProcess = null;
       });
 
-      emulatorProcess.unref();
+      const startResult = await waitForProcessStart(childProcess);
 
+      if (!startResult.success) {
+        emulatorProcess = null;
+        return createErrorResponse(
+          ErrorCodes.EMULATOR_LAUNCH_ERROR,
+          startResult.error,
+        );
+      }
+
+      childProcess.unref();
       console.log('[launch-emulator] Emulator launched successfully with args:', args);
       return { success: true };
     } catch (error) {
