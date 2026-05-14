@@ -18,8 +18,6 @@ let emulatorProcess: ChildProcess | null = null;
 
 const EMULATOR_START_TIMEOUT_MS = 1500;
 
-const EMULATOR_START_TIMEOUT_MS = 1500;
-
 export type SystemHandlers = typeof SystemHandlers;
 
 const resolveMacAppExecutable = (appPath: string): string | null => {
