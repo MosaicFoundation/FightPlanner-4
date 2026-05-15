@@ -110,6 +110,138 @@ const ProtocolHandlers = {
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
   },
+
+  ['fetch-gamebanana-details']: async (
+    common: BaseHandlerArg,
+    modelName: string,
+    submissionId: string,
+  ): HandlerResponse<any> => {
+    try {
+      const safeModelName = encodeURIComponent(modelName || 'Mod');
+      const safeSubmissionId = encodeURIComponent(submissionId);
+      const apiUrl = `https://gamebanana.com/apiv11/${safeModelName}/${safeSubmissionId}?_csvProperties=%40gbprofile`;
+
+      return new Promise((resolve) => {
+        https
+          .get(apiUrl, (res) => {
+            let data = '';
+
+            res.on('data', (chunk) => {
+              data += chunk;
+            });
+
+            res.on('end', () => {
+              try {
+                const json = JSON.parse(data);
+
+                if (res.statusCode && res.statusCode >= 400) {
+                  resolve({
+                    success: false,
+                    error: `GameBanana returned ${res.statusCode}`,
+                  });
+                  return;
+                }
+
+                resolve({ success: true, data: json });
+              } catch (error) {
+                resolve(
+                  createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message),
+                );
+              }
+            });
+          })
+          .on('error', (error) => {
+            resolve(
+              createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message),
+            );
+          });
+      });
+    } catch (error) {
+      handleError(error, 'fetch-gamebanana-details');
+      return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
+    }
+  },
+
+  ['fetch-gamebanana-files']: async (
+    common: BaseHandlerArg,
+    modelName: string,
+    submissionId: string,
+  ): HandlerResponse<{ files: any[] }> => {
+    try {
+      const safeModelName = encodeURIComponent(modelName || 'Mod');
+      const safeSubmissionId = encodeURIComponent(submissionId);
+      const apiUrl = `https://gamebanana.com/apiv11/${safeModelName}/${safeSubmissionId}?_csvProperties=_aFiles,_aModManagerIntegrations`;
+
+      return new Promise((resolve) => {
+        https
+          .get(apiUrl, (res) => {
+            let data = '';
+
+            res.on('data', (chunk) => {
+              data += chunk;
+            });
+
+            res.on('end', () => {
+              try {
+                const json = JSON.parse(data);
+
+                if (res.statusCode && res.statusCode >= 400) {
+                  resolve({
+                    success: false,
+                    error: `GameBanana returned ${res.statusCode}`,
+                  });
+                  return;
+                }
+
+                const integrations = json?._aModManagerIntegrations || {};
+                const getFightPlannerDownloadUrl = (fileId: string) => {
+                  const entries = Array.isArray(integrations[fileId])
+                    ? integrations[fileId]
+                    : [];
+                  const integration = entries.find((entry) => {
+                    const alias = String(entry?._sModManagerAlias || '').toLowerCase();
+                    const installer = String(entry?._sInstallerName || '').toLowerCase();
+                    return (
+                      entry?._sDownloadUrl?.startsWith('fightplanner:') &&
+                      (alias === 'fightplanner' || installer === 'fightplanner')
+                    );
+                  });
+                  return integration?._sDownloadUrl || '';
+                };
+
+                const files = json?._aFiles;
+                const fileEntries = Array.isArray(files)
+                  ? files
+                  : Object.values(files || {});
+                const enrichedFileEntries = fileEntries.map((file: any) => {
+                  const fileId = file?._idRow ? String(file._idRow) : '';
+                  const fightPlannerUrl = fileId
+                    ? getFightPlannerDownloadUrl(fileId)
+                    : '';
+                  return fightPlannerUrl
+                    ? { ...file, _sFightPlannerDownloadUrl: fightPlannerUrl }
+                    : file;
+                });
+
+                resolve({ success: true, files: enrichedFileEntries });
+              } catch (error) {
+                resolve(
+                  createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message),
+                );
+              }
+            });
+          })
+          .on('error', (error) => {
+            resolve(
+              createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message),
+            );
+          });
+      });
+    } catch (error) {
+      handleError(error, 'fetch-gamebanana-files');
+      return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
+    }
+  },
 } as const;
 
 /**

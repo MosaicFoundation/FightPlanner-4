@@ -115,6 +115,41 @@
     </div>
   </div>
 
+  <!-- Profile Media Crop Modal -->
+  <div id="social-profile-media-crop-modal" class="social-modal" style="display: none">
+    <div class="social-modal-content social-crop-modal-content">
+      <div class="social-modal-header">
+        <h2 id="social-crop-title" class="social-modal-title">Crop image</h2>
+        <button id="social-crop-close" class="social-modal-close">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+      <div class="social-modal-body">
+        <div id="social-crop-upload-loading" class="social-crop-upload-loading" style="display: none">
+          <div id="social-crop-upload-lottie" class="social-crop-upload-lottie"></div>
+          <p>Uploading...</p>
+        </div>
+        <div id="social-crop-frame" class="social-crop-frame">
+          <canvas id="social-crop-canvas" class="social-crop-canvas"></canvas>
+        </div>
+        <div class="social-crop-controls">
+          <label for="social-crop-zoom" class="social-setting-label">Zoom</label>
+          <input id="social-crop-zoom" class="social-crop-zoom" type="range" min="1" max="3" step="0.01" value="1" />
+        </div>
+        <div class="social-modal-actions">
+          <button id="social-crop-cancel" class="social-btn social-btn-secondary">
+            <i class="bi bi-x"></i>
+            <span data-i18n="common.cancel">Cancel</span>
+          </button>
+          <button id="social-crop-confirm" class="social-btn social-btn-primary">
+            <i class="bi bi-cloud-upload"></i>
+            <span>Upload</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Create Account Modal -->
   <div id="social-register-modal" class="social-modal" style="display: none">
     <div class="social-modal-content">
@@ -166,9 +201,13 @@
   <div id="social-profile-container" class="social-profile-container" style="display: none">
     <!-- Navigation Menu -->
     <div class="social-nav-menu">
-      <div class="social-nav-item active" data-section="feed">
+      <div class="social-nav-item active" data-section="discover">
         <i class="bi bi-compass"></i>
         <span data-i18n="social.discover">Discover</span>
+      </div>
+      <div class="social-nav-item" data-section="people-downloads">
+        <i class="bi bi-cloud-download"></i>
+        <span data-i18n="social.downloadByPeople">Download by People</span>
       </div>
       <div class="social-nav-item" data-section="my-mods">
         <i class="bi bi-collection"></i>
@@ -186,14 +225,32 @@
 
     <!-- Content Sections -->
     <div class="social-main-content">
-      <!-- Feed Section -->
-      <div id="social-section-feed" class="social-section active">
+      <!-- Discover Section -->
+      <div id="social-section-discover" class="social-section active">
         <div class="social-section-header">
           <h2 class="social-section-title" data-i18n="social.discoverMods">
-            Discover Mods
+            GameBanana Mods
           </h2>
           <p class="social-section-subtitle" data-i18n="social.exploreMods">
-            Explore mods shared by the community
+            Search and download Super Smash Bros. Ultimate mods from GameBanana
+          </p>
+        </div>
+        <div id="social-discover-content" class="social-discover-content">
+          <div class="social-loading">
+            <i class="bi bi-hourglass-split"></i>
+            <p data-i18n="social.loadingMods">Loading mods...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Downloads by People Section -->
+      <div id="social-section-people-downloads" class="social-section">
+        <div class="social-section-header">
+          <h2 class="social-section-title" data-i18n="social.downloadByPeopleTitle">
+            Download by People
+          </h2>
+          <p class="social-section-subtitle" data-i18n="social.downloadByPeopleSubtitle">
+            See mods downloaded by the community
           </p>
         </div>
         <div id="social-feed-content" class="social-feed-content">
@@ -262,6 +319,9 @@
             <i class="bi bi-arrow-left"></i> Back
           </button>
           <div class="social-user-profile-header">
+            <div class="social-user-profile-banner">
+              <img id="social-user-profile-banner" src="" alt="Profile banner" />
+            </div>
             <div class="social-user-profile-avatar-container">
               <img id="social-user-profile-avatar" class="social-user-profile-avatar" src="" alt="Profile" />
             </div>
@@ -295,11 +355,19 @@
       <!-- Profile Section -->
       <div id="social-section-profile" class="social-section">
         <div class="social-profile-header">
+          <div class="social-profile-banner">
+            <img id="social-profile-banner" src="" alt="Profile banner" />
+            <button id="social-profile-edit-banner" class="social-profile-edit-banner" title="Edit banner">
+              <i class="bi bi-image"></i>
+            </button>
+          </div>
           <div class="social-profile-avatar-container">
             <img id="social-profile-avatar" class="social-profile-avatar" src="" alt="Profile" />
             <button id="social-profile-edit-avatar" class="social-profile-edit-avatar" title="Edit avatar">
               <i class="bi bi-camera"></i>
             </button>
+            <input id="social-profile-avatar-input" type="file" accept="image/*" hidden />
+            <input id="social-profile-banner-input" type="file" accept="image/*" hidden />
           </div>
           <div class="social-profile-info">
             <h2 id="social-profile-username" class="social-profile-username">
