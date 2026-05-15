@@ -420,7 +420,7 @@
 .social-friends-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
 }
 
 .social-gamebanana-featured,
@@ -444,11 +444,61 @@
   gap: 16px;
 }
 
+.social-gamebanana-mods-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
 .social-gamebanana-section-title {
   margin: 0;
   color: var(--text-primary);
   font-size: 18px;
   font-weight: 600;
+}
+
+.social-gamebanana-search {
+  width: min(340px, 42vw);
+  min-width: 220px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.social-gamebanana-search:focus-within {
+  border-color: var(--border-hover);
+  background: var(--bg-tertiary);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
+}
+
+.social-gamebanana-search i {
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.social-gamebanana-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.social-gamebanana-search input::placeholder {
+  color: var(--text-muted);
 }
 
 .social-gamebanana-carousel-actions {
@@ -465,6 +515,8 @@
 }
 
 .social-gamebanana-carousel-btn,
+.social-gamebanana-external-btn,
+.social-gamebanana-finished-work-btn,
 .social-gamebanana-open-btn,
 .social-gamebanana-page-btn {
   border: 1px solid var(--border-color);
@@ -495,6 +547,8 @@
 }
 
 .social-gamebanana-carousel-btn:hover,
+.social-gamebanana-external-btn:hover,
+.social-gamebanana-finished-work-btn:hover,
 .social-gamebanana-open-btn:hover,
 .social-gamebanana-page-btn:hover:not(:disabled) {
   background: var(--bg-hover);
@@ -706,6 +760,37 @@
   min-height: 100%;
 }
 
+.social-gamebanana-detail-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.social-gamebanana-external-btn {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 13px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.social-gamebanana-finished-work-btn {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 13px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .social-gamebanana-detail-layout {
   display: grid;
   grid-template-columns: minmax(320px, 46%) minmax(0, 1fr);
@@ -722,6 +807,154 @@
   border-radius: 10px;
   border: 1px solid var(--border-color);
   background: var(--border-color);
+}
+
+.social-gamebanana-gallery {
+  min-width: 0;
+}
+
+.social-gamebanana-gallery-main {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.social-gamebanana-detail-image.is-sliding {
+  animation: socialGameBananaImageSlide 0.26s ease both;
+}
+
+.social-gamebanana-gallery.slide-next .social-gamebanana-detail-image.is-sliding {
+  --social-gallery-slide-x: 18px;
+}
+
+.social-gamebanana-gallery.slide-prev .social-gamebanana-detail-image.is-sliding {
+  --social-gallery-slide-x: -18px;
+}
+
+@keyframes socialGameBananaImageSlide {
+  from {
+    opacity: 0;
+    transform: translateX(var(--social-gallery-slide-x, 18px));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.social-gamebanana-gallery-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: none;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--border-color);
+}
+
+.social-gamebanana-gallery.is-loading .social-gamebanana-gallery-loading {
+  display: flex;
+}
+
+.social-gamebanana-gallery.is-loading .social-gamebanana-detail-image {
+  opacity: 0;
+}
+
+.social-gamebanana-gallery-skeleton {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+}
+
+.social-gamebanana-gallery-skeleton-caption {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: min(72%, 360px);
+}
+
+.social-gamebanana-gallery-skeleton-caption span {
+  height: 10px;
+}
+
+.social-gamebanana-gallery-skeleton-caption span:last-child {
+  width: 58%;
+}
+
+.social-gamebanana-gallery-nav {
+  position: absolute;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.54);
+  color: var(--text-primary);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: all 0.2s ease;
+}
+
+.social-gamebanana-gallery-nav:hover {
+  background: var(--accent-color);
+  color: var(--text-inverse);
+}
+
+.social-gamebanana-gallery-nav.is-prev {
+  left: 10px;
+}
+
+.social-gamebanana-gallery-nav.is-next {
+  right: 10px;
+}
+
+.social-gamebanana-gallery-caption {
+  margin: 10px 0 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.social-gamebanana-gallery-thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.social-gamebanana-gallery-thumb {
+  height: 54px;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-card);
+  cursor: pointer;
+  opacity: 0.72;
+  transition: all 0.2s ease;
+}
+
+.social-gamebanana-gallery-thumb.active,
+.social-gamebanana-gallery-thumb:hover {
+  border-color: var(--accent-color);
+  opacity: 1;
+}
+
+.social-gamebanana-gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 .social-gamebanana-preview-flyout {
@@ -783,6 +1016,67 @@
   font-size: 14px;
   line-height: 1.55;
   white-space: pre-line;
+}
+
+.social-gamebanana-wip-info {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-card);
+}
+
+.social-gamebanana-wip-title {
+  margin: 0 0 12px 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.social-gamebanana-wip-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.social-gamebanana-wip-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.social-gamebanana-wip-item span,
+.social-gamebanana-wip-finished > span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.social-gamebanana-wip-item strong {
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+.social-gamebanana-wip-progress {
+  height: 8px;
+  margin-top: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+}
+
+.social-gamebanana-wip-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent-color);
+}
+
+.social-gamebanana-wip-finished {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
 }
 
 .social-gamebanana-skeleton-block {
@@ -1037,6 +1331,16 @@
     flex-direction: column;
   }
 
+  .social-gamebanana-mods-title-row,
+  .social-gamebanana-search {
+    width: 100%;
+  }
+
+  .social-gamebanana-mods-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .social-gamebanana-detail-layout {
     grid-template-columns: 1fr;
   }
@@ -1056,10 +1360,13 @@
 }
 
 .social-profile-header {
-  display: flex;
-  gap: 32px;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 32px;
+  row-gap: 0;
   margin-bottom: 40px;
-  padding-bottom: 32px;
+  padding: 0 0 32px;
   border-bottom: 1px solid var(--bg-transparent-10);
 }
 
@@ -1067,9 +1374,62 @@
   margin-bottom: 32px;
 }
 
+.social-profile-banner,
+.social-user-profile-banner {
+  position: relative;
+  grid-column: 1 / -1;
+  width: 100%;
+  aspect-ratio: 3 / 1;
+  height: auto;
+  overflow: hidden;
+  border: 1px solid var(--bg-transparent-10);
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, rgba(var(--accent-rgb), 0.22), transparent 55%),
+    var(--bg-card);
+}
+
+.social-profile-banner img,
+.social-user-profile-banner img {
+  width: 100%;
+  height: 100%;
+  display: none;
+  object-fit: cover;
+}
+
+.social-profile-banner.has-image img,
+.social-user-profile-banner.has-image img {
+  display: block;
+}
+
+.social-profile-edit-banner {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--bg-transparent-10);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.social-profile-edit-banner:hover {
+  background: var(--accent-color);
+  color: var(--text-inverse);
+}
+
 .social-profile-avatar-container {
   position: relative;
   flex-shrink: 0;
+  z-index: 1;
+  margin-top: -54px;
+  margin-left: 24px;
 }
 
 .social-profile-avatar {
@@ -1106,10 +1466,14 @@
 }
 
 .social-profile-info {
+  z-index: 1;
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  justify-content: center;
+  min-height: 88px;
+  padding-top: 12px;
 }
 
 .social-profile-username {
@@ -1546,15 +1910,21 @@
 }
 
 .social-user-profile-header {
-  display: flex;
-  gap: 24px;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 24px;
+  row-gap: 0;
   margin-bottom: 32px;
-  padding-bottom: 24px;
+  padding: 0 0 24px;
   border-bottom: 1px solid var(--bg-transparent-10);
 }
 
 .social-user-profile-avatar-container {
   flex-shrink: 0;
+  z-index: 1;
+  margin-top: -46px;
+  margin-left: 20px;
 }
 
 .social-user-profile-avatar {
@@ -1567,11 +1937,14 @@
 }
 
 .social-user-profile-info {
+  z-index: 1;
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 12px;
+  min-height: 78px;
+  padding-top: 10px;
 }
 
 .social-user-profile-username {
@@ -1633,6 +2006,85 @@
   z-index: 100000;
   backdrop-filter: blur(5px);
   pointer-events: auto;
+}
+
+.social-crop-modal-content {
+  position: relative;
+  width: min(760px, calc(100vw - 48px));
+  max-width: 760px;
+}
+
+.social-crop-upload-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border-radius: 16px;
+  background: rgba(8, 8, 12, 0.82);
+  backdrop-filter: blur(6px);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.social-crop-upload-loading.is-active {
+  display: flex !important;
+}
+
+.social-crop-upload-lottie {
+  width: 96px;
+  height: 96px;
+}
+
+.social-crop-upload-loading p {
+  margin: 0;
+}
+
+.social-crop-frame {
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--bg-transparent-10);
+  border-radius: 12px;
+  background: var(--bg-primary);
+  touch-action: none;
+}
+
+.social-crop-frame.is-avatar {
+  max-width: 420px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+}
+
+.social-crop-frame.is-banner {
+  aspect-ratio: 3 / 1;
+}
+
+.social-crop-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+}
+
+.social-crop-canvas.is-dragging {
+  cursor: grabbing;
+}
+
+.social-crop-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.social-crop-zoom {
+  flex: 1;
 }
 
 .social-modal[style*='display: flex'],

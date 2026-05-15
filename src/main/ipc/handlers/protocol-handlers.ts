@@ -119,7 +119,7 @@ const ProtocolHandlers = {
     try {
       const safeModelName = encodeURIComponent(modelName || 'Mod');
       const safeSubmissionId = encodeURIComponent(submissionId);
-      const apiUrl = `https://gamebanana.com/apiv11/${safeModelName}/${safeSubmissionId}/ProfilePage`;
+      const apiUrl = `https://gamebanana.com/apiv11/${safeModelName}/${safeSubmissionId}?_csvProperties=%40gbprofile`;
 
       return new Promise((resolve) => {
         https
@@ -170,7 +170,7 @@ const ProtocolHandlers = {
     try {
       const safeModelName = encodeURIComponent(modelName || 'Mod');
       const safeSubmissionId = encodeURIComponent(submissionId);
-      const apiUrl = `https://gamebanana.com/apiv11/${safeModelName}/${safeSubmissionId}?_csvProperties=_aFiles`;
+      const apiUrl = `https://gamebanana.com/apiv11/${safeModelName}/${safeSubmissionId}?_csvProperties=_aFiles,_aModManagerIntegrations`;
 
       return new Promise((resolve) => {
         https
@@ -193,12 +193,37 @@ const ProtocolHandlers = {
                   return;
                 }
 
+                const integrations = json?._aModManagerIntegrations || {};
+                const getFightPlannerDownloadUrl = (fileId: string) => {
+                  const entries = Array.isArray(integrations[fileId])
+                    ? integrations[fileId]
+                    : [];
+                  const integration = entries.find((entry) => {
+                    const alias = String(entry?._sModManagerAlias || '').toLowerCase();
+                    const installer = String(entry?._sInstallerName || '').toLowerCase();
+                    return (
+                      entry?._sDownloadUrl?.startsWith('fightplanner:') &&
+                      (alias === 'fightplanner' || installer === 'fightplanner')
+                    );
+                  });
+                  return integration?._sDownloadUrl || '';
+                };
+
                 const files = json?._aFiles;
                 const fileEntries = Array.isArray(files)
                   ? files
                   : Object.values(files || {});
+                const enrichedFileEntries = fileEntries.map((file: any) => {
+                  const fileId = file?._idRow ? String(file._idRow) : '';
+                  const fightPlannerUrl = fileId
+                    ? getFightPlannerDownloadUrl(fileId)
+                    : '';
+                  return fightPlannerUrl
+                    ? { ...file, _sFightPlannerDownloadUrl: fightPlannerUrl }
+                    : file;
+                });
 
-                resolve({ success: true, files: fileEntries });
+                resolve({ success: true, files: enrichedFileEntries });
               } catch (error) {
                 resolve(
                   createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message),
