@@ -4,6 +4,16 @@ import store from './store';
 
 type LegacyConfig = Record<string, unknown>;
 
+const ACCIDENTAL_FP4_DEFAULT_STORE_KEYS = new Set([
+  'updateChannel',
+  'developer',
+]);
+const ACCIDENTAL_FP4_DEVELOPER_KEYS = new Set([
+  'forceUpdateAvailable',
+  'ignoreUpdateCertErrors',
+  'disableUpdateSignatureCheck',
+]);
+
 function isPlainObject(value: unknown): value is LegacyConfig {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -14,9 +24,80 @@ function getNonEmptyString(config: LegacyConfig, key: string): string | null {
 }
 
 function looksLikeFightPlanner3Config(config: LegacyConfig): boolean {
-  return ['modsPath', 'pluginsPath', 'emulatorPath', 'gamePath'].some(key =>
-    getNonEmptyString(config, key) !== null,
+  return ['modsPath', 'pluginsPath', 'emulatorPath', 'gamePath'].some(
+    (key) => getNonEmptyString(config, key) !== null,
   );
+}
+
+function looksLikeAccidentalFightPlanner4DefaultStore(
+  config: LegacyConfig,
+): boolean {
+  const keys = Object.keys(config);
+
+  if (keys.length === 0) {
+    return false;
+  }
+
+  return keys.every((key) => {
+    if (!ACCIDENTAL_FP4_DEFAULT_STORE_KEYS.has(key)) {
+      return false;
+    }
+
+    if (key === 'updateChannel') {
+      return typeof config.updateChannel === 'string';
+    }
+
+    if (key === 'developer') {
+      const developerConfig = config.developer;
+      return (
+        isPlainObject(developerConfig) &&
+        Object.keys(developerConfig).every((developerKey) =>
+          ACCIDENTAL_FP4_DEVELOPER_KEYS.has(developerKey),
+        )
+      );
+    }
+
+    return false;
+  });
+}
+
+function migrateAccidentalFightPlanner4DefaultStore(
+  config: LegacyConfig,
+  oldConfigPath: string,
+  storeDir: string,
+) {
+  const migratedKeys: string[] = [];
+
+  if (
+    typeof config.updateChannel === 'string' &&
+    store.get('updateChannel') === undefined
+  ) {
+    store.set('updateChannel', config.updateChannel);
+    migratedKeys.push('updateChannel');
+  }
+
+  if (isPlainObject(config.developer)) {
+    for (const developerKey of Object.keys(config.developer)) {
+      const storeKey = `developer.${developerKey}`;
+      if (store.get(storeKey) === undefined) {
+        store.set(storeKey, config.developer[developerKey]);
+        migratedKeys.push(storeKey);
+      }
+    }
+  }
+
+  const backupPath = path.join(
+    storeDir,
+    'config.fp4-default-store.backup.json',
+  );
+  fs.renameSync(oldConfigPath, backupPath);
+
+  console.log(
+    'Removed accidental FightPlanner 4 default electron-store config. Backup:',
+    backupPath,
+  );
+
+  return { migratedKeys, backupPath };
 }
 
 export async function migrateFromV3() {
@@ -32,19 +113,39 @@ export async function migrateFromV3() {
       return { migrated: false };
     }
 
+    console.log('Potential legacy config found, validating contents...');
+
+    const oldConfigContent = fs.readFileSync(oldConfigPath, 'utf8');
+    const oldConfig = JSON.parse(oldConfigContent);
+
+    if (
+      isPlainObject(oldConfig) &&
+      looksLikeAccidentalFightPlanner4DefaultStore(oldConfig)
+    ) {
+      const cleanupResult = migrateAccidentalFightPlanner4DefaultStore(
+        oldConfig,
+        oldConfigPath,
+        storeDir,
+      );
+
+      return {
+        migrated: false,
+        cleanedAccidentalConfig: true,
+        migratedKeys: cleanupResult.migratedKeys,
+        backupPath: cleanupResult.backupPath,
+      };
+    }
+
     const alreadyMigrated = store.get('migrationCompleted');
     if (alreadyMigrated) {
       console.log('✓ Migration already completed, skipping');
       return { migrated: false, alreadyDone: true };
     }
 
-    console.log('Potential legacy config found, validating contents...');
-
-    const oldConfigContent = fs.readFileSync(oldConfigPath, 'utf8');
-    const oldConfig = JSON.parse(oldConfigContent);
-
     if (!isPlainObject(oldConfig) || !looksLikeFightPlanner3Config(oldConfig)) {
-      console.log('config.json does not look like a FightPlanner 3 config, skipping migration');
+      console.log(
+        'config.json does not look like a FightPlanner 3 config, skipping migration',
+      );
       return { migrated: false };
     }
 
@@ -121,7 +222,9 @@ export async function migrateFromV3() {
     const migratedSettingKeys = Object.keys(migratedSettings);
 
     if (migratedSettingKeys.length === 0) {
-      console.log('FightPlanner 3 config found, but no supported settings to migrate');
+      console.log(
+        'FightPlanner 3 config found, but no supported settings to migrate',
+      );
       return { migrated: false };
     }
 

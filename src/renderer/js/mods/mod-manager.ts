@@ -469,6 +469,18 @@ class ModManager {
     });
   }
 
+  clearSelection() {
+    this.selectedMods = [];
+    this.selectedMod = null;
+    this.selectionAnchorId = null;
+    localStorage.removeItem('selectedModId');
+    this.applySelectionClasses();
+
+    const updateToken = ++this.selectionUpdateToken;
+    void this.updateSelectionInfo([], updateToken);
+    void this.updatePreview([], updateToken);
+  }
+
   arePreviewAnimationsDisabled() {
     return (
       document.body.classList.contains('reduced-animations') ||

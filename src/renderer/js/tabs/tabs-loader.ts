@@ -379,6 +379,11 @@ function initializeTabFeatures(tabName) {
       window.modManager.reinitialize();
     }
 
+    if (window.modProfileManager) {
+      window.modProfileManager.bindControls();
+      window.modProfileManager.render();
+    }
+
     if (window.i18n) {
       window.i18n.updateDOM();
     }

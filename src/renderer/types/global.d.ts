@@ -37,6 +37,7 @@ import { ModContextMenuHandler } from '../js/mods/mod-context-menu';
 import { ModKeybindsHandler } from '../js/mods/mod-keybinds';
 import { ModListRenderer } from '../js/mods/mod-list-renderer';
 import { LanguageSelector } from '../js/i18n/language-selector';
+import { ModProfileManager } from '../js/mods/mod-profile-manager';
 
 import {
   ResolveSSBUFolderName,
@@ -78,6 +79,7 @@ declare global {
     modDragDropHandler: ModDragDropHandler;
     smartRenameManager: SmartRenameManager;
     stagesManager: StagesManager;
+    modProfileManager: ModProfileManager;
 
     ModOperations: typeof ModOperations;
     ModContextMenuHandler: typeof ModContextMenuHandler;

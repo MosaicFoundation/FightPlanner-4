@@ -196,6 +196,116 @@ body.no-animations .plugin-item {
   transition: none !important;
 }
 
+.mod-profile-btn {
+  flex: 1;
+  min-width: 0;
+}
+
+.mod-profile-btn span {
+  max-width: 90px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mod-profile-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mod-profile-modal-copy {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.mod-profile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 340px;
+  overflow: auto;
+}
+
+.mod-profile-empty {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px dashed var(--bg-transparent-10);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-muted);
+}
+
+.mod-profile-card {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--bg-transparent-08);
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--border-color) 0%, var(--bg-tertiary) 100%);
+  box-shadow: var(--shadow-sm);
+  color: inherit;
+}
+
+.mod-profile-card.is-active {
+  border-color: rgba(var(--accent-rgb), 0.4);
+  box-shadow:
+    0 0 0 1px rgba(var(--accent-rgb), 0.18),
+    var(--shadow-md);
+}
+
+.mod-profile-card-header,
+.mod-profile-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mod-profile-card-header {
+  justify-content: space-between;
+}
+
+.mod-profile-card-title {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.mod-profile-card-badge {
+  flex-shrink: 0;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--accent-color);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.mod-profile-card-meta {
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.mod-profile-card-actions {
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.mod-profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mod-profile-form-error {
+  margin: 0;
+  color: var(--danger-color);
+  font-size: 12px;
+}
+
 body.no-animations .action-btn-small {
   transition: none !important;
 }

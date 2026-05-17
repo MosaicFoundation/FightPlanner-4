@@ -13,6 +13,7 @@ import { TutorialHandlers } from './ipc/handlers/tutorial-handlers';
 import { MigrationHandlers } from './ipc/handlers/migration-handlers';
 import { FppHandlers } from './ipc/handlers/fpp-handlers';
 import { StageHandlers } from './ipc/handlers/stage-handlers';
+import { ModProfileHandlers } from './ipc/handlers/mod-profile-handlers';
 import { ParamsWithoutFirstArg } from './types/common';
 import { WindowHandlers } from './ipc/handlers/window-handlers';
 import { DiscordHandlers } from './ipc/handlers/discord-handlers';
@@ -82,6 +83,7 @@ const invokeDiscordHandler = wrapInvoke<DiscordHandlers>();
 const invokeAnalyticsHandler = wrapInvoke<AnalyticsHandlers>();
 const invokeFppHandler = wrapInvoke<FppHandlers>();
 const invokeStageHandler = wrapInvoke<StageHandlers>();
+const invokeModProfileHandler = wrapInvoke<ModProfileHandlers>();
 
 const registerProtocolCallback = wrapEventCallback<ProtocolHandlerEvents>();
 const registerMainCallback = wrapEventCallback<MainEvents>();
@@ -179,6 +181,8 @@ const electronAPI = {
   saveStageLayout: invokeStageHandler('save-stage-layout'),
   loadStageLayoutPreset: invokeStageHandler('load-stage-layout-preset'),
   saveStageLayoutPreset: invokeStageHandler('save-stage-layout-preset'),
+  loadModProfiles: invokeModProfileHandler('load-mod-profiles'),
+  saveModProfiles: invokeModProfileHandler('save-mod-profiles'),
 
   store: {
     get: invokeStoreHandler('store-get'),
