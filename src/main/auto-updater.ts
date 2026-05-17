@@ -1,8 +1,7 @@
 import { autoUpdater } from 'electron-updater';
 import { app, BrowserWindow } from 'electron';
-import Store from 'electron-store';
 import { UpdateInfo } from 'electron-updater';
-const store = new Store();
+import store from './store';
 
 export interface UpdateEvents {
   'update-checking': {};
@@ -96,7 +95,7 @@ class AutoUpdater {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     }
 
-    this.setUpdateChannel(this.updateChannel);
+    autoUpdater.allowPrerelease = this.updateChannel !== 'stable';
     this.setupEventHandlers();
   }
 

@@ -15,6 +15,7 @@ import { registerUpdateHandlers } from './handlers/update-handlers';
 import { registerAnalyticsHandlers } from './handlers/analytics-handlers';
 import { registerFppHandlers } from './handlers/fpp-handlers';
 import { registerStageHandlers } from './handlers/stage-handlers';
+import { registerModProfileHandlers } from './handlers/mod-profile-handlers';
 import DiscordRPCManager from '../discord-rpc';
 
 /**
@@ -42,4 +43,5 @@ export function registerAllHandlers(
   registerAnalyticsHandlers(ipcMain);
   registerFppHandlers(ipcMain);
   registerStageHandlers(ipcMain);
+  registerModProfileHandlers(ipcMain);
 }
