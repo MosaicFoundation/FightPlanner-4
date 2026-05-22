@@ -377,7 +377,21 @@ body.no-animations .action-btn-small {
   box-shadow: inset 3px 0 0 var(--accent-color);
 }
 
+.mod-item.mod-special-character-css-layout {
+  background-color: rgba(var(--accent-rgb), 0.08);
+  border-color: rgba(var(--accent-rgb), 0.24);
+  box-shadow: inset 3px 0 0 var(--accent-color);
+}
+
 .mod-item.mod-special-stage-layout:hover {
+  background-color: rgba(var(--accent-rgb), 0.12);
+  border-color: rgba(var(--accent-rgb), 0.34);
+  box-shadow:
+    inset 3px 0 0 var(--accent-color),
+    var(--shadow-md);
+}
+
+.mod-item.mod-special-character-css-layout:hover {
   background-color: rgba(var(--accent-rgb), 0.12);
   border-color: rgba(var(--accent-rgb), 0.34);
   box-shadow:
@@ -400,12 +414,26 @@ body.no-animations .action-btn-small {
   line-height: 1.4;
 }
 
+.mod-special-css-badge {
+  color: var(--accent-color);
+}
+
 [data-theme='light'] .mod-item.mod-special-stage-layout {
   background-color: rgba(var(--accent-rgb), 0.06);
   border-color: rgba(var(--accent-rgb), 0.2);
 }
 
+[data-theme='light'] .mod-item.mod-special-character-css-layout {
+  background-color: rgba(var(--accent-rgb), 0.06);
+  border-color: rgba(var(--accent-rgb), 0.2);
+}
+
 [data-theme='light'] .mod-item.mod-special-stage-layout:hover {
+  background-color: rgba(var(--accent-rgb), 0.1);
+  border-color: rgba(var(--accent-rgb), 0.28);
+}
+
+[data-theme='light'] .mod-item.mod-special-character-css-layout:hover {
   background-color: rgba(var(--accent-rgb), 0.1);
   border-color: rgba(var(--accent-rgb), 0.28);
 }

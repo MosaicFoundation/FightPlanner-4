@@ -74,9 +74,15 @@ class ModListRenderer {
     const isStagesLayoutMod =
       typeof mod.name === 'string' &&
       mod.name.trim().toLowerCase() === 'stages layout';
+    const isCharacterCssLayoutMod =
+      typeof mod.name === 'string' &&
+      mod.name.trim().toLowerCase() === 'character css layout';
 
     if (isStagesLayoutMod) {
       modItem.classList.add('mod-special-stage-layout');
+    }
+    if (isCharacterCssLayoutMod) {
+      modItem.classList.add('mod-special-character-css-layout');
     }
 
     modItem.dataset.processed = 'false';
@@ -125,6 +131,13 @@ class ModListRenderer {
       badge.className = 'mod-special-badge';
       badge.textContent =
         window.i18n?.t('stages.modBadge') || 'Stages Layout';
+      textContainer.appendChild(badge);
+    }
+
+    if (isCharacterCssLayoutMod) {
+      const badge = document.createElement('span');
+      badge.className = 'mod-special-badge mod-special-css-badge';
+      badge.textContent = 'CSS';
       textContainer.appendChild(badge);
     }
 
