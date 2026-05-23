@@ -13,6 +13,7 @@ import { TutorialHandlers } from './ipc/handlers/tutorial-handlers';
 import { MigrationHandlers } from './ipc/handlers/migration-handlers';
 import { FppHandlers } from './ipc/handlers/fpp-handlers';
 import { StageHandlers } from './ipc/handlers/stage-handlers';
+import { CharacterCssHandlers } from './ipc/handlers/character-css-handlers';
 import { ModProfileHandlers } from './ipc/handlers/mod-profile-handlers';
 import { ParamsWithoutFirstArg } from './types/common';
 import { WindowHandlers } from './ipc/handlers/window-handlers';
@@ -83,6 +84,7 @@ const invokeDiscordHandler = wrapInvoke<DiscordHandlers>();
 const invokeAnalyticsHandler = wrapInvoke<AnalyticsHandlers>();
 const invokeFppHandler = wrapInvoke<FppHandlers>();
 const invokeStageHandler = wrapInvoke<StageHandlers>();
+const invokeCharacterCssHandler = wrapInvoke<CharacterCssHandlers>();
 const invokeModProfileHandler = wrapInvoke<ModProfileHandlers>();
 
 const registerProtocolCallback = wrapEventCallback<ProtocolHandlerEvents>();
@@ -181,6 +183,10 @@ const electronAPI = {
   saveStageLayout: invokeStageHandler('save-stage-layout'),
   loadStageLayoutPreset: invokeStageHandler('load-stage-layout-preset'),
   saveStageLayoutPreset: invokeStageHandler('save-stage-layout-preset'),
+  getCharacterCssLayout: invokeCharacterCssHandler('get-character-css-layout'),
+  saveCharacterCssLayout: invokeCharacterCssHandler('save-character-css-layout'),
+  duplicateCharacterCssEntry: invokeCharacterCssHandler('duplicate-character-css-entry'),
+  removeCharacterCssEntry: invokeCharacterCssHandler('remove-character-css-entry'),
   loadModProfiles: invokeModProfileHandler('load-mod-profiles'),
   saveModProfiles: invokeModProfileHandler('save-mod-profiles'),
 

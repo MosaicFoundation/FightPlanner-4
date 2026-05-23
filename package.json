@@ -78,6 +78,14 @@
         "filter": [
           "ParamXML/**/*"
         ]
+      },
+      {
+        "from": "tools",
+        "to": "tools",
+        "filter": [
+          "prc2json/**/*",
+          "MSBTEditorCLI/**/*"
+        ]
       }
     ],
     "protocols": [
