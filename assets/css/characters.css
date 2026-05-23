@@ -629,7 +629,7 @@ body.no-animations .characters-view-exit-right {
 
 .character-css-preview-stage {
   position: relative;
-  width: min(1534px, calc(100vw - 56px));
+  width: min(1328px, calc(100vw - 56px));
   max-height: calc(100vh - 56px);
   display: flex;
   flex-direction: column;
@@ -677,7 +677,7 @@ body.no-animations .characters-view-exit-right {
 
 .character-css-preview-tile {
   position: relative;
-  flex: 0 0 calc(100% / 13);
+  flex: 0 0 calc(100% / 12);
   min-width: 0;
   aspect-ratio: 181 / 120;
   overflow: hidden;
