@@ -10,6 +10,7 @@ class AppSoundManager {
   sounds: Record<AppSoundName, string>;
   defaultSounds: Record<AppSoundName, string>;
   customSounds: Partial<Record<AppSoundName, string>>;
+  appSoundEnabled: Partial<Record<AppSoundName, boolean>>;
   customSoundsLoaded: boolean;
   lastPlayed: Map<AppSoundName, number>;
   loopAudios: Map<AppSoundName, HTMLAudioElement>;
@@ -29,6 +30,7 @@ class AppSoundManager {
     };
     this.sounds = { ...this.defaultSounds };
     this.customSounds = {};
+    this.appSoundEnabled = {};
     this.customSoundsLoaded = false;
     this.lastPlayed = new Map();
     this.loopAudios = new Map();
@@ -39,9 +41,12 @@ class AppSoundManager {
     void this.loadCustomSounds();
   }
 
-  play(name: AppSoundName, options: { volume?: number; cooldownMs?: number } = {}) {
+  play(
+    name: AppSoundName,
+    options: { volume?: number; cooldownMs?: number } = {},
+  ) {
     const src = this.sounds[name];
-    if (!src) {
+    if (!src || !this.isSoundEnabled(name)) {
       return;
     }
 
@@ -82,11 +87,24 @@ class AppSoundManager {
 
     try {
       const storedSounds = await window.electronAPI.store.get('appSoundPaths');
+      const storedSoundEnabled =
+        await window.electronAPI.store.get('appSoundEnabled');
       if (storedSounds && typeof storedSounds === 'object') {
         for (const [name, filePath] of Object.entries(storedSounds)) {
-          if (this.isKnownSound(name) && typeof filePath === 'string' && filePath.trim()) {
+          if (
+            this.isKnownSound(name) &&
+            typeof filePath === 'string' &&
+            filePath.trim()
+          ) {
             this.customSounds[name] = filePath;
             this.sounds[name] = this.localPathToFileUrl(filePath);
+          }
+        }
+      }
+      if (storedSoundEnabled && typeof storedSoundEnabled === 'object') {
+        for (const [name, enabled] of Object.entries(storedSoundEnabled)) {
+          if (this.isKnownSound(name)) {
+            this.appSoundEnabled[name] = enabled !== false;
           }
         }
       }
@@ -112,12 +130,25 @@ class AppSoundManager {
     }
   }
 
+  setSoundEnabled(name: AppSoundName, enabled: boolean) {
+    if (!this.isKnownSound(name)) {
+      return;
+    }
+
+    this.appSoundEnabled[name] = enabled;
+    this.lastPlayed.delete(name);
+
+    if (!enabled) {
+      this.stop(name, { force: true, fadeMs: 120 });
+    }
+  }
+
   startLoop(
     name: AppSoundName,
     options: { volume?: number; cooldownMs?: number } = {},
   ) {
     const src = this.sounds[name];
-    if (!src) {
+    if (!src || !this.isSoundEnabled(name)) {
       return;
     }
 
@@ -148,7 +179,9 @@ class AppSoundManager {
       return;
     }
 
-    const nextCount = options.force ? 0 : Math.max((this.loopCounts.get(name) || 0) - 1, 0);
+    const nextCount = options.force
+      ? 0
+      : Math.max((this.loopCounts.get(name) || 0) - 1, 0);
     this.loopCounts.set(name, nextCount);
 
     if (nextCount > 0) {
@@ -203,6 +236,10 @@ class AppSoundManager {
 
   isKnownSound(name: string): name is AppSoundName {
     return name in this.defaultSounds;
+  }
+
+  isSoundEnabled(name: AppSoundName) {
+    return this.appSoundEnabled[name] !== false;
   }
 
   localPathToFileUrl(filePath: string) {

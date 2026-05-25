@@ -47,6 +47,15 @@ class StartupSplashManager {
 
     this.animationWarmupPromise = this.warmupAnimationAssets();
 
+    // Pre-cache heavy panels (stages layout + character CSS) BEFORE the
+    // splash animation plays so their IPC payload deserialization does not
+    // stutter the Lottie animation. Capped to avoid stalling startup if the
+    // backend is slow.
+    await Promise.race([
+      this.runEarlyPrefetches(),
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ]);
+
     const bootPromise = this.waitForBoot();
 
     if (this.splashEnabled) {
@@ -140,6 +149,25 @@ class StartupSplashManager {
     await Promise.allSettled(bootTasks);
 
     await new Promise((resolve) => setTimeout(resolve, 120));
+  }
+
+  async runEarlyPrefetches() {
+    const tasks: Promise<unknown>[] = [];
+    try {
+      const stagePromise = window.stagesManager?.preloadLayout?.();
+      if (stagePromise) tasks.push(stagePromise);
+    } catch (error) {
+      console.warn('[StartupSplash] stages preload kickoff failed:', error);
+    }
+    try {
+      const cssPromise = window.charactersManager?.preloadCssLayout?.();
+      if (cssPromise) tasks.push(cssPromise);
+    } catch (error) {
+      console.warn('[StartupSplash] characters CSS preload kickoff failed:', error);
+    }
+    if (tasks.length) {
+      await Promise.allSettled(tasks);
+    }
   }
 
   async playSplashSequence(bootPromise: Promise<void>) {

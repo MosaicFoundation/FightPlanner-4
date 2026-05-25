@@ -2,36 +2,69 @@
 <div class="settings-container">
   <!-- Settings Tabs -->
   <div class="settings-sidebar">
-    <button class="settings-tab-btn active" data-settings-tab="general" data-i18n="settings.general">
+    <button
+      class="settings-tab-btn active"
+      data-settings-tab="general"
+      data-i18n="settings.general"
+    >
       <i class="bi bi-gear"></i>
       General
     </button>
-    <button class="settings-tab-btn" data-settings-tab="library" data-i18n="settings.library">
+    <button
+      class="settings-tab-btn"
+      data-settings-tab="library"
+      data-i18n="settings.library"
+    >
       <i class="bi bi-collection"></i>
       Library
     </button>
-    <button class="settings-tab-btn" data-settings-tab="emulator" data-i18n="settings.emulator">
+    <button
+      class="settings-tab-btn"
+      data-settings-tab="emulator"
+      data-i18n="settings.emulator"
+    >
       <i class="bi bi-controller"></i>
       Emulator
     </button>
-    <button class="settings-tab-btn" data-settings-tab="customization" data-i18n="settings.customization">
+    <button
+      class="settings-tab-btn"
+      data-settings-tab="customization"
+      data-i18n="settings.customization"
+    >
       <i class="bi bi-palette"></i>
       Customization
     </button>
-    <button class="settings-tab-btn" data-settings-tab="advanced" data-i18n="settings.advanced">
+    <button
+      class="settings-tab-btn"
+      data-settings-tab="advanced"
+      data-i18n="settings.advanced"
+    >
       <i class="bi bi-sliders"></i>
       Advanced
     </button>
-    <button class="settings-tab-btn" data-settings-tab="social" data-i18n="settings.social">
+    <button
+      class="settings-tab-btn"
+      data-settings-tab="social"
+      data-i18n="settings.social"
+    >
       <i class="bi bi-people"></i>
       Social
     </button>
-    <button class="settings-tab-btn" data-settings-tab="logs" data-i18n="settings.logs">
+    <button
+      class="settings-tab-btn"
+      data-settings-tab="logs"
+      data-i18n="settings.logs"
+    >
       <i class="bi bi-terminal"></i>
       Logs
     </button>
-    <button class="settings-tab-btn" data-settings-tab="developer" id="settings-tab-developer" style="display: none"
-      data-i18n="settings.developer">
+    <button
+      class="settings-tab-btn"
+      data-settings-tab="developer"
+      id="settings-tab-developer"
+      style="display: none"
+      data-i18n="settings.developer"
+    >
       <i class="bi bi-code-slash"></i>
       Developer
     </button>
@@ -45,10 +78,14 @@
         General Settings
       </h2>
 
-      <div class="settings-group-title"><i class="bi bi-brush"></i> Appearance</div>
+      <div class="settings-group-title">
+        <i class="bi bi-brush"></i> Appearance
+      </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.language">Language</label>
+        <label class="settings-label" data-i18n="settings.language"
+          >Language</label
+        >
         <div class="custom-select" id="language-type-select">
           <div class="custom-select-trigger">
             <span class="selected-value">English</span>
@@ -72,7 +109,9 @@
         <label class="settings-label" data-i18n="settings.theme">Theme</label>
         <div class="custom-select" id="theme-select">
           <div class="custom-select-trigger">
-            <span class="selected-value" data-i18n="settings.themeDark">Dark</span>
+            <span class="selected-value" data-i18n="settings.themeDark"
+              >Dark</span
+            >
             <i class="bi bi-chevron-down"></i>
           </div>
           <div class="custom-select-dropdown">
@@ -90,15 +129,25 @@
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.animations">Animations</label>
+        <label class="settings-label" data-i18n="settings.animations"
+          >Animations</label
+        >
         <div class="animation-selector" id="animation-preference">
           <div class="animation-option" data-value="full">
             <div class="animation-option-icon">
               <i class="bi bi-stars"></i>
             </div>
             <div class="animation-option-content">
-              <span class="animation-option-title" data-i18n="settings.fullAnimations">Full Animations</span>
-              <span class="animation-option-desc" data-i18n="settings.fullAnimationsDesc">All effects enabled</span>
+              <span
+                class="animation-option-title"
+                data-i18n="settings.fullAnimations"
+                >Full Animations</span
+              >
+              <span
+                class="animation-option-desc"
+                data-i18n="settings.fullAnimationsDesc"
+                >All effects enabled</span
+              >
             </div>
             <div class="animation-option-check">
               <i class="bi bi-check-circle-fill"></i>
@@ -109,8 +158,16 @@
               <i class="bi bi-dash-circle"></i>
             </div>
             <div class="animation-option-content">
-              <span class="animation-option-title" data-i18n="settings.reducedAnimations">Reduced Animations</span>
-              <span class="animation-option-desc" data-i18n="settings.reducedAnimationsDesc">Minimal effects</span>
+              <span
+                class="animation-option-title"
+                data-i18n="settings.reducedAnimations"
+                >Reduced Animations</span
+              >
+              <span
+                class="animation-option-desc"
+                data-i18n="settings.reducedAnimationsDesc"
+                >Minimal effects</span
+              >
             </div>
             <div class="animation-option-check">
               <i class="bi bi-check-circle-fill"></i>
@@ -121,8 +178,16 @@
               <i class="bi bi-x-circle"></i>
             </div>
             <div class="animation-option-content">
-              <span class="animation-option-title" data-i18n="settings.noAnimations">No Animations</span>
-              <span class="animation-option-desc" data-i18n="settings.noAnimationsDesc">Instant transitions</span>
+              <span
+                class="animation-option-title"
+                data-i18n="settings.noAnimations"
+                >No Animations</span
+              >
+              <span
+                class="animation-option-desc"
+                data-i18n="settings.noAnimationsDesc"
+                >Instant transitions</span
+              >
             </div>
             <div class="animation-option-check">
               <i class="bi bi-check-circle-fill"></i>
@@ -135,149 +200,428 @@
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.startupSplash">Startup Splash Screen</label>
+        <label class="settings-label" data-i18n="settings.startupSplash"
+          >Startup Splash Screen</label
+        >
         <div class="settings-input-group">
           <label class="settings-switch">
             <input type="checkbox" id="startup-splash-enabled" checked />
             <span class="settings-switch-slider"></span>
           </label>
-          <span style="margin-left: 12px; color: var(--text-secondary)"
-            data-i18n="settings.enableStartupSplash">Play the splash screen on normal app startup</span>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.enableStartupSplash"
+            >Play the splash screen on normal app startup</span
+          >
         </div>
         <p class="settings-hint" data-i18n="settings.startupSplashHint">
-          Shows the startup splash before the app becomes interactive. When disabled, only the loading animation is shown.
+          Shows the startup splash before the app becomes interactive. When
+          disabled, only the loading animation is shown.
         </p>
         <div class="settings-input-group" style="margin-top: 12px">
           <label class="settings-switch">
             <input type="checkbox" id="startup-splash-sound-enabled" checked />
             <span class="settings-switch-slider"></span>
           </label>
-          <span id="startup-splash-sound-label" style="margin-left: 12px; color: var(--text-secondary)"
-            data-i18n="settings.enableStartupSplashSound">Play the splash screen sound</span>
+          <span
+            id="startup-splash-sound-label"
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.enableStartupSplashSound"
+            >Play the splash screen sound</span
+          >
         </div>
         <p class="settings-hint" data-i18n="settings.startupSplashSoundHint">
           Keeps the splash visual but mutes the startup audio.
         </p>
         <div class="settings-input-group" style="margin-top: 12px">
-          <input type="text" id="startup-splash-sound-path" class="settings-input"
-            data-i18n="settings.startupSplashSoundPathPlaceholder" data-i18n-placeholder
-            placeholder="Default FightPlanner sound" readonly />
-          <input type="file" id="startup-splash-sound-file" accept=".mp3,.wav,.ogg,.m4a,audio/*" hidden />
-          <button class="settings-btn" id="browse-startup-splash-sound" type="button"
-            data-i18n="settings.chooseStartupSplashSound">Choose Sound</button>
-          <button class="settings-btn" id="reset-startup-splash-sound" type="button"
-            data-i18n="settings.reset">Reset</button>
+          <input
+            type="text"
+            id="startup-splash-sound-path"
+            class="settings-input"
+            data-i18n="settings.startupSplashSoundPathPlaceholder"
+            data-i18n-placeholder
+            placeholder="Default FightPlanner sound"
+            readonly
+          />
+          <input
+            type="file"
+            id="startup-splash-sound-file"
+            accept=".mp3,.wav,.ogg,.m4a,audio/*"
+            hidden
+          />
+          <button
+            class="settings-btn"
+            id="browse-startup-splash-sound"
+            type="button"
+            data-i18n="settings.chooseStartupSplashSound"
+          >
+            Choose Sound
+          </button>
+          <button
+            class="settings-btn"
+            id="reset-startup-splash-sound"
+            type="button"
+            data-i18n="settings.reset"
+          >
+            Reset
+          </button>
         </div>
-        <p class="settings-hint" data-i18n="settings.customStartupSplashSoundHint">
+        <p
+          class="settings-hint"
+          data-i18n="settings.customStartupSplashSoundHint"
+        >
           Choose an MP3, WAV, OGG, or M4A file to play when FightPlanner starts.
         </p>
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.appSounds">Interface Sounds</label>
+        <label class="settings-label" data-i18n="settings.appSounds"
+          >Interface Sounds</label
+        >
         <div class="settings-input-group" style="margin-bottom: 10px">
-          <span style="width: 130px; color: var(--text-secondary)" data-i18n="settings.soundNotification">Notifications</span>
-          <input type="text" id="app-sound-path-notification" class="settings-input"
-            data-sound-name="notification" data-i18n="settings.defaultSoundPath" data-i18n-placeholder
-            placeholder="Default sound" readonly />
-          <input type="file" id="app-sound-file-notification" data-sound-name="notification"
-            accept=".mp3,.wav,.ogg,.m4a,audio/*" hidden />
-          <button class="settings-btn app-sound-browse" data-sound-name="notification" type="button"
-            data-i18n="settings.chooseSound">Choose</button>
-          <button class="settings-btn app-sound-reset" data-sound-name="notification" type="button"
-            data-i18n="settings.reset">Reset</button>
+          <span
+            style="width: 130px; color: var(--text-secondary)"
+            data-i18n="settings.soundNotification"
+            >Notifications</span
+          >
+          <label class="settings-switch" title="Enable sound">
+            <input
+              type="checkbox"
+              id="app-sound-enabled-notification"
+              class="app-sound-enabled"
+              data-sound-name="notification"
+              checked
+            />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <input
+            type="text"
+            id="app-sound-path-notification"
+            class="settings-input"
+            data-sound-name="notification"
+            data-i18n="settings.defaultSoundPath"
+            data-i18n-placeholder
+            placeholder="Default sound"
+            readonly
+          />
+          <input
+            type="file"
+            id="app-sound-file-notification"
+            data-sound-name="notification"
+            accept=".mp3,.wav,.ogg,.m4a,audio/*"
+            hidden
+          />
+          <button
+            class="settings-btn app-sound-browse"
+            data-sound-name="notification"
+            type="button"
+            data-i18n="settings.chooseSound"
+          >
+            Choose
+          </button>
+          <button
+            class="settings-btn app-sound-reset"
+            data-sound-name="notification"
+            type="button"
+            data-i18n="settings.reset"
+          >
+            Reset
+          </button>
         </div>
         <div class="settings-input-group" style="margin-bottom: 10px">
-          <span style="width: 130px; color: var(--text-secondary)" data-i18n="settings.soundError">Errors</span>
-          <input type="text" id="app-sound-path-error" class="settings-input"
-            data-sound-name="error" data-i18n="settings.defaultSoundPath" data-i18n-placeholder
-            placeholder="Default sound" readonly />
-          <input type="file" id="app-sound-file-error" data-sound-name="error"
-            accept=".mp3,.wav,.ogg,.m4a,audio/*" hidden />
-          <button class="settings-btn app-sound-browse" data-sound-name="error" type="button"
-            data-i18n="settings.chooseSound">Choose</button>
-          <button class="settings-btn app-sound-reset" data-sound-name="error" type="button"
-            data-i18n="settings.reset">Reset</button>
+          <span
+            style="width: 130px; color: var(--text-secondary)"
+            data-i18n="settings.soundError"
+            >Errors</span
+          >
+          <label class="settings-switch" title="Enable sound">
+            <input
+              type="checkbox"
+              id="app-sound-enabled-error"
+              class="app-sound-enabled"
+              data-sound-name="error"
+              checked
+            />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <input
+            type="text"
+            id="app-sound-path-error"
+            class="settings-input"
+            data-sound-name="error"
+            data-i18n="settings.defaultSoundPath"
+            data-i18n-placeholder
+            placeholder="Default sound"
+            readonly
+          />
+          <input
+            type="file"
+            id="app-sound-file-error"
+            data-sound-name="error"
+            accept=".mp3,.wav,.ogg,.m4a,audio/*"
+            hidden
+          />
+          <button
+            class="settings-btn app-sound-browse"
+            data-sound-name="error"
+            type="button"
+            data-i18n="settings.chooseSound"
+          >
+            Choose
+          </button>
+          <button
+            class="settings-btn app-sound-reset"
+            data-sound-name="error"
+            type="button"
+            data-i18n="settings.reset"
+          >
+            Reset
+          </button>
         </div>
         <div class="settings-input-group" style="margin-bottom: 10px">
-          <span style="width: 130px; color: var(--text-secondary)" data-i18n="settings.soundComplete">Completed</span>
-          <input type="text" id="app-sound-path-complete" class="settings-input"
-            data-sound-name="complete" data-i18n="settings.defaultSoundPath" data-i18n-placeholder
-            placeholder="Default sound" readonly />
-          <input type="file" id="app-sound-file-complete" data-sound-name="complete"
-            accept=".mp3,.wav,.ogg,.m4a,audio/*" hidden />
-          <button class="settings-btn app-sound-browse" data-sound-name="complete" type="button"
-            data-i18n="settings.chooseSound">Choose</button>
-          <button class="settings-btn app-sound-reset" data-sound-name="complete" type="button"
-            data-i18n="settings.reset">Reset</button>
+          <span
+            style="width: 130px; color: var(--text-secondary)"
+            data-i18n="settings.soundComplete"
+            >Completed</span
+          >
+          <label class="settings-switch" title="Enable sound">
+            <input
+              type="checkbox"
+              id="app-sound-enabled-complete"
+              class="app-sound-enabled"
+              data-sound-name="complete"
+              checked
+            />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <input
+            type="text"
+            id="app-sound-path-complete"
+            class="settings-input"
+            data-sound-name="complete"
+            data-i18n="settings.defaultSoundPath"
+            data-i18n-placeholder
+            placeholder="Default sound"
+            readonly
+          />
+          <input
+            type="file"
+            id="app-sound-file-complete"
+            data-sound-name="complete"
+            accept=".mp3,.wav,.ogg,.m4a,audio/*"
+            hidden
+          />
+          <button
+            class="settings-btn app-sound-browse"
+            data-sound-name="complete"
+            type="button"
+            data-i18n="settings.chooseSound"
+          >
+            Choose
+          </button>
+          <button
+            class="settings-btn app-sound-reset"
+            data-sound-name="complete"
+            type="button"
+            data-i18n="settings.reset"
+          >
+            Reset
+          </button>
         </div>
         <div class="settings-input-group" style="margin-bottom: 10px">
-          <span style="width: 130px; color: var(--text-secondary)" data-i18n="settings.soundDownloading">Downloading</span>
-          <input type="text" id="app-sound-path-downloading" class="settings-input"
-            data-sound-name="downloading" data-i18n="settings.defaultSoundPath" data-i18n-placeholder
-            placeholder="Default sound" readonly />
-          <input type="file" id="app-sound-file-downloading" data-sound-name="downloading"
-            accept=".mp3,.wav,.ogg,.m4a,audio/*" hidden />
-          <button class="settings-btn app-sound-browse" data-sound-name="downloading" type="button"
-            data-i18n="settings.chooseSound">Choose</button>
-          <button class="settings-btn app-sound-reset" data-sound-name="downloading" type="button"
-            data-i18n="settings.reset">Reset</button>
+          <span
+            style="width: 130px; color: var(--text-secondary)"
+            data-i18n="settings.soundDownloading"
+            >Downloading</span
+          >
+          <label class="settings-switch" title="Enable sound">
+            <input
+              type="checkbox"
+              id="app-sound-enabled-downloading"
+              class="app-sound-enabled"
+              data-sound-name="downloading"
+              checked
+            />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <input
+            type="text"
+            id="app-sound-path-downloading"
+            class="settings-input"
+            data-sound-name="downloading"
+            data-i18n="settings.defaultSoundPath"
+            data-i18n-placeholder
+            placeholder="Default sound"
+            readonly
+          />
+          <input
+            type="file"
+            id="app-sound-file-downloading"
+            data-sound-name="downloading"
+            accept=".mp3,.wav,.ogg,.m4a,audio/*"
+            hidden
+          />
+          <button
+            class="settings-btn app-sound-browse"
+            data-sound-name="downloading"
+            type="button"
+            data-i18n="settings.chooseSound"
+          >
+            Choose
+          </button>
+          <button
+            class="settings-btn app-sound-reset"
+            data-sound-name="downloading"
+            type="button"
+            data-i18n="settings.reset"
+          >
+            Reset
+          </button>
         </div>
         <div class="settings-input-group" style="margin-bottom: 10px">
-          <span style="width: 130px; color: var(--text-secondary)" data-i18n="settings.soundLoading">Loading</span>
-          <input type="text" id="app-sound-path-loading" class="settings-input"
-            data-sound-name="loading" data-i18n="settings.defaultSoundPath" data-i18n-placeholder
-            placeholder="Default sound" readonly />
-          <input type="file" id="app-sound-file-loading" data-sound-name="loading"
-            accept=".mp3,.wav,.ogg,.m4a,audio/*" hidden />
-          <button class="settings-btn app-sound-browse" data-sound-name="loading" type="button"
-            data-i18n="settings.chooseSound">Choose</button>
-          <button class="settings-btn app-sound-reset" data-sound-name="loading" type="button"
-            data-i18n="settings.reset">Reset</button>
+          <span
+            style="width: 130px; color: var(--text-secondary)"
+            data-i18n="settings.soundLoading"
+            >Loading</span
+          >
+          <label class="settings-switch" title="Enable sound">
+            <input
+              type="checkbox"
+              id="app-sound-enabled-loading"
+              class="app-sound-enabled"
+              data-sound-name="loading"
+              checked
+            />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <input
+            type="text"
+            id="app-sound-path-loading"
+            class="settings-input"
+            data-sound-name="loading"
+            data-i18n="settings.defaultSoundPath"
+            data-i18n-placeholder
+            placeholder="Default sound"
+            readonly
+          />
+          <input
+            type="file"
+            id="app-sound-file-loading"
+            data-sound-name="loading"
+            accept=".mp3,.wav,.ogg,.m4a,audio/*"
+            hidden
+          />
+          <button
+            class="settings-btn app-sound-browse"
+            data-sound-name="loading"
+            type="button"
+            data-i18n="settings.chooseSound"
+          >
+            Choose
+          </button>
+          <button
+            class="settings-btn app-sound-reset"
+            data-sound-name="loading"
+            type="button"
+            data-i18n="settings.reset"
+          >
+            Reset
+          </button>
         </div>
         <div class="settings-input-group">
-          <span style="width: 130px; color: var(--text-secondary)" data-i18n="settings.soundSwitchTab">Switch Tab</span>
-          <input type="text" id="app-sound-path-switchTab" class="settings-input"
-            data-sound-name="switchTab" data-i18n="settings.defaultSoundPath" data-i18n-placeholder
-            placeholder="Default sound" readonly />
-          <input type="file" id="app-sound-file-switchTab" data-sound-name="switchTab"
-            accept=".mp3,.wav,.ogg,.m4a,audio/*" hidden />
-          <button class="settings-btn app-sound-browse" data-sound-name="switchTab" type="button"
-            data-i18n="settings.chooseSound">Choose</button>
-          <button class="settings-btn app-sound-reset" data-sound-name="switchTab" type="button"
-            data-i18n="settings.reset">Reset</button>
+          <span
+            style="width: 130px; color: var(--text-secondary)"
+            data-i18n="settings.soundSwitchTab"
+            >Switch Tab</span
+          >
+          <label class="settings-switch" title="Enable sound">
+            <input
+              type="checkbox"
+              id="app-sound-enabled-switchTab"
+              class="app-sound-enabled"
+              data-sound-name="switchTab"
+              checked
+            />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <input
+            type="text"
+            id="app-sound-path-switchTab"
+            class="settings-input"
+            data-sound-name="switchTab"
+            data-i18n="settings.defaultSoundPath"
+            data-i18n-placeholder
+            placeholder="Default sound"
+            readonly
+          />
+          <input
+            type="file"
+            id="app-sound-file-switchTab"
+            data-sound-name="switchTab"
+            accept=".mp3,.wav,.ogg,.m4a,audio/*"
+            hidden
+          />
+          <button
+            class="settings-btn app-sound-browse"
+            data-sound-name="switchTab"
+            type="button"
+            data-i18n="settings.chooseSound"
+          >
+            Choose
+          </button>
+          <button
+            class="settings-btn app-sound-reset"
+            data-sound-name="switchTab"
+            type="button"
+            data-i18n="settings.reset"
+          >
+            Reset
+          </button>
         </div>
         <p class="settings-hint" data-i18n="settings.appSoundsHint">
           Choose custom audio files for FightPlanner interface events.
         </p>
       </div>
 
-      <div class="settings-group-title"><i class="bi bi-toggles"></i> Behavior</div>
+      <div class="settings-group-title">
+        <i class="bi bi-toggles"></i> Behavior
+      </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.enhancedStatusBar">Enhanced Status Bar</label>
+        <label class="settings-label" data-i18n="settings.enhancedStatusBar"
+          >Enhanced Status Bar</label
+        >
         <div class="settings-input-group">
           <label class="settings-switch">
             <input type="checkbox" id="enhanced-status-bar-enabled" checked />
             <span class="settings-switch-slider"></span>
           </label>
-          <span style="margin-left: 12px; color: var(--text-secondary)"
-            data-i18n="settings.enableEnhancedStatusBar">Enable extended status info</span>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.enableEnhancedStatusBar"
+            >Enable extended status info</span
+          >
         </div>
         <p class="settings-hint" data-i18n="settings.enhancedStatusBarHint">
-          Shows a detailed progress bar and information panel for downloads and conflicts.
+          Shows a detailed progress bar and information panel for downloads and
+          conflicts.
         </p>
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.installConfirm">1-Click Install Confirmation</label>
+        <label class="settings-label" data-i18n="settings.installConfirm"
+          >1-Click Install Confirmation</label
+        >
         <div class="settings-input-group">
           <label class="settings-switch">
             <input type="checkbox" id="install-confirm-enabled" checked />
             <span class="settings-switch-slider"></span>
           </label>
-          <span style="margin-left: 12px; color: var(--text-secondary)" data-i18n="settings.showConfirmation">Show
-            confirmation before downloading</span>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.showConfirmation"
+            >Show confirmation before downloading</span
+          >
         </div>
         <p class="settings-hint" data-i18n="settings.installConfirmHint">
           Display a modal to confirm mod downloads from browser links
@@ -285,21 +629,37 @@
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.appUpdates">Application Updates</label>
+        <label class="settings-label" data-i18n="settings.appUpdates"
+          >Application Updates</label
+        >
         <div class="settings-input-group" style="margin-bottom: 12px">
-          <span style="color: var(--text-secondary)" data-i18n="settings.currentVersion">Current Version:</span>
-          <span id="app-version" style="
+          <span
+            style="color: var(--text-secondary)"
+            data-i18n="settings.currentVersion"
+            >Current Version:</span
+          >
+          <span
+            id="app-version"
+            style="
               margin-left: 8px;
               color: var(--primary-color);
               font-weight: 600;
-            ">4.0.0</span>
+            "
+            >4.0.0</span
+          >
         </div>
         <div class="settings-input-group" style="margin-bottom: 12px">
-          <label class="settings-label" style="margin-right: 12px; min-width: 150px"
-            data-i18n="settings.updateChannel">Update Channel:</label>
+          <label
+            class="settings-label"
+            style="margin-right: 12px; min-width: 150px"
+            data-i18n="settings.updateChannel"
+            >Update Channel:</label
+          >
           <div class="custom-select" id="update-channel-select" style="flex: 1">
             <div class="custom-select-trigger">
-              <span class="selected-value" data-i18n="settings.channelStable">Stable</span>
+              <span class="selected-value" data-i18n="settings.channelStable"
+                >Stable</span
+              >
               <i class="bi bi-chevron-down"></i>
             </div>
             <div class="custom-select-dropdown">
@@ -315,9 +675,16 @@
         <button class="settings-btn-action" id="check-updates-btn">
           <i class="bi bi-arrow-repeat"></i>
           <div class="settings-btn-action-content">
-            <span class="settings-btn-action-title" data-i18n="settings.checkForUpdates">Check for Updates</span>
-            <span class="settings-btn-action-desc" data-i18n="settings.checkForUpdatesDesc">Manually check if a new
-              version is available</span>
+            <span
+              class="settings-btn-action-title"
+              data-i18n="settings.checkForUpdates"
+              >Check for Updates</span
+            >
+            <span
+              class="settings-btn-action-desc"
+              data-i18n="settings.checkForUpdatesDesc"
+              >Manually check if a new version is available</span
+            >
           </div>
           <i class="bi bi-arrow-right"></i>
         </button>
@@ -327,21 +694,26 @@
         </p>
       </div>
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.analytics">Analytics</label>
+        <label class="settings-label" data-i18n="settings.analytics"
+          >Analytics</label
+        >
         <div class="settings-input-group">
           <label class="settings-switch">
             <input type="checkbox" id="analytics-enabled" checked />
             <span class="settings-switch-slider"></span>
           </label>
-          <span style="margin-left: 12px; color: var(--text-secondary)" data-i18n="settings.enableAnalytics">Send
-            anonymous usage data to help improve FightPlanner</span>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.enableAnalytics"
+            >Send anonymous usage data to help improve FightPlanner</span
+          >
         </div>
         <p class="settings-hint" data-i18n="settings.analyticsHint">
-          When enabled, anonymous crash reports and usage statistics are sent to help us improve the application.
-          No personal data is collected. You can disable this at any time.
+          When enabled, anonymous crash reports and usage statistics are sent to
+          help us improve the application. No personal data is collected. You
+          can disable this at any time.
         </p>
       </div>
-
     </div>
 
     <!-- Library Settings -->
@@ -350,14 +722,29 @@
         Library Settings
       </h2>
 
-      <div class="settings-group-title"><i class="bi bi-folder2-open"></i> Folders</div>
+      <div class="settings-group-title">
+        <i class="bi bi-folder2-open"></i> Folders
+      </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.modsFolder">Mods Folder Path</label>
+        <label class="settings-label" data-i18n="settings.modsFolder"
+          >Mods Folder Path</label
+        >
         <div class="settings-input-group">
-          <input type="text" id="mods-folder-path" class="settings-input" data-i18n="settings.modsFolderPlaceholder"
-            data-i18n-placeholder placeholder="Select mods folder..." readonly />
-          <button class="settings-btn" id="browse-mods-folder" data-i18n="settings.browse">
+          <input
+            type="text"
+            id="mods-folder-path"
+            class="settings-input"
+            data-i18n="settings.modsFolderPlaceholder"
+            data-i18n-placeholder
+            placeholder="Select mods folder..."
+            readonly
+          />
+          <button
+            class="settings-btn"
+            id="browse-mods-folder"
+            data-i18n="settings.browse"
+          >
             Browse
           </button>
         </div>
@@ -367,12 +754,24 @@
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.pluginsFolder">Plugins Folder Path</label>
+        <label class="settings-label" data-i18n="settings.pluginsFolder"
+          >Plugins Folder Path</label
+        >
         <div class="settings-input-group">
-          <input type="text" id="plugins-folder-path" class="settings-input"
-            data-i18n="settings.pluginsFolderPlaceholder" data-i18n-placeholder placeholder="Select plugins folder..."
-            readonly />
-          <button class="settings-btn" id="browse-plugins-folder" data-i18n="settings.browse">
+          <input
+            type="text"
+            id="plugins-folder-path"
+            class="settings-input"
+            data-i18n="settings.pluginsFolderPlaceholder"
+            data-i18n-placeholder
+            placeholder="Select plugins folder..."
+            readonly
+          />
+          <button
+            class="settings-btn"
+            id="browse-plugins-folder"
+            data-i18n="settings.browse"
+          >
             Browse
           </button>
         </div>
@@ -381,17 +780,24 @@
         </p>
       </div>
 
-      <div class="settings-group-title"><i class="bi bi-box-seam"></i> Mod Management</div>
+      <div class="settings-group-title">
+        <i class="bi bi-box-seam"></i> Mod Management
+      </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.modInstallation">Mod Installation</label>
+        <label class="settings-label" data-i18n="settings.modInstallation"
+          >Mod Installation</label
+        >
         <div class="settings-input-group">
           <label class="settings-switch">
             <input type="checkbox" id="auto-disable-mods-enabled" />
             <span class="settings-switch-slider"></span>
           </label>
-          <span style="margin-left: 12px; color: var(--text-secondary)"
-            data-i18n="settings.autoDisableMods">Auto-disable new mods after install</span>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.autoDisableMods"
+            >Auto-disable new mods after install</span
+          >
         </div>
         <p class="settings-hint" data-i18n="settings.autoDisableModsHint">
           When enabled, newly installed mods will be automatically disabled to
@@ -402,24 +808,39 @@
             <input type="checkbox" id="disable-all-mods-on-download-enabled" />
             <span class="settings-switch-slider"></span>
           </label>
-          <span style="margin-left: 12px; color: var(--text-secondary)"
-            data-i18n="settings.disableAllModsOnDownload">Disable all mods when downloading</span>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.disableAllModsOnDownload"
+            >Disable all mods when downloading</span
+          >
         </div>
-        <p class="settings-hint" data-i18n="settings.disableAllModsOnDownloadHint">
+        <p
+          class="settings-hint"
+          data-i18n="settings.disableAllModsOnDownloadHint"
+        >
           When enabled, all active mods will be automatically disabled when a
           mod download starts
         </p>
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.exportModList">Export Mod List</label>
+        <label class="settings-label" data-i18n="settings.exportModList"
+          >Export Mod List</label
+        >
         <button class="settings-btn-action" id="export-mods-list-btn">
           <i class="bi bi-file-earmark-text"></i>
           <div class="settings-btn-action-content">
-            <span class="settings-btn-action-title" data-i18n="settings.exportModListTitle">Export Enabled Mods</span>
-            <span class="settings-btn-action-desc" data-i18n="settings.exportModListDesc">Export all enabled mods to a
-              text file, grouped by
-              character</span>
+            <span
+              class="settings-btn-action-title"
+              data-i18n="settings.exportModListTitle"
+              >Export Enabled Mods</span
+            >
+            <span
+              class="settings-btn-action-desc"
+              data-i18n="settings.exportModListDesc"
+              >Export all enabled mods to a text file, grouped by
+              character</span
+            >
           </div>
           <i class="bi bi-arrow-right"></i>
         </button>
@@ -430,21 +851,47 @@
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.bulkModActions">Bulk Mod Actions</label>
-        <div class="settings-input-group" style="gap: 12px; flex-wrap: wrap;">
-          <button class="settings-btn-action" id="bulk-enable-mods-btn" style="flex: 1; min-width: 240px;">
+        <label class="settings-label" data-i18n="settings.bulkModActions"
+          >Bulk Mod Actions</label
+        >
+        <div class="settings-input-group" style="gap: 12px; flex-wrap: wrap">
+          <button
+            class="settings-btn-action"
+            id="bulk-enable-mods-btn"
+            style="flex: 1; min-width: 240px"
+          >
             <i class="bi bi-check2-circle"></i>
             <div class="settings-btn-action-content">
-              <span class="settings-btn-action-title" data-i18n="settings.bulkEnableModsTitle">Enable All Mods</span>
-              <span class="settings-btn-action-desc" data-i18n="settings.bulkEnableModsDesc">Move all disabled mods back to the active folder</span>
+              <span
+                class="settings-btn-action-title"
+                data-i18n="settings.bulkEnableModsTitle"
+                >Enable All Mods</span
+              >
+              <span
+                class="settings-btn-action-desc"
+                data-i18n="settings.bulkEnableModsDesc"
+                >Move all disabled mods back to the active folder</span
+              >
             </div>
             <i class="bi bi-arrow-right"></i>
           </button>
-          <button class="settings-btn-action" id="bulk-disable-mods-btn" style="flex: 1; min-width: 240px;">
+          <button
+            class="settings-btn-action"
+            id="bulk-disable-mods-btn"
+            style="flex: 1; min-width: 240px"
+          >
             <i class="bi bi-slash-circle"></i>
             <div class="settings-btn-action-content">
-              <span class="settings-btn-action-title" data-i18n="settings.bulkDisableModsTitle">Disable All Mods</span>
-              <span class="settings-btn-action-desc" data-i18n="settings.bulkDisableModsDesc">Move all active mods into the disabled folder</span>
+              <span
+                class="settings-btn-action-title"
+                data-i18n="settings.bulkDisableModsTitle"
+                >Disable All Mods</span
+              >
+              <span
+                class="settings-btn-action-desc"
+                data-i18n="settings.bulkDisableModsDesc"
+                >Move all active mods into the disabled folder</span
+              >
             </div>
             <i class="bi bi-arrow-right"></i>
           </button>
@@ -453,7 +900,6 @@
           Quickly enable or disable your whole mod library in one click.
         </p>
       </div>
-
     </div>
 
     <!-- Emulator Settings -->
@@ -462,13 +908,19 @@
         Emulator Settings
       </h2>
 
-      <div class="settings-group-title"><i class="bi bi-controller"></i> Emulator</div>
+      <div class="settings-group-title">
+        <i class="bi bi-controller"></i> Emulator
+      </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.emulatorType">Emulator Type</label>
+        <label class="settings-label" data-i18n="settings.emulatorType"
+          >Emulator Type</label
+        >
         <div class="custom-select" id="emulator-type-select">
           <div class="custom-select-trigger">
-            <span class="selected-value" data-i18n="settings.emulatorTypeYuzu">Yuzu</span>
+            <span class="selected-value" data-i18n="settings.emulatorTypeYuzu"
+              >Yuzu</span
+            >
             <i class="bi bi-chevron-down"></i>
           </div>
           <div class="custom-select-dropdown">
@@ -486,11 +938,24 @@
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.emulatorPath">Emulator Path</label>
+        <label class="settings-label" data-i18n="settings.emulatorPath"
+          >Emulator Path</label
+        >
         <div class="settings-input-group">
-          <input type="text" id="emulator-path" class="settings-input" data-i18n="settings.emulatorPathPlaceholder"
-            data-i18n-placeholder placeholder="Select emulator executable..." readonly />
-          <button class="settings-btn" id="browse-emulator-path" data-i18n="settings.browse">
+          <input
+            type="text"
+            id="emulator-path"
+            class="settings-input"
+            data-i18n="settings.emulatorPathPlaceholder"
+            data-i18n-placeholder
+            placeholder="Select emulator executable..."
+            readonly
+          />
+          <button
+            class="settings-btn"
+            id="browse-emulator-path"
+            data-i18n="settings.browse"
+          >
             Browse
           </button>
         </div>
@@ -500,11 +965,24 @@
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.gamePath">Game Path</label>
+        <label class="settings-label" data-i18n="settings.gamePath"
+          >Game Path</label
+        >
         <div class="settings-input-group">
-          <input type="text" id="game-path" class="settings-input" data-i18n="settings.gamePathPlaceholder"
-            data-i18n-placeholder placeholder="Select game file..." readonly />
-          <button class="settings-btn" id="browse-game-path" data-i18n="settings.browse">
+          <input
+            type="text"
+            id="game-path"
+            class="settings-input"
+            data-i18n="settings.gamePathPlaceholder"
+            data-i18n-placeholder
+            placeholder="Select game file..."
+            readonly
+          />
+          <button
+            class="settings-btn"
+            id="browse-game-path"
+            data-i18n="settings.browse"
+          >
             Browse
           </button>
         </div>
@@ -514,21 +992,25 @@
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.emulatorOptions">Emulator Options</label>
+        <label class="settings-label" data-i18n="settings.emulatorOptions"
+          >Emulator Options</label
+        >
         <div class="settings-input-group">
           <label class="settings-switch">
             <input type="checkbox" id="emulator-fullscreen-enabled" />
             <span class="settings-switch-slider"></span>
           </label>
-          <span style="margin-left: 12px; color: var(--text-secondary)" data-i18n="settings.launchFullscreen">Launch
-            emulator in fullscreen</span>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.launchFullscreen"
+            >Launch emulator in fullscreen</span
+          >
         </div>
         <p class="settings-hint" data-i18n="settings.launchFullscreenHint">
           When enabled, adds the -f flag to launch the emulator in fullscreen
           mode
         </p>
       </div>
-
     </div>
 
     <!-- Advanced Settings -->
@@ -538,24 +1020,39 @@
       </h2>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.developerMode">Developer Mode</label>
+        <label class="settings-label" data-i18n="settings.developerMode"
+          >Developer Mode</label
+        >
         <div class="settings-input-group">
           <label class="settings-switch">
             <input type="checkbox" id="developer-mode-enabled" />
             <span class="settings-switch-slider"></span>
           </label>
-          <span style="margin-left: 12px; color: var(--text-secondary)" data-i18n="settings.developerModeHint">Enable
-            advanced developer features</span>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.developerModeHint"
+            >Enable advanced developer features</span
+          >
         </div>
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.switchConnection">Switch Connection</label>
+        <label class="settings-label" data-i18n="settings.switchConnection"
+          >Switch Connection</label
+        >
 
         <div class="settings-input-group" style="margin-bottom: 12px">
-          <label class="settings-label" style="margin-right: 12px; min-width: 150px"
-            data-i18n="settings.transferMethod">Transfer Method:</label>
-          <div class="custom-select" id="switch-transfer-method-select" style="flex: 1">
+          <label
+            class="settings-label"
+            style="margin-right: 12px; min-width: 150px"
+            data-i18n="settings.transferMethod"
+            >Transfer Method:</label
+          >
+          <div
+            class="custom-select"
+            id="switch-transfer-method-select"
+            style="flex: 1"
+          >
             <div class="custom-select-trigger">
               <span class="selected-value">Select method...</span>
               <i class="bi bi-chevron-down"></i>
@@ -565,7 +1062,9 @@
                 <span data-i18n="settings.transferMethodFtp">FTP</span>
               </div>
               <div class="custom-select-option" data-value="drive">
-                <span data-i18n="settings.transferMethodDrive">Local Drive</span>
+                <span data-i18n="settings.transferMethodDrive"
+                  >Local Drive</span
+                >
               </div>
             </div>
           </div>
@@ -577,38 +1076,74 @@
         <!-- FTP Settings -->
         <div id="switch-ftp-settings" style="margin-top: 12px">
           <div class="settings-input-group">
-            <input type="text" id="switch-ip" class="settings-input" data-i18n="settings.switchIpPlaceholder"
-              data-i18n-placeholder placeholder="192.168.1.100" />
+            <input
+              type="text"
+              id="switch-ip"
+              class="settings-input"
+              data-i18n="settings.switchIpPlaceholder"
+              data-i18n-placeholder
+              placeholder="192.168.1.100"
+            />
             <label class="settings-label" style="margin: 0 10px">:</label>
-            <input type="text" id="switch-port" class="settings-input" data-i18n="settings.switchPortPlaceholder"
-              data-i18n-placeholder placeholder="5000" style="width: 100px" />
+            <input
+              type="text"
+              id="switch-port"
+              class="settings-input"
+              data-i18n="settings.switchPortPlaceholder"
+              data-i18n-placeholder
+              placeholder="5000"
+              style="width: 100px"
+            />
           </div>
           <p class="settings-hint" data-i18n="settings.switchIpPort">
             Switch IP address and FTP port (default: 5000)
           </p>
 
           <div class="settings-input-group" style="margin-top: 12px">
-            <input type="text" id="switch-ftp-user" class="settings-input" data-i18n="settings.switchFtpUserPlaceholder"
-              data-i18n-placeholder placeholder="ftp" />
-            <input type="password" id="switch-ftp-password" class="settings-input" data-i18n="settings.switchFtpPasswordPlaceholder"
-              data-i18n-placeholder placeholder="ftp" />
+            <input
+              type="text"
+              id="switch-ftp-user"
+              class="settings-input"
+              data-i18n="settings.switchFtpUserPlaceholder"
+              data-i18n-placeholder
+              placeholder="ftp"
+            />
+            <input
+              type="password"
+              id="switch-ftp-password"
+              class="settings-input"
+              data-i18n="settings.switchFtpPasswordPlaceholder"
+              data-i18n-placeholder
+              placeholder="ftp"
+            />
           </div>
           <p class="settings-hint" data-i18n="settings.switchFtpCredentials">
             Optional FTP username and password (defaults to ftp / ftp)
           </p>
 
           <div class="settings-input-group" style="margin-top: 12px">
-            <input type="text" id="switch-ftp-path" class="settings-input" data-i18n="settings.switchFtpPathPlaceholder"
-              data-i18n-placeholder placeholder="/ultimate/mods" />
+            <input
+              type="text"
+              id="switch-ftp-path"
+              class="settings-input"
+              data-i18n="settings.switchFtpPathPlaceholder"
+              data-i18n-placeholder
+              placeholder="/ultimate/mods"
+            />
           </div>
           <p class="settings-hint" data-i18n="settings.switchFtpPath">
             Remote mods folder on the Switch SD card
           </p>
 
           <div class="settings-input-group" style="margin-top: 12px">
-            <input type="text" id="switch-ftp-plugins-path" class="settings-input"
-              data-i18n="settings.switchFtpPluginsPathPlaceholder" data-i18n-placeholder
-              placeholder="/ultimate/contents/01006A800016E000/romfs/skyline/plugins" />
+            <input
+              type="text"
+              id="switch-ftp-plugins-path"
+              class="settings-input"
+              data-i18n="settings.switchFtpPluginsPathPlaceholder"
+              data-i18n-placeholder
+              placeholder="/ultimate/contents/01006A800016E000/romfs/skyline/plugins"
+            />
           </div>
           <p class="settings-hint" data-i18n="settings.switchFtpPluginsPath">
             Remote plugins folder on the Switch SD card
@@ -618,14 +1153,27 @@
         <!-- Drive Settings -->
         <div id="switch-drive-settings" style="margin-top: 12px; display: none">
           <div class="settings-input-group">
-            <label class="settings-label" style="margin-right: 12px; min-width: 150px"
-              data-i18n="settings.driveLetter">Drive Letter:</label>
-            <div class="custom-select" id="switch-drive-letter-select" style="flex: 1">
+            <label
+              class="settings-label"
+              style="margin-right: 12px; min-width: 150px"
+              data-i18n="settings.driveLetter"
+              >Drive Letter:</label
+            >
+            <div
+              class="custom-select"
+              id="switch-drive-letter-select"
+              style="flex: 1"
+            >
               <div class="custom-select-trigger">
-                <span class="selected-value" data-i18n="settings.selectDrive">Select Drive</span>
+                <span class="selected-value" data-i18n="settings.selectDrive"
+                  >Select Drive</span
+                >
                 <i class="bi bi-chevron-down"></i>
               </div>
-              <div class="custom-select-dropdown" id="switch-drive-letter-options">
+              <div
+                class="custom-select-dropdown"
+                id="switch-drive-letter-options"
+              >
                 <!-- Drive letters will be populated dynamically -->
               </div>
             </div>
@@ -637,14 +1185,19 @@
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.conflictDetection">Conflict Detection</label>
+        <label class="settings-label" data-i18n="settings.conflictDetection"
+          >Conflict Detection</label
+        >
         <div class="settings-input-group">
           <label class="settings-switch">
             <input type="checkbox" id="conflict-detection-enabled" checked />
             <span class="settings-switch-slider"></span>
           </label>
-          <span style="margin-left: 12px; color: var(--text-secondary)"
-            data-i18n="settings.enableConflictDetection">Enable automatic conflict detection</span>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.enableConflictDetection"
+            >Enable automatic conflict detection</span
+          >
         </div>
         <p class="settings-hint" data-i18n="settings.conflictDetectionHint">
           Automatically check for file conflicts between mods
@@ -652,14 +1205,19 @@
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.pluginAutoUpdate">Plugin Auto-Update Check</label>
+        <label class="settings-label" data-i18n="settings.pluginAutoUpdate"
+          >Plugin Auto-Update Check</label
+        >
         <div class="settings-input-group">
           <label class="settings-switch">
             <input type="checkbox" id="auto-check-plugin-updates-enabled" />
             <span class="settings-switch-slider"></span>
           </label>
-          <span style="margin-left: 12px; color: var(--text-secondary)"
-            data-i18n="settings.enablePluginAutoUpdate">Check for plugin updates on startup</span>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.enablePluginAutoUpdate"
+            >Check for plugin updates on startup</span
+          >
         </div>
         <p class="settings-hint" data-i18n="settings.pluginAutoUpdateHint">
           Automatically check for plugin updates when the application starts
@@ -667,13 +1225,22 @@
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.tempFiles">Temporary Files</label>
+        <label class="settings-label" data-i18n="settings.tempFiles"
+          >Temporary Files</label
+        >
         <button class="settings-btn-action" id="clear-temp-files-btn">
           <i class="bi bi-trash3"></i>
           <div class="settings-btn-action-content">
-            <span class="settings-btn-action-title" data-i18n="settings.clearTempFiles">Clear Temporary Files</span>
-            <span class="settings-btn-action-desc" data-i18n="settings.clearTempFilesDesc">Remove temporary download and
-              extraction files</span>
+            <span
+              class="settings-btn-action-title"
+              data-i18n="settings.clearTempFiles"
+              >Clear Temporary Files</span
+            >
+            <span
+              class="settings-btn-action-desc"
+              data-i18n="settings.clearTempFilesDesc"
+              >Remove temporary download and extraction files</span
+            >
           </div>
           <i class="bi bi-arrow-right"></i>
         </button>
@@ -683,96 +1250,324 @@
         </p>
       </div>
 
-      <div class="settings-group-title"><i class="bi bi-search"></i> Batch Testing</div>
+      <div class="settings-group-title">
+        <i class="bi bi-search"></i> Batch Testing
+      </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.batchTestingTitle">Batch Testing</label>
+        <label class="settings-label" data-i18n="settings.batchTestingTitle"
+          >Batch Testing</label
+        >
         <p class="settings-hint" data-i18n="settings.batchTestingDesc">
           Binary diagnostic mode for mods and plugins. We disable half of your
           active items, ask you to launch the game, and narrow down the problem
           until the main cause is found.
         </p>
 
-        <div id="batch-testing-session-card"
-          style="margin-bottom: 12px; padding: 16px 18px; border-radius: 14px; background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.03) 100%); border: 1px solid var(--border-color);">
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-            <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);"
-              data-i18n="settings.batchTestingSessionLabel">
+        <div
+          id="batch-testing-session-card"
+          style="
+            margin-bottom: 12px;
+            padding: 16px 18px;
+            border-radius: 14px;
+            background: linear-gradient(
+              135deg,
+              rgba(255, 255, 255, 0.05) 0%,
+              rgba(255, 255, 255, 0.03) 100%
+            );
+            border: 1px solid var(--border-color);
+          "
+        >
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              gap: 12px;
+              flex-wrap: wrap;
+            "
+          >
+            <div
+              style="
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                color: var(--text-muted);
+              "
+              data-i18n="settings.batchTestingSessionLabel"
+            >
               Current Session
             </div>
-            <div id="batch-testing-session-badge"
-              style="padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: var(--text-secondary); font-size: 12px; font-weight: 600;">
+            <div
+              id="batch-testing-session-badge"
+              style="
+                padding: 6px 10px;
+                border-radius: 999px;
+                border: 1px solid rgba(255, 255, 255, 0.12);
+                background: rgba(255, 255, 255, 0.06);
+                color: var(--text-secondary);
+                font-size: 12px;
+                font-weight: 600;
+              "
+            >
               Ready
             </div>
           </div>
-          <div id="batch-testing-session-title" style="margin-top: 10px; font-size: 18px; font-weight: 700; color: var(--text-primary);"
-            data-i18n="settings.batchTestingReadyTitle">
+          <div
+            id="batch-testing-session-title"
+            style="
+              margin-top: 10px;
+              font-size: 18px;
+              font-weight: 700;
+              color: var(--text-primary);
+            "
+            data-i18n="settings.batchTestingReadyTitle"
+          >
             Ready to start a diagnostic
           </div>
-          <div id="batch-testing-session-desc" style="margin-top: 6px; color: var(--text-secondary); line-height: 1.6;"
-            data-i18n="settings.batchTestingReadyDesc">
-            Choose where to begin, then FightPlanner will disable groups step by step until the likely cause is isolated.
+          <div
+            id="batch-testing-session-desc"
+            style="
+              margin-top: 6px;
+              color: var(--text-secondary);
+              line-height: 1.6;
+            "
+            data-i18n="settings.batchTestingReadyDesc"
+          >
+            Choose where to begin, then FightPlanner will disable groups step by
+            step until the likely cause is isolated.
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 12px;">
-          <div style="padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color);">
-            <div style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; background: rgba(var(--primary-rgb), 0.14); border: 1px solid rgba(var(--primary-rgb), 0.22); color: var(--primary-color); font-size: 13px; font-weight: 700; margin-bottom: 10px;">1</div>
-            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;"
-              data-i18n="settings.batchTestingHowStepOneTitle">
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
+          "
+        >
+          <div
+            style="
+              padding: 14px 16px;
+              border-radius: 12px;
+              background: rgba(255, 255, 255, 0.04);
+              border: 1px solid var(--border-color);
+            "
+          >
+            <div
+              style="
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 28px;
+                height: 28px;
+                border-radius: 999px;
+                background: rgba(var(--primary-rgb), 0.14);
+                border: 1px solid rgba(var(--primary-rgb), 0.22);
+                color: var(--primary-color);
+                font-size: 13px;
+                font-weight: 700;
+                margin-bottom: 10px;
+              "
+            >
+              1
+            </div>
+            <div
+              style="
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text-primary);
+                margin-bottom: 6px;
+              "
+              data-i18n="settings.batchTestingHowStepOneTitle"
+            >
               FightPlanner disables a group
             </div>
-            <div style="font-size: 13px; line-height: 1.6; color: var(--text-secondary);"
-              data-i18n="settings.batchTestingHowStepOneDesc">
-              A portion of your active mods or plugins is turned off temporarily.
+            <div
+              style="
+                font-size: 13px;
+                line-height: 1.6;
+                color: var(--text-secondary);
+              "
+              data-i18n="settings.batchTestingHowStepOneDesc"
+            >
+              A portion of your active mods or plugins is turned off
+              temporarily.
             </div>
           </div>
-          <div style="padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color);">
-            <div style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; background: rgba(var(--primary-rgb), 0.14); border: 1px solid rgba(var(--primary-rgb), 0.22); color: var(--primary-color); font-size: 13px; font-weight: 700; margin-bottom: 10px;">2</div>
-            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;"
-              data-i18n="settings.batchTestingHowStepTwoTitle">
+          <div
+            style="
+              padding: 14px 16px;
+              border-radius: 12px;
+              background: rgba(255, 255, 255, 0.04);
+              border: 1px solid var(--border-color);
+            "
+          >
+            <div
+              style="
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 28px;
+                height: 28px;
+                border-radius: 999px;
+                background: rgba(var(--primary-rgb), 0.14);
+                border: 1px solid rgba(var(--primary-rgb), 0.22);
+                color: var(--primary-color);
+                font-size: 13px;
+                font-weight: 700;
+                margin-bottom: 10px;
+              "
+            >
+              2
+            </div>
+            <div
+              style="
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text-primary);
+                margin-bottom: 6px;
+              "
+              data-i18n="settings.batchTestingHowStepTwoTitle"
+            >
               You test the game
             </div>
-            <div style="font-size: 13px; line-height: 1.6; color: var(--text-secondary);"
-              data-i18n="settings.batchTestingHowStepTwoDesc">
-              Launch the game, reproduce the issue, then tell FightPlanner if it works now.
+            <div
+              style="
+                font-size: 13px;
+                line-height: 1.6;
+                color: var(--text-secondary);
+              "
+              data-i18n="settings.batchTestingHowStepTwoDesc"
+            >
+              Launch the game, reproduce the issue, then tell FightPlanner if it
+              works now.
             </div>
           </div>
-          <div style="padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color);">
-            <div style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; background: rgba(var(--primary-rgb), 0.14); border: 1px solid rgba(var(--primary-rgb), 0.22); color: var(--primary-color); font-size: 13px; font-weight: 700; margin-bottom: 10px;">3</div>
-            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;"
-              data-i18n="settings.batchTestingHowStepThreeTitle">
+          <div
+            style="
+              padding: 14px 16px;
+              border-radius: 12px;
+              background: rgba(255, 255, 255, 0.04);
+              border: 1px solid var(--border-color);
+            "
+          >
+            <div
+              style="
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 28px;
+                height: 28px;
+                border-radius: 999px;
+                background: rgba(var(--primary-rgb), 0.14);
+                border: 1px solid rgba(var(--primary-rgb), 0.22);
+                color: var(--primary-color);
+                font-size: 13px;
+                font-weight: 700;
+                margin-bottom: 10px;
+              "
+            >
+              3
+            </div>
+            <div
+              style="
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text-primary);
+                margin-bottom: 6px;
+              "
+              data-i18n="settings.batchTestingHowStepThreeTitle"
+            >
               The suspect list gets smaller
             </div>
-            <div style="font-size: 13px; line-height: 1.6; color: var(--text-secondary);"
-              data-i18n="settings.batchTestingHowStepThreeDesc">
-              FightPlanner repeats the process until the most likely cause is isolated.
+            <div
+              style="
+                font-size: 13px;
+                line-height: 1.6;
+                color: var(--text-secondary);
+              "
+              data-i18n="settings.batchTestingHowStepThreeDesc"
+            >
+              FightPlanner repeats the process until the most likely cause is
+              isolated.
             </div>
           </div>
         </div>
 
-        <div class="settings-input-group" style="margin-bottom: 12px; gap: 12px; flex-wrap: wrap;">
-          <label class="settings-label" style="margin-right: 12px; min-width: 150px"
-            data-i18n="settings.batchTestingStartOrder">
+        <div
+          class="settings-input-group"
+          style="margin-bottom: 12px; gap: 12px; flex-wrap: wrap"
+        >
+          <label
+            class="settings-label"
+            style="margin-right: 12px; min-width: 150px"
+            data-i18n="settings.batchTestingStartOrder"
+          >
             Start With:
           </label>
-          <label style="display: inline-flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-tertiary); cursor: pointer; flex: 1; min-width: 220px;">
-            <input type="radio" name="batch-testing-start-order" id="batch-testing-start-mods" value="mods" checked
-              style="margin-top: 4px;" />
-            <span style="display: flex; flex-direction: column; gap: 4px;">
+          <label
+            style="
+              display: inline-flex;
+              align-items: flex-start;
+              gap: 10px;
+              padding: 12px 14px;
+              border-radius: 12px;
+              border: 1px solid var(--border-color);
+              background: var(--bg-tertiary);
+              cursor: pointer;
+              flex: 1;
+              min-width: 220px;
+            "
+          >
+            <input
+              type="radio"
+              name="batch-testing-start-order"
+              id="batch-testing-start-mods"
+              value="mods"
+              checked
+              style="margin-top: 4px"
+            />
+            <span style="display: flex; flex-direction: column; gap: 4px">
               <span data-i18n="settings.batchTestingStartMods">Mods</span>
-              <span style="font-size: 12px; color: var(--text-muted);" data-i18n="settings.batchTestingStartModsDesc">
+              <span
+                style="font-size: 12px; color: var(--text-muted)"
+                data-i18n="settings.batchTestingStartModsDesc"
+              >
                 Recommended first. Most problems come from mods.
               </span>
             </span>
           </label>
-          <label style="display: inline-flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-tertiary); cursor: pointer; flex: 1; min-width: 220px;">
-            <input type="radio" name="batch-testing-start-order" id="batch-testing-start-plugins" value="plugins"
-              style="margin-top: 4px;" />
-            <span style="display: flex; flex-direction: column; gap: 4px;">
+          <label
+            style="
+              display: inline-flex;
+              align-items: flex-start;
+              gap: 10px;
+              padding: 12px 14px;
+              border-radius: 12px;
+              border: 1px solid var(--border-color);
+              background: var(--bg-tertiary);
+              cursor: pointer;
+              flex: 1;
+              min-width: 220px;
+            "
+          >
+            <input
+              type="radio"
+              name="batch-testing-start-order"
+              id="batch-testing-start-plugins"
+              value="plugins"
+              style="margin-top: 4px"
+            />
+            <span style="display: flex; flex-direction: column; gap: 4px">
               <span data-i18n="settings.batchTestingStartPlugins">Plugins</span>
-              <span style="font-size: 12px; color: var(--text-muted);" data-i18n="settings.batchTestingStartPluginsDesc">
-                Useful if the issue looks related to Skyline or a runtime plugin.
+              <span
+                style="font-size: 12px; color: var(--text-muted)"
+                data-i18n="settings.batchTestingStartPluginsDesc"
+              >
+                Useful if the issue looks related to Skyline or a runtime
+                plugin.
               </span>
             </span>
           </label>
@@ -781,31 +1576,70 @@
         <button class="settings-btn-action" id="batch-testing-btn">
           <i class="bi bi-bezier2"></i>
           <div class="settings-btn-action-content">
-            <span class="settings-btn-action-title" data-i18n="settings.batchTestingButton">Batch Testing</span>
-            <span class="settings-btn-action-desc" data-i18n="settings.batchTestingButtonDesc">Start the binary
-              mod/plugin diagnostic flow</span>
+            <span
+              class="settings-btn-action-title"
+              data-i18n="settings.batchTestingButton"
+              >Batch Testing</span
+            >
+            <span
+              class="settings-btn-action-desc"
+              data-i18n="settings.batchTestingButtonDesc"
+              >Start the binary mod/plugin diagnostic flow</span
+            >
           </div>
           <i class="bi bi-arrow-right"></i>
         </button>
 
-        <div class="settings-input-group" style="margin-top: 12px; gap: 12px; flex-wrap: wrap;">
-          <button class="settings-btn-action" id="batch-testing-resume-btn" style="display: none; flex: 1; min-width: 260px;">
+        <div
+          class="settings-input-group"
+          style="margin-top: 12px; gap: 12px; flex-wrap: wrap"
+        >
+          <button
+            class="settings-btn-action"
+            id="batch-testing-resume-btn"
+            style="display: none; flex: 1; min-width: 260px"
+          >
             <i class="bi bi-play-circle"></i>
             <div class="settings-btn-action-content">
-              <span class="settings-btn-action-title" data-i18n="settings.batchTestingResumeButton">Resume Batch Testing</span>
-              <span class="settings-btn-action-desc" data-i18n="settings.batchTestingResumeButtonDesc">Resume the current diagnostic session</span>
+              <span
+                class="settings-btn-action-title"
+                data-i18n="settings.batchTestingResumeButton"
+                >Resume Batch Testing</span
+              >
+              <span
+                class="settings-btn-action-desc"
+                data-i18n="settings.batchTestingResumeButtonDesc"
+                >Resume the current diagnostic session</span
+              >
             </div>
             <i class="bi bi-arrow-right"></i>
           </button>
 
-          <button class="settings-btn-action" id="batch-testing-cancel-btn"
-            style="display: none; flex: 1; min-width: 260px; background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3);">
-            <i class="bi bi-x-circle" style="color: var(--danger-color);"></i>
+          <button
+            class="settings-btn-action"
+            id="batch-testing-cancel-btn"
+            style="
+              display: none;
+              flex: 1;
+              min-width: 260px;
+              background: rgba(239, 68, 68, 0.12);
+              border-color: rgba(239, 68, 68, 0.3);
+            "
+          >
+            <i class="bi bi-x-circle" style="color: var(--danger-color)"></i>
             <div class="settings-btn-action-content">
-              <span class="settings-btn-action-title" data-i18n="settings.batchTestingCancelButton">Cancel Batch Testing</span>
-              <span class="settings-btn-action-desc" data-i18n="settings.batchTestingCancelButtonDesc">Cancel the current session and restore the original state</span>
+              <span
+                class="settings-btn-action-title"
+                data-i18n="settings.batchTestingCancelButton"
+                >Cancel Batch Testing</span
+              >
+              <span
+                class="settings-btn-action-desc"
+                data-i18n="settings.batchTestingCancelButtonDesc"
+                >Cancel the current session and restore the original state</span
+              >
             </div>
-            <i class="bi bi-arrow-right" style="color: var(--danger-color);"></i>
+            <i class="bi bi-arrow-right" style="color: var(--danger-color)"></i>
           </button>
         </div>
 
@@ -819,7 +1653,10 @@
         <p class="settings-hint" data-i18n="settings.batchTestingPrimaryCause">
           The current priority is shown as the principal cause while testing.
         </p>
-        <p class="settings-hint" data-i18n="settings.batchTestingDeleteOrDisable">
+        <p
+          class="settings-hint"
+          data-i18n="settings.batchTestingDeleteOrDisable"
+        >
           Do you want to delete it or just disable it?
         </p>
       </div>
@@ -832,26 +1669,45 @@
       </h2>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.socialAutoDownload">Auto-Download Settings</label>
+        <label class="settings-label" data-i18n="settings.socialAutoDownload"
+          >Auto-Download Settings</label
+        >
         <div class="settings-input-group">
           <label class="settings-switch">
             <input type="checkbox" id="settings-social-auto-download-enabled" />
             <span class="settings-switch-slider"></span>
           </label>
-          <span style="margin-left: 12px; color: var(--text-secondary)" data-i18n="settings.enableAutoDownload">Enable
-            automatic download check</span>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.enableAutoDownload"
+            >Enable automatic download check</span
+          >
         </div>
         <p class="settings-hint" data-i18n="settings.socialAutoDownloadHint">
-          Automatically check for mods you need to download from your synced list
+          Automatically check for mods you need to download from your synced
+          list
         </p>
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.socialCheckInterval">Check Interval</label>
+        <label class="settings-label" data-i18n="settings.socialCheckInterval"
+          >Check Interval</label
+        >
         <div class="settings-input-group">
-          <input type="number" id="settings-social-auto-download-interval" class="settings-input" style="width: 100px"
-            min="1" max="60" value="5" />
-          <span style="margin-left: 8px; color: var(--text-secondary)" data-i18n="settings.minutes">minutes</span>
+          <input
+            type="number"
+            id="settings-social-auto-download-interval"
+            class="settings-input"
+            style="width: 100px"
+            min="1"
+            max="60"
+            value="5"
+          />
+          <span
+            style="margin-left: 8px; color: var(--text-secondary)"
+            data-i18n="settings.minutes"
+            >minutes</span
+          >
         </div>
         <p class="settings-hint" data-i18n="settings.socialCheckIntervalHint">
           How often to automatically check for mods to download (1-60 minutes)
@@ -859,17 +1715,34 @@
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.socialAccountInfo">Account Information</label>
-        <div class="settings-input-group" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-          <div style="display: flex; align-items: center;">
-            <span style="color: var(--text-secondary); min-width: 80px;"
-              data-i18n="settings.socialStatus">Status:</span>
-            <span id="settings-social-status" style="color: var(--text-muted);">Not connected</span>
+        <label class="settings-label" data-i18n="settings.socialAccountInfo"
+          >Account Information</label
+        >
+        <div
+          class="settings-input-group"
+          style="flex-direction: column; align-items: flex-start; gap: 8px"
+        >
+          <div style="display: flex; align-items: center">
+            <span
+              style="color: var(--text-secondary); min-width: 80px"
+              data-i18n="settings.socialStatus"
+              >Status:</span
+            >
+            <span id="settings-social-status" style="color: var(--text-muted)"
+              >Not connected</span
+            >
           </div>
-          <div style="display: flex; align-items: center;">
-            <span style="color: var(--text-secondary); min-width: 80px;"
-              data-i18n="settings.socialUsername">Username:</span>
-            <span id="settings-social-username" style="color: var(--primary-color); font-weight: 600;">-</span>
+          <div style="display: flex; align-items: center">
+            <span
+              style="color: var(--text-secondary); min-width: 80px"
+              data-i18n="settings.socialUsername"
+              >Username:</span
+            >
+            <span
+              id="settings-social-username"
+              style="color: var(--primary-color); font-weight: 600"
+              >-</span
+            >
           </div>
         </div>
         <p class="settings-hint" data-i18n="settings.socialAccountHint">
@@ -878,13 +1751,22 @@
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.socialQuickActions">Quick Actions</label>
+        <label class="settings-label" data-i18n="settings.socialQuickActions"
+          >Quick Actions</label
+        >
         <button class="settings-btn-action" id="settings-go-to-social-btn">
           <i class="bi bi-people"></i>
           <div class="settings-btn-action-content">
-            <span class="settings-btn-action-title" data-i18n="settings.goToSocialTab">Open Social Tab</span>
-            <span class="settings-btn-action-desc" data-i18n="settings.goToSocialTabDesc">Manage your account, friends
-              and mods</span>
+            <span
+              class="settings-btn-action-title"
+              data-i18n="settings.goToSocialTab"
+              >Open Social Tab</span
+            >
+            <span
+              class="settings-btn-action-desc"
+              data-i18n="settings.goToSocialTabDesc"
+              >Manage your account, friends and mods</span
+            >
           </div>
           <i class="bi bi-arrow-right"></i>
         </button>
@@ -898,7 +1780,9 @@
       </h2>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.customCss">Custom CSS Files</label>
+        <label class="settings-label" data-i18n="settings.customCss"
+          >Custom CSS Files</label
+        >
         <p class="settings-hint" data-i18n="settings.customCssHint">
           Load custom CSS files to modify the appearance of FightPlanner
         </p>
@@ -917,13 +1801,17 @@
         </div>
         <p class="settings-hint" style="margin-top: 12px">
           <i class="bi bi-info-circle"></i>
-          <span data-i18n="settings.customCssInfo">Custom CSS files will be applied in order, on top of the default
-            styles</span>
+          <span data-i18n="settings.customCssInfo"
+            >Custom CSS files will be applied in order, on top of the default
+            styles</span
+          >
         </p>
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.customJs">Custom JavaScript Files</label>
+        <label class="settings-label" data-i18n="settings.customJs"
+          >Custom JavaScript Files</label
+        >
         <p class="settings-hint" data-i18n="settings.customJsHint">
           Load custom JavaScript files to extend FightPlanner functionality
         </p>
@@ -936,42 +1824,58 @@
         <div id="custom-js-list" class="custom-files-list">
           <!-- JS files will be listed here -->
         </div>
-        <p class="settings-hint" style="margin-top: 12px; color: var(--warning-color)">
+        <p
+          class="settings-hint"
+          style="margin-top: 12px; color: var(--warning-color)"
+        >
           <i class="bi bi-exclamation-triangle-fill"></i>
-          <strong data-i18n="settings.customJsWarning">Warning: Only load JavaScript from trusted sources. Malicious
-            code
-            can harm your system.</strong>
+          <strong data-i18n="settings.customJsWarning"
+            >Warning: Only load JavaScript from trusted sources. Malicious code
+            can harm your system.</strong
+          >
         </p>
       </div>
 
-      <div class="settings-section" style="
+      <div
+        class="settings-section"
+        style="
           background: linear-gradient(
             135deg,
             rgba(255, 152, 0, 0.1) 0%,
             rgba(255, 152, 0, 0.05) 100%
           );
           border-color: rgba(255, 152, 0, 0.2);
-        ">
+        "
+      >
         <label class="settings-label" style="color: var(--warning-color)">
           <i class="bi bi-shield-exclamation"></i>
           <span data-i18n="settings.securityNotice">Security Notice</span>
         </label>
-        <p style="
+        <p
+          style="
             color: var(--text-secondary);
             line-height: 1.6;
             margin-bottom: 12px;
-          " data-i18n="settings.securityNoticeText">
+          "
+          data-i18n="settings.securityNoticeText"
+        >
           Custom CSS and JavaScript files have full access to the application.
           Only use files from developers you trust.
         </p>
-        <ul style="color: var(--text-muted); margin-left: 20px; line-height: 1.8">
+        <ul
+          style="color: var(--text-muted); margin-left: 20px; line-height: 1.8"
+        >
           <li>
             <strong>CSS</strong>
-            <span data-i18n="settings.securityNoticeList1">can modify the visual appearance and layout</span>
+            <span data-i18n="settings.securityNoticeList1"
+              >can modify the visual appearance and layout</span
+            >
           </li>
           <li>
             <strong>JavaScript</strong>
-            <span data-i18n="settings.securityNoticeList2">can access all application features and data</span>
+            <span data-i18n="settings.securityNoticeList2"
+              >can access all application features and data</span
+            >
           </li>
           <li data-i18n="settings.securityNoticeList3">
             Changes take effect after reloading or restarting the app
@@ -987,13 +1891,22 @@
       </h2>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.logsLocation">Log Files Location</label>
+        <label class="settings-label" data-i18n="settings.logsLocation"
+          >Log Files Location</label
+        >
         <button class="settings-btn-action" id="open-logs-folder-btn">
           <i class="bi bi-folder2-open"></i>
           <div class="settings-btn-action-content">
-            <span class="settings-btn-action-title" data-i18n="settings.openLogsFolder">Open Logs Folder</span>
-            <span class="settings-btn-action-desc" data-i18n="settings.openLogsFolderDesc">View all saved log files on
-              disk</span>
+            <span
+              class="settings-btn-action-title"
+              data-i18n="settings.openLogsFolder"
+              >Open Logs Folder</span
+            >
+            <span
+              class="settings-btn-action-desc"
+              data-i18n="settings.openLogsFolderDesc"
+              >View all saved log files on disk</span
+            >
           </div>
           <i class="bi bi-arrow-right"></i>
         </button>
@@ -1002,19 +1915,37 @@
           logs are captured.
         </p>
         <div class="settings-input-group" style="margin-top: 12px">
-          <label class="settings-label" style="margin-right: 12px; min-width: 150px"
-            data-i18n="settings.logRetention">Log Retention:</label>
-          <input type="number" id="log-retention-days" class="settings-input" style="width: 80px" min="1" max="365"
-            value="7" />
-          <span style="margin-left: 8px; color: var(--text-secondary)" data-i18n="settings.days">days</span>
+          <label
+            class="settings-label"
+            style="margin-right: 12px; min-width: 150px"
+            data-i18n="settings.logRetention"
+            >Log Retention:</label
+          >
+          <input
+            type="number"
+            id="log-retention-days"
+            class="settings-input"
+            style="width: 80px"
+            min="1"
+            max="365"
+            value="7"
+          />
+          <span
+            style="margin-left: 8px; color: var(--text-secondary)"
+            data-i18n="settings.days"
+            >days</span
+          >
         </div>
         <p class="settings-hint" data-i18n="settings.logRetentionHint">
-          Logs older than this number of days will be automatically deleted on startup
+          Logs older than this number of days will be automatically deleted on
+          startup
         </p>
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.liveConsole">Live Console Output</label>
+        <label class="settings-label" data-i18n="settings.liveConsole"
+          >Live Console Output</label
+        >
         <div class="logs-toolbar">
           <div class="logs-filter-buttons">
             <button class="logs-filter-btn active" data-log-level="all">
@@ -1035,12 +1966,22 @@
             </button>
           </div>
           <div class="logs-action-buttons">
-            <button class="logs-action-btn" id="clear-logs-btn" data-i18n="settings.clearLogs" data-i18n-title
-              title="Clear current session">
+            <button
+              class="logs-action-btn"
+              id="clear-logs-btn"
+              data-i18n="settings.clearLogs"
+              data-i18n-title
+              title="Clear current session"
+            >
               <i class="bi bi-trash"></i>
             </button>
-            <button class="logs-action-btn" id="copy-logs-btn" data-i18n="settings.copyLogs" data-i18n-title
-              title="Copy to clipboard">
+            <button
+              class="logs-action-btn"
+              id="copy-logs-btn"
+              data-i18n="settings.copyLogs"
+              data-i18n-title
+              title="Copy to clipboard"
+            >
               <i class="bi bi-clipboard"></i>
             </button>
           </div>
@@ -1056,8 +1997,10 @@
         </div>
         <p class="settings-hint" style="margin-top: 12px">
           <i class="bi bi-info-circle"></i>
-          <span data-i18n="settings.logsInfo">Showing logs from current session. Use \"Open Logs Folder\" above
-            to view historical logs.</span>
+          <span data-i18n="settings.logsInfo"
+            >Showing logs from current session. Use \"Open Logs Folder\" above
+            to view historical logs.</span
+          >
         </p>
       </div>
     </div>
@@ -1068,7 +2011,9 @@
       </h2>
 
       <!-- Warning Banner -->
-      <div class="settings-section" style="
+      <div
+        class="settings-section"
+        style="
           background: linear-gradient(
             135deg,
             rgba(239, 68, 68, 0.15) 0%,
@@ -1076,38 +2021,73 @@
           );
           border: 1px solid rgba(239, 68, 68, 0.3);
           border-radius: 10px;
-        ">
-        <label class="settings-label" style="color: #ef4444; display: flex; align-items: center; gap: 8px;">
-          <i class="bi bi-exclamation-triangle-fill" style="font-size: 20px;"></i>
-          <span data-i18n="settings.devWarningTitle">Warning — Developer Options</span>
+        "
+      >
+        <label
+          class="settings-label"
+          style="color: #ef4444; display: flex; align-items: center; gap: 8px"
+        >
+          <i
+            class="bi bi-exclamation-triangle-fill"
+            style="font-size: 20px"
+          ></i>
+          <span data-i18n="settings.devWarningTitle"
+            >Warning — Developer Options</span
+          >
         </label>
-        <p style="
+        <p
+          style="
             color: var(--text-secondary);
             line-height: 1.6;
             margin-bottom: 0;
-          " data-i18n="settings.devWarningText">
-          Modifying these settings can cause unexpected behavior, break your application, or corrupt your data.
-          Only change these options if you know what you are doing. These settings are intended for development and
-          testing purposes only.
+          "
+          data-i18n="settings.devWarningText"
+        >
+          Modifying these settings can cause unexpected behavior, break your
+          application, or corrupt your data. Only change these options if you
+          know what you are doing. These settings are intended for development
+          and testing purposes only.
         </p>
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.tutorial">Tutorial</label>
+        <label class="settings-label" data-i18n="settings.tutorial"
+          >Tutorial</label
+        >
         <button class="settings-btn-action" id="restart-tutorial-btn">
           <i class="bi bi-book"></i>
           <div class="settings-btn-action-content">
-            <span class="settings-btn-action-title" data-i18n="settings.openTutorial">Open Tutorial</span>
-            <span class="settings-btn-action-desc" data-i18n="settings.openTutorialDesc">Watch the welcome animation
-              again</span>
+            <span
+              class="settings-btn-action-title"
+              data-i18n="settings.openTutorial"
+              >Open Tutorial</span
+            >
+            <span
+              class="settings-btn-action-desc"
+              data-i18n="settings.openTutorialDesc"
+              >Watch the welcome animation again</span
+            >
           </div>
           <i class="bi bi-arrow-right"></i>
         </button>
-        <button class="settings-btn-action" id="restart-tutorial-mods-btn" style="margin-top: 8px;">
+        <button
+          class="settings-btn-action"
+          id="restart-tutorial-mods-btn"
+          style="margin-top: 8px"
+        >
           <i class="bi bi-box-seam"></i>
           <div class="settings-btn-action-content">
-            <span class="settings-btn-action-title" data-i18n="settings.openTutorialMods">Open Tutorial & Redirect to Mods</span>
-            <span class="settings-btn-action-desc" data-i18n="settings.openTutorialModsDesc">Opens the tutorial then navigates to the mods tab when closed</span>
+            <span
+              class="settings-btn-action-title"
+              data-i18n="settings.openTutorialMods"
+              >Open Tutorial & Redirect to Mods</span
+            >
+            <span
+              class="settings-btn-action-desc"
+              data-i18n="settings.openTutorialModsDesc"
+              >Opens the tutorial then navigates to the mods tab when
+              closed</span
+            >
           </div>
           <i class="bi bi-arrow-right"></i>
         </button>
@@ -1117,10 +2097,18 @@
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.fakeVersion">Fake App Version</label>
+        <label class="settings-label" data-i18n="settings.fakeVersion"
+          >Fake App Version</label
+        >
         <div class="settings-input-group">
-          <input type="text" id="fake-version-input" class="settings-input" data-i18n="settings.fakeVersionPlaceholder"
-            data-i18n-placeholder placeholder="e.g. 3.0.0" />
+          <input
+            type="text"
+            id="fake-version-input"
+            class="settings-input"
+            data-i18n="settings.fakeVersionPlaceholder"
+            data-i18n-placeholder
+            placeholder="e.g. 3.0.0"
+          />
         </div>
         <p class="settings-hint" data-i18n="settings.fakeVersionHint">
           Override the current app version to test the update system. LEAVE
@@ -1129,26 +2117,36 @@
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.forceUpdateAvailable">Force Update Available</label>
+        <label class="settings-label" data-i18n="settings.forceUpdateAvailable"
+          >Force Update Available</label
+        >
         <div class="settings-input-group">
           <label class="settings-switch">
             <input type="checkbox" id="force-update-enabled" />
             <span class="settings-switch-slider"></span>
           </label>
-          <span style="margin-left: 12px; color: var(--text-secondary)"
-            data-i18n="settings.forceUpdateAvailableHint">Force updater to report update available</span>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.forceUpdateAvailableHint"
+            >Force updater to report update available</span
+          >
         </div>
       </div>
 
       <div class="settings-section">
-        <label class="settings-label" data-i18n="settings.showModHashs">Show Mod Hashs</label>
+        <label class="settings-label" data-i18n="settings.showModHashs"
+          >Show Mod Hashs</label
+        >
         <div class="settings-input-group">
           <label class="settings-switch">
             <input type="checkbox" id="developer-show-mod-hash" />
             <span class="settings-switch-slider"></span>
           </label>
-          <span style="margin-left: 12px; color: var(--text-secondary)" data-i18n="settings.showModHashsHint">Affiche le
-            hash du mod en dessous de son nom.</span>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.showModHashsHint"
+            >Affiche le hash du mod en dessous de son nom.</span
+          >
         </div>
       </div>
 
@@ -1157,29 +2155,54 @@
           <button class="settings-btn-action" id="save-dev-settings-btn">
             <i class="bi bi-save"></i>
             <div class="settings-btn-action-content">
-              <span class="settings-btn-action-title" data-i18n="settings.saveDevSettings">Save Developer
-                Settings</span>
+              <span
+                class="settings-btn-action-title"
+                data-i18n="settings.saveDevSettings"
+                >Save Developer Settings</span
+              >
             </div>
           </button>
-          <button class="settings-btn" id="reset-dev-settings-btn" style="margin-left: 10px">
+          <button
+            class="settings-btn"
+            id="reset-dev-settings-btn"
+            style="margin-left: 10px"
+          >
             <i class="bi bi-arrow-counterclockwise"></i>
             <span data-i18n="settings.reset">Reset</span>
           </button>
-          <button class="settings-btn" id="simulate-update-btn" style="margin-left: 10px">
+          <button
+            class="settings-btn"
+            id="simulate-update-btn"
+            style="margin-left: 10px"
+          >
             <i class="bi bi-play-circle"></i>
             <span data-i18n="settings.simulateUpdate">Simulate Update</span>
           </button>
         </div>
 
-        <div class="settings-input-group" style="margin-top: 10px;">
-          <button class="settings-btn-action" id="open-config-btn"
-            style="background: rgba(33, 150, 243, 0.1); border-color: rgba(33, 150, 243, 0.3);">
+        <div class="settings-input-group" style="margin-top: 10px">
+          <button
+            class="settings-btn-action"
+            id="open-config-btn"
+            style="
+              background: rgba(33, 150, 243, 0.1);
+              border-color: rgba(33, 150, 243, 0.3);
+            "
+          >
             <i class="bi bi-file-earmark-code" style="color: #64b5f6"></i>
             <div class="settings-btn-action-content">
-              <span class="settings-btn-action-title" style="color: #64b5f6" data-i18n="settings.seeConfigJson">See
-                config.json</span>
-              <span class="settings-btn-action-desc" data-i18n="settings.seeConfigJsonDesc">Options le fichier de
-                configuration dans votre éditeur par défaut</span>
+              <span
+                class="settings-btn-action-title"
+                style="color: #64b5f6"
+                data-i18n="settings.seeConfigJson"
+                >See config.json</span
+              >
+              <span
+                class="settings-btn-action-desc"
+                data-i18n="settings.seeConfigJsonDesc"
+                >Options le fichier de configuration dans votre éditeur par
+                défaut</span
+              >
             </div>
             <i class="bi bi-arrow-right" style="color: #64b5f6"></i>
           </button>
@@ -1187,282 +2210,693 @@
       </div>
 
       <!-- PostHog Analytics Tests -->
-      <div class="settings-section" style="
+      <div
+        class="settings-section"
+        style="
           background: linear-gradient(
             135deg,
             rgba(99, 102, 241, 0.1) 0%,
             rgba(99, 102, 241, 0.05) 100%
           );
           border-color: rgba(99, 102, 241, 0.2);
-        ">
-        <label class="settings-label"
-          style="color: var(--primary-color); display: flex; align-items: center; gap: 8px;">
+        "
+      >
+        <label
+          class="settings-label"
+          style="
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          "
+        >
           <i class="bi bi-graph-up"></i>
           <span data-i18n="settings.posthogTests">PostHog Analytics Tests</span>
         </label>
-        <p class="settings-hint" style="margin-bottom: 12px;" data-i18n="settings.posthogTestsHint">
-          Send test events to PostHog to verify analytics integration is working correctly.
+        <p
+          class="settings-hint"
+          style="margin-bottom: 12px"
+          data-i18n="settings.posthogTestsHint"
+        >
+          Send test events to PostHog to verify analytics integration is working
+          correctly.
         </p>
-        <div class="settings-input-group" style="gap: 10px;">
-          <button class="settings-btn-action" id="posthog-test-event-btn" style="flex: 1;">
+        <div class="settings-input-group" style="gap: 10px">
+          <button
+            class="settings-btn-action"
+            id="posthog-test-event-btn"
+            style="flex: 1"
+          >
             <i class="bi bi-send"></i>
             <div class="settings-btn-action-content">
-              <span class="settings-btn-action-title" data-i18n="settings.sendTestEvent">Send Test Event</span>
-              <span class="settings-btn-action-desc" data-i18n="settings.sendTestEventDesc">Send a test_event to
-                PostHog</span>
+              <span
+                class="settings-btn-action-title"
+                data-i18n="settings.sendTestEvent"
+                >Send Test Event</span
+              >
+              <span
+                class="settings-btn-action-desc"
+                data-i18n="settings.sendTestEventDesc"
+                >Send a test_event to PostHog</span
+              >
             </div>
           </button>
-          <button class="settings-btn-action" id="posthog-test-error-btn" style="flex: 1;">
+          <button
+            class="settings-btn-action"
+            id="posthog-test-error-btn"
+            style="flex: 1"
+          >
             <i class="bi bi-bug"></i>
             <div class="settings-btn-action-content">
-              <span class="settings-btn-action-title" data-i18n="settings.sendTestError">Send Test Error</span>
-              <span class="settings-btn-action-desc" data-i18n="settings.sendTestErrorDesc">Send a test error to
-                PostHog</span>
+              <span
+                class="settings-btn-action-title"
+                data-i18n="settings.sendTestError"
+                >Send Test Error</span
+              >
+              <span
+                class="settings-btn-action-desc"
+                data-i18n="settings.sendTestErrorDesc"
+                >Send a test error to PostHog</span
+              >
             </div>
           </button>
         </div>
-        <p id="posthog-test-status" class="settings-hint" style="margin-top: 10px; display: none;">
-          <i class="bi bi-check-circle-fill" style="color: var(--success-color);"></i>
+        <p
+          id="posthog-test-status"
+          class="settings-hint"
+          style="margin-top: 10px; display: none"
+        >
+          <i
+            class="bi bi-check-circle-fill"
+            style="color: var(--success-color)"
+          ></i>
           <span></span>
         </p>
       </div>
 
-      <div class="settings-section" style="
+      <div
+        class="settings-section"
+        style="
           background: linear-gradient(
             135deg,
             rgba(34, 197, 94, 0.1) 0%,
             rgba(34, 197, 94, 0.05) 100%
           );
           border-color: rgba(34, 197, 94, 0.2);
-        ">
-        <label class="settings-label" style="color: #22c55e; display: flex; align-items: center; gap: 8px;">
+        "
+      >
+        <label
+          class="settings-label"
+          style="color: #22c55e; display: flex; align-items: center; gap: 8px"
+        >
           <i class="bi bi-chat-square-text"></i>
           <span data-i18n="settings.toastTests">Toast Tests</span>
         </label>
-        <p class="settings-hint" style="margin-bottom: 12px;" data-i18n="settings.toastTestsHint">
+        <p
+          class="settings-hint"
+          style="margin-bottom: 12px"
+          data-i18n="settings.toastTestsHint"
+        >
           Test toast notifications and stacking animations.
         </p>
-        <div class="settings-input-group" style="gap: 10px; flex-wrap: wrap;">
-          <button class="settings-btn" id="toast-test-success-btn" style="flex: 1; min-width: 100px;"
-            onclick="if(window.toastManager) window.toastManager.success('toasts.testToastSuccess');">
-            <i class="bi bi-check-circle" style="color: var(--success-color);"></i>
+        <div class="settings-input-group" style="gap: 10px; flex-wrap: wrap">
+          <button
+            class="settings-btn"
+            id="toast-test-success-btn"
+            style="flex: 1; min-width: 100px"
+            onclick="
+              if (window.toastManager)
+                window.toastManager.success('toasts.testToastSuccess');
+            "
+          >
+            <i
+              class="bi bi-check-circle"
+              style="color: var(--success-color)"
+            ></i>
             <span data-i18n="settings.testSuccess">Success</span>
           </button>
-          <button class="settings-btn" id="toast-test-error-btn" style="flex: 1; min-width: 100px;"
-            onclick="if(window.toastManager) window.toastManager.error('toasts.testToastError');">
-            <i class="bi bi-x-circle" style="color: var(--danger-color);"></i>
+          <button
+            class="settings-btn"
+            id="toast-test-error-btn"
+            style="flex: 1; min-width: 100px"
+            onclick="
+              if (window.toastManager)
+                window.toastManager.error('toasts.testToastError');
+            "
+          >
+            <i class="bi bi-x-circle" style="color: var(--danger-color)"></i>
             <span data-i18n="settings.testError">Error</span>
           </button>
-          <button class="settings-btn" id="toast-test-warning-btn" style="flex: 1; min-width: 100px;"
-            onclick="if(window.toastManager) window.toastManager.warning('toasts.testToastWarning');">
-            <i class="bi bi-exclamation-triangle" style="color: var(--warning-color);"></i>
+          <button
+            class="settings-btn"
+            id="toast-test-warning-btn"
+            style="flex: 1; min-width: 100px"
+            onclick="
+              if (window.toastManager)
+                window.toastManager.warning('toasts.testToastWarning');
+            "
+          >
+            <i
+              class="bi bi-exclamation-triangle"
+              style="color: var(--warning-color)"
+            ></i>
             <span data-i18n="settings.testWarning">Warning</span>
           </button>
-          <button class="settings-btn" id="toast-test-info-btn" style="flex: 1; min-width: 100px;"
-            onclick="if(window.toastManager) window.toastManager.info('toasts.testToastInfo');">
-            <i class="bi bi-info-circle" style="color: var(--accent-color);"></i>
+          <button
+            class="settings-btn"
+            id="toast-test-info-btn"
+            style="flex: 1; min-width: 100px"
+            onclick="
+              if (window.toastManager)
+                window.toastManager.info('toasts.testToastInfo');
+            "
+          >
+            <i class="bi bi-info-circle" style="color: var(--accent-color)"></i>
             <span data-i18n="settings.testInfo">Info</span>
           </button>
         </div>
-        <div class="settings-input-group" style="margin-top: 10px;">
-          <button class="settings-btn-action" id="toast-test-spam-btn" style="flex: 1;"
-            onclick="if(window.toastManager){window.toastManager.success('toasts.testToastSuccess');setTimeout(()=>window.toastManager.error('toasts.testToastError'),300);setTimeout(()=>window.toastManager.warning('toasts.testToastWarning'),600);setTimeout(()=>window.toastManager.info('toasts.testToastInfo'),900);setTimeout(()=>window.toastManager.success('toasts.testToastSuccess'),1200);}">
+        <div class="settings-input-group" style="margin-top: 10px">
+          <button
+            class="settings-btn-action"
+            id="toast-test-spam-btn"
+            style="flex: 1"
+            onclick="
+              if (window.toastManager) {
+                window.toastManager.success('toasts.testToastSuccess');
+                setTimeout(
+                  () => window.toastManager.error('toasts.testToastError'),
+                  300,
+                );
+                setTimeout(
+                  () => window.toastManager.warning('toasts.testToastWarning'),
+                  600,
+                );
+                setTimeout(
+                  () => window.toastManager.info('toasts.testToastInfo'),
+                  900,
+                );
+                setTimeout(
+                  () => window.toastManager.success('toasts.testToastSuccess'),
+                  1200,
+                );
+              }
+            "
+          >
             <i class="bi bi-layers"></i>
             <div class="settings-btn-action-content">
-              <span class="settings-btn-action-title" data-i18n="settings.spamToasts">Spam Toasts</span>
-              <span class="settings-btn-action-desc" data-i18n="settings.spamToastsDesc">Send 5 toasts rapidly to test
-                stacking</span>
+              <span
+                class="settings-btn-action-title"
+                data-i18n="settings.spamToasts"
+                >Spam Toasts</span
+              >
+              <span
+                class="settings-btn-action-desc"
+                data-i18n="settings.spamToastsDesc"
+                >Send 5 toasts rapidly to test stacking</span
+              >
             </div>
           </button>
         </div>
-        <div class="settings-input-group" style="margin-top: 10px;">
-          <button class="settings-btn-action" id="toast-test-action-btn" style="flex: 1;"
-            onclick="if(window.toastManager) window.toastManager.error('Test toast with action button', 8000, {}, { actionButton: { text: 'View Details', onClick: () => window.toastManager.info('Action clicked!') } });">
+        <div class="settings-input-group" style="margin-top: 10px">
+          <button
+            class="settings-btn-action"
+            id="toast-test-action-btn"
+            style="flex: 1"
+            onclick="
+              if (window.toastManager)
+                window.toastManager.error(
+                  'Test toast with action button',
+                  8000,
+                  {},
+                  {
+                    actionButton: {
+                      text: 'View Details',
+                      onClick: () =>
+                        window.toastManager.info('Action clicked!'),
+                    },
+                  },
+                );
+            "
+          >
             <i class="bi bi-hand-index"></i>
             <div class="settings-btn-action-content">
               <span class="settings-btn-action-title">Toast with Action</span>
-              <span class="settings-btn-action-desc">Test a toast with a clickable action button</span>
+              <span class="settings-btn-action-desc"
+                >Test a toast with a clickable action button</span
+              >
             </div>
           </button>
         </div>
-        <div class="settings-input-group" style="margin-top: 10px;">
-          <button class="settings-btn-action" id="toast-test-long-btn" style="flex: 1;"
-            onclick="if(window.toastManager) window.toastManager.info('This is a very long toast message designed to test text wrapping and layout behavior with extended content that spans multiple lines in the toast notification area', 10000);">
+        <div class="settings-input-group" style="margin-top: 10px">
+          <button
+            class="settings-btn-action"
+            id="toast-test-long-btn"
+            style="flex: 1"
+            onclick="
+              if (window.toastManager)
+                window.toastManager.info(
+                  'This is a very long toast message designed to test text wrapping and layout behavior with extended content that spans multiple lines in the toast notification area',
+                  10000,
+                );
+            "
+          >
             <i class="bi bi-text-wrap"></i>
             <div class="settings-btn-action-content">
               <span class="settings-btn-action-title">Long Message Toast</span>
-              <span class="settings-btn-action-desc">Test a toast with a long message (10s duration)</span>
+              <span class="settings-btn-action-desc"
+                >Test a toast with a long message (10s duration)</span
+              >
             </div>
           </button>
         </div>
       </div>
 
       <!-- Modal Tests -->
-      <div class="settings-section" style="
+      <div
+        class="settings-section"
+        style="
           background: linear-gradient(
             135deg,
             rgba(168, 85, 247, 0.1) 0%,
             rgba(168, 85, 247, 0.05) 100%
           );
           border-color: rgba(168, 85, 247, 0.2);
-        ">
-        <label class="settings-label" style="color: #a855f7; display: flex; align-items: center; gap: 8px;">
+        "
+      >
+        <label
+          class="settings-label"
+          style="color: #a855f7; display: flex; align-items: center; gap: 8px"
+        >
           <i class="bi bi-window-stack"></i>
           <span>Modal Tests</span>
         </label>
-        <p class="settings-hint" style="margin-bottom: 12px;">
+        <p class="settings-hint" style="margin-bottom: 12px">
           Test different modal types and their animations.
         </p>
-        <div class="settings-input-group" style="gap: 10px; flex-wrap: wrap;">
-          <button class="settings-btn" id="modal-test-alert-success" style="flex: 1; min-width: 120px;"
-            onclick="if(window.modalManager) window.modalManager.showAlert('success', 'modals.alert.successTitle', 'modals.alert.testMessage');">
-            <i class="bi bi-check-circle" style="color: var(--success-color);"></i>
+        <div class="settings-input-group" style="gap: 10px; flex-wrap: wrap">
+          <button
+            class="settings-btn"
+            id="modal-test-alert-success"
+            style="flex: 1; min-width: 120px"
+            onclick="
+              if (window.modalManager)
+                window.modalManager.showAlert(
+                  'success',
+                  'modals.alert.successTitle',
+                  'modals.alert.testMessage',
+                );
+            "
+          >
+            <i
+              class="bi bi-check-circle"
+              style="color: var(--success-color)"
+            ></i>
             <span>Alert Success</span>
           </button>
-          <button class="settings-btn" id="modal-test-alert-error" style="flex: 1; min-width: 120px;"
-            onclick="if(window.modalManager) window.modalManager.showAlert('error', 'modals.alert.errorTitle', 'modals.alert.testMessage');">
-            <i class="bi bi-x-circle" style="color: var(--danger-color);"></i>
+          <button
+            class="settings-btn"
+            id="modal-test-alert-error"
+            style="flex: 1; min-width: 120px"
+            onclick="
+              if (window.modalManager)
+                window.modalManager.showAlert(
+                  'error',
+                  'modals.alert.errorTitle',
+                  'modals.alert.testMessage',
+                );
+            "
+          >
+            <i class="bi bi-x-circle" style="color: var(--danger-color)"></i>
             <span>Alert Error</span>
           </button>
-          <button class="settings-btn" id="modal-test-alert-warning" style="flex: 1; min-width: 120px;"
-            onclick="if(window.modalManager) window.modalManager.showAlert('warning', 'modals.alert.warningTitle', 'modals.alert.testMessage');">
-            <i class="bi bi-exclamation-triangle" style="color: var(--warning-color);"></i>
+          <button
+            class="settings-btn"
+            id="modal-test-alert-warning"
+            style="flex: 1; min-width: 120px"
+            onclick="
+              if (window.modalManager)
+                window.modalManager.showAlert(
+                  'warning',
+                  'modals.alert.warningTitle',
+                  'modals.alert.testMessage',
+                );
+            "
+          >
+            <i
+              class="bi bi-exclamation-triangle"
+              style="color: var(--warning-color)"
+            ></i>
             <span>Alert Warning</span>
           </button>
         </div>
-        <div class="settings-input-group" style="gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-          <button class="settings-btn-action" id="modal-test-custom" style="flex: 1;"
-            onclick="if(window.modalManager) window.modalManager.showCustomModal({ title: 'Custom Test Modal', body: '<p style=&quot;color: var(--text-secondary); line-height: 1.6;&quot;>This is a test custom modal with <strong>HTML content</strong>.<br/><br/>It supports buttons, custom sizes, and more.</p>', size: 'normal', buttons: [{ text: 'Primary Action', type: 'primary', onClick: () => { if(window.toastManager) window.toastManager.success('Primary clicked!'); } }, { text: 'Cancel', type: 'secondary' }] });">
+        <div
+          class="settings-input-group"
+          style="gap: 10px; margin-top: 10px; flex-wrap: wrap"
+        >
+          <button
+            class="settings-btn-action"
+            id="modal-test-custom"
+            style="flex: 1"
+            onclick="
+              if (window.modalManager)
+                window.modalManager.showCustomModal({
+                  title: 'Custom Test Modal',
+                  body: '<p style=&quot;color: var(--text-secondary); line-height: 1.6;&quot;>This is a test custom modal with <strong>HTML content</strong>.<br/><br/>It supports buttons, custom sizes, and more.</p>',
+                  size: 'normal',
+                  buttons: [
+                    {
+                      text: 'Primary Action',
+                      type: 'primary',
+                      onClick: () => {
+                        if (window.toastManager)
+                          window.toastManager.success('Primary clicked!');
+                      },
+                    },
+                    { text: 'Cancel', type: 'secondary' },
+                  ],
+                });
+            "
+          >
             <i class="bi bi-puzzle"></i>
             <div class="settings-btn-action-content">
               <span class="settings-btn-action-title">Custom Modal</span>
-              <span class="settings-btn-action-desc">Test the showCustomModal API with buttons and HTML</span>
+              <span class="settings-btn-action-desc"
+                >Test the showCustomModal API with buttons and HTML</span
+              >
             </div>
           </button>
         </div>
-        <div class="settings-input-group" style="gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-          <button class="settings-btn-action" id="modal-test-rename" style="flex: 1;"
-            onclick="if(window.modalManager) window.modalManager.openRenameModal({ name: 'Test Mod Name', path: '/fake/path' }, (newName) => { if(window.toastManager) window.toastManager.info('Renamed to: ' + newName); });">
+        <div
+          class="settings-input-group"
+          style="gap: 10px; margin-top: 10px; flex-wrap: wrap"
+        >
+          <button
+            class="settings-btn-action"
+            id="modal-test-rename"
+            style="flex: 1"
+            onclick="
+              if (window.modalManager)
+                window.modalManager.openRenameModal(
+                  { name: 'Test Mod Name', path: '/fake/path' },
+                  (newName) => {
+                    if (window.toastManager)
+                      window.toastManager.info('Renamed to: ' + newName);
+                  },
+                );
+            "
+          >
             <i class="bi bi-pencil-square"></i>
             <div class="settings-btn-action-content">
               <span class="settings-btn-action-title">Rename Modal</span>
-              <span class="settings-btn-action-desc">Test the rename modal flow</span>
+              <span class="settings-btn-action-desc"
+                >Test the rename modal flow</span
+              >
             </div>
           </button>
-          <button class="settings-btn-action" id="modal-test-uninstall" style="flex: 1;"
-            onclick="if(window.modalManager) window.modalManager.openUninstallModal({ name: 'Test Mod', path: '/fake/path' }, () => { if(window.toastManager) window.toastManager.info('Uninstall confirmed (test)'); });">
+          <button
+            class="settings-btn-action"
+            id="modal-test-uninstall"
+            style="flex: 1"
+            onclick="
+              if (window.modalManager)
+                window.modalManager.openUninstallModal(
+                  { name: 'Test Mod', path: '/fake/path' },
+                  () => {
+                    if (window.toastManager)
+                      window.toastManager.info('Uninstall confirmed (test)');
+                  },
+                );
+            "
+          >
             <i class="bi bi-trash3"></i>
             <div class="settings-btn-action-content">
               <span class="settings-btn-action-title">Uninstall Modal</span>
-              <span class="settings-btn-action-desc">Test the uninstall confirmation modal</span>
+              <span class="settings-btn-action-desc"
+                >Test the uninstall confirmation modal</span
+              >
             </div>
           </button>
         </div>
-        <div class="settings-input-group" style="gap: 10px; margin-top: 10px;">
-          <button class="settings-btn-action" id="modal-test-blocking" style="flex: 1;"
-            onclick="if(window.modalManager) window.modalManager.showCustomModal({ title: 'Blocking Modal Test', body: '<p style=&quot;color: var(--text-secondary);&quot;>This modal cannot be closed by clicking the overlay. You must use a button.</p>', clickOverlayToClose: false, buttons: [{ text: 'Got it!', type: 'primary' }] });">
+        <div class="settings-input-group" style="gap: 10px; margin-top: 10px">
+          <button
+            class="settings-btn-action"
+            id="modal-test-blocking"
+            style="flex: 1"
+            onclick="
+              if (window.modalManager)
+                window.modalManager.showCustomModal({
+                  title: 'Blocking Modal Test',
+                  body: '<p style=&quot;color: var(--text-secondary);&quot;>This modal cannot be closed by clicking the overlay. You must use a button.</p>',
+                  clickOverlayToClose: false,
+                  buttons: [{ text: 'Got it!', type: 'primary' }],
+                });
+            "
+          >
             <i class="bi bi-shield-lock"></i>
             <div class="settings-btn-action-content">
               <span class="settings-btn-action-title">Blocking Modal</span>
-              <span class="settings-btn-action-desc">Test a modal that blocks overlay clicks</span>
+              <span class="settings-btn-action-desc"
+                >Test a modal that blocks overlay clicks</span
+              >
             </div>
           </button>
         </div>
       </div>
 
       <!-- UI Component Tests -->
-      <div class="settings-section" style="
+      <div
+        class="settings-section"
+        style="
           background: linear-gradient(
             135deg,
             rgba(245, 158, 11, 0.1) 0%,
             rgba(245, 158, 11, 0.05) 100%
           );
           border-color: rgba(245, 158, 11, 0.2);
-        ">
-        <label class="settings-label" style="color: #f59e0b; display: flex; align-items: center; gap: 8px;">
+        "
+      >
+        <label
+          class="settings-label"
+          style="color: #f59e0b; display: flex; align-items: center; gap: 8px"
+        >
           <i class="bi bi-palette"></i>
           <span>UI Component Tests</span>
         </label>
-        <p class="settings-hint" style="margin-bottom: 12px;">
+        <p class="settings-hint" style="margin-bottom: 12px">
           Test various UI components and their states.
         </p>
-        <div class="settings-input-group" style="gap: 10px; flex-wrap: wrap;">
-          <button class="settings-btn" id="ui-test-overlay" style="flex: 1; min-width: 120px;"
-            onclick="if(window.modalManager) { window.modalManager.showOverlay(); setTimeout(() => window.modalManager.hideOverlay(), 2000); }">
-            <i class="bi bi-square" style="color: #f59e0b;"></i>
+        <div class="settings-input-group" style="gap: 10px; flex-wrap: wrap">
+          <button
+            class="settings-btn"
+            id="ui-test-overlay"
+            style="flex: 1; min-width: 120px"
+            onclick="
+              if (window.modalManager) {
+                window.modalManager.showOverlay();
+                setTimeout(() => window.modalManager.hideOverlay(), 2000);
+              }
+            "
+          >
+            <i class="bi bi-square" style="color: #f59e0b"></i>
             <span>Flash Overlay</span>
           </button>
-          <button class="settings-btn" id="ui-test-devtools" style="flex: 1; min-width: 120px;"
-            onclick="if(window.electronAPI && window.electronAPI.openDevTools) window.electronAPI.openDevTools();">
-            <i class="bi bi-terminal" style="color: #f59e0b;"></i>
+          <button
+            class="settings-btn"
+            id="ui-test-devtools"
+            style="flex: 1; min-width: 120px"
+            onclick="
+              if (window.electronAPI && window.electronAPI.openDevTools)
+                window.electronAPI.openDevTools();
+            "
+          >
+            <i class="bi bi-terminal" style="color: #f59e0b"></i>
             <span>DevTools</span>
           </button>
-          <button class="settings-btn" id="ui-test-reload" style="flex: 1; min-width: 120px;"
-            onclick="window.location.reload();">
-            <i class="bi bi-arrow-clockwise" style="color: #f59e0b;"></i>
+          <button
+            class="settings-btn"
+            id="ui-test-reload"
+            style="flex: 1; min-width: 120px"
+            onclick="window.location.reload()"
+          >
+            <i class="bi bi-arrow-clockwise" style="color: #f59e0b"></i>
             <span>Reload Window</span>
           </button>
         </div>
-        <div class="settings-input-group" style="gap: 10px; margin-top: 10px; flex-wrap: nowrap;">
-          <button class="settings-btn-action" id="ui-test-statusbar-download" style="flex: 1 1 0;"
-            onclick="if(window.statusBarManager) { let p=0; const iv = setInterval(() => { p+=5; if(p>100) { clearInterval(iv); window.statusBarManager.updateExtendedBar({ type: 'success', fileName: 'test_mod.zip' }); setTimeout(() => window.statusBarManager.updateExtendedBar({ type: 'none' }), 3000); return; } window.statusBarManager.updateExtendedBar({ type: 'download', fileName: 'test_mod.zip', progress: p, speedText: '2.4 MB/s' }); }, 200); }">
-            <i class="bi bi-cloud-arrow-down" style="color: #f59e0b;"></i>
+        <div
+          class="settings-input-group"
+          style="gap: 10px; margin-top: 10px; flex-wrap: nowrap"
+        >
+          <button
+            class="settings-btn-action"
+            id="ui-test-statusbar-download"
+            style="flex: 1 1 0"
+            onclick="
+              if (window.statusBarManager) {
+                let p = 0;
+                const iv = setInterval(() => {
+                  p += 5;
+                  if (p > 100) {
+                    clearInterval(iv);
+                    window.statusBarManager.updateExtendedBar({
+                      type: 'success',
+                      fileName: 'test_mod.zip',
+                    });
+                    setTimeout(
+                      () =>
+                        window.statusBarManager.updateExtendedBar({
+                          type: 'none',
+                        }),
+                      3000,
+                    );
+                    return;
+                  }
+                  window.statusBarManager.updateExtendedBar({
+                    type: 'download',
+                    fileName: 'test_mod.zip',
+                    progress: p,
+                    speedText: '2.4 MB/s',
+                  });
+                }, 200);
+              }
+            "
+          >
+            <i class="bi bi-cloud-arrow-down" style="color: #f59e0b"></i>
             <div class="settings-btn-action-content">
               <span class="settings-btn-action-title">Simulate Download</span>
-              <span class="settings-btn-action-desc">Simulate a download progress bar in the status bar (0-100%)</span>
+              <span class="settings-btn-action-desc"
+                >Simulate a download progress bar in the status bar
+                (0-100%)</span
+              >
             </div>
           </button>
-          <button class="settings-btn-action" id="ui-test-statusbar-conflicts" style="flex: 1 1 0;"
-            onclick="if(window.statusBarManager) { window.statusBarManager.userDismissedExtendedBar = false; window.statusBarManager.updateExtendedBar({ type: 'conflict', conflictCount: 7, modsWithConflictsCount: 3 }); }">
-            <i class="bi bi-exclamation-triangle" style="color: #f59e0b;"></i>
+          <button
+            class="settings-btn-action"
+            id="ui-test-statusbar-conflicts"
+            style="flex: 1 1 0"
+            onclick="
+              if (window.statusBarManager) {
+                window.statusBarManager.userDismissedExtendedBar = false;
+                window.statusBarManager.updateExtendedBar({
+                  type: 'conflict',
+                  conflictCount: 7,
+                  modsWithConflictsCount: 3,
+                });
+              }
+            "
+          >
+            <i class="bi bi-exclamation-triangle" style="color: #f59e0b"></i>
             <div class="settings-btn-action-content">
               <span class="settings-btn-action-title">Simulate Conflicts</span>
-              <span class="settings-btn-action-desc">Show a persistent conflicts state in the status bar until dismissed</span>
+              <span class="settings-btn-action-desc"
+                >Show a persistent conflicts state in the status bar until
+                dismissed</span
+              >
             </div>
           </button>
         </div>
-        <div class="settings-input-group" style="gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-          <button class="settings-btn-action" id="ui-test-statusbar-states" style="flex: 1;"
-            onclick="if(window.statusBarManager) { const tabs = ['tools', 'settings', 'downloads', 'plugins']; let i=0; const iv = setInterval(() => { if(i>=tabs.length) { clearInterval(iv); window.statusBarManager.updateStatus('settings'); if(window.toastManager) window.toastManager.success('Status bar cycle complete'); return; } window.statusBarManager.updateStatus(tabs[i]); i++; }, 1500); }">
-            <i class="bi bi-speedometer2" style="color: #f59e0b;"></i>
+        <div
+          class="settings-input-group"
+          style="gap: 10px; margin-top: 10px; flex-wrap: wrap"
+        >
+          <button
+            class="settings-btn-action"
+            id="ui-test-statusbar-states"
+            style="flex: 1"
+            onclick="
+              if (window.statusBarManager) {
+                const tabs = ['tools', 'settings', 'downloads', 'plugins'];
+                let i = 0;
+                const iv = setInterval(() => {
+                  if (i >= tabs.length) {
+                    clearInterval(iv);
+                    window.statusBarManager.updateStatus('settings');
+                    if (window.toastManager)
+                      window.toastManager.success('Status bar cycle complete');
+                    return;
+                  }
+                  window.statusBarManager.updateStatus(tabs[i]);
+                  i++;
+                }, 1500);
+              }
+            "
+          >
+            <i class="bi bi-speedometer2" style="color: #f59e0b"></i>
             <div class="settings-btn-action-content">
               <span class="settings-btn-action-title">Status Bar States</span>
-              <span class="settings-btn-action-desc">Cycle through all status bar states (idle, scanning, downloading, error)</span>
+              <span class="settings-btn-action-desc"
+                >Cycle through all status bar states (idle, scanning,
+                downloading, error)</span
+              >
             </div>
           </button>
         </div>
-        <div class="settings-input-group" style="gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-          <button class="settings-btn" id="ui-test-i18n-key" style="flex: 1; min-width: 120px;"
-            onclick="if(window.toastManager) window.toastManager.info('toasts.nonExistentKey.test');">
-            <i class="bi bi-translate" style="color: #f59e0b;"></i>
+        <div
+          class="settings-input-group"
+          style="gap: 10px; margin-top: 10px; flex-wrap: wrap"
+        >
+          <button
+            class="settings-btn"
+            id="ui-test-i18n-key"
+            style="flex: 1; min-width: 120px"
+            onclick="
+              if (window.toastManager)
+                window.toastManager.info('toasts.nonExistentKey.test');
+            "
+          >
+            <i class="bi bi-translate" style="color: #f59e0b"></i>
             <span>Missing i18n Key</span>
           </button>
-          <button class="settings-btn" id="ui-test-clear-toasts" style="flex: 1; min-width: 120px;"
-            onclick="if(window.toastManager) window.toastManager.clear();">
-            <i class="bi bi-eraser" style="color: #f59e0b;"></i>
+          <button
+            class="settings-btn"
+            id="ui-test-clear-toasts"
+            style="flex: 1; min-width: 120px"
+            onclick="if (window.toastManager) window.toastManager.clear();"
+          >
+            <i class="bi bi-eraser" style="color: #f59e0b"></i>
             <span>Clear All Toasts</span>
           </button>
         </div>
       </div>
 
-      <div class="settings-section" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3);">
+      <div
+        class="settings-section"
+        style="
+          background: rgba(239, 68, 68, 0.1);
+          border-color: rgba(239, 68, 68, 0.3);
+        "
+      >
         <label class="settings-label" style="color: #ef4444">
           <i class="bi bi-exclamation-triangle-fill"></i>
-          <span data-i18n="settings.resetStoreTitle">Reset Application Data</span>
+          <span data-i18n="settings.resetStoreTitle"
+            >Reset Application Data</span
+          >
         </label>
         <p class="settings-hint" data-i18n="settings.resetStoreHint">
-          This will reset all application settings and data stored in Electron Store. The application will restart after
-          reset.
+          This will reset all application settings and data stored in Electron
+          Store. The application will restart after reset.
         </p>
-        <button class="settings-btn-action" id="reset-electron-store-btn"
-          onclick="if(window.settingsManager) window.settingsManager.showResetStoreConfirmModal();"
-          style="background: rgba(239, 68, 68, 0.15); border-color: #ef4444;">
+        <button
+          class="settings-btn-action"
+          id="reset-electron-store-btn"
+          onclick="
+            if (window.settingsManager)
+              window.settingsManager.showResetStoreConfirmModal();
+          "
+          style="background: rgba(239, 68, 68, 0.15); border-color: #ef4444"
+        >
           <i class="bi bi-trash3" style="color: #ef4444"></i>
           <div class="settings-btn-action-content">
-            <span class="settings-btn-action-title" style="color: #ef4444" data-i18n="settings.resetStore">Reset
-              Electron Store</span>
-            <span class="settings-btn-action-desc" data-i18n="settings.resetStoreDesc">Clear all stored settings and
-              data</span>
+            <span
+              class="settings-btn-action-title"
+              style="color: #ef4444"
+              data-i18n="settings.resetStore"
+              >Reset Electron Store</span
+            >
+            <span
+              class="settings-btn-action-desc"
+              data-i18n="settings.resetStoreDesc"
+              >Clear all stored settings and data</span
+            >
           </div>
           <i class="bi bi-arrow-right" style="color: #ef4444"></i>
         </button>
