@@ -38,6 +38,7 @@ class SettingsManager {
       startupSplashSoundEnabled: true,
       startupSplashSoundPath: null,
       appSoundPaths: {},
+      appSoundEnabled: {},
     };
     this.initialized = false;
     this.tabSwitchingAttached = false;
@@ -172,7 +173,9 @@ class SettingsManager {
 
         const filePath = window.electronAPI?.getPathForFile?.(file);
         if (!filePath) {
-          window.toastManager?.error?.('Unable to read the selected audio path');
+          window.toastManager?.error?.(
+            'Unable to read the selected audio path',
+          );
           return;
         }
 
@@ -199,79 +202,113 @@ class SettingsManager {
       resetStartupSplashSound.dataset.listenerAttached = 'true';
     }
 
-    document.querySelectorAll<HTMLElement>('.app-sound-browse').forEach((button) => {
-      if (button.dataset.listenerAttached) {
-        return;
-      }
-
-      button.addEventListener('click', () => {
-        const soundName = button.dataset.soundName;
-        if (!soundName) {
+    document
+      .querySelectorAll<HTMLElement>('.app-sound-browse')
+      .forEach((button) => {
+        if (button.dataset.listenerAttached) {
           return;
         }
 
-        const fileInput = document.querySelector<HTMLInputElement>(
-          `#app-sound-file-${soundName}`,
-        );
-        if (!fileInput) {
-          return;
-        }
+        button.addEventListener('click', () => {
+          const soundName = button.dataset.soundName;
+          if (!soundName) {
+            return;
+          }
 
-        fileInput.value = '';
-        fileInput.click();
+          const fileInput = document.querySelector<HTMLInputElement>(
+            `#app-sound-file-${soundName}`,
+          );
+          if (!fileInput) {
+            return;
+          }
+
+          fileInput.value = '';
+          fileInput.click();
+        });
+        button.dataset.listenerAttached = 'true';
       });
-      button.dataset.listenerAttached = 'true';
-    });
 
-    document.querySelectorAll<HTMLInputElement>('input[id^="app-sound-file-"]').forEach((input) => {
-      if (input.dataset.listenerAttached) {
-        return;
-      }
-
-      input.addEventListener('change', () => {
-        const soundName = input.dataset.soundName;
-        const file = input.files?.[0];
-        if (!soundName || !file) {
+    document
+      .querySelectorAll<HTMLInputElement>('input[id^="app-sound-file-"]')
+      .forEach((input) => {
+        if (input.dataset.listenerAttached) {
           return;
         }
 
-        const filePath = window.electronAPI?.getPathForFile?.(file);
-        if (!filePath) {
-          window.toastManager?.error?.('Unable to read the selected audio path');
-          return;
-        }
+        input.addEventListener('change', () => {
+          const soundName = input.dataset.soundName;
+          const file = input.files?.[0];
+          if (!soundName || !file) {
+            return;
+          }
 
-        this.settings.appSoundPaths = {
-          ...(this.settings.appSoundPaths || {}),
-          [soundName]: filePath,
-        };
-        window.appSoundManager?.setCustomSound?.(soundName as any, filePath);
-        this.saveSettings();
-        this.updateAppSoundsUI();
+          const filePath = window.electronAPI?.getPathForFile?.(file);
+          if (!filePath) {
+            window.toastManager?.error?.(
+              'Unable to read the selected audio path',
+            );
+            return;
+          }
+
+          this.settings.appSoundPaths = {
+            ...(this.settings.appSoundPaths || {}),
+            [soundName]: filePath,
+          };
+          window.appSoundManager?.setCustomSound?.(soundName as any, filePath);
+          this.saveSettings();
+          this.updateAppSoundsUI();
+        });
+        input.dataset.listenerAttached = 'true';
       });
-      input.dataset.listenerAttached = 'true';
-    });
 
-    document.querySelectorAll<HTMLElement>('.app-sound-reset').forEach((button) => {
-      if (button.dataset.listenerAttached) {
-        return;
-      }
-
-      button.addEventListener('click', () => {
-        const soundName = button.dataset.soundName;
-        if (!soundName) {
+    document
+      .querySelectorAll<HTMLElement>('.app-sound-reset')
+      .forEach((button) => {
+        if (button.dataset.listenerAttached) {
           return;
         }
 
-        const nextSoundPaths = { ...(this.settings.appSoundPaths || {}) };
-        delete nextSoundPaths[soundName];
-        this.settings.appSoundPaths = nextSoundPaths;
-        window.appSoundManager?.setCustomSound?.(soundName as any, null);
-        this.saveSettings();
-        this.updateAppSoundsUI();
+        button.addEventListener('click', () => {
+          const soundName = button.dataset.soundName;
+          if (!soundName) {
+            return;
+          }
+
+          const nextSoundPaths = { ...(this.settings.appSoundPaths || {}) };
+          delete nextSoundPaths[soundName];
+          this.settings.appSoundPaths = nextSoundPaths;
+          window.appSoundManager?.setCustomSound?.(soundName as any, null);
+          this.saveSettings();
+          this.updateAppSoundsUI();
+        });
+        button.dataset.listenerAttached = 'true';
       });
-      button.dataset.listenerAttached = 'true';
-    });
+
+    document
+      .querySelectorAll<HTMLInputElement>('.app-sound-enabled')
+      .forEach((input) => {
+        if (input.dataset.listenerAttached) {
+          return;
+        }
+
+        input.addEventListener('change', () => {
+          const soundName = input.dataset.soundName;
+          if (!soundName) {
+            return;
+          }
+
+          this.settings.appSoundEnabled = {
+            ...(this.settings.appSoundEnabled || {}),
+            [soundName]: input.checked,
+          };
+          window.appSoundManager?.setSoundEnabled?.(
+            soundName as any,
+            input.checked,
+          );
+          this.saveSettings();
+        });
+        input.dataset.listenerAttached = 'true';
+      });
 
     const enhancedStatusBarToggle = document.querySelector<HTMLInputElement>(
       '#enhanced-status-bar-enabled',
@@ -347,9 +384,8 @@ class SettingsManager {
       console.log('Bulk disable mods button listener attached');
     }
 
-    const batchTestingBtn = document.querySelector<HTMLElement>(
-      '#batch-testing-btn',
-    );
+    const batchTestingBtn =
+      document.querySelector<HTMLElement>('#batch-testing-btn');
     if (batchTestingBtn && !batchTestingBtn.dataset.listenerAttached) {
       batchTestingBtn.addEventListener('click', async () => {
         if ((window as any).batchTestingManager) {
@@ -428,7 +464,10 @@ class SettingsManager {
     const restartTutorialModsBtn = document.querySelector<HTMLElement>(
       '#restart-tutorial-mods-btn',
     );
-    if (restartTutorialModsBtn && !restartTutorialModsBtn.dataset.listenerAttached) {
+    if (
+      restartTutorialModsBtn &&
+      !restartTutorialModsBtn.dataset.listenerAttached
+    ) {
       restartTutorialModsBtn.addEventListener('click', async () => {
         const modsTabBtn = document.querySelector<HTMLElement>(
           '.sidebar-btn[data-tab="tools"]',
@@ -522,8 +561,9 @@ class SettingsManager {
       switchFtpUser.dataset.listenerAttached = 'true';
     }
 
-    const switchFtpPassword =
-      document.querySelector<HTMLInputElement>('#switch-ftp-password');
+    const switchFtpPassword = document.querySelector<HTMLInputElement>(
+      '#switch-ftp-password',
+    );
     if (switchFtpPassword && !switchFtpPassword.dataset.listenerAttached) {
       switchFtpPassword.addEventListener('change', () => {
         this.settings.switchFtpPassword = switchFtpPassword.value || null;
@@ -968,9 +1008,8 @@ class SettingsManager {
     this.updateDeveloperModeUI();
 
     // Analytics toggle
-    const analyticsToggle = document.querySelector<HTMLInputElement>(
-      '#analytics-enabled',
-    );
+    const analyticsToggle =
+      document.querySelector<HTMLInputElement>('#analytics-enabled');
     if (analyticsToggle && !analyticsToggle.dataset.listenerAttached) {
       // Load current value
       if (window.electronAPI && window.electronAPI.getAnalyticsEnabled) {
@@ -1058,7 +1097,8 @@ class SettingsManager {
         });
       }
 
-      const openConfigBtn = document.querySelector<HTMLElement>('#open-config-btn');
+      const openConfigBtn =
+        document.querySelector<HTMLElement>('#open-config-btn');
       if (openConfigBtn) {
         openConfigBtn.addEventListener('click', async () => {
           if (window.electronAPI && window.electronAPI.openConfigFile) {
@@ -1493,10 +1533,7 @@ class SettingsManager {
   checkModsPath(path, options: { force?: boolean } = {}) {
     if (!path || this.hasExpectedModsPathStructure(path)) return;
 
-    if (
-      !options.force &&
-      this.lastModsPathWarningPath === path
-    ) {
+    if (!options.force && this.lastModsPathWarningPath === path) {
       return;
     }
 
@@ -1740,8 +1777,9 @@ ${t('settings.okUnderstand')}
       switchFtpUserInput.value = this.settings.switchFtpUser || '';
     }
 
-    const switchFtpPasswordInput =
-      document.querySelector<HTMLInputElement>('#switch-ftp-password');
+    const switchFtpPasswordInput = document.querySelector<HTMLInputElement>(
+      '#switch-ftp-password',
+    );
     if (switchFtpPasswordInput) {
       switchFtpPasswordInput.value = this.settings.switchFtpPassword || '';
     }
@@ -1750,16 +1788,15 @@ ${t('settings.okUnderstand')}
       document.querySelector<HTMLInputElement>('#switch-ftp-path');
     if (switchFtpPathInput) {
       switchFtpPathInput.value =
-        this.settings.switchFtpModsPath ||
-        this.settings.switchFtpPath ||
-        '';
+        this.settings.switchFtpModsPath || this.settings.switchFtpPath || '';
     }
 
     const switchFtpPluginsPathInput = document.querySelector<HTMLInputElement>(
       '#switch-ftp-plugins-path',
     );
     if (switchFtpPluginsPathInput) {
-      switchFtpPluginsPathInput.value = this.settings.switchFtpPluginsPath || '';
+      switchFtpPluginsPathInput.value =
+        this.settings.switchFtpPluginsPath || '';
     }
   }
 
@@ -2023,7 +2060,8 @@ ${t('settings.okUnderstand')}
       '#startup-splash-enabled',
     );
     if (startupSplashCheckbox) {
-      startupSplashCheckbox.checked = this.settings.startupSplashEnabled !== false;
+      startupSplashCheckbox.checked =
+        this.settings.startupSplashEnabled !== false;
     }
   }
 
@@ -2036,10 +2074,9 @@ ${t('settings.okUnderstand')}
       startupSplashSoundCheckbox.checked =
         splashEnabled && this.settings.startupSplashSoundEnabled !== false;
       startupSplashSoundCheckbox.disabled = !splashEnabled;
-      startupSplashSoundCheckbox.closest('.settings-switch')?.classList.toggle(
-        'disabled',
-        !splashEnabled,
-      );
+      startupSplashSoundCheckbox
+        .closest('.settings-switch')
+        ?.classList.toggle('disabled', !splashEnabled);
     }
 
     const splashSoundLabel = document.querySelector<HTMLElement>(
@@ -2055,12 +2092,12 @@ ${t('settings.okUnderstand')}
     );
     if (splashSoundPathInput) {
       const defaultSoundLabel =
-        window.i18n?.t?.(
-          'settings.startupSplashSoundPathPlaceholder',
-        ) || 'Default FightPlanner sound';
+        window.i18n?.t?.('settings.startupSplashSoundPathPlaceholder') ||
+        'Default FightPlanner sound';
       splashSoundPathInput.value =
         this.settings.startupSplashSoundPath || defaultSoundLabel;
-      splashSoundPathInput.disabled = this.settings.startupSplashEnabled === false;
+      splashSoundPathInput.disabled =
+        this.settings.startupSplashEnabled === false;
     }
 
     const browseStartupSplashSound = document.querySelector<HTMLButtonElement>(
@@ -2085,8 +2122,16 @@ ${t('settings.okUnderstand')}
     const defaultSoundLabel =
       window.i18n?.t?.('settings.defaultSoundPath') || 'Default sound';
     const appSoundPaths = this.settings.appSoundPaths || {};
+    const appSoundEnabled = this.settings.appSoundEnabled || {};
 
     this.getAppSoundNames().forEach((soundName) => {
+      const enabledInput = document.querySelector<HTMLInputElement>(
+        `#app-sound-enabled-${soundName}`,
+      );
+      if (enabledInput) {
+        enabledInput.checked = appSoundEnabled[soundName] !== false;
+      }
+
       const pathInput = document.querySelector<HTMLInputElement>(
         `#app-sound-path-${soundName}`,
       );
@@ -2109,10 +2154,15 @@ ${t('settings.okUnderstand')}
     }
 
     const appSoundPaths = this.settings.appSoundPaths || {};
+    const appSoundEnabled = this.settings.appSoundEnabled || {};
     this.getAppSoundNames().forEach((soundName) => {
       window.appSoundManager.setCustomSound(
         soundName as any,
         appSoundPaths[soundName] || null,
+      );
+      window.appSoundManager.setSoundEnabled(
+        soundName as any,
+        appSoundEnabled[soundName] !== false,
       );
     });
   }
@@ -2229,13 +2279,11 @@ ${t('settings.okUnderstand')}
       const switchIp = await window.electronAPI.store.get('switchIp');
       const switchPort = await window.electronAPI.store.get('switchPort');
       const switchFtpUser = await window.electronAPI.store.get('switchFtpUser');
-      const switchFtpPassword = await window.electronAPI.store.get(
-        'switchFtpPassword',
-      );
+      const switchFtpPassword =
+        await window.electronAPI.store.get('switchFtpPassword');
       const switchFtpPath = await window.electronAPI.store.get('switchFtpPath');
-      const switchFtpModsPath = await window.electronAPI.store.get(
-        'switchFtpModsPath',
-      );
+      const switchFtpModsPath =
+        await window.electronAPI.store.get('switchFtpModsPath');
       const switchFtpPluginsPath = await window.electronAPI.store.get(
         'switchFtpPluginsPath',
       );
@@ -2268,9 +2316,9 @@ ${t('settings.okUnderstand')}
       const startupSplashSoundPath = await window.electronAPI.store.get(
         'startupSplashSoundPath',
       );
-      const appSoundPaths = await window.electronAPI.store.get(
-        'appSoundPaths',
-      );
+      const appSoundPaths = await window.electronAPI.store.get('appSoundPaths');
+      const appSoundEnabled =
+        await window.electronAPI.store.get('appSoundEnabled');
       return {
         modsPath: modsPath || null,
         pluginsPath: pluginsPath || null,
@@ -2304,6 +2352,10 @@ ${t('settings.okUnderstand')}
           appSoundPaths && typeof appSoundPaths === 'object'
             ? appSoundPaths
             : {},
+        appSoundEnabled:
+          appSoundEnabled && typeof appSoundEnabled === 'object'
+            ? appSoundEnabled
+            : {},
       };
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -2333,6 +2385,7 @@ ${t('settings.okUnderstand')}
         startupSplashSoundEnabled: true,
         startupSplashSoundPath: null,
         appSoundPaths: {},
+        appSoundEnabled: {},
       };
     }
   }
@@ -2432,6 +2485,10 @@ ${t('settings.okUnderstand')}
         'appSoundPaths',
         this.settings.appSoundPaths || {},
       );
+      await window.electronAPI.store.set(
+        'appSoundEnabled',
+        this.settings.appSoundEnabled || {},
+      );
     } catch (error) {
       console.error('Failed to save settings:', error);
     }
@@ -2498,11 +2555,15 @@ ${t('settings.okUnderstand')}
   }
 
   getSwitchFtpPath() {
-    return this.settings.switchFtpModsPath || this.settings.switchFtpPath || null;
+    return (
+      this.settings.switchFtpModsPath || this.settings.switchFtpPath || null
+    );
   }
 
   getSwitchFtpModsPath() {
-    return this.settings.switchFtpModsPath || this.settings.switchFtpPath || null;
+    return (
+      this.settings.switchFtpModsPath || this.settings.switchFtpPath || null
+    );
   }
 
   getSwitchFtpPluginsPath() {

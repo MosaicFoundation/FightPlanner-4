@@ -111,8 +111,22 @@
   border-color: var(--bg-transparent-15);
 }
 
-.characters-content {
+.characters-stage {
+  position: relative;
   flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.characters-stage > .characters-content,
+.characters-stage > .character-css-editor {
+  position: absolute;
+  inset: 0;
+  will-change: transform, opacity;
+}
+
+.characters-content {
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -123,8 +137,6 @@
 }
 
 .character-css-editor {
-  flex: 1;
-  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -139,62 +151,66 @@
 }
 
 .characters-view-enter-from-right {
-  animation: charactersViewEnterFromRight 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: charactersViewEnterFromRight 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  z-index: 2;
 }
 
 .characters-view-enter-from-left {
-  animation: charactersViewEnterFromLeft 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: charactersViewEnterFromLeft 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  z-index: 2;
 }
 
 .characters-view-exit-left {
-  animation: charactersViewExitLeft 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: charactersViewExitLeft 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  z-index: 1;
 }
 
 .characters-view-exit-right {
-  animation: charactersViewExitRight 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: charactersViewExitRight 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  z-index: 1;
 }
 
 @keyframes charactersViewEnterFromRight {
   from {
     opacity: 0;
-    transform: translateX(28px);
+    transform: translate3d(8%, 0, 0);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes charactersViewEnterFromLeft {
   from {
     opacity: 0;
-    transform: translateX(-28px);
+    transform: translate3d(-8%, 0, 0);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes charactersViewExitLeft {
   from {
     opacity: 1;
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
   to {
     opacity: 0;
-    transform: translateX(-28px);
+    transform: translate3d(-8%, 0, 0);
   }
 }
 
 @keyframes charactersViewExitRight {
   from {
     opacity: 1;
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
   to {
     opacity: 0;
-    transform: translateX(28px);
+    transform: translate3d(8%, 0, 0);
   }
 }
 
@@ -669,46 +685,79 @@ body.no-animations .characters-view-exit-right {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  align-content: flex-start;
+  align-content: center;
+  align-items: center;
   overflow: auto;
-  padding: 8px;
+  gap: 4px;
+  padding: 22px 18px 34px;
   background: #050607;
 }
 
 .character-css-preview-tile {
   position: relative;
-  flex: 0 0 calc(100% / 12);
-  min-width: 0;
-  aspect-ratio: 181 / 120;
-  overflow: hidden;
-  border: 1px solid #040404;
-  background: #111;
+  flex: 0 0 112px;
+  width: 112px;
+  height: 72px;
+  overflow: visible;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  background: linear-gradient(180deg, #15171a 0%, #090a0c 100%);
+  box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.46);
 }
 
 .character-css-preview-tile img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: 60px;
+  object-fit: contain;
   display: block;
+  pointer-events: none;
 }
 
 .character-css-preview-placeholder {
   width: 100%;
-  height: 100%;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(0, 0, 0, 0.62);
-  font-size: 28px;
+  color: rgba(255, 255, 255, 0.32);
+  font-size: 24px;
 }
 
 .character-css-preview-placeholder[hidden] {
   display: none;
 }
 
+.character-css-preview-name {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 2px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 @media (max-width: 1000px) {
   .character-css-preview-tile {
-    flex-basis: calc(100% / 8);
+    flex-basis: 96px;
+    width: 96px;
+    height: 64px;
+  }
+
+  .character-css-preview-tile img,
+  .character-css-preview-placeholder {
+    height: 52px;
   }
 }
 

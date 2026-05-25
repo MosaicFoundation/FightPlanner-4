@@ -57,6 +57,8 @@ class StagesManager {
   activationFrame: number | null;
   activationTimeout: number | null;
   boundGridElement: HTMLElement | null;
+  prefetchedLayout: any | null;
+  prefetchPromise: Promise<void> | null;
 
   constructor() {
     this.root = null;
@@ -101,8 +103,34 @@ class StagesManager {
     this.activationFrame = null;
     this.activationTimeout = null;
     this.boundGridElement = null;
+    this.prefetchedLayout = null;
+    this.prefetchPromise = null;
 
     this.setupContextMenu();
+  }
+
+  preloadLayout() {
+    if (this.prefetchedLayout || this.prefetchPromise || this.movableStages.length > 0) {
+      return this.prefetchPromise || Promise.resolve();
+    }
+
+    this.prefetchPromise = (async () => {
+      try {
+        if (!window.electronAPI?.getStageLayout) {
+          return;
+        }
+        const result = await window.electronAPI.getStageLayout();
+        if (result?.success) {
+          this.prefetchedLayout = result;
+        }
+      } catch (error) {
+        console.warn('[StagesManager] Preload failed:', error);
+      } finally {
+        this.prefetchPromise = null;
+      }
+    })();
+
+    return this.prefetchPromise;
   }
 
   t(key: string, fallback: string, params: Record<string, string | number> = {}) {
@@ -563,7 +591,16 @@ class StagesManager {
     this.grid.innerHTML = `<div class="stages-empty-state">${this.t('stages.loading', 'Loading stages...')}</div>`;
 
     try {
-      const result = await window.electronAPI.getStageLayout();
+      if (this.prefetchPromise) {
+        await this.prefetchPromise;
+      }
+
+      let result = this.prefetchedLayout;
+      if (result) {
+        this.prefetchedLayout = null;
+      } else {
+        result = await window.electronAPI.getStageLayout();
+      }
       if (!result.success) {
         throw new Error(result.error || this.t('stages.loadFailed', 'Failed to load stage layout'));
       }

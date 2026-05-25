@@ -58,6 +58,8 @@ class CharactersManager {
   cssPanelMode: 'prc' | 'msbt';
   cssSelectedSlotIndex: number;
   cssCharacterUpdates: Map<string, any>;
+  cssPrefetchedLayout: any | null;
+  cssPrefetchPromise: Promise<void> | null;
 
   constructor() {
     this.characters = new Map();
@@ -75,8 +77,34 @@ class CharactersManager {
     this.cssPanelMode = 'prc';
     this.cssSelectedSlotIndex = 0;
     this.cssCharacterUpdates = new Map();
+    this.cssPrefetchedLayout = null;
+    this.cssPrefetchPromise = null;
 
     console.log('Characters Manager created');
+  }
+
+  preloadCssLayout() {
+    if (this.cssLoaded || this.cssPrefetchedLayout || this.cssPrefetchPromise) {
+      return this.cssPrefetchPromise || Promise.resolve();
+    }
+
+    this.cssPrefetchPromise = (async () => {
+      try {
+        if (!window.electronAPI?.getCharacterCssLayout) {
+          return;
+        }
+        const result = await window.electronAPI.getCharacterCssLayout();
+        if (result?.success) {
+          this.cssPrefetchedLayout = result;
+        }
+      } catch (error) {
+        console.warn('[CharactersManager] CSS preload failed:', error);
+      } finally {
+        this.cssPrefetchPromise = null;
+      }
+    })();
+
+    return this.cssPrefetchPromise;
   }
 
   closeCharacterModal(
@@ -648,17 +676,33 @@ ${char.mods
       return;
     }
 
-    browserView.classList.remove('characters-view-enter-from-left', 'characters-view-enter-from-right');
-    browserView.classList.add('characters-view-exit-left');
-    window.setTimeout(() => {
-      browserView.hidden = true;
-      browserView.classList.remove('characters-view-exit-left');
-    }, 220);
+    const isNoAnimations = document.body.classList.contains('no-animations');
+    const animClasses = [
+      'characters-view-enter-from-left',
+      'characters-view-enter-from-right',
+      'characters-view-exit-left',
+      'characters-view-exit-right',
+    ];
+    browserView.classList.remove(...animClasses);
+    cssEditor.classList.remove(...animClasses);
 
-    cssEditor.hidden = false;
-    cssEditor.classList.remove('characters-view-enter-from-left', 'characters-view-exit-left');
-    void cssEditor.offsetWidth;
-    cssEditor.classList.add('characters-view-enter-from-right');
+    if (isNoAnimations) {
+      browserView.hidden = true;
+      cssEditor.hidden = false;
+    } else {
+      browserView.classList.add('characters-view-exit-left');
+      window.setTimeout(() => {
+        browserView.hidden = true;
+        browserView.classList.remove('characters-view-exit-left');
+      }, 320);
+
+      cssEditor.hidden = false;
+      void cssEditor.offsetWidth;
+      cssEditor.classList.add('characters-view-enter-from-right');
+      window.setTimeout(() => {
+        cssEditor.classList.remove('characters-view-enter-from-right');
+      }, 320);
+    }
 
     if (!this.cssLoaded) {
       await this.loadCssLayout();
@@ -674,19 +718,36 @@ ${char.mods
     const cssEditor =
       document.querySelector<HTMLElement>('#character-css-editor');
 
+    const isNoAnimations = document.body.classList.contains('no-animations');
+    const animClasses = [
+      'characters-view-enter-from-left',
+      'characters-view-enter-from-right',
+      'characters-view-exit-left',
+      'characters-view-exit-right',
+    ];
+
     if (browserView) {
+      browserView.classList.remove(...animClasses);
       browserView.hidden = false;
-      browserView.classList.remove('characters-view-exit-left');
-      void browserView.offsetWidth;
-      browserView.classList.add('characters-view-enter-from-left');
+      if (!isNoAnimations) {
+        void browserView.offsetWidth;
+        browserView.classList.add('characters-view-enter-from-left');
+        window.setTimeout(() => {
+          browserView.classList.remove('characters-view-enter-from-left');
+        }, 320);
+      }
     }
     if (cssEditor) {
-      cssEditor.classList.remove('characters-view-enter-from-right');
-      cssEditor.classList.add('characters-view-exit-right');
-      window.setTimeout(() => {
+      cssEditor.classList.remove(...animClasses);
+      if (isNoAnimations) {
         cssEditor.hidden = true;
-        cssEditor.classList.remove('characters-view-exit-right');
-      }, 220);
+      } else {
+        cssEditor.classList.add('characters-view-exit-right');
+        window.setTimeout(() => {
+          cssEditor.hidden = true;
+          cssEditor.classList.remove('characters-view-exit-right');
+        }, 320);
+      }
     }
   }
 
@@ -697,7 +758,16 @@ ${char.mods
     }
 
     try {
-      const result = await window.electronAPI.getCharacterCssLayout();
+      if (this.cssPrefetchPromise) {
+        await this.cssPrefetchPromise;
+      }
+
+      let result = this.cssPrefetchedLayout;
+      if (result) {
+        this.cssPrefetchedLayout = null;
+      } else {
+        result = await window.electronAPI.getCharacterCssLayout();
+      }
       if (!result.success) {
         throw new Error(result.error || 'Failed to load character CSS layout');
       }
@@ -1577,6 +1647,7 @@ ${image}
 <div class="character-css-preview-placeholder" ${character.imageUrl ? 'hidden' : ''}>
 <i class="bi bi-person-fill"></i>
 </div>
+<span class="character-css-preview-name">${escapedName.toUpperCase()}</span>
 </div>
 `;
   }
