@@ -4,6 +4,7 @@ interface UserFields {
   bannerURL?: string;
   photoPublicId?: string;
   bannerPublicId?: string;
+  badges?: string[];
 
   privacySettings?: {
     showEmail?: boolean;

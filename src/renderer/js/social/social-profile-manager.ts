@@ -1,5 +1,100 @@
 class SocialProfileManager extends SocialFeedManager {
   [key: string]: any;
+  parseFirestoreFieldValue(value: any): any {
+    if (!value || typeof value !== 'object') return value;
+    if ('stringValue' in value) return value.stringValue;
+    if ('booleanValue' in value) return value.booleanValue;
+    if ('integerValue' in value) return Number(value.integerValue);
+    if ('doubleValue' in value) return Number(value.doubleValue);
+    if ('arrayValue' in value) {
+      const values = value.arrayValue?.values;
+      return Array.isArray(values)
+        ? values.map((entry) => this.parseFirestoreFieldValue(entry))
+        : [];
+    }
+    if ('mapValue' in value) {
+      const fields = value.mapValue?.fields || {};
+      return Object.fromEntries(
+        Object.entries(fields).map(([key, entry]) => [
+          key,
+          this.parseFirestoreFieldValue(entry),
+        ]),
+      );
+    }
+
+    return Object.values(value)[0];
+  }
+
+  parseFirestoreFields<T extends Record<string, any>>(fields: any): T {
+    return Object.fromEntries(
+      Object.entries(fields || {}).map(([key, value]) => [
+        key,
+        this.parseFirestoreFieldValue(value),
+      ]),
+    ) as T;
+  }
+
+  getProfileBadgeMeta(badge: string) {
+    const normalized = String(badge || '').trim().toLowerCase();
+    const badgeMap: Record<string, { label: string; icon: string; className: string }> = {
+      owner: {
+        label: 'Owner',
+        icon: 'bi-shield-fill-check',
+        className: 'badge-owner',
+      },
+      fightplanner_creator: {
+        label: 'FightPlanner Creator',
+        icon: 'bi-stars',
+        className: 'badge-fightplanner-creator',
+      },
+      tester: {
+        label: 'Tester',
+        icon: 'bi-bug-fill',
+        className: 'badge-tester',
+      },
+    };
+
+    return (
+      badgeMap[normalized] || {
+        label: normalized
+          .split('_')
+          .filter(Boolean)
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(' ') || 'Badge',
+        icon: 'bi-patch-check-fill',
+        className: `badge-${normalized.replace(/[^a-z0-9-]/g, '-')}`,
+      }
+    );
+  }
+
+  renderProfileBadges(badges: string[] = []) {
+    const uniqueBadges = Array.from(
+      new Set(
+        badges
+          .map((badge) => String(badge || '').trim())
+          .filter(Boolean),
+      ),
+    );
+
+    return uniqueBadges
+      .map((badge) => {
+        const meta = this.getProfileBadgeMeta(badge);
+        return `<span class="social-profile-badge ${this.escapeHtml(meta.className)}" title="${this.escapeHtml(meta.label)}">
+<i class="bi ${this.escapeHtml(meta.icon)}"></i>
+<span>${this.escapeHtml(meta.label)}</span>
+</span>`;
+      })
+      .join('');
+  }
+
+  applyProfileBadges(selector: string, badges?: string[]) {
+    const badgesEl = document.querySelector<HTMLElement>(selector);
+    if (!badgesEl) return;
+    badgesEl.innerHTML = Array.isArray(badges)
+      ? this.renderProfileBadges(badges)
+      : '';
+  }
+
   setupProfileMediaButtons() {
     if (this.profileMediaListenersBound) return;
 
@@ -386,11 +481,7 @@ class SocialProfileManager extends SocialFeedManager {
       } = await response.json();
 
       if (response.ok && data.fields) {
-        const userFields: UserFields = {};
-
-        Object.entries(data.fields).forEach(([key, value]) => {
-          userFields[key] = Object.values(value)[0];
-        });
+        const userFields = this.parseFirestoreFields<UserFields>(data.fields);
 
         const usernameEl = document.querySelector<HTMLElement>(
           '#social-profile-username',
@@ -415,6 +506,7 @@ class SocialProfileManager extends SocialFeedManager {
         );
 
         if (usernameEl) usernameEl.textContent = userFields.username || 'User';
+        this.applyProfileBadges('#social-profile-badges', userFields.badges);
         if (emailEl) emailEl.textContent = this.userData.email || '';
         if (avatarEl)
           avatarEl.src =
@@ -1498,6 +1590,7 @@ class SocialProfileManager extends SocialFeedManager {
         usernameEl.style.opacity = '1';
       }, 10);
     }
+    this.applyProfileBadges('#social-user-profile-badges', []);
     if (avatarEl) {
       avatarEl.style.opacity = '0';
       avatarEl.src = 'https://files.catbox.moe/xry0hs.png';
@@ -1586,11 +1679,8 @@ class SocialProfileManager extends SocialFeedManager {
             } = await userResponse.json();
 
             if (userData.fields) {
-              const userFields: UserFields = {};
-
-              Object.entries(userData.fields).forEach(([key, value]) => {
-                userFields[key] = Object.values(value)[0];
-              });
+              const userFields =
+                this.parseFirestoreFields<UserFields>(userData.fields);
               const avatarEl = document.querySelector<HTMLImageElement>(
                 '#social-user-profile-avatar',
               );
@@ -1618,6 +1708,10 @@ class SocialProfileManager extends SocialFeedManager {
                   bannerContainer?.classList.remove('has-image');
                 }
               }
+              this.applyProfileBadges(
+                '#social-user-profile-badges',
+                userFields.badges,
+              );
             }
           } catch (e) {
             console.warn('Failed to fetch user info:', e);
