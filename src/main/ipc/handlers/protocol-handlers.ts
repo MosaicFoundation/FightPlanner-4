@@ -119,43 +119,60 @@ const ProtocolHandlers = {
     try {
       const safeModelName = encodeURIComponent(modelName || 'Mod');
       const safeSubmissionId = encodeURIComponent(submissionId);
-      const apiUrl = `https://gamebanana.com/apiv11/${safeModelName}/${safeSubmissionId}?_csvProperties=%40gbprofile`;
+      const fetchGameBananaJson = (apiUrl: string) =>
+        new Promise<any>((resolve, reject) => {
+          https
+            .get(apiUrl, (res) => {
+              let data = '';
 
-      return new Promise((resolve) => {
-        https
-          .get(apiUrl, (res) => {
-            let data = '';
+              res.on('data', (chunk) => {
+                data += chunk;
+              });
 
-            res.on('data', (chunk) => {
-              data += chunk;
-            });
+              res.on('end', () => {
+                try {
+                  const json = JSON.parse(data);
 
-            res.on('end', () => {
-              try {
-                const json = JSON.parse(data);
+                  if (res.statusCode && res.statusCode >= 400) {
+                    reject(new Error(`GameBanana returned ${res.statusCode}`));
+                    return;
+                  }
 
-                if (res.statusCode && res.statusCode >= 400) {
-                  resolve({
-                    success: false,
-                    error: `GameBanana returned ${res.statusCode}`,
-                  });
-                  return;
+                  if (json?._sErrorCode) {
+                    reject(
+                      new Error(
+                        json?._aErrorData?._csvProperties?._sErrorMessage ||
+                          json._sErrorCode,
+                      ),
+                    );
+                    return;
+                  }
+
+                  resolve(json);
+                } catch (error) {
+                  reject(error);
                 }
-
-                resolve({ success: true, data: json });
-              } catch (error) {
-                resolve(
-                  createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message),
-                );
-              }
+              });
+            })
+            .on('error', (error) => {
+              reject(error);
             });
-          })
-          .on('error', (error) => {
-            resolve(
-              createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message),
-            );
-          });
-      });
+        });
+
+      const profileUrl = `https://gamebanana.com/apiv11/${safeModelName}/${safeSubmissionId}?_csvProperties=%40gbprofile`;
+      const textUrl = `https://gamebanana.com/apiv11/${safeModelName}/${safeSubmissionId}?_csvProperties=_sText,_sDescription,_aRequirements`;
+      const [profileData, textResult] = await Promise.all([
+        fetchGameBananaJson(profileUrl),
+        fetchGameBananaJson(textUrl).catch((error) => {
+          console.warn(
+            '[Protocol] Failed to fetch GameBanana description:',
+            error.message,
+          );
+          return {};
+        }),
+      ]);
+
+      return { success: true, data: { ...profileData, ...textResult } };
     } catch (error) {
       handleError(error, 'fetch-gamebanana-details');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
@@ -199,8 +216,12 @@ const ProtocolHandlers = {
                     ? integrations[fileId]
                     : [];
                   const integration = entries.find((entry) => {
-                    const alias = String(entry?._sModManagerAlias || '').toLowerCase();
-                    const installer = String(entry?._sInstallerName || '').toLowerCase();
+                    const alias = String(
+                      entry?._sModManagerAlias || '',
+                    ).toLowerCase();
+                    const installer = String(
+                      entry?._sInstallerName || '',
+                    ).toLowerCase();
                     return (
                       entry?._sDownloadUrl?.startsWith('fightplanner:') &&
                       (alias === 'fightplanner' || installer === 'fightplanner')

@@ -158,6 +158,23 @@ const FileHandlers = {
     }
   },
 
+  ['folder-exists']: async (
+    common: BaseHandlerArg,
+    folderPath: string,
+  ): HandlerResponse<{ exists: boolean }> => {
+    try {
+      const exists =
+        !!folderPath &&
+        fs.existsSync(folderPath) &&
+        fs.statSync(folderPath).isDirectory();
+
+      return { success: true, exists };
+    } catch (error) {
+      handleError(error, 'folder-exists');
+      return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
+    }
+  },
+
   ['open-file']: async (common: BaseHandlerArg, filePath: string) => {
     try {
       if (fs.existsSync(filePath)) {

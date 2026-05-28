@@ -483,9 +483,72 @@ class SocialGameBananaManager extends SocialManagerBase {
   }
 
   stripGameBananaHtml(value) {
-    const div = document.createElement('div');
-    div.innerHTML = value == null ? '' : String(value);
-    return (div.textContent || div.innerText || '').trim();
+    const container = document.createElement('div');
+    container.innerHTML = value == null ? '' : String(value);
+
+    const blockTags = new Set([
+      'ARTICLE',
+      'BLOCKQUOTE',
+      'DIV',
+      'H1',
+      'H2',
+      'H3',
+      'H4',
+      'H5',
+      'H6',
+      'LI',
+      'OL',
+      'P',
+      'PRE',
+      'SECTION',
+      'TABLE',
+      'TR',
+      'UL',
+    ]);
+    let text = '';
+
+    const addLineBreak = () => {
+      if (text && !text.endsWith('\n')) {
+        text += '\n';
+      }
+    };
+
+    const appendNodeText = (node: Node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        text += node.textContent || '';
+        return;
+      }
+
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+      const element = node as HTMLElement;
+      const tagName = element.tagName;
+      if (tagName === 'BR' || tagName === 'HR') {
+        addLineBreak();
+        return;
+      }
+
+      if (blockTags.has(tagName)) {
+        addLineBreak();
+      }
+
+      element.childNodes.forEach(appendNodeText);
+
+      if (blockTags.has(tagName)) {
+        addLineBreak();
+      }
+    };
+
+    container.childNodes.forEach(appendNodeText);
+
+    return text
+      .replace(/\u00a0/g, ' ')
+      .replace(/\r\n?/g, '\n')
+      .replace(/[ \t\f\v]+\n/g, '\n')
+      .replace(/\n[ \t\f\v]+/g, '\n')
+      .replace(/[ \t\f\v]{2,}/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   }
 
   getGameBananaSubmissionDescription(
@@ -514,6 +577,421 @@ class SocialGameBananaManager extends SocialManagerBase {
     } catch (e) {
       return '';
     }
+  }
+
+  normalizeDependencyName(value: string) {
+    return String(value || '')
+      .toLowerCase()
+      .replace(/\.nro$/i, '')
+      .replace(/^lib/, '')
+      .replace(/[^a-z0-9]/g, '');
+  }
+
+  getDependencyAliases(requirementName: string) {
+    const normalized = this.normalizeDependencyName(requirementName);
+    const aliases: Record<string, string[]> = {
+      arcropolis: ['arcropolis', 'arcroplois', 'libarcropolis'],
+      nrohook: ['nrohook', 'nrohookplugin', 'libnrohook'],
+      smashline2: [
+        'smashline2',
+        'smashline',
+        'smashlineplugin',
+        'smashlinehook',
+        'libsmashlinehook',
+        'libsmashlineplugin',
+      ],
+      paramconfig: ['paramconfig', 'libparamconfig'],
+      skyline: ['skyline', 'libskyline'],
+    };
+
+    return new Set([normalized, ...(aliases[normalized] || [])]);
+  }
+
+  isSkylineRequirement(requirementName: string) {
+    return this.getDependencyAliases(requirementName).has('skyline');
+  }
+
+  normalizeLocalPath(value: string) {
+    return String(value || '').replace(/\\/g, '/').replace(/\/+$/, '');
+  }
+
+  getSkylineRomfsDirsFromSettings() {
+    const candidates = new Set<string>();
+    const pluginsPath = this.normalizeLocalPath(
+      window.settingsManager?.getPluginsPath?.() ||
+        window.pluginManager?.pluginsPath ||
+        '',
+    );
+    const modsPath = this.normalizeLocalPath(
+      window.settingsManager?.getModsPath?.() || '',
+    );
+
+    const addFromConfiguredPath = (configuredPath: string) => {
+      if (!configuredPath) return;
+
+      const contentMatch = configuredPath.match(
+        /^(.*?)(?:\/ultimate\/contents|\/atmosphere\/contents)\/01006A800016E000(?:\/|$)/i,
+      );
+      if (contentMatch?.[1]) {
+        candidates.add(
+          `${contentMatch[1]}/atmosphere/contents/01006A800016E000/romfs/skyline`,
+        );
+      }
+
+      const pluginsMatch = configuredPath.match(
+        /^(.*\/(?:atmosphere|ultimate)\/contents\/01006A800016E000)\/romfs\/skyline\/plugins(?:\/|$)/i,
+      );
+      if (pluginsMatch?.[1]) {
+        const contentDir = pluginsMatch[1].replace(
+          /\/ultimate\/contents\/01006A800016E000$/i,
+          '/atmosphere/contents/01006A800016E000',
+        );
+        candidates.add(`${contentDir}/romfs/skyline`);
+      }
+
+      const skylineRomfsMatch = configuredPath.match(
+        /^(.*\/(?:atmosphere|ultimate)\/contents\/01006A800016E000\/romfs\/skyline)(?:\/|$)/i,
+      );
+      if (skylineRomfsMatch?.[1]) {
+        candidates.add(
+          skylineRomfsMatch[1].replace(
+            /\/ultimate\/contents\/01006A800016E000\/romfs\/skyline$/i,
+            '/atmosphere/contents/01006A800016E000/romfs/skyline',
+          ),
+        );
+      }
+    };
+
+    addFromConfiguredPath(pluginsPath);
+    addFromConfiguredPath(modsPath);
+    (window.pluginManager?.plugins || []).forEach((plugin) => {
+      addFromConfiguredPath(this.normalizeLocalPath(plugin.filePath || ''));
+    });
+
+    const modsMatch = modsPath.match(/^(.*)\/ultimate\/mods(?:\/|$)/i);
+    if (modsMatch?.[1]) {
+      candidates.add(
+        `${modsMatch[1]}/atmosphere/contents/01006A800016E000/romfs/skyline`,
+      );
+    }
+
+    return Array.from(candidates);
+  }
+
+  async refreshSkylineDependencyStatus() {
+    if (!window.electronAPI?.folderExists) {
+      this.skylineInstalledCache = false;
+      return false;
+    }
+
+    const skylineDirs = this.getSkylineRomfsDirsFromSettings();
+    for (const skylineDir of skylineDirs) {
+      try {
+        const result = await window.electronAPI.folderExists(skylineDir);
+        if (result?.success && result.exists) {
+          this.skylineInstalledCache = true;
+          return true;
+        }
+      } catch (error) {
+        console.warn('[Social] Failed to check Skyline installation:', error);
+      }
+    }
+
+    this.skylineInstalledCache = false;
+    return false;
+  }
+
+  getGameBananaRequirements(
+    mod: GameBananaTopSubmission & { _aRequirements?: any },
+  ) {
+    const requirements = mod._aRequirements;
+    if (!Array.isArray(requirements)) return [];
+
+    return requirements
+      .map((requirement) => {
+        const name = Array.isArray(requirement)
+          ? requirement[0]
+          : requirement?._sName || requirement?.name || requirement?.title;
+        const url = Array.isArray(requirement)
+          ? requirement[1]
+          : requirement?._sUrl || requirement?.url || requirement?._sProfileUrl;
+
+        if (!name) return null;
+        return {
+          name: String(name),
+          url: String(url || ''),
+        };
+      })
+      .filter(Boolean) as { name: string; url: string }[];
+  }
+
+  findInstalledDependency(requirementName: string) {
+    if (
+      this.isSkylineRequirement(requirementName) &&
+      this.skylineInstalledCache
+    ) {
+      return {
+        id: 'skyline',
+        name: 'Skyline',
+        size: '',
+        status: 'active',
+        filePath: '',
+      };
+    }
+
+    const aliases = this.getDependencyAliases(requirementName);
+    const plugins = window.pluginManager?.plugins || [];
+
+    return plugins.find((plugin) => {
+      const candidates = [
+        plugin.name,
+        plugin.id,
+        plugin.filePath?.split(/[\\/]/).pop() || '',
+      ].map((value) => this.normalizeDependencyName(value));
+
+      return candidates.some(
+        (candidate) =>
+          aliases.has(candidate) ||
+          Array.from(aliases).some(
+            (alias) =>
+              candidate.includes(alias) || alias.includes(candidate),
+          ),
+      );
+    });
+  }
+
+  findMarketplaceDependency(requirementName: string, url = '') {
+    const marketplacePlugins = window.pluginMarketplace?.getPlugins?.() || [];
+    const aliases = this.getDependencyAliases(requirementName);
+    const normalizedUrl = this.normalizeDependencyName(url);
+
+    return marketplacePlugins.find((plugin) => {
+      const candidates = [
+        plugin.name,
+        plugin.repo,
+        plugin.repo?.split('/').pop() || '',
+        plugin.description,
+        plugin.url,
+      ].map((value) => this.normalizeDependencyName(value));
+
+      return (
+        candidates.some((candidate) => aliases.has(candidate)) ||
+        (!!normalizedUrl &&
+          candidates.some(
+            (candidate) => candidate && normalizedUrl.includes(candidate),
+          ))
+      );
+    });
+  }
+
+  renderGameBananaRequirements(
+    mod: GameBananaTopSubmission & { _aRequirements?: any },
+  ) {
+    const requirements = this.getGameBananaRequirements(mod);
+    if (!requirements.length) return '';
+
+    return `
+      <div class="social-gamebanana-requirements">
+        <h4 class="social-gamebanana-requirements-title">Requirements</h4>
+        <div class="social-gamebanana-requirements-list">
+          ${requirements
+            .map((requirement) =>
+              this.renderGameBananaRequirementItem(requirement),
+            )
+            .join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  renderGameBananaRequirementItem(requirement: { name: string; url: string }) {
+    const installedPlugin = this.findInstalledDependency(requirement.name);
+    const marketplacePlugin = this.findMarketplaceDependency(
+      requirement.name,
+      requirement.url,
+    );
+    const name = this.escapeHtml(requirement.name);
+    const url = this.escapeHtml(requirement.url);
+    const searchQuery = this.escapeHtml(
+      `${requirement.name} Super Smash Bros Ultimate GameBanana`,
+    );
+    const statusClass = installedPlugin
+      ? 'is-installed'
+      : marketplacePlugin
+        ? 'is-installable'
+        : 'is-external';
+    const statusText = installedPlugin
+      ? installedPlugin.status === 'disabled'
+        ? 'Installed disabled'
+        : 'Installed'
+      : marketplacePlugin
+        ? 'Not installed'
+        : 'Manual search';
+    const installButton =
+      !installedPlugin && marketplacePlugin
+        ? `<button class="social-gamebanana-requirement-install" data-plugin-name="${this.escapeHtml(marketplacePlugin.name)}" data-plugin-repo="${this.escapeHtml(marketplacePlugin.repo)}">
+            <i class="bi bi-download"></i>
+            <span>Install</span>
+          </button>`
+        : '';
+    const openButton = url
+      ? `<button class="social-gamebanana-requirement-link" data-url="${url}">
+          <i class="bi bi-box-arrow-up-right"></i>
+          <span>Open</span>
+        </button>`
+      : '';
+
+    return `
+      <div class="social-gamebanana-requirement ${statusClass}">
+        <div class="social-gamebanana-requirement-main">
+          <strong>${name}</strong>
+          <span>${statusText}</span>
+        </div>
+        <div class="social-gamebanana-requirement-actions">
+          ${installButton}
+          ${openButton}
+          ${
+            !marketplacePlugin
+              ? `<button class="social-gamebanana-requirement-search" data-query="${searchQuery}" data-provider="gamebanana">
+                  <i class="bi bi-search"></i>
+                  <span>GameBanana</span>
+                </button>
+                <button class="social-gamebanana-requirement-search" data-query="${searchQuery}" data-provider="google">
+                  <i class="bi bi-google"></i>
+                  <span>Google</span>
+                </button>`
+              : ''
+          }
+        </div>
+      </div>
+    `;
+  }
+
+  async installGameBananaRequirement(pluginName: string, repo: string) {
+    if (!window.pluginMarketplace) return;
+
+    const downloadInfo =
+      await window.pluginMarketplace.getLatestReleaseDownloadUrl(repo);
+    if (!downloadInfo) {
+      window.toastManager?.error(
+        `No downloadable release found for ${pluginName}`,
+      );
+      return;
+    }
+
+    await window.pluginMarketplace.downloadAndInstallPlugin(
+      pluginName,
+      repo,
+      downloadInfo,
+    );
+  }
+
+  getGameBananaRequirementSearchUrl(query: string, provider: string) {
+    const encodedQuery = encodeURIComponent(query);
+    if (provider === 'gamebanana') {
+      return `https://gamebanana.com/search?_sSearchString=${encodedQuery}`;
+    }
+
+    return `https://www.google.com/search?q=${encodedQuery}`;
+  }
+
+  getMissingGameBananaRequirements() {
+    if (!this.gameBananaCurrentDetail) return [];
+
+    const merged = {
+      ...this.gameBananaCurrentDetail.fallback,
+      ...this.gameBananaCurrentDetail.details,
+    } as GameBananaTopSubmission & { _aRequirements?: any };
+
+    return this.getGameBananaRequirements(merged)
+      .map((requirement) => {
+        const installedPlugin = this.findInstalledDependency(requirement.name);
+        const marketplacePlugin = this.findMarketplaceDependency(
+          requirement.name,
+          requirement.url,
+        );
+        const isDisabled = installedPlugin?.status === 'disabled';
+        const isMissing = !installedPlugin || isDisabled;
+
+        if (!isMissing) return null;
+
+        return {
+          ...requirement,
+          reason: isDisabled ? 'Installed but disabled' : 'Missing',
+          marketplacePlugin,
+        };
+      })
+      .filter(Boolean) as {
+      name: string;
+      url: string;
+      reason: string;
+      marketplacePlugin?: any;
+    }[];
+  }
+
+  confirmMissingGameBananaRequirements() {
+    const missingRequirements = this.getMissingGameBananaRequirements();
+    if (!missingRequirements.length) return Promise.resolve(true);
+
+    if (!window.modalManager?.showCustomModal) {
+      return Promise.resolve(
+        window.confirm(
+          `This mod has ${missingRequirements.length} missing or disabled requirement(s). Continue anyway?`,
+        ),
+      );
+    }
+
+    const items = missingRequirements
+      .map((requirement) => {
+        const source = requirement.marketplacePlugin
+          ? 'Available in marketplace'
+          : 'Manual install needed';
+
+        return `
+          <li class="social-gamebanana-missing-requirement">
+            <strong>${this.escapeHtml(requirement.name)}</strong>
+            <span>${this.escapeHtml(requirement.reason)} - ${source}</span>
+          </li>
+        `;
+      })
+      .join('');
+
+    return new Promise<boolean>((resolve) => {
+      let settled = false;
+      const settle = (value: boolean) => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
+
+      window.modalManager.showCustomModal({
+        id: 'social-gamebanana-requirements-warning-modal',
+        title: 'Missing requirements',
+        body: `
+          <div class="social-gamebanana-requirements-warning">
+            <p>This mod lists requirements that are not currently active in your plugins folder.</p>
+            <ul>${items}</ul>
+            <p>You can continue, but the mod may crash or not work correctly until these dependencies are installed and enabled.</p>
+          </div>
+        `,
+        size: 'normal',
+        clickOverlayToClose: false,
+        escapeToClose: false,
+        onClose: () => settle(false),
+        buttons: [
+          {
+            text: 'Cancel',
+            type: 'secondary',
+            onClick: () => settle(false),
+          },
+          {
+            text: 'Continue anyway',
+            type: 'primary',
+            onClick: () => settle(true),
+          },
+        ],
+      });
+    });
   }
 
   getGameBananaDetailImageStyle(mod: GameBananaTopSubmission) {
@@ -640,6 +1118,7 @@ class SocialGameBananaManager extends SocialManagerBase {
         await this.gameBananaPreviewAnimation;
       }
 
+      await this.refreshSkylineDependencyStatus();
       this.renderGameBananaDetailPage(detailData, fallback, false, filesData);
       this.scrollGameBananaDetailToTop();
       if (!fallback) {
@@ -1229,6 +1708,7 @@ class SocialGameBananaManager extends SocialManagerBase {
               : `<p class="social-gamebanana-detail-description">${description}</p>`
           }
           ${this.renderGameBananaWipInfo(merged)}
+          ${this.renderGameBananaRequirements(merged)}
           ${this.renderGameBananaFileList(files, contentLoading)}
         </div>
       `;
