@@ -258,7 +258,7 @@
     "pathWarningText": "Ce n'est peut-être pas le bon dossier de mods :",
     "expectedPath": "Le chemin des mods devrait contenir :",
     "example": "Exemple :",
-    "incorrectPathWarning": "Utiliser un autre dossier peut empêcher FightPlanner de détecter ou d'envoyer les mods correctement.",
+    "incorrectPathWarning": "Utiliser un autre dossier peut empêcher ARCropolis de détecter vos mods correctement.",
     "okUnderstand": "OK, j'ai compris",
     "appUpdates": "Mises à Jour de l'Application",
     "currentVersion": "Version Actuelle :",

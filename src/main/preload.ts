@@ -104,6 +104,7 @@ const electronAPI = {
   readModInfoRaw: invokeModHandler('read-mod-info-raw'),
   saveModInfoRaw: invokeModHandler('save-mod-info-raw'),
   openFolder: invokeFileHandler('open-folder'),
+  folderExists: invokeFileHandler('folder-exists'),
   openFile: invokeFileHandler('open-file'),
   openUrl: invokeSystemHandler('open-url'),
   openFightPlannerLink: invokeSystemHandler('open-fightplanner-link'),

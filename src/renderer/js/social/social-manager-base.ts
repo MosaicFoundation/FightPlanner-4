@@ -50,6 +50,7 @@ class SocialManagerBase {
     fallback: GameBananaTopSubmission | null;
     files: GameBananaFileEntry[];
   } | null;
+  skylineInstalledCache: boolean | null;
   pendingGameBananaSocialDownloads: Map<
     string,
     PendingGameBananaSocialDownload
@@ -99,6 +100,7 @@ class SocialManagerBase {
     this.gameBananaDetailReturnInProgress = false;
     this.gameBananaDiscoverSnapshot = null;
     this.gameBananaCurrentDetail = null;
+    this.skylineInstalledCache = null;
     this.pendingGameBananaSocialDownloads = new Map();
     this.profileMediaCropState = null;
     this.profileMediaListenersBound = false;

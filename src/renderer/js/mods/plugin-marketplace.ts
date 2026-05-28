@@ -11,7 +11,7 @@ class PluginMarketplace {
   constructor() {
     this.plugins = [
       {
-        name: 'ARCroplois',
+        name: 'ARCropolis',
         repo: 'Raytwo/ARCropolis',
         description:
           'libarcropolis.nro (Mod loader, if you want to setup arcropolis see our tutorial for emulator.)',

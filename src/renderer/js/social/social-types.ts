@@ -23,7 +23,9 @@ interface GameBananaTopSubmission {
   _sProfileUrl?: string;
   _sImageUrl?: string;
   _sThumbnailUrl?: string;
+  _sText?: string;
   _sDescription?: string;
+  _aRequirements?: [string, string][];
   _sPeriod?: string;
   _tsDateAdded?: number;
   _nLikeCount?: number;

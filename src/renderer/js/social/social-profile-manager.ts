@@ -35,8 +35,13 @@ class SocialProfileManager extends SocialFeedManager {
   }
 
   getProfileBadgeMeta(badge: string) {
-    const normalized = String(badge || '').trim().toLowerCase();
-    const badgeMap: Record<string, { label: string; icon: string; className: string }> = {
+    const normalized = String(badge || '')
+      .trim()
+      .toLowerCase();
+    const badgeMap: Record<
+      string,
+      { label: string; icon: string; className: string }
+    > = {
       owner: {
         label: 'Owner',
         icon: 'bi-shield-fill-check',
@@ -56,11 +61,12 @@ class SocialProfileManager extends SocialFeedManager {
 
     return (
       badgeMap[normalized] || {
-        label: normalized
-          .split('_')
-          .filter(Boolean)
-          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-          .join(' ') || 'Badge',
+        label:
+          normalized
+            .split('_')
+            .filter(Boolean)
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' ') || 'Badge',
         icon: 'bi-patch-check-fill',
         className: `badge-${normalized.replace(/[^a-z0-9-]/g, '-')}`,
       }
@@ -70,9 +76,7 @@ class SocialProfileManager extends SocialFeedManager {
   renderProfileBadges(badges: string[] = []) {
     const uniqueBadges = Array.from(
       new Set(
-        badges
-          .map((badge) => String(badge || '').trim())
-          .filter(Boolean),
+        badges.map((badge) => String(badge || '').trim()).filter(Boolean),
       ),
     );
 
@@ -827,6 +831,65 @@ class SocialProfileManager extends SocialFeedManager {
         return false;
       }
 
+      const requirementInstallBtn = clickedElement.closest<HTMLButtonElement>(
+        '.social-gamebanana-requirement-install',
+      );
+      if (requirementInstallBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (requirementInstallBtn.disabled) return false;
+
+        const pluginName =
+          requirementInstallBtn.getAttribute('data-plugin-name');
+        const repo = requirementInstallBtn.getAttribute('data-plugin-repo');
+        if (pluginName && repo) {
+          requirementInstallBtn.disabled = true;
+          await this.installGameBananaRequirement(pluginName, repo);
+          await window.pluginManager?.refreshPlugins?.();
+          requirementInstallBtn.disabled = false;
+          if (this.gameBananaCurrentDetail) {
+            this.renderGameBananaDetailPage(
+              this.gameBananaCurrentDetail.details,
+              this.gameBananaCurrentDetail.fallback,
+              false,
+              this.gameBananaCurrentDetail.files,
+            );
+          }
+        }
+        return false;
+      }
+
+      const requirementLinkBtn = clickedElement.closest<HTMLButtonElement>(
+        '.social-gamebanana-requirement-link',
+      );
+      if (requirementLinkBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const url = requirementLinkBtn.getAttribute('data-url');
+        if (url && window.electronAPI?.openUrl) {
+          await window.electronAPI.openUrl(url);
+        }
+        return false;
+      }
+
+      const requirementSearchBtn = clickedElement.closest<HTMLButtonElement>(
+        '.social-gamebanana-requirement-search',
+      );
+      if (requirementSearchBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const query = requirementSearchBtn.getAttribute('data-query') || '';
+        const provider =
+          requirementSearchBtn.getAttribute('data-provider') || 'google';
+        const url = this.getGameBananaRequirementSearchUrl(query, provider);
+        if (window.electronAPI?.openUrl) {
+          await window.electronAPI.openUrl(url);
+        }
+        return false;
+      }
+
       const galleryThumb = clickedElement.closest<HTMLButtonElement>(
         '.social-gamebanana-gallery-thumb',
       );
@@ -910,6 +973,9 @@ class SocialProfileManager extends SocialFeedManager {
 
         const downloadUrl = fileDownloadBtn.getAttribute('data-download-url');
         if (downloadUrl && window.electronAPI?.openFightPlannerLink) {
+          const shouldContinue = await this.confirmMissingGameBananaRequirements();
+          if (!shouldContinue) return false;
+
           this.registerPendingGameBananaSocialDownload(downloadUrl);
           const protocolUrl = downloadUrl.startsWith('fightplanner:')
             ? downloadUrl
@@ -1679,8 +1745,9 @@ class SocialProfileManager extends SocialFeedManager {
             } = await userResponse.json();
 
             if (userData.fields) {
-              const userFields =
-                this.parseFirestoreFields<UserFields>(userData.fields);
+              const userFields = this.parseFirestoreFields<UserFields>(
+                userData.fields,
+              );
               const avatarEl = document.querySelector<HTMLImageElement>(
                 '#social-user-profile-avatar',
               );
