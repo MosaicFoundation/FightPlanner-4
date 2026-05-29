@@ -277,6 +277,14 @@
   overflow: hidden;
 }
 
+.social-profile-container.guest-discover-only .social-nav-menu {
+  display: none;
+}
+
+.social-profile-container.guest-discover-only .social-main-content {
+  padding: 28px 32px;
+}
+
 .social-nav-menu {
   width: 100%;
   background: var(--bg-tertiary);

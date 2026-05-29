@@ -513,6 +513,12 @@
       "rateLimited": "The social service is temporarily unavailable (429/404). Please try again in a few minutes.",
       "invalidResponse": "The social service response is invalid or unavailable. Please try again in a few minutes."
     },
+    "firebaseDatabaseLimit": {
+      "title": "Firebase limit reached",
+      "message": "The Firebase database limit has been reached. Social features are temporarily blocked, please try again later. You can support FIREXDF on Ko-fi to help fund the databases.",
+      "support": "Support on Ko-fi",
+      "wait": "Wait"
+    },
     "update": {
       "title": "Update Available",
       "newVersion": "New version available:",
@@ -550,6 +556,7 @@
     "rememberMe": "Remember me",
     "forgotPassword": "Forgot password?",
     "signIn": "Sign In",
+    "accessDiscoverOnly": "Access Discover only",
     "noAccount": "Don't have an account?",
     "createOne": "Create one",
     "resetPassword": "Reset Password",

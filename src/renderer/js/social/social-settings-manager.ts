@@ -491,8 +491,61 @@ class SocialSettingsManager extends SocialProfileManager {
     }
   }
 
+  showFirebaseDatabaseLimitModal() {
+    const t = (k) => (window.i18n && window.i18n.t ? window.i18n.t(k) : k);
+    const titleKey = 'modals.firebaseDatabaseLimit.title';
+    const messageKey = 'modals.firebaseDatabaseLimit.message';
+    const supportKey = 'modals.firebaseDatabaseLimit.support';
+    const waitKey = 'modals.firebaseDatabaseLimit.wait';
+
+    if (window.modalManager?.showCustomModal) {
+      window.modalManager.showCustomModal({
+        id: 'firebase-database-limit-modal',
+        title: t(titleKey),
+        body: `<p style="color: var(--text-secondary); line-height: 1.6; margin: 0;">${this.escapeHtml(t(messageKey))}</p>`,
+        clickOverlayToClose: false,
+        buttons: [
+          {
+            text: t(supportKey),
+            type: 'primary',
+            onClick: () => {
+              window.electronAPI?.openUrl?.('https://ko-fi.com/firexdf');
+            },
+          },
+          {
+            text: t(waitKey),
+            type: 'secondary',
+          },
+        ],
+      });
+      return;
+    }
+
+    this.showServiceErrorModal(titleKey, messageKey);
+  }
+
   async handleServiceUnavailable(rawMessage, status) {
     const msg = (rawMessage || '').toString();
+    const lowerMsg = msg.toLowerCase();
+    const firebaseLimitReached =
+      msg.includes('FIREBASE_DATABASE_LIMIT_REACHED') ||
+      lowerMsg.includes('resource_exhausted') ||
+      lowerMsg.includes('quota exceeded') ||
+      lowerMsg.includes('limite de la base de donnees') ||
+      lowerMsg.includes('limite de la base de données') ||
+      lowerMsg.includes('firebase database limit') ||
+      (lowerMsg.includes('cloud firestore api') &&
+        lowerMsg.includes('quota'));
+
+    if (firebaseLimitReached) {
+      if (!this.serviceUnavailableShown) {
+        this.serviceUnavailableShown = true;
+        this.showFirebaseDatabaseLimitModal();
+      }
+      this.stopAutoDownloadCheck();
+      return true;
+    }
+
     const marker =
       msg.includes('Please check back later') ||
       msg.includes('Error 1027') ||

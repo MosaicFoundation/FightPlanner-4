@@ -358,6 +358,13 @@ class SocialManagerBase {
         data = await this.parseJsonResponse(response);
       }
 
+      if (!response.ok) {
+        await this.handleServiceUnavailable(
+          typeof data === 'string' ? data : JSON.stringify(data || {}),
+          response.status,
+        );
+      }
+
       // Mettre en cache si cacheKey fourni
       if (cacheKey && response.ok) {
         this.setCache(cacheKey, data);
@@ -583,6 +590,14 @@ class SocialManagerBase {
   }
 
   showLoginScreen() {
+    const profileContainer = document.querySelector<HTMLElement>(
+      '#social-profile-container',
+    );
+    if (profileContainer) {
+      profileContainer.style.display = 'none';
+      profileContainer.classList.remove('guest-discover-only');
+    }
+
     const loginContainer = document.querySelector<HTMLElement>(
       '#social-login-container',
     );
@@ -747,6 +762,9 @@ class SocialManagerBase {
 
     const forgot = document.querySelector<HTMLElement>('#social-forgot');
     const create = document.querySelector<HTMLElement>('#social-create');
+    const discoverOnly = document.querySelector<HTMLElement>(
+      '#social-discover-only',
+    );
     const submitButton = form
       ? form.querySelector<HTMLButtonElement>('button[type="submit"]')
       : null;
@@ -840,6 +858,14 @@ class SocialManagerBase {
       });
     }
 
+    if (discoverOnly && !discoverOnly.dataset.listenerAttached) {
+      discoverOnly.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.showDiscoverOnly();
+      });
+      discoverOnly.dataset.listenerAttached = 'true';
+    }
+
     this.setupForgotPasswordModal();
 
     this.setupRegisterModal();
@@ -847,6 +873,53 @@ class SocialManagerBase {
     this.setupRemoveFriendModal();
 
     this.setupGameBananaSearchEvents();
+  }
+
+  showDiscoverOnly() {
+    const loginContainer = document.querySelector<HTMLElement>(
+      '#social-login-container',
+    );
+    if (loginContainer) {
+      loginContainer.style.display = 'none';
+    }
+
+    const onboarding =
+      document.querySelector<HTMLElement>('#social-onboarding');
+    if (onboarding) {
+      onboarding.style.display = 'none';
+    }
+
+    this.hideRegisterModal();
+    this.hideForgotPasswordModal();
+    this.hideRemoveFriendModal();
+
+    const profileContainer = document.querySelector<HTMLElement>(
+      '#social-profile-container',
+    );
+    if (!profileContainer) return;
+
+    profileContainer.style.display = 'flex';
+    profileContainer.classList.add('guest-discover-only');
+
+    const navItems = document.querySelectorAll<HTMLElement>('.social-nav-item');
+    navItems.forEach((item) => {
+      item.classList.toggle(
+        'active',
+        item.getAttribute('data-section') === 'discover',
+      );
+    });
+
+    const sections = document.querySelectorAll<HTMLElement>('.social-section');
+    sections.forEach((section) => {
+      const isDiscover = section.id === 'social-section-discover';
+      section.classList.toggle('active', isDiscover);
+      section.style.opacity = '';
+      section.style.transform = '';
+      section.style.transition = '';
+    });
+
+    this.setupGameBananaSearchEvents();
+    this.loadDiscover();
   }
 
   showForgotPasswordModal() {
@@ -1173,6 +1246,7 @@ class SocialManagerBase {
     );
     if (profileContainer) {
       profileContainer.style.display = 'flex';
+      profileContainer.classList.remove('guest-discover-only');
 
       await this.loadUserProfile();
       this.setupProfileButtons();

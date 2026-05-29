@@ -513,6 +513,12 @@
       "rateLimited": "Le service social est temporairement indisponible (erreur 429/404). Merci de réessayer dans quelques minutes.",
       "invalidResponse": "La réponse du service social est invalide ou indisponible. Merci de réessayer dans quelques minutes."
     },
+    "firebaseDatabaseLimit": {
+      "title": "Limite Firebase atteinte",
+      "message": "La limite de la base de données Firebase est atteinte. Les fonctions sociales sont temporairement bloquées, merci de réessayer plus tard. Vous pouvez supporter FIREXDF sur Ko-fi pour aider à financer les bases de données.",
+      "support": "Soutenir sur Ko-fi",
+      "wait": "Attendre"
+    },
     "update": {
       "title": "Mise à Jour Disponible",
       "newVersion": "Nouvelle version disponible :",
@@ -550,6 +556,7 @@
     "rememberMe": "Se souvenir de moi",
     "forgotPassword": "Mot de passe oublié ?",
     "signIn": "Se Connecter",
+    "accessDiscoverOnly": "Accéder à Discover uniquement",
     "noAccount": "Vous n'avez pas de compte ?",
     "createOne": "En créer un",
     "resetPassword": "Réinitialiser le Mot de Passe",
