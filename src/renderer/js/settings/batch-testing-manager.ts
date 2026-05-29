@@ -1354,6 +1354,8 @@ class BatchTestingManager {
       return;
     }
 
+    await window.settingsManager.readyPromise;
+
     const result = await window.electronAPI.launchEmulator(
       window.settingsManager.getEmulatorType(),
       window.settingsManager.getEmulatorPath(),

@@ -594,27 +594,74 @@ export class FppManager {
         const statusBar = window.statusBarManager;
         if (!statusBar) return;
 
+        const progress = Math.max(0, Math.min(100, Math.round(Number(data.progress) || 0)));
+        const showProgress = (
+            phaseLabel: string,
+            fileName: string,
+            iconClass: string,
+            displayProgress = progress,
+        ) => {
+            statusBar.updateExtendedBar({
+                type: 'download',
+                downloads: [{
+                    id: 'fpp-install',
+                    fileName,
+                    progress: Math.max(0, Math.min(100, Math.round(displayProgress))),
+                    phaseLabel,
+                    iconClass,
+                }],
+            });
+        };
+
         switch (data.step) {
-            case 'extracting':
+            case 'extracting': {
+                const extractProgress = Math.max(
+                    0,
+                    Math.min(100, Math.round(Number(data.extractProgress) || progress * 2)),
+                );
+                const phaseLabel = t('fpp.statusExtracting', 'FPP: Extracting...');
+                const fileName = (data.file || 'FPP package').split(/[\\/]/).pop();
+
                 statusBar.showTemporaryStatus(
-                    t('fpp.statusExtracting', 'FPP: Extracting...'),
+                    `${t('fpp.statusExtracting', 'FPP: Extracting...')} ${extractProgress}%`,
+                );
+                showProgress(phaseLabel, fileName, 'bi-file-zip-fill', extractProgress);
+                break;
+            }
+            case 'installing': {
+                const modName = data.modName || '';
+                const phaseLabel = t('fpp.statusInstalling', 'Installing');
+                statusBar.showTemporaryStatus(
+                    `FPP: ${phaseLabel} ${modName}... ${progress}%`,
+                );
+                showProgress(`FPP: ${phaseLabel}`, modName || 'FPP package', 'bi-folder-check');
+                break;
+            }
+            case 'downloading': {
+                const phaseLabel = t('fpp.statusDownloading', 'Downloading');
+                statusBar.showTemporaryStatus(
+                    `FPP: ${phaseLabel} (${data.totalDownloads} mods)... ${progress}%`,
+                );
+                showProgress(
+                    `FPP: ${phaseLabel}`,
+                    `${data.totalDownloads} mods`,
+                    'bi-cloud-arrow-down-fill',
                 );
                 break;
-            case 'installing':
-                statusBar.showTemporaryStatus(
-                    `FPP: ${t('fpp.statusInstalling', 'Installing')} ${data.modName || ''}...`,
-                );
-                break;
-            case 'downloading':
-                statusBar.showTemporaryStatus(
-                    `FPP: ${t('fpp.statusDownloading', 'Downloading')} (${data.totalDownloads} mods)...`,
-                );
-                break;
+            }
             case 'complete':
                 statusBar.showTemporaryStatus(
                     t('fpp.statusComplete', 'FPP: Installation complete!'),
                     { autoRestoreMs: 3000 },
                 );
+                showProgress(
+                    t('fpp.statusComplete', 'FPP: Installation complete!'),
+                    'FPP package',
+                    'bi-check-circle-fill',
+                );
+                setTimeout(() => {
+                    window.statusBarManager?.updateExtendedBar?.({ type: 'none' });
+                }, 3000);
                 break;
         }
     }

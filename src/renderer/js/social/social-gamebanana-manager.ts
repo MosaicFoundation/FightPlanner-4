@@ -41,6 +41,9 @@ class SocialGameBananaManager extends SocialManagerBase {
       featuredMods.forEach((mod) => this.cacheGameBananaSubmission(mod));
 
       discoverContent.innerHTML = `
+        <div class="social-gamebanana-top-search">
+          ${this.renderGameBananaSearchControl()}
+        </div>
         <div class="social-gamebanana-featured">
           <div class="social-gamebanana-carousel-header">
             <h3 class="social-gamebanana-section-title">Featured</h3>
@@ -61,7 +64,6 @@ class SocialGameBananaManager extends SocialManagerBase {
           <div class="social-gamebanana-mods-header">
             <div class="social-gamebanana-mods-title-row">
               <h3 class="social-gamebanana-section-title">Mods</h3>
-              ${this.renderGameBananaSearchControl()}
             </div>
             <div id="social-gamebanana-pagination" class="social-gamebanana-pagination">
               ${this.renderGameBananaPagination(subfeedData)}
@@ -96,9 +98,38 @@ class SocialGameBananaManager extends SocialManagerBase {
     if (this.gameBananaSearchListenerBound) return;
     this.gameBananaSearchListenerBound = true;
 
+    const setSearchFocusState = (input: HTMLInputElement, focused: boolean) => {
+      const discoverContent = input.closest<HTMLElement>(
+        '#social-discover-content',
+      );
+      if (!discoverContent) return;
+
+      const hasQuery = input.value.trim().length > 0;
+      discoverContent.classList.toggle(
+        'is-searching-gamebanana',
+        focused || hasQuery,
+      );
+    };
+
+    document.addEventListener('focusin', (event) => {
+      const input = event.target as HTMLInputElement;
+      if (input?.id !== 'social-gamebanana-search-input') return;
+
+      setSearchFocusState(input, true);
+    });
+
+    document.addEventListener('focusout', (event) => {
+      const input = event.target as HTMLInputElement;
+      if (input?.id !== 'social-gamebanana-search-input') return;
+
+      setSearchFocusState(input, false);
+    });
+
     document.addEventListener('input', (event) => {
       const input = event.target as HTMLInputElement;
       if (input?.id !== 'social-gamebanana-search-input') return;
+
+      setSearchFocusState(input, document.activeElement === input);
 
       const query = input.value;
       if (this.gameBananaSearchDebounce) {
@@ -601,6 +632,8 @@ class SocialGameBananaManager extends SocialManagerBase {
         'libsmashlineplugin',
       ],
       paramconfig: ['paramconfig', 'libparamconfig'],
+      onesloteffects: ['onesloteffects', 'oneeffect', 'slotfx'],
+      cskcollection: ['cskcollection', 'thecskcollection', 'csk'],
       skyline: ['skyline', 'libskyline'],
     };
 
@@ -895,15 +928,312 @@ class SocialGameBananaManager extends SocialManagerBase {
     return `https://www.google.com/search?q=${encodedQuery}`;
   }
 
-  getMissingGameBananaRequirements() {
+  getCurrentGameBananaMergedDetail() {
     if (!this.gameBananaCurrentDetail) return [];
 
-    const merged = {
+    return {
       ...this.gameBananaCurrentDetail.fallback,
       ...this.gameBananaCurrentDetail.details,
     } as GameBananaTopSubmission & { _aRequirements?: any };
+  }
 
-    return this.getGameBananaRequirements(merged)
+  getReadmeMentionText(downloadUrl = '') {
+    const merged = this.getCurrentGameBananaMergedDetail();
+    if (Array.isArray(merged)) return '';
+
+    const downloadId = this.getDownloadIdFromGameBananaUrl(downloadUrl);
+    const selectedFile = downloadId
+      ? this.getGameBananaFileByDownloadId(downloadId)
+      : null;
+
+    return [
+      this.getGameBananaSubmissionDescription(merged),
+      selectedFile?._sDescription || '',
+      selectedFile?._sFile || '',
+    ].join('\n');
+  }
+
+  shouldScanGameBananaReadme(downloadUrl = '') {
+    const mentionText = this.getReadmeMentionText(downloadUrl);
+    return /read[\s_-]*me|lisez[\s_-]*moi|dependencies listed|requirements listed/i.test(
+      mentionText,
+    );
+  }
+
+  getReadmeDependencyCatalog() {
+    const catalog = [
+      {
+        name: 'Skyline',
+        aliases: ['skyline'],
+      },
+      {
+        name: 'ARCropolis',
+        aliases: ['arcropolis', 'arcroplois'],
+      },
+      {
+        name: 'NRO Hook',
+        aliases: ['nro hook', 'nrohook', 'libnro_hook'],
+      },
+      {
+        name: 'Smashline 2',
+        aliases: ['smashline 2', 'smashline2', 'smashline'],
+      },
+      {
+        name: 'Param Config',
+        aliases: ['param config', 'paramconfig'],
+      },
+      {
+        name: 'One Slot Effects',
+        aliases: ['one slot effects', 'onesloteffects'],
+      },
+      {
+        name: 'The CSK Collection',
+        aliases: ['the csk collection', 'csk collection', 'cskcollection'],
+      },
+    ];
+
+    const marketplacePlugins = window.pluginMarketplace?.getPlugins?.() || [];
+    marketplacePlugins.forEach((plugin) => {
+      if (!plugin?.name) return;
+      catalog.push({
+        name: plugin.name,
+        aliases: [plugin.name, plugin.repo?.split('/').pop() || ''],
+      });
+    });
+
+    return catalog;
+  }
+
+  formatReadmeDependencyLine(line: string) {
+    return line
+      .replace(/^\s*[-*+•]\s*/, '')
+      .replace(/^\s*\d+[.)]\s*/, '')
+      .replace(/^\s*\[[ x-]\]\s*/i, '')
+      .replace(/\[[^\]]+\]\(([^)]+)\)/g, '')
+      .replace(/\s+-\s+https?:\/\/\S+.*$/i, '')
+      .replace(/\s*[:=-]\s*https?:\/\/\S+.*$/i, '')
+      .replace(/https?:\/\/\S+/gi, '')
+      .replace(/\s+-\s*$/, '')
+      .replace(/\b(?:plugin|dependency|dependencies|required|requirement)\b/gi, '')
+      .replace(/\s*\([^)]*(?:optional|already included)[^)]*\)\s*$/i, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  }
+
+  getReadmeDependencyUrl(line: string) {
+    return line.match(/https?:\/\/\S+/i)?.[0]?.replace(/[),.;]+$/, '') || '';
+  }
+
+  canonicalizeReadmeDependencyName(name: string) {
+    const normalizedName = this.normalizeDependencyName(name);
+    if (!normalizedName) return '';
+
+    const catalogMatch = this.getReadmeDependencyCatalog().find((entry) => {
+      return entry.aliases.some((alias) => {
+        const normalizedAlias = this.normalizeDependencyName(alias);
+        return (
+          normalizedAlias.length >= 3 &&
+          (normalizedName === normalizedAlias ||
+            normalizedName.includes(normalizedAlias) ||
+            normalizedAlias.includes(normalizedName))
+        );
+      });
+    });
+
+    return catalogMatch?.name || name;
+  }
+
+  getReadmeDependencyFromLine(line: string) {
+    const cleanedName = this.formatReadmeDependencyLine(line);
+    if (!cleanedName) return null;
+
+    const canonicalName = this.canonicalizeReadmeDependencyName(cleanedName);
+    if (!canonicalName) return null;
+
+    return {
+      name: canonicalName,
+      url: this.getReadmeDependencyUrl(line),
+    };
+  }
+
+  getKnownReadmeDependencyFromLine(line: string) {
+    const normalizedLine = this.normalizeDependencyName(line);
+    const catalogMatch = this.getReadmeDependencyCatalog().find((entry) => {
+      return entry.aliases.some((alias) => {
+        const normalizedAlias = this.normalizeDependencyName(alias);
+        return (
+          normalizedAlias.length >= 3 && normalizedLine.includes(normalizedAlias)
+        );
+      });
+    });
+
+    if (!catalogMatch) return null;
+
+    return {
+      name: catalogMatch.name,
+      url: this.getReadmeDependencyUrl(line),
+    };
+  }
+
+  getKnownReadmeDependenciesFromText(text: string) {
+    const normalizedText = this.normalizeDependencyName(text);
+    const mentionsDependencySection =
+      /dependenc|requirement|prerequisite|required plugin/i.test(text) ||
+      /dependenc|requirement|prerequisite|requiredplugin/i.test(
+        normalizedText,
+      );
+
+    if (!mentionsDependencySection) return [];
+
+    return this.getReadmeDependencyCatalog()
+      .filter((entry) => {
+        return entry.aliases.some((alias) => {
+          const normalizedAlias = this.normalizeDependencyName(alias);
+          return (
+            normalizedAlias.length >= 3 &&
+            normalizedText.includes(normalizedAlias)
+          );
+        });
+      })
+      .map((entry) => ({ name: entry.name, url: '' }));
+  }
+
+  extractReadmeDependencyRequirements(
+    readmes: { path: string; content: string }[] = [],
+  ) {
+    const byName = new Map<string, { name: string; url: string }>();
+    const text = readmes.map((readme) => readme.content || '').join('\n');
+    const lines = text.replace(/\r\n?/g, '\n').split('\n');
+    let inDependencyBlock = false;
+    let capturedFromBlock = 0;
+
+    const addRequirement = (requirement: { name: string; url: string }) => {
+      const normalized = this.normalizeDependencyName(requirement.name);
+      if (!normalized) return;
+
+      const existing = byName.get(normalized);
+      byName.set(normalized, {
+        ...requirement,
+        url: existing?.url || requirement.url,
+      });
+    };
+
+    this.getKnownReadmeDependenciesFromText(text).forEach(addRequirement);
+
+    lines.forEach((rawLine) => {
+      const line = rawLine.trim();
+      const headingMatch =
+        /^(?:#+\s*)?(?:dependencies|requirements|prerequisites|required plugins|needed plugins)\s*:?\s*(.*)$/i.exec(
+          line,
+        );
+
+      if (headingMatch) {
+        inDependencyBlock = true;
+        capturedFromBlock = 0;
+        const inlineText = headingMatch[1] || '';
+        const inlineRequirement =
+          this.getReadmeDependencyFromLine(inlineText) ||
+          this.getKnownReadmeDependencyFromLine(inlineText);
+        if (inlineRequirement) {
+          addRequirement(inlineRequirement);
+          capturedFromBlock += 1;
+        }
+        return;
+      }
+
+      if (!inDependencyBlock && /^https?:\/\//i.test(line)) return;
+      if (!inDependencyBlock && this.getReadmeDependencyUrl(line)) {
+        const knownRequirement = this.getKnownReadmeDependencyFromLine(line);
+        if (knownRequirement) addRequirement(knownRequirement);
+        return;
+      }
+
+      if (!inDependencyBlock) return;
+      if (!line) {
+        if (capturedFromBlock > 0) inDependencyBlock = false;
+        return;
+      }
+
+      if (
+        /^(the new|if you|duplicate|character id|name id|series id|amount of colors|color start index|join|https?:\/\/|credits?|thanks|support)\b/i.test(
+          line,
+        )
+      ) {
+        inDependencyBlock = false;
+        return;
+      }
+
+      if (capturedFromBlock >= 20) {
+        inDependencyBlock = false;
+        return;
+      }
+
+      const requirement =
+        this.getReadmeDependencyFromLine(line) ||
+        this.getKnownReadmeDependencyFromLine(line);
+      if (!requirement) return;
+
+      addRequirement(requirement);
+      capturedFromBlock += 1;
+    });
+
+    return Array.from(byName.values());
+  }
+
+  async getGameBananaReadmeRequirements(downloadUrl = '') {
+    if (
+      !downloadUrl ||
+      !window.electronAPI?.scanGameBananaReadme
+    ) {
+      return [];
+    }
+
+    try {
+      const result = await window.electronAPI.scanGameBananaReadme(downloadUrl);
+      if (!result?.success || !Array.isArray(result.readmes)) {
+        console.warn('[Social] README scan failed:', result);
+        return [];
+      }
+
+      const requirements = this.extractReadmeDependencyRequirements(
+        result.readmes,
+      );
+      console.log(
+        '[Social] README content received:',
+        result.readmes
+          .map((readme) => `--- ${readme.path} ---\n${readme.content}`)
+          .join('\n\n'),
+      );
+      console.log('[Social] README scan result:', {
+        readmes: result.readmes.map((readme) => readme.path),
+        requirements: requirements.map((requirement) => requirement.name),
+      });
+
+      return requirements;
+    } catch (error) {
+      console.warn('[Social] Failed to scan GameBanana README:', error);
+      return [];
+    }
+  }
+
+  getMissingGameBananaRequirements(
+    extraRequirements: { name: string; url: string }[] = [],
+  ) {
+    const merged = this.getCurrentGameBananaMergedDetail();
+    if (Array.isArray(merged)) return [];
+
+    const requirementsByName = new Map<string, { name: string; url: string }>();
+    [...this.getGameBananaRequirements(merged), ...extraRequirements].forEach(
+      (requirement) => {
+        const normalized = this.normalizeDependencyName(requirement.name);
+        if (!normalized) return;
+        if (!requirementsByName.has(normalized)) {
+          requirementsByName.set(normalized, requirement);
+        }
+      },
+    );
+
+    return Array.from(requirementsByName.values())
       .map((requirement) => {
         const installedPlugin = this.findInstalledDependency(requirement.name);
         const marketplacePlugin = this.findMarketplaceDependency(
@@ -929,8 +1259,15 @@ class SocialGameBananaManager extends SocialManagerBase {
     }[];
   }
 
-  confirmMissingGameBananaRequirements() {
-    const missingRequirements = this.getMissingGameBananaRequirements();
+  async confirmMissingGameBananaRequirements(downloadUrl = '') {
+    const shouldCheckDependencies =
+      await this.shouldCheckGameBananaDependenciesOnDownload();
+    if (!shouldCheckDependencies) return Promise.resolve(true);
+
+    const readmeRequirements =
+      await this.getGameBananaReadmeRequirements(downloadUrl);
+    const missingRequirements =
+      this.getMissingGameBananaRequirements(readmeRequirements);
     if (!missingRequirements.length) return Promise.resolve(true);
 
     if (!window.modalManager?.showCustomModal) {
@@ -992,6 +1329,27 @@ class SocialGameBananaManager extends SocialManagerBase {
         ],
       });
     });
+  }
+
+  async shouldCheckGameBananaDependenciesOnDownload() {
+    const settingsValue =
+      window.settingsManager?.settings?.checkDependenciesOnDiscoverDownload;
+    if (typeof settingsValue === 'boolean') {
+      return settingsValue;
+    }
+
+    try {
+      const storedValue = await window.electronAPI?.store?.get?.(
+        'checkDependenciesOnDiscoverDownload',
+      );
+      return storedValue !== false;
+    } catch (error) {
+      console.warn(
+        '[Social] Failed to read dependency check setting:',
+        error,
+      );
+      return true;
+    }
   }
 
   getGameBananaDetailImageStyle(mod: GameBananaTopSubmission) {
@@ -1235,6 +1593,13 @@ class SocialGameBananaManager extends SocialManagerBase {
     this.gameBananaDetailReturnSection =
       previousSection !== 'discover' ? previousSection : null;
     this.gameBananaDetailReturnScrollTop = this.getSocialMainScrollTop();
+
+    const searchInput = document.querySelector<HTMLInputElement>(
+      '#social-gamebanana-search-input',
+    );
+    if (searchInput) {
+      this.gameBananaSearchQuery = searchInput.value.trim();
+    }
 
     this.activateSocialSectionWithoutLoading('discover');
     this.captureGameBananaDiscoverSnapshot();
@@ -1494,6 +1859,14 @@ class SocialGameBananaManager extends SocialManagerBase {
         }
         this.setSocialMainScrollTop(source?.scrollTop || 0);
         this.fadeGameBananaRestoredBackground();
+      }
+
+      // Restore search query value to the search input
+      const searchInput = document.querySelector<HTMLInputElement>(
+        '#social-gamebanana-search-input',
+      );
+      if (searchInput && this.gameBananaSearchQuery) {
+        searchInput.value = this.gameBananaSearchQuery;
       }
 
       this.gameBananaDiscoverSnapshot = null;

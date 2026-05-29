@@ -130,10 +130,12 @@
   left: 0;
   right: 0;
   padding: 40px;
-  background: linear-gradient(to top,
-      var(--bg-modal-overlay) 0%,
-      rgba(0, 0, 0, 0.3) 60%,
-      transparent 100%);
+  background: linear-gradient(
+    to top,
+    var(--bg-modal-overlay) 0%,
+    rgba(0, 0, 0, 0.3) 60%,
+    transparent 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -144,10 +146,12 @@
 }
 
 [data-theme='light'] .social-onboarding-overlay {
-  background: linear-gradient(to top,
-      rgba(0, 0, 0, 0.6) 0%,
-      rgba(0, 0, 0, 0.3) 60%,
-      transparent 100%);
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.6) 0%,
+    rgba(0, 0, 0, 0.3) 60%,
+    transparent 100%
+  );
 }
 
 .social-onboarding-text {
@@ -288,17 +292,21 @@
 }
 
 .social-btn-primary {
-  background: linear-gradient(135deg,
-      var(--accent-color) 0%,
-      var(--accent-hover) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--accent-color) 0%,
+    var(--accent-hover) 100%
+  );
   border-color: var(--accent-hover);
   color: var(--text-inverse);
 }
 
 .social-btn-primary:hover {
-  background: linear-gradient(135deg,
-      var(--accent-hover) 0%,
-      var(--accent-color) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--accent-hover) 0%,
+    var(--accent-color) 100%
+  );
   box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3);
   color: var(--text-inverse);
 }
@@ -376,10 +384,12 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg,
-      transparent,
-      var(--accent-color),
-      transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--accent-color),
+    transparent
+  );
   opacity: 0.5;
 }
 
@@ -741,9 +751,11 @@
 .social-mod-image-placeholder {
   width: 100%;
   height: 160px;
-  background: linear-gradient(135deg,
-      var(--border-color) 0%,
-      var(--bg-primary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--border-color) 0%,
+    var(--bg-primary) 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1297,9 +1309,11 @@
   top: calc(100% + 8px);
   left: 0;
   right: 0;
-  background: linear-gradient(135deg,
-      var(--border-color) 0%,
-      var(--bg-tertiary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--border-color) 0%,
+    var(--bg-tertiary) 100%
+  );
   border: 1px solid var(--border-hover);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
@@ -1386,9 +1400,11 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  background: linear-gradient(180deg,
-      var(--accent-color) 0%,
-      var(--accent-hover) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--accent-color) 0%,
+    var(--accent-hover) 100%
+  );
 }
 
 body.reduced-animations .custom-select {
@@ -1921,7 +1937,6 @@ body.no-animations .mod-info-content {
 }
 
 @keyframes pulse {
-
   0%,
   100% {
     transform: scale(1);
@@ -2380,7 +2395,9 @@ body.no-animations .mod-info-item {
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
   border: 1px solid var(--border-hover);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 100;
@@ -2578,9 +2595,11 @@ body.no-animations .credits-logo-menu {
 }
 
 .credits-section {
-  background: linear-gradient(135deg,
-      var(--border-color) 0%,
-      var(--bg-tertiary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--border-color) 0%,
+    var(--bg-tertiary) 100%
+  );
   border: 1px solid var(--border-hover);
   border-radius: 16px;
   padding: 25px;
@@ -2620,9 +2639,11 @@ body.no-animations .credits-logo-menu {
 
 .credits-section-header i {
   font-size: 24px;
-  background: linear-gradient(135deg,
-      var(--accent-color) 0%,
-      var(--accent-hover) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--accent-color) 0%,
+    var(--accent-hover) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -2650,7 +2671,7 @@ body.no-animations .credits-logo-menu {
   border-radius: 12px;
 }
 
-.credits-person>i {
+.credits-person > i {
   font-size: 32px;
   color: var(--accent-color);
 }
@@ -2662,7 +2683,9 @@ body.no-animations .credits-logo-menu {
   object-fit: cover;
   border: 2px solid var(--border-hover);
   flex-shrink: 0;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .credits-person:hover .credits-person-avatar {
@@ -2703,7 +2726,10 @@ body.no-animations .credits-logo-menu {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .credits-support-btn:hover {
@@ -2749,7 +2775,9 @@ body.no-animations .credits-logo-menu {
   color: var(--text-muted);
   font-size: 13px;
   cursor: pointer;
-  transition: color 0.2s ease, opacity 0.2s ease;
+  transition:
+    color 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .credits-toggle-old-testers:hover {
@@ -2758,17 +2786,24 @@ body.no-animations .credits-logo-menu {
 
 .credits-section-old-testers {
   padding: 20px;
-  background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.02) 0%,
-      rgba(255, 255, 255, 0.01) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.02) 0%,
+    rgba(255, 255, 255, 0.01) 100%
+  );
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
   opacity: 0.82;
   overflow: hidden;
   max-height: 500px;
   margin-top: 0;
-  transition: max-height 0.28s ease, opacity 0.28s ease, margin-top 0.28s ease,
-    padding-top 0.28s ease, padding-bottom 0.28s ease, border-color 0.28s ease;
+  transition:
+    max-height 0.28s ease,
+    opacity 0.28s ease,
+    margin-top 0.28s ease,
+    padding-top 0.28s ease,
+    padding-bottom 0.28s ease,
+    border-color 0.28s ease;
 }
 
 .credits-section-old-testers.is-collapsed {
@@ -2829,7 +2864,6 @@ body.no-animations .credits-logo-menu {
 }
 
 @keyframes heartBeat {
-
   0%,
   100% {
     transform: scale(1);

@@ -30,6 +30,7 @@ class SettingsManager {
       pluginUpdateIntroShown: false,
       autoDisableNewMods: false,
       disableAllModsOnDownload: false,
+      checkDependenciesOnDiscoverDownload: true,
       devMode: false,
       devShowModHash: false,
       theme: 'dark',
@@ -64,6 +65,12 @@ class SettingsManager {
     } else {
       this.setupEventListeners();
     }
+  }
+
+  normalizeEmulatorType(emulatorType) {
+    const normalized =
+      typeof emulatorType === 'string' ? emulatorType.toLowerCase() : '';
+    return normalized === 'ryujinx' ? 'ryujinx' : 'yuzu';
   }
 
   setupEventListeners() {
@@ -631,11 +638,16 @@ class SettingsManager {
 
       options.forEach((option) => {
         option.addEventListener('click', () => {
-          const value = option.dataset.value;
+          const value = this.normalizeEmulatorType(option.dataset.value);
           const text = option.querySelector<HTMLElement>('span')!.textContent;
+          const i18nKey =
+            option.querySelector<HTMLElement>('span')!.dataset.i18n;
 
           if (selectedValue) {
             selectedValue.textContent = text;
+            if (i18nKey) {
+              selectedValue.dataset.i18n = i18nKey;
+            }
           }
 
           options.forEach((opt) => opt.classList.remove('active'));
@@ -747,6 +759,22 @@ class SettingsManager {
         this.saveSettings();
       });
       disableAllOnDownload.dataset.listenerAttached = 'true';
+    }
+
+    const checkDependenciesOnDiscoverDownload =
+      document.querySelector<HTMLInputElement>(
+        '#check-dependencies-on-discover-download-enabled',
+      );
+    if (
+      checkDependenciesOnDiscoverDownload &&
+      !checkDependenciesOnDiscoverDownload.dataset.listenerAttached
+    ) {
+      checkDependenciesOnDiscoverDownload.addEventListener('change', () => {
+        this.settings.checkDependenciesOnDiscoverDownload =
+          checkDependenciesOnDiscoverDownload.checked;
+        this.saveSettings();
+      });
+      checkDependenciesOnDiscoverDownload.dataset.listenerAttached = 'true';
     }
 
     const checkUpdatesBtn =
@@ -1001,6 +1029,7 @@ class SettingsManager {
     this.updateAutoCheckPluginUpdatesUI();
     this.updateAutoDisableModsUI();
     this.updateDisableAllModsOnDownloadUI();
+    this.updateCheckDependenciesOnDiscoverDownloadUI();
     this.updateEnhancedStatusBarUI();
     this.updateStartupSplashUI();
     this.updateStartupSplashSoundUI();
@@ -1391,6 +1420,16 @@ class SettingsManager {
     }
   }
 
+  updateCheckDependenciesOnDiscoverDownloadUI() {
+    const toggle = document.querySelector<HTMLInputElement>(
+      '#check-dependencies-on-discover-download-enabled',
+    );
+    if (toggle) {
+      toggle.checked =
+        this.settings.checkDependenciesOnDiscoverDownload !== false;
+    }
+  }
+
   updateEnhancedStatusBarUI() {
     const toggle = document.querySelector<HTMLInputElement>(
       '#enhanced-status-bar-enabled',
@@ -1701,7 +1740,8 @@ ${t('settings.okUnderstand')}
       const options = emulatorTypeSelect.querySelectorAll<HTMLElement>(
         '.custom-select-option',
       );
-      const currentType = this.settings.emulatorType || 'yuzu';
+      const currentType = this.normalizeEmulatorType(this.settings.emulatorType);
+      this.settings.emulatorType = currentType;
 
       options.forEach((option) => {
         if (option.dataset.value === currentType) {
@@ -1709,6 +1749,11 @@ ${t('settings.okUnderstand')}
           if (selectedValue) {
             selectedValue.textContent =
               option.querySelector<HTMLElement>('span')!.textContent;
+            const i18nKey =
+              option.querySelector<HTMLElement>('span')!.dataset.i18n;
+            if (i18nKey) {
+              selectedValue.dataset.i18n = i18nKey;
+            }
           }
         } else {
           option.classList.remove('active');
@@ -1750,7 +1795,7 @@ ${t('settings.okUnderstand')}
       '.settings-section',
     ) as HTMLElement;
     if (fullscreenSection) {
-      if (this.settings.emulatorType === 'ryujinx') {
+      if (this.normalizeEmulatorType(this.settings.emulatorType) === 'ryujinx') {
         fullscreenSection.style.display = 'none';
       } else {
         fullscreenSection.style.display = 'block';
@@ -2307,6 +2352,10 @@ ${t('settings.okUnderstand')}
       const disableAllModsOnDownload = await window.electronAPI.store.get(
         'disableAllModsOnDownload',
       );
+      const checkDependenciesOnDiscoverDownload =
+        await window.electronAPI.store.get(
+          'checkDependenciesOnDiscoverDownload',
+        );
       const startupSplashEnabled = await window.electronAPI.store.get(
         'startupSplashEnabled',
       );
@@ -2322,7 +2371,7 @@ ${t('settings.okUnderstand')}
       return {
         modsPath: modsPath || null,
         pluginsPath: pluginsPath || null,
-        emulatorType: emulatorType || 'yuzu',
+        emulatorType: this.normalizeEmulatorType(emulatorType),
         emulatorPath: emulatorPath || null,
         gamePath: gamePath || null,
         emulatorFullscreen: emulatorFullscreen || false,
@@ -2341,6 +2390,8 @@ ${t('settings.okUnderstand')}
         theme: theme || 'dark',
         autoDisableNewMods: autoDisableNewMods || false,
         disableAllModsOnDownload: disableAllModsOnDownload || false,
+        checkDependenciesOnDiscoverDownload:
+          checkDependenciesOnDiscoverDownload !== false,
         startupSplashEnabled: startupSplashEnabled !== false,
         startupSplashSoundEnabled: startupSplashSoundEnabled !== false,
         startupSplashSoundPath:
@@ -2381,6 +2432,7 @@ ${t('settings.okUnderstand')}
         theme: 'dark',
         autoDisableNewMods: false,
         disableAllModsOnDownload: false,
+        checkDependenciesOnDiscoverDownload: true,
         startupSplashEnabled: true,
         startupSplashSoundEnabled: true,
         startupSplashSoundPath: null,
@@ -2470,6 +2522,10 @@ ${t('settings.okUnderstand')}
         this.settings.disableAllModsOnDownload,
       );
       await window.electronAPI.store.set(
+        'checkDependenciesOnDiscoverDownload',
+        this.settings.checkDependenciesOnDiscoverDownload,
+      );
+      await window.electronAPI.store.set(
         'startupSplashEnabled',
         this.settings.startupSplashEnabled,
       );
@@ -2531,7 +2587,7 @@ ${t('settings.okUnderstand')}
   }
 
   getEmulatorType() {
-    return this.settings.emulatorType || 'yuzu';
+    return this.normalizeEmulatorType(this.settings.emulatorType);
   }
 
   getEmulatorFullscreen() {
