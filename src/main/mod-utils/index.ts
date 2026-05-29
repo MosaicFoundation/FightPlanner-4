@@ -10,6 +10,15 @@ import { ModScanner } from './mod-scanner';
 import { CONFLICT_WHITELIST_PATTERNS } from '../config';
 import sharedStore from '../store';
 
+interface ModInstallOptions {
+  onExtractProgress?: (progress: {
+    percent: number;
+    fileCount?: number;
+    file?: string;
+  }) => void;
+  isCancelled?: () => boolean;
+}
+
 interface ModInfo {
   display_name: string;
   description: string;
@@ -55,6 +64,45 @@ interface BatchModMove {
 }
 
 export default class ModUtils {
+  private static getDirectorySize(dirPath: string): number {
+    let total = 0;
+
+    if (!fs.existsSync(dirPath)) {
+      return total;
+    }
+
+    const stack = [dirPath];
+    while (stack.length) {
+      const currentPath = stack.pop();
+      if (!currentPath) continue;
+
+      let entries: fs.Dirent[];
+      try {
+        entries = fs.readdirSync(currentPath, { withFileTypes: true });
+      } catch {
+        continue;
+      }
+
+      for (const entry of entries) {
+        const fullPath = path.join(currentPath, entry.name);
+        if (entry.isDirectory()) {
+          stack.push(fullPath);
+          continue;
+        }
+
+        if (entry.isFile()) {
+          try {
+            total += fs.statSync(fullPath).size;
+          } catch {
+            // File may still be in the middle of extraction.
+          }
+        }
+      }
+    }
+
+    return total;
+  }
+
   private static _gatherDirsWithModFiles(rootDir: string): string[] {
     const checkIfModDir = (dir: string): boolean => {
       return (
@@ -554,7 +602,11 @@ export default class ModUtils {
     }
   }
 
-  static async copyRecursive(src: string, dest: string) {
+  static async copyRecursive(src: string, dest: string, isCancelled?: () => boolean) {
+    if (isCancelled?.()) {
+      throw new Error('Installation cancelled');
+    }
+
     const stats = await fsPromises.stat(src);
 
     if (stats.isDirectory()) {
@@ -562,9 +614,14 @@ export default class ModUtils {
 
       const children = await fsPromises.readdir(src);
       for (const childItemName of children) {
+        if (isCancelled?.()) {
+          throw new Error('Installation cancelled');
+        }
+
         await this.copyRecursive(
           path.join(src, childItemName),
           path.join(dest, childItemName),
+          isCancelled,
         );
       }
     } else {
@@ -572,7 +629,11 @@ export default class ModUtils {
     }
   }
 
-  static async installFromArchive(sourceArchivePath: string, modsPath: string) {
+  static async installFromArchive(
+    sourceArchivePath: string,
+    modsPath: string,
+    options: ModInstallOptions = {},
+  ) {
     let tempExtractDir: string | null;
 
     console.log('[installFromArchive] Installing mod from archive:', sourceArchivePath);
@@ -584,8 +645,86 @@ export default class ModUtils {
     );
 
     await fsPromises.mkdir(tempExtractDir, { recursive: true });
+    if (options.isCancelled?.()) {
+      throw new Error('Installation cancelled');
+    }
 
-    await FileExtractor.extractArchive(sourceArchivePath, tempExtractDir);
+    const estimatedSize = await FileExtractor.estimateArchiveUncompressedSize(sourceArchivePath);
+    let lastProgress = -1;
+    let lastLoggedProgress = -1;
+    console.log('[extract-progress][mod-utils] extraction prepared', {
+      archive: sourceArchivePath,
+      tempExtractDir,
+      estimatedSize,
+    });
+
+    const reportProgress = (
+      percent: number,
+      file?: string,
+      source: 'initial' | 'poll' | 'node-7z' | 'complete' = 'node-7z',
+      extractedSize?: number,
+    ) => {
+      const nextProgress = Math.max(0, Math.min(100, Math.round(percent)));
+      if (nextProgress <= lastProgress && nextProgress !== 100) return;
+
+      lastProgress = nextProgress;
+      if (
+        nextProgress === 0 ||
+        nextProgress === 100 ||
+        nextProgress - lastLoggedProgress >= 5
+      ) {
+        lastLoggedProgress = nextProgress;
+        console.log('[extract-progress][mod-utils] report', {
+          source,
+          percent: nextProgress,
+          archive: sourceArchivePath,
+          file,
+          extractedSize,
+          estimatedSize,
+        });
+      }
+      options.onExtractProgress?.({ percent: nextProgress, file });
+    };
+
+    reportProgress(0, undefined, 'initial');
+    const progressTimer = setInterval(() => {
+      if (options.isCancelled?.()) return;
+      if (estimatedSize <= 0) return;
+
+      const extractedSize = this.getDirectorySize(tempExtractDir!);
+      const percent = Math.min(95, (extractedSize / estimatedSize) * 100);
+      reportProgress(percent, undefined, 'poll', extractedSize);
+    }, 250);
+
+    try {
+      try {
+        await FileExtractor.extractArchive(sourceArchivePath, tempExtractDir, {
+          isCancelled: options.isCancelled,
+          onProgress: ({ percent, file }) => {
+            if (options.isCancelled?.()) return;
+            reportProgress(percent >= 100 ? 95 : percent, file, 'node-7z');
+          },
+        });
+      } finally {
+        clearInterval(progressTimer);
+      }
+    } catch (error) {
+      try {
+        await fsPromises.rm(tempExtractDir, { recursive: true, force: true });
+      } catch (cleanupError) {
+        console.warn('[installFromArchive] Failed to cleanup cancelled extraction:', cleanupError.message);
+      }
+      throw error;
+    }
+
+    if (options.isCancelled?.()) {
+      throw new Error('Installation cancelled');
+    }
+
+    reportProgress(100, undefined, 'complete', this.getDirectorySize(tempExtractDir));
+    if (options.isCancelled?.()) {
+      throw new Error('Installation cancelled');
+    }
 
     const extractedItems = await fsPromises.readdir(tempExtractDir);
     let isSingleFolderExtract = false;
@@ -608,6 +747,10 @@ export default class ModUtils {
       this._gatherDirsWithModFiles(tempExtractDir) || tempExtractDir;
 
     async function _prepareModPath(modDirectory: string) {
+      if (options.isCancelled?.()) {
+        throw new Error('Installation cancelled');
+      }
+
       const modName = path.basename(modDirectory);
       const modPath = path.join(modsPath, modName);
 
@@ -627,13 +770,21 @@ export default class ModUtils {
 
     if (!dirsWithModFiles.length) {
       console.log('[installFromArchive] Copying multiple items to mods folder...');
-      await this.copyRecursive(tempExtractDir, await _prepareModPath(tempExtractDir));
+      await this.copyRecursive(
+        tempExtractDir,
+        await _prepareModPath(tempExtractDir),
+        options.isCancelled,
+      );
     } else {
       for (const dir of dirsWithModFiles) {
+        if (options.isCancelled?.()) {
+          throw new Error('Installation cancelled');
+        }
+
         console.log(`[installFromArchive] Copying mod files from ${dir} to mods folder...`);
 
         const modPath = await _prepareModPath(dir);
-        await this.copyRecursive(dir, modPath);
+        await this.copyRecursive(dir, modPath, options.isCancelled);
 
         if (dir !== topLevelModDir) {
           const infoTomlSource = path.join(topLevelModDir, 'info.toml');
@@ -709,6 +860,7 @@ export default class ModUtils {
   static async installModFromPath(
     sourcePath: string,
     modsPath: string,
+    options: ModInstallOptions = {},
   ): Promise<ModInstallResult> {
     try {
       if (!fs.existsSync(sourcePath)) {
@@ -733,7 +885,7 @@ export default class ModUtils {
       let resultingMods: Awaited<ReturnType<typeof this.installFromArchive>>;
 
       if (isArchive) {
-        resultingMods = await this.installFromArchive(sourcePath, modsPath);
+        resultingMods = await this.installFromArchive(sourcePath, modsPath, options);
       } else if (isDirectory) {
         resultingMods = [await this.installFromDirectory(sourcePath, modsPath)];
       } else {

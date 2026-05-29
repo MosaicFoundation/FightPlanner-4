@@ -423,11 +423,52 @@
   gap: 24px;
 }
 
+.social-discover-content {
+  gap: 0;
+}
+
+.social-discover-content > * + * {
+  margin-top: 24px;
+}
+
 .social-gamebanana-featured,
 .social-gamebanana-mods {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.social-gamebanana-featured {
+  max-height: 520px;
+  overflow: hidden;
+  transition:
+    max-height 0.28s ease,
+    margin-top 0.28s ease,
+    opacity 0.2s ease,
+    filter 0.2s ease,
+    transform 0.28s ease;
+}
+
+#social-discover-content.is-searching-gamebanana .social-gamebanana-featured {
+  max-height: 0;
+  margin-top: 0;
+  opacity: 0;
+  filter: saturate(0.7);
+  pointer-events: none;
+  transform: translateY(-8px);
+}
+
+#social-discover-content.is-searching-gamebanana .social-gamebanana-mods {
+  margin-top: 16px;
+}
+
+.social-gamebanana-top-search {
+  display: flex;
+  justify-content: center;
+}
+
+.social-gamebanana-top-search .social-gamebanana-search {
+  width: min(520px, 100%);
 }
 
 .social-gamebanana-carousel-header {

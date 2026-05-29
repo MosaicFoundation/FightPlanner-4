@@ -284,6 +284,53 @@ const ModHandlers = {
     }
   },
 
+  ['delete-conflict-file']: async (
+    common: BaseHandlerArg,
+    modPath: string,
+    conflictFilePath: string,
+  ): HandlerResponse => {
+    try {
+      if (!modPath || !fs.existsSync(modPath) || !fs.statSync(modPath).isDirectory()) {
+        return createErrorResponse(
+          ErrorCodes.MOD_NOT_FOUND,
+          'Mod folder does not exist',
+        );
+      }
+
+      if (!conflictFilePath || path.isAbsolute(conflictFilePath)) {
+        return createErrorResponse(
+          ErrorCodes.MOD_DELETE_ERROR,
+          'Invalid conflict file path',
+        );
+      }
+
+      const modRoot = path.resolve(modPath);
+      const targetPath = path.resolve(modRoot, conflictFilePath);
+      const relativeTarget = path.relative(modRoot, targetPath);
+
+      if (relativeTarget.startsWith('..') || path.isAbsolute(relativeTarget)) {
+        return createErrorResponse(
+          ErrorCodes.MOD_DELETE_ERROR,
+          'Conflict file path is outside the mod folder',
+        );
+      }
+
+      if (!fs.existsSync(targetPath)) {
+        return createErrorResponse(
+          ErrorCodes.MOD_NOT_FOUND,
+          'Conflict file does not exist',
+        );
+      }
+
+      fs.rmSync(targetPath, { recursive: true, force: true });
+
+      return { success: true };
+    } catch (error) {
+      handleError(error, 'delete-conflict-file');
+      return createErrorResponse(ErrorCodes.MOD_DELETE_ERROR, error.message);
+    }
+  },
+
   ['toggle-mod']: async (
     common: BaseHandlerArg,
     modPath: string,

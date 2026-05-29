@@ -74,7 +74,7 @@ export default class ProtocolHandler {
     string,
     {
       request: http.ClientRequest | null;
-      file: fs.WriteStream;
+      file: fs.WriteStream | null;
       filePath: string;
       cancelled: boolean;
       paused?: boolean;
@@ -552,6 +552,7 @@ export default class ProtocolHandler {
         error: error.message,
       });
 
+      this.activeDownloads.delete(downloadId);
       this.pendingInstalls.delete(downloadId);
     };
 
@@ -612,13 +613,54 @@ export default class ProtocolHandler {
       }
 
       console.log('Downloaded to:', filePath);
+      console.log('[extract-progress][protocol] extract start', {
+        downloadId,
+        filePath,
+      });
+
+      this.sendToRenderer('mod-extract-start', { downloadId });
+      this.sendToRenderer('mod-download-progress', {
+        downloadId,
+        progress: 0,
+        receivedBytes: 0,
+        totalBytes: 0,
+        statusText: 'Extracting mod...',
+      });
 
       const modInstallResult = await ModUtils.installModFromPath(
         filePath,
         modsPath,
+        {
+          onExtractProgress: ({ percent }) => {
+            if (this.activeDownloads.get(downloadId)?.cancelled) return;
+
+            console.log('[extract-progress][protocol] send renderer progress', {
+              downloadId,
+              percent,
+            });
+            this.sendToRenderer('mod-download-progress', {
+              downloadId,
+              progress: percent,
+              receivedBytes: 0,
+              totalBytes: 0,
+              statusText: 'Extracting mod...',
+            });
+          },
+          isCancelled: () => this.activeDownloads.get(downloadId)?.cancelled === true,
+        },
       );
 
       if (modInstallResult.success) {
+        if (this.activeDownloads.get(downloadId)?.cancelled) {
+          throw new Error('Installation cancelled');
+        }
+
+        console.log('[extract-progress][protocol] extract complete', {
+          downloadId,
+          resultingMods: modInstallResult.resultingMods.map((mod) => mod.modName),
+        });
+        this.sendToRenderer('mod-extract-complete', { downloadId });
+
         if (modId && modInstallResult.resultingMods.length === 1) {
           const modData = modInstallResult.resultingMods[0];
           await this.fetchAndSaveModMetadata(modId, modData.modPath, modType);
@@ -637,6 +679,7 @@ export default class ProtocolHandler {
           downloadId,
         });
 
+        this.activeDownloads.delete(downloadId);
         this.pendingInstalls.delete(downloadId);
       } else {
         _handleSaveError(new Error(modInstallResult.error));
@@ -939,7 +982,11 @@ export default class ProtocolHandler {
             }
 
             console.log('[protocol][download] complete');
-            this.activeDownloads.delete(downloadId);
+            if (downloadCheck) {
+              downloadCheck.request = null;
+              downloadCheck.file = null;
+              downloadCheck.filePath = filePath;
+            }
             resolve(filePath);
           });
         });
@@ -1175,7 +1222,7 @@ export default class ProtocolHandler {
 
       for (let i = 0; i < totalMods; i++) {
         if (extractStatuses[i]) {
-          totalProgressSum += 100;
+          totalProgressSum += fileProgresses[i];
           extractingCount++;
         } else {
           totalProgressSum += fileProgresses[i];
@@ -1184,7 +1231,7 @@ export default class ProtocolHandler {
 
       const overallProgress = Math.round(totalProgressSum / totalMods);
 
-      if (extractingCount === totalMods) {
+      if (extractingCount === totalMods && overallProgress === 0) {
         this.sendToRenderer('mod-extract-start', { downloadId });
       } else {
         this.sendToRenderer('mod-download-progress', {
@@ -1192,7 +1239,9 @@ export default class ProtocolHandler {
           progress: overallProgress,
           receivedBytes: 0,
           totalBytes: 0,
-          statusText: `Downloading .FPP (${completedCount}/${totalMods})`,
+          statusText: extractingCount > 0
+            ? `Extracting .FPP (${completedCount}/${totalMods})`
+            : `Downloading .FPP (${completedCount}/${totalMods})`,
           subItems: subItems,
         });
       }
@@ -1210,11 +1259,16 @@ export default class ProtocolHandler {
         const filePath = await this.downloadMod(downloadUrl, downloadId, onProgress);
         if (!filePath) return;
 
-        fileProgresses[i] = 100;
+        fileProgresses[i] = 0;
         extractStatuses[i] = true;
         updateGlobalProgress();
 
-        const modInstallResult = await ModUtils.installModFromPath(filePath, modsPath);
+        const modInstallResult = await ModUtils.installModFromPath(filePath, modsPath, {
+          onExtractProgress: ({ percent }) => {
+            fileProgresses[i] = percent;
+            updateGlobalProgress();
+          },
+        });
 
         completedCount++;
 
@@ -1290,6 +1344,8 @@ export default class ProtocolHandler {
     download.cancelled = true;
 
     // Destroy the request to stop data flow
+    const wasDownloading = !!download.request;
+
     if (download.request) {
       download.request.destroy();
       download.request = null;
@@ -1316,10 +1372,12 @@ export default class ProtocolHandler {
       }
     }
 
-    // Keep entry for a short time to catch finish event, then clean up
-    setTimeout(() => {
-      this.activeDownloads.delete(downloadId);
-    }, 1000);
+    // During extraction/install the entry must stay alive so isCancelled() keeps returning true.
+    if (wasDownloading) {
+      setTimeout(() => {
+        this.activeDownloads.delete(downloadId);
+      }, 1000);
+    }
 
     // Notify renderer immediately
     this.sendToRenderer('mod-install-error', {

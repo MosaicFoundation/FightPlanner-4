@@ -973,14 +973,29 @@ class SocialProfileManager extends SocialFeedManager {
 
         const downloadUrl = fileDownloadBtn.getAttribute('data-download-url');
         if (downloadUrl && window.electronAPI?.openFightPlannerLink) {
-          const shouldContinue = await this.confirmMissingGameBananaRequirements();
-          if (!shouldContinue) return false;
+          const originalContent = fileDownloadBtn.innerHTML;
+          fileDownloadBtn.disabled = true;
 
-          this.registerPendingGameBananaSocialDownload(downloadUrl);
-          const protocolUrl = downloadUrl.startsWith('fightplanner:')
-            ? downloadUrl
-            : `fightplanner:${downloadUrl}`;
-          await window.electronAPI.openFightPlannerLink(protocolUrl);
+          try {
+            const shouldCheckDependencies =
+              await this.shouldCheckGameBananaDependenciesOnDownload();
+            fileDownloadBtn.innerHTML = shouldCheckDependencies
+              ? '<i class="bi bi-hourglass-split"></i><span>Checking</span>'
+              : '<i class="bi bi-download"></i><span>Downloading</span>';
+
+            const shouldContinue =
+              await this.confirmMissingGameBananaRequirements(downloadUrl);
+            if (!shouldContinue) return false;
+
+            this.registerPendingGameBananaSocialDownload(downloadUrl);
+            const protocolUrl = downloadUrl.startsWith('fightplanner:')
+              ? downloadUrl
+              : `fightplanner:${downloadUrl}`;
+            await window.electronAPI.openFightPlannerLink(protocolUrl);
+          } finally {
+            fileDownloadBtn.disabled = false;
+            fileDownloadBtn.innerHTML = originalContent;
+          }
         }
         return false;
       }

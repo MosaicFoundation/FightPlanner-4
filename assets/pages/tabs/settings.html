@@ -1690,6 +1690,36 @@
       </div>
 
       <div class="settings-section">
+        <label
+          class="settings-label"
+          data-i18n="settings.discoverDependencyCheck"
+          >Discover Dependency Check</label
+        >
+        <div class="settings-input-group">
+          <label class="settings-switch">
+            <input
+              type="checkbox"
+              id="check-dependencies-on-discover-download-enabled"
+              checked
+            />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.enableDiscoverDependencyCheck"
+            >Check dependencies before downloading from Discover</span
+          >
+        </div>
+        <p
+          class="settings-hint"
+          data-i18n="settings.discoverDependencyCheckHint"
+        >
+          When enabled, FightPlanner warns about missing or disabled
+          requirements before starting a Discover mod download.
+        </p>
+      </div>
+
+      <div class="settings-section">
         <label class="settings-label" data-i18n="settings.socialCheckInterval"
           >Check Interval</label
         >

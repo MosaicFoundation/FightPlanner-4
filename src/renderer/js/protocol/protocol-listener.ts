@@ -41,6 +41,14 @@ class ProtocolListener {
     window.electronAPI.onModDownloadProgress((data) => {
       if (window.downloadManager && data.downloadId) {
         const rendererId = this.idMap.get(data.downloadId) || data.downloadId;
+        if (data.statusText?.toLowerCase().includes('extract')) {
+          console.log('[extract-progress][renderer-ipc] received', {
+            mainDownloadId: data.downloadId,
+            rendererId,
+            progress: data.progress,
+            statusText: data.statusText,
+          });
+        }
         window.downloadManager.updateProgress(
           rendererId,
           data.progress,
@@ -57,6 +65,10 @@ class ProtocolListener {
     window.electronAPI.onModExtractStart((data) => {
       if (window.downloadManager && data.downloadId) {
         const rendererId = this.idMap.get(data.downloadId) || data.downloadId;
+        console.log('[extract-progress][renderer-ipc] extract start', {
+          mainDownloadId: data.downloadId,
+          rendererId,
+        });
         window.downloadManager.markExtracting(rendererId);
       }
     });

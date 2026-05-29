@@ -223,6 +223,8 @@ function initializeTabFeatures(tabName) {
               return;
             }
 
+            await window.settingsManager.readyPromise;
+
             const emulatorType = window.settingsManager.getEmulatorType();
             const emulatorPath = window.settingsManager.getEmulatorPath();
             const gamePath = window.settingsManager.getGamePath();

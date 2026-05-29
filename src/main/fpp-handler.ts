@@ -298,12 +298,33 @@ export default class FppHandler {
             const tempDir = path.join(os.tmpdir(), `fpp-install-${Date.now()}`);
             fs.mkdirSync(tempDir, { recursive: true });
 
-            mainWindow.webContents.send('fpp-install-progress', {
-                step: 'extracting',
-                progress: 0,
-            });
+            const sendInstallProgress = (
+                step: string,
+                progress: number,
+                extra: Record<string, unknown> = {},
+            ) => {
+                mainWindow.webContents.send('fpp-install-progress', {
+                    step,
+                    progress: Math.max(0, Math.min(100, Math.round(progress))),
+                    ...extra,
+                });
+            };
 
-            await FileExtractor.extractArchive(fppPath, tempDir);
+            sendInstallProgress('extracting', 0);
+
+            let lastExtractProgress = 0;
+            await FileExtractor.extractArchive(fppPath, tempDir, {
+                onProgress: ({ percent, file }) => {
+                    const overallProgress = Math.round(percent * 0.5);
+                    if (overallProgress === lastExtractProgress && percent < 100) return;
+
+                    lastExtractProgress = overallProgress;
+                    sendInstallProgress('extracting', overallProgress, {
+                        extractProgress: percent,
+                        file,
+                    });
+                },
+            });
 
             const manifestPath = path.join(tempDir, 'manifest.xml');
             let manifest: FppManifest | null = null;
@@ -337,9 +358,7 @@ export default class FppHandler {
                         installedMods.push(entry.name);
                         current++;
 
-                        mainWindow.webContents.send('fpp-install-progress', {
-                            step: 'installing',
-                            progress: Math.round((current / total) * 50),
+                        sendInstallProgress('installing', 50 + ((current / total) * 35), {
                             modName: entry.name,
                         });
                     }
@@ -351,15 +370,20 @@ export default class FppHandler {
                 const embeddedPluginsDir = path.join(tempDir, 'data', 'plugins');
                 if (fs.existsSync(embeddedPluginsDir)) {
                     const entries = fs.readdirSync(embeddedPluginsDir, { withFileTypes: true });
+                    const plugins = entries.filter(entry => entry.isFile() && entry.name.endsWith('.nro'));
+                    let current = 0;
 
-                    for (const entry of entries) {
-                        if (entry.isFile() && entry.name.endsWith('.nro')) {
-                            const sourcePath = path.join(embeddedPluginsDir, entry.name);
-                            const destPath = path.join(pluginsPath, entry.name);
+                    for (const entry of plugins) {
+                        const sourcePath = path.join(embeddedPluginsDir, entry.name);
+                        const destPath = path.join(pluginsPath, entry.name);
 
-                            fs.copyFileSync(sourcePath, destPath);
-                            installedMods.push(entry.name); // Treat as an installed item
-                        }
+                        fs.copyFileSync(sourcePath, destPath);
+                        installedMods.push(entry.name); // Treat as an installed item
+                        current++;
+
+                        sendInstallProgress('installing', 85 + ((current / plugins.length) * 10), {
+                            modName: entry.name,
+                        });
                     }
                 }
             }
@@ -377,9 +401,7 @@ export default class FppHandler {
                 }
 
                 if (links.length > 0) {
-                    mainWindow.webContents.send('fpp-install-progress', {
-                        step: 'downloading',
-                        progress: 50,
+                    sendInstallProgress('downloading', 95, {
                         totalDownloads: links.length,
                     });
 
@@ -393,10 +415,7 @@ export default class FppHandler {
                 }
             }
 
-            mainWindow.webContents.send('fpp-install-progress', {
-                step: 'complete',
-                progress: 100,
-            });
+            sendInstallProgress('complete', 100);
 
             fs.rmSync(tempDir, { recursive: true, force: true });
 

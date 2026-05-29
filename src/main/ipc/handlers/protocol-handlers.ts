@@ -1,5 +1,7 @@
 import { IpcMain } from 'electron';
+import * as fs from 'fs';
 import * as https from 'https';
+import * as path from 'path';
 import { getProtocolHandler } from '../../main-protocol-setup';
 import {
   handleError,
@@ -8,8 +10,55 @@ import {
 } from '../../utils/error-handler';
 import { HandlerResponse } from '../../types/common';
 import { BaseHandlerArg, GenericHandler } from '../../types/common';
+import { FileExtractor } from '../../utils/file-extractor';
 
 export type ProtocolHandlers = typeof ProtocolHandlers;
+
+type GameBananaReadmeScanResult = {
+  readmes: { path: string; content: string }[];
+};
+
+function isReadmeFileName(fileName: string) {
+  const normalized = fileName.toLowerCase();
+  return (
+    /^read[\s_-]*me(?:[^\w].*)?$/i.test(fileName) ||
+    normalized === 'readme' ||
+    normalized.startsWith('readme.')
+  );
+}
+
+function findReadmeArchiveEntries(entries: string[]) {
+  return entries
+    .filter((entry) => {
+      const normalizedEntry = entry.replace(/\\/g, '/');
+      const fileName = normalizedEntry.split('/').pop() || '';
+      return (
+        normalizedEntry &&
+        !normalizedEntry.endsWith('/') &&
+        !path.isAbsolute(normalizedEntry) &&
+        !normalizedEntry.split('/').includes('..') &&
+        isReadmeFileName(fileName)
+      );
+    })
+    .slice(0, 5);
+}
+
+function decodeReadmeBuffer(buffer: Buffer) {
+  if (buffer.length >= 2 && buffer[0] === 0xff && buffer[1] === 0xfe) {
+    return buffer.toString('utf16le').replace(/^\uFEFF/, '');
+  }
+
+  if (buffer.length >= 2 && buffer[0] === 0xfe && buffer[1] === 0xff) {
+    const swapped = Buffer.alloc(buffer.length - 2);
+    for (let i = 2; i + 1 < buffer.length; i += 2) {
+      swapped[i - 2] = buffer[i + 1];
+      swapped[i - 1] = buffer[i];
+    }
+    return swapped.toString('utf16le').replace(/^\uFEFF/, '');
+  }
+
+  return buffer.toString('utf8').replace(/^\uFEFF/, '');
+}
 
 const ProtocolHandlers = {
   ['confirm-protocol-install']: async (
@@ -261,6 +310,110 @@ const ProtocolHandlers = {
     } catch (error) {
       handleError(error, 'fetch-gamebanana-files');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
+    }
+  },
+
+  ['scan-gamebanana-readme']: async (
+    common: BaseHandlerArg,
+    downloadUrl: string,
+  ): HandlerResponse<GameBananaReadmeScanResult> => {
+    const protocolHandler = getProtocolHandler();
+    if (!protocolHandler) {
+      return createErrorResponse(
+        ErrorCodes.PROTOCOL_HANDLER_NOT_INITIALIZED,
+        'Protocol handler not available',
+      );
+    }
+
+    let downloadedPath = '';
+
+    try {
+      const cleanUrl = String(downloadUrl || '').replace(/^fightplanner:/i, '');
+      const resolvedUrl =
+        (await protocolHandler.resolveGameBananaDownloadUrl(cleanUrl)) ||
+        cleanUrl;
+
+      if (!/^https?:\/\//i.test(resolvedUrl)) {
+        return { success: true, readmes: [] };
+      }
+
+      const scanId = `gamebanana_readme_${Date.now()}`;
+      console.log('[GameBanana README] scanning:', resolvedUrl);
+      downloadedPath = await protocolHandler.downloadMod(
+        resolvedUrl,
+        scanId,
+        () => {},
+      );
+
+      const archiveEntries = await FileExtractor.listFppContents(downloadedPath);
+      const readmeEntries = findReadmeArchiveEntries(archiveEntries);
+      console.log(
+        `[GameBanana README] archive entries: ${archiveEntries.length}, readme entries: ${readmeEntries.length}`,
+      );
+      if (!readmeEntries.length) {
+        console.log(
+          '[GameBanana README] no README found. First entries:',
+          archiveEntries.slice(0, 20),
+        );
+      } else {
+        console.log('[GameBanana README] README entries:', readmeEntries);
+      }
+
+      if (!readmeEntries.length) {
+        return { success: true, readmes: [] };
+      }
+
+      const readmes: { path: string; content: string }[] = [];
+      for (const entry of readmeEntries) {
+        try {
+          const buffer = await FileExtractor.readArchiveFile(
+            downloadedPath,
+            entry,
+          );
+          console.log(
+            `[GameBanana README] read stdout bytes for ${entry}: ${buffer.length}`,
+          );
+          if (buffer.length > 256 * 1024) continue;
+
+          readmes.push({
+            path: entry.replace(/\\/g, '/'),
+            content: decodeReadmeBuffer(buffer).slice(0, 120000),
+          });
+        } catch (readError) {
+          console.warn(
+            `[GameBanana README] failed to read README entry ${entry}:`,
+            readError,
+          );
+        }
+      }
+
+      console.log(
+        `[GameBanana README] read ${readmes.length}/${readmeEntries.length} README file(s):`,
+        readmes.map((readme) => readme.path),
+      );
+      if (readmes[0]?.content) {
+        console.log(
+          '[GameBanana README] full README content:',
+          readmes[0].content,
+        );
+      }
+
+      return { success: true, readmes };
+    } catch (error) {
+      handleError(error, 'scan-gamebanana-readme');
+      return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
+    } finally {
+      try {
+        if (downloadedPath && fs.existsSync(downloadedPath)) {
+          fs.unlinkSync(downloadedPath);
+        }
+      } catch (cleanupError) {
+        console.warn(
+          '[Protocol] Failed to remove README scan archive:',
+          cleanupError,
+        );
+      }
+
     }
   },
 } as const;

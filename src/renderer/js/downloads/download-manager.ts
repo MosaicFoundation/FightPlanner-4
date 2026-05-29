@@ -2,7 +2,7 @@ interface Download {
   id: string;
   url: string;
   fileName: string;
-  status: 'downloading' | 'completed' | 'failed';
+  status: 'downloading' | 'extracting' | 'completed' | 'failed';
   progress: number;
   receivedBytes: number;
   totalBytes: number;
@@ -199,6 +199,16 @@ class DownloadManager {
     download.progress = progress;
     download.receivedBytes = receivedBytes;
     download.totalBytes = totalBytes;
+    const isExtractProgress = download.statusText?.toLowerCase().includes('extract');
+    if (isExtractProgress) {
+      console.log('[extract-progress][download-manager] updateProgress', {
+        downloadId,
+        progress,
+        receivedBytes,
+        totalBytes,
+        statusText: download.statusText,
+      });
+    }
 
     const element = document.querySelector<HTMLElement>(
       `[data-download-id="${downloadId}"]`,
@@ -213,14 +223,30 @@ class DownloadManager {
       );
 
       if (progressBar) {
-        progressBar.style.width = `${progress}%`;
+        const isExtracting = download.statusText?.toLowerCase().includes('extract');
+        if (isExtracting && progress <= 0) {
+          progressBar.classList.add('download-progress-indeterminate');
+          progressBar.style.width = '';
+          console.log('[extract-progress][download-manager] using indeterminate bar', {
+            downloadId,
+          });
+        } else {
+          progressBar.classList.remove('download-progress-indeterminate');
+          progressBar.style.width = `${progress}%`;
+          if (isExtractProgress) {
+            console.log('[extract-progress][download-manager] set bar width', {
+              downloadId,
+              width: `${progress}%`,
+            });
+          }
+        }
       }
 
       if (progressText) {
         if (download.statusText) {
           const lowerStatus = download.statusText.toLowerCase();
           if (lowerStatus.includes('extract')) {
-            progressText.textContent = 'Extracting...';
+            progressText.textContent = progress > 0 ? `${Math.round(progress)}%` : 'Extracting...';
             return;
           } else if (lowerStatus.includes('verif')) {
             progressText.textContent = 'Verifying...';
@@ -294,19 +320,42 @@ class DownloadManager {
   markExtracting(downloadId) {
     const download = this.activeDownloads.get(downloadId);
     if (!download) return;
+
+    download.status = 'extracting';
+    download.statusText = 'Extracting mod...';
+    download.progress = 0;
+    download.receivedBytes = 0;
+    download.totalBytes = 0;
+    console.log('[extract-progress][download-manager] markExtracting', {
+      downloadId,
+    });
+
     const element = document.querySelector<HTMLElement>(
       `[data-download-id="${downloadId}"]`,
     );
+
     if (element) {
+      const progressBar = element.querySelector<HTMLElement>(
+        '.download-progress-fill',
+      );
       const statusText = element.querySelector<HTMLElement>(
         '.download-status-text',
       );
       const progressText = element.querySelector<HTMLElement>(
         '.download-progress-text',
       );
+
+      if (progressBar) {
+        progressBar.classList.add('download-progress-indeterminate');
+        progressBar.style.width = '';
+      }
       if (statusText)
-        statusText.innerHTML = '<i class="bi bi-file-zip"></i> Extracting...';
-      if (progressText) progressText.textContent = 'Processing...';
+        statusText.innerHTML = '<i class="bi bi-file-zip"></i> Extracting mod...';
+      if (progressText) progressText.textContent = 'Extracting...';
+    }
+
+    if (window.statusBarManager) {
+      window.statusBarManager.checkAndUpdateForDownloads();
     }
   }
 

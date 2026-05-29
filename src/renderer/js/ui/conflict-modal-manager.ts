@@ -11,6 +11,135 @@ export class ConflictModalManager {
     this.autoSlotChangeMods = [];
   }
 
+  t(key: string, params = {}) {
+    return window.i18n && window.i18n.t ? window.i18n.t(key, params) : key;
+  }
+
+  async confirmConflictFileDeletion(
+    mod: { name: string; path: string },
+    filePath: string,
+  ): Promise<boolean> {
+    if (!window.modalManager?.showCustomModal) {
+      return window.confirm(
+        this.t('modals.conflict.deleteFileConfirm', {
+          filePath,
+          modName: mod.name,
+        }),
+      );
+    }
+
+    return new Promise((resolve) => {
+      let shouldDelete = false;
+      let resolved = false;
+      const resolveOnce = (value: boolean) => {
+        if (resolved) return;
+        resolved = true;
+        resolve(value);
+      };
+
+      const body = document.createElement('div');
+      body.className = 'conflict-delete-confirm-body';
+
+      const warning = document.createElement('p');
+      warning.className = 'modal-warning';
+      warning.textContent = this.t('modals.conflict.deleteFileWarning', {
+        modName: mod.name,
+      });
+
+      const file = document.createElement('div');
+      file.className = 'conflict-delete-confirm-file';
+
+      const fileLabel = document.createElement('span');
+      fileLabel.className = 'conflict-delete-confirm-file-label';
+      fileLabel.textContent = this.t('modals.conflict.deleteFilePathLabel');
+
+      const filePathEl = document.createElement('code');
+      filePathEl.textContent = filePath;
+
+      const hint = document.createElement('p');
+      hint.className = 'modal-hint';
+      hint.textContent = this.t('modals.conflict.deleteFileHint');
+
+      file.appendChild(fileLabel);
+      file.appendChild(filePathEl);
+      body.appendChild(warning);
+      body.appendChild(file);
+      body.appendChild(hint);
+
+      window.modalManager.showCustomModal({
+        id: 'conflict-delete-file-confirm-modal',
+        title: this.t('modals.conflict.deleteFileTitle'),
+        body,
+        size: 'small',
+        clickOverlayToClose: false,
+        buttons: [
+          {
+            text: this.t('common.cancel'),
+            type: 'cancel',
+            onClick: () => {
+              shouldDelete = false;
+            },
+          },
+          {
+            text: this.t('common.delete'),
+            type: 'danger',
+            onClick: () => {
+              shouldDelete = true;
+            },
+          },
+        ],
+        onClose: () => {
+          resolveOnce(shouldDelete);
+        },
+      });
+    });
+  }
+
+  async deleteConflictFile(
+    mod: { name: string; path: string },
+    filePath: string,
+  ) {
+    if (!window.electronAPI?.deleteConflictFile || !window.modManager) {
+      window.toastManager?.error('toasts.failedToDeleteConflictFile', 5000, {
+        error: 'API not available',
+      });
+      return;
+    }
+
+    const confirmed = await this.confirmConflictFileDeletion(mod, filePath);
+
+    if (!confirmed) return;
+
+    const result = await window.electronAPI.deleteConflictFile(
+      mod.path,
+      filePath,
+    );
+
+    if (!result.success) {
+      window.toastManager?.error('toasts.failedToDeleteConflictFile', 5000, {
+        error: result.error || 'Unknown error',
+      });
+      return;
+    }
+
+    window.toastManager?.success('toasts.conflictFileDeleted', 3000);
+
+    await window.modManager.fetchMods();
+
+    const whitelistPatterns =
+      window.settingsManager?.settings.conflictWhitelistPatterns || [];
+    const conflictResult = await window.modManager.checkConflicts(
+      whitelistPatterns,
+    );
+
+    if (conflictResult.success && window.modManager.conflictGroups.length > 0) {
+      await this.showConflictModal();
+    } else {
+      this.closeConflictModal();
+      window.toastManager?.success('toasts.noConflictsDetected', 3000);
+    }
+  }
+
   async showConflictModal() {
     if (
       !window.modManager ||
@@ -153,8 +282,23 @@ export class ConflictModalManager {
           modWarningIcon.className = 'bi bi-exclamation-circle-fill';
           const modName = document.createElement('span');
           modName.textContent = mod.name;
+          const deleteButton = document.createElement('button');
+          deleteButton.type = 'button';
+          deleteButton.className = 'conflict-delete-file-btn';
+          deleteButton.title = this.t('modals.conflict.deleteFileFromMod', {
+            modName: mod.name,
+          });
+          deleteButton.setAttribute('aria-label', deleteButton.title);
+          deleteButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            this.deleteConflictFile(mod, conflict.filePath);
+          });
+          const deleteIcon = document.createElement('i');
+          deleteIcon.className = 'bi bi-trash3';
+          deleteButton.appendChild(deleteIcon);
           modItem.appendChild(modWarningIcon);
           modItem.appendChild(modName);
+          modItem.appendChild(deleteButton);
           modsList.appendChild(modItem);
         });
         tdMods.appendChild(modsList);
