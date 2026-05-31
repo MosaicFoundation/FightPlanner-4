@@ -12,6 +12,7 @@ import {
   createErrorResponse,
   ErrorCodes,
 } from '../../utils/error-handler';
+import { resolveVirtualPath } from '../../utils/virtual-paths';
 import { HandlerResponse } from '../../types/common';
 import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
@@ -26,7 +27,15 @@ const PluginHandlers = {
     disabledPlugins: SimplePlugin[];
   }> => {
     try {
-      return { success: true, ...PluginUtils.readAllPlugins(pluginsPath) };
+      console.log('[PluginHandlers] Reading plugins folder:', pluginsPath);
+      const result = PluginUtils.readAllPlugins(pluginsPath);
+      console.log('[PluginHandlers] Plugins folder read complete:', {
+        pluginsPath,
+        activeCount: result.activePlugins.length,
+        disabledCount: result.disabledPlugins.length,
+      });
+
+      return { success: true, ...result };
     } catch (error) {
       handleError(error, 'read-plugins-folder');
       return {
@@ -68,16 +77,32 @@ const PluginHandlers = {
     pluginsPath: string,
   ): HandlerResponse => {
     try {
+      console.log(
+        '[PluginHandlers] Ensuring plugins folder is available:',
+        pluginsPath,
+      );
+      const resolvedPluginsPath = pluginsPath
+        ? resolveVirtualPath(pluginsPath)
+        : '';
       if (
-        !pluginsPath
-        || !fs.existsSync(pluginsPath)
-        || !fs.statSync(pluginsPath).isDirectory()
+        !resolvedPluginsPath
+        || !fs.existsSync(resolvedPluginsPath)
+        || !fs.statSync(resolvedPluginsPath).isDirectory()
       ) {
+        console.error('[PluginHandlers] Plugins folder unavailable:', {
+          requestedPath: pluginsPath,
+          resolvedPath: resolvedPluginsPath,
+        });
         return createErrorResponse(
           ErrorCodes.FOLDER_NOT_FOUND,
           `Plugins folder is not available. Reconnect your Switch and make sure this folder exists: ${pluginsPath}`,
         );
       }
+
+      console.log('[PluginHandlers] Plugins folder is available:', {
+        requestedPath: pluginsPath,
+        resolvedPath: resolvedPluginsPath,
+      });
 
       return { success: true };
     } catch (error) {

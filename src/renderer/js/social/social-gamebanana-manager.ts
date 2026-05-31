@@ -14,7 +14,7 @@ class SocialGameBananaManager extends SocialManagerBase {
         this.fetchWithCache(
           this.GAMEBANANA_TOP_SUBS_URL,
           {},
-          'gameBananaTopSubs',
+          'gameBananaTopSubsContentRatings',
         ),
         this.fetchGameBananaModsPage(1, this.gameBananaSearchQuery),
       ]);
@@ -24,9 +24,11 @@ class SocialGameBananaManager extends SocialManagerBase {
       )
         ? submissionsData
         : [];
-      const mods = submissions.filter(
-        (submission) => submission._sModelName === 'Mod',
+      const mods = this.filterDiscoverNsfwSubmissions(
+        submissions.filter((submission) => submission._sModelName === 'Mod'),
       );
+      this.gameBananaFeaturedSourceMods = mods;
+      this.gameBananaCurrentSubfeedData = subfeedData;
 
       if (mods.length === 0) {
         discoverContent.innerHTML =
@@ -34,7 +36,7 @@ class SocialGameBananaManager extends SocialManagerBase {
         return;
       }
 
-      const featuredMods = mods.slice(0, 6);
+      const featuredMods = this.getFilteredGameBananaFeaturedMods();
       this.gameBananaFeaturedMods = featuredMods;
       this.gameBananaFeaturedIndex = 0;
       this.gameBananaModsPage = 1;
@@ -69,6 +71,7 @@ class SocialGameBananaManager extends SocialManagerBase {
               ${this.renderGameBananaPagination(subfeedData)}
             </div>
           </div>
+          ${this.renderGameBananaCategoryFilters()}
           <div id="social-gamebanana-mods-content">
             ${this.renderGameBananaModsPage(subfeedData)}
           </div>
@@ -94,7 +97,207 @@ class SocialGameBananaManager extends SocialManagerBase {
     `;
   }
 
+  renderGameBananaCategoryFilters() {
+    const activeFilter = this.getGameBananaCategoryFilter();
+
+    return `
+      <div id="social-gamebanana-category-filter-area">
+        <div class="social-gamebanana-category-filters" aria-label="Discover category filters">
+          ${this.getGameBananaCategoryFilters()
+            .map((filter) => this.renderGameBananaCategoryFilterButton(filter))
+            .join('')}
+        </div>
+        ${this.renderGameBananaSkinSubcategoryFilters()}
+      </div>
+    `;
+  }
+
+  renderGameBananaCategoryFilterButton(filter: any) {
+    const activeFilter = this.getGameBananaCategoryFilter();
+    const isActive = activeFilter === filter.id;
+    const showSkinToggle = filter.id === 'skins' && isActive;
+
+    return `
+      <button class="social-gamebanana-category-filter ${isActive ? 'is-active' : ''}" type="button" data-category-filter="${filter.id}">
+        <span>${filter.label}</span>
+        ${
+          showSkinToggle
+            ? `<i class="bi bi-chevron-${this.gameBananaSkinSubcategoryOpen ? 'up' : 'down'} social-gamebanana-skins-toggle" aria-hidden="true"></i>`
+            : ''
+        }
+      </button>
+    `;
+  }
+
+  renderGameBananaSkinSubcategoryFilters() {
+    if (
+      this.getGameBananaCategoryFilter() !== 'skins' ||
+      !this.gameBananaSkinSubcategoryOpen
+    ) {
+      return '';
+    }
+
+    if (!Array.isArray(this.gameBananaSkinSubcategories)) {
+      return `
+        <div class="social-gamebanana-subcategory-filters">
+          <span class="social-gamebanana-subcategory-loading">Loading skins...</span>
+        </div>
+      `;
+    }
+
+    const selectedId = this.getGameBananaActiveSkinCategoryId();
+    const buttons = [
+      { _idRow: 3330, _sName: 'All skins' },
+      ...this.gameBananaSkinSubcategories,
+    ];
+
+    return `
+      <div class="social-gamebanana-subcategory-filters social-gamebanana-skin-picker" aria-label="Skin subcategory filters">
+        <label class="social-gamebanana-skin-picker-label" for="social-gamebanana-skin-select">Character</label>
+        <select id="social-gamebanana-skin-select" class="social-gamebanana-skin-select">
+          ${buttons
+            .map((category) => {
+              const id = Number(category._idRow);
+              return `
+                <option value="${id}" ${selectedId === id ? 'selected' : ''}>
+                  ${this.escapeHtml(category._sName || 'Skins')}
+                </option>
+              `;
+            })
+            .join('')}
+        </select>
+      </div>
+    `;
+  }
+
+  getGameBananaCategoryFilters() {
+    return [
+      { id: 'all', label: 'All' },
+      { id: 'skins', label: 'Skins', model: 'Mod', categoryId: 3330 },
+      { id: 'stages', label: 'Stages', model: 'Mod', categoryId: 6089 },
+      { id: 'sounds', label: 'Sounds', model: 'Sound' },
+      { id: 'effects', label: 'Effects', model: 'Mod', categoryId: 1177 },
+      { id: 'gameplay', label: 'Gameplay', model: 'Mod', categoryId: 26521 },
+      { id: 'ui', label: 'UI', model: 'Mod', categoryId: 1760 },
+      { id: 'tools', label: 'Tools', model: 'Tool' },
+      { id: 'wips', label: 'WiPs', model: 'Wip' },
+    ];
+  }
+
+  getGameBananaCategoryFilter() {
+    return this.gameBananaCategoryFilter || 'all';
+  }
+
+  async setGameBananaCategoryFilter(filter: string) {
+    const validFilter = this.getGameBananaCategoryFilters().some(
+      (item) => item.id === filter,
+    )
+      ? filter
+      : 'all';
+    if (validFilter === this.getGameBananaCategoryFilter()) return;
+    this.gameBananaCategoryFilter = validFilter;
+    if (validFilter !== 'skins') {
+      this.gameBananaSkinSubcategoryOpen = false;
+      this.gameBananaSkinSubcategoryId = null;
+    }
+    this.gameBananaModsTotalPages = 1;
+
+    this.refreshGameBananaCategoryFilterUI();
+    this.refreshGameBananaFilteredContent();
+    await this.loadGameBananaModsPage(1, this.gameBananaSearchQuery);
+  }
+
+  async toggleGameBananaSkinSubcategories() {
+    if (this.getGameBananaCategoryFilter() !== 'skins') {
+      await this.setGameBananaCategoryFilter('skins');
+    }
+
+    this.gameBananaSkinSubcategoryOpen = !this.gameBananaSkinSubcategoryOpen;
+    this.refreshGameBananaCategoryFilterUI();
+
+    if (
+      this.gameBananaSkinSubcategoryOpen &&
+      !Array.isArray(this.gameBananaSkinSubcategories)
+    ) {
+      await this.loadGameBananaSkinSubcategories();
+      this.refreshGameBananaCategoryFilterUI();
+    }
+  }
+
+  async setGameBananaSkinSubcategory(categoryId: number) {
+    const nextCategoryId = Number.isFinite(categoryId) ? categoryId : 3330;
+    this.gameBananaSkinSubcategoryId =
+      nextCategoryId === 3330 ? null : nextCategoryId;
+    this.gameBananaModsTotalPages = 1;
+    this.refreshGameBananaCategoryFilterUI();
+    this.refreshGameBananaFilteredContent();
+    await this.loadGameBananaModsPage(1, this.gameBananaSearchQuery);
+  }
+
+  async loadGameBananaSkinSubcategories() {
+    try {
+      const response = await fetch(
+        `${this.GAMEBANANA_API_URL}/Util/ModCategory/NestedStructure?_idGameRow=6498`,
+      );
+      const categories = await response.json();
+      if (!response.ok || !Array.isArray(categories)) {
+        throw new Error(`GameBanana category tree failed: ${response.status}`);
+      }
+
+      const skinsCategory = categories.find(
+        (category) => Number(category?._idRow) === 3330,
+      );
+      const children = Array.isArray(skinsCategory?._aChildren)
+        ? skinsCategory._aChildren
+        : [];
+      this.gameBananaSkinSubcategories = children
+        .filter((category) => Number(category?._nItemCount || 0) > 0)
+        .sort((a, b) =>
+          String(a._sName || '').localeCompare(String(b._sName || '')),
+        );
+    } catch (error) {
+      console.error('[Social] Error loading GameBanana skin categories:', error);
+      this.gameBananaSkinSubcategories = [];
+    }
+  }
+
+  refreshGameBananaCategoryFilterUI() {
+    const filterArea = document.querySelector<HTMLElement>(
+      '#social-gamebanana-category-filter-area',
+    );
+    if (filterArea) {
+      filterArea.outerHTML = this.renderGameBananaCategoryFilters();
+    }
+  }
+
+  getGameBananaActiveSkinCategoryId() {
+    return this.gameBananaSkinSubcategoryId || 3330;
+  }
+
+  refreshGameBananaFilteredContent() {
+    this.gameBananaFeaturedMods = this.getFilteredGameBananaFeaturedMods();
+    this.gameBananaFeaturedIndex = 0;
+
+    const carousel = document.querySelector<HTMLElement>(
+      '#social-gamebanana-carousel',
+    );
+    if (carousel) {
+      carousel.innerHTML = this.renderGameBananaFeaturedStack();
+      this.setGameBananaFeaturedCardPositions();
+    }
+
+    const modsContent = document.querySelector<HTMLElement>(
+      '#social-gamebanana-mods-content',
+    );
+    if (modsContent && this.gameBananaCurrentSubfeedData) {
+      modsContent.innerHTML = this.renderGameBananaModsPage(
+        this.gameBananaCurrentSubfeedData,
+      );
+    }
+  }
+
   setupGameBananaSearchEvents() {
+    this.setupGameBananaClickFallbackEvents();
     if (this.gameBananaSearchListenerBound) return;
     this.gameBananaSearchListenerBound = true;
 
@@ -140,9 +343,315 @@ class SocialGameBananaManager extends SocialManagerBase {
         this.loadGameBananaModsPage(1, query);
       }, 350);
     });
+
+    document.addEventListener('change', (event) => {
+      const select = event.target as HTMLSelectElement;
+      if (select?.id !== 'social-gamebanana-skin-select') return;
+
+      void this.setGameBananaSkinSubcategory(Number(select.value));
+    });
+  }
+
+  setupGameBananaClickFallbackEvents() {
+    if (this.gameBananaClickFallbackListenerBound) return;
+    this.gameBananaClickFallbackListenerBound = true;
+
+    document.addEventListener(
+      'click',
+      (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+
+        const gameBananaTarget = target.closest(
+          [
+            '.social-gamebanana-nsfw-reveal-btn',
+            '.social-gamebanana-category-filter',
+            '.social-gamebanana-carousel-btn',
+            '.social-gamebanana-card-featured',
+            '.social-gamebanana-page-btn',
+            '.social-gamebanana-detail-back',
+            '.social-gamebanana-requirement-install',
+            '.social-gamebanana-requirement-link',
+            '.social-gamebanana-requirement-search',
+            '.social-gamebanana-gallery-thumb',
+            '.social-gamebanana-gallery-nav',
+            '.social-gamebanana-finished-work-btn',
+            '.social-gamebanana-external-btn',
+            '.social-gamebanana-file-download-btn',
+            '.social-gamebanana-card',
+          ].join(','),
+        );
+        if (!gameBananaTarget) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        void this.handleGameBananaClickTarget(target as HTMLElement);
+      },
+      true,
+    );
+  }
+
+  async handleGameBananaClickTarget(clickedElement: HTMLElement) {
+    const skinToggle = clickedElement.closest<HTMLElement>(
+      '.social-gamebanana-skins-toggle',
+    );
+    if (skinToggle) {
+      await this.toggleGameBananaSkinSubcategories();
+      return;
+    }
+
+    const nsfwRevealButton = clickedElement.closest<HTMLButtonElement>(
+      '.social-gamebanana-nsfw-reveal-btn',
+    );
+    if (nsfwRevealButton) {
+      nsfwRevealButton
+        .closest<HTMLElement>('.social-gamebanana-preview-media')
+        ?.classList.add('is-revealed');
+      return;
+    }
+
+    const categoryFilterButton = clickedElement.closest<HTMLButtonElement>(
+      '.social-gamebanana-category-filter',
+    );
+    if (categoryFilterButton) {
+      await this.setGameBananaCategoryFilter(
+        categoryFilterButton.getAttribute('data-category-filter') || 'all',
+      );
+      return;
+    }
+
+    const carouselButton = clickedElement.closest<HTMLElement>(
+      '.social-gamebanana-carousel-btn',
+    );
+    if (carouselButton) {
+      const direction =
+        carouselButton.getAttribute('data-direction') === 'next' ? 1 : -1;
+      this.scrollGameBananaCarousel(direction);
+      return;
+    }
+
+    const featuredCard = clickedElement.closest<HTMLElement>(
+      '.social-gamebanana-card-featured',
+    );
+    if (featuredCard) {
+      const featuredPosition = featuredCard.getAttribute(
+        'data-featured-position',
+      );
+      const featuredIndex = Number(
+        featuredCard.getAttribute('data-featured-index'),
+      );
+
+      if (featuredPosition !== 'active' && Number.isFinite(featuredIndex)) {
+        const total = this.gameBananaFeaturedMods.length;
+        const nextIndex = (this.gameBananaFeaturedIndex + 1) % total;
+        const direction = featuredIndex === nextIndex ? 1 : -1;
+        this.updateGameBananaFeaturedStack(featuredIndex, direction);
+        return;
+      }
+    }
+
+    const pageButton = clickedElement.closest<HTMLButtonElement>(
+      '.social-gamebanana-page-btn',
+    );
+    if (pageButton) {
+      if (pageButton.disabled) return;
+
+      const action = pageButton.getAttribute('data-page-action');
+      const nextPage =
+        action === 'next'
+          ? this.gameBananaModsPage + 1
+          : this.gameBananaModsPage - 1;
+      await this.loadGameBananaModsPage(nextPage);
+      return;
+    }
+
+    if (clickedElement.closest('.social-gamebanana-detail-back')) {
+      await this.returnFromGameBananaDetail();
+      return;
+    }
+
+    const requirementInstallBtn = clickedElement.closest<HTMLButtonElement>(
+      '.social-gamebanana-requirement-install',
+    );
+    if (requirementInstallBtn) {
+      if (requirementInstallBtn.disabled) return;
+
+      const pluginName = requirementInstallBtn.getAttribute('data-plugin-name');
+      const repo = requirementInstallBtn.getAttribute('data-plugin-repo');
+      if (pluginName && repo) {
+        requirementInstallBtn.disabled = true;
+        try {
+          await this.installGameBananaRequirement(pluginName, repo);
+          await window.pluginManager?.refreshPlugins?.();
+          if (this.gameBananaCurrentDetail) {
+            this.renderGameBananaDetailPage(
+              this.gameBananaCurrentDetail.details,
+              this.gameBananaCurrentDetail.fallback,
+              false,
+              this.gameBananaCurrentDetail.files,
+            );
+          }
+        } finally {
+          requirementInstallBtn.disabled = false;
+        }
+      }
+      return;
+    }
+
+    const requirementLinkBtn = clickedElement.closest<HTMLButtonElement>(
+      '.social-gamebanana-requirement-link',
+    );
+    if (requirementLinkBtn) {
+      const url = requirementLinkBtn.getAttribute('data-url');
+      if (url && window.electronAPI?.openUrl) {
+        await window.electronAPI.openUrl(url);
+      }
+      return;
+    }
+
+    const requirementSearchBtn = clickedElement.closest<HTMLButtonElement>(
+      '.social-gamebanana-requirement-search',
+    );
+    if (requirementSearchBtn) {
+      const query = requirementSearchBtn.getAttribute('data-query') || '';
+      const provider =
+        requirementSearchBtn.getAttribute('data-provider') || 'google';
+      const url = this.getGameBananaRequirementSearchUrl(query, provider);
+      if (window.electronAPI?.openUrl) {
+        await window.electronAPI.openUrl(url);
+      }
+      return;
+    }
+
+    const galleryThumb = clickedElement.closest<HTMLButtonElement>(
+      '.social-gamebanana-gallery-thumb',
+    );
+    if (galleryThumb) {
+      const gallery = galleryThumb.closest<HTMLElement>(
+        '.social-gamebanana-gallery',
+      );
+      const index = Number(galleryThumb.getAttribute('data-gallery-index'));
+      if (gallery && Number.isFinite(index)) {
+        this.updateGameBananaGallery(gallery, index);
+      }
+      return;
+    }
+
+    const galleryNav = clickedElement.closest<HTMLButtonElement>(
+      '.social-gamebanana-gallery-nav',
+    );
+    if (galleryNav) {
+      const gallery = galleryNav.closest<HTMLElement>(
+        '.social-gamebanana-gallery',
+      );
+      const currentIndex = Number(
+        gallery?.getAttribute('data-gallery-index') || 0,
+      );
+      const direction = Number(
+        galleryNav.getAttribute('data-gallery-direction') || 0,
+      );
+      if (gallery && Number.isFinite(currentIndex)) {
+        this.updateGameBananaGallery(gallery, currentIndex + direction);
+      }
+      return;
+    }
+
+    const finishedWorkBtn = clickedElement.closest<HTMLButtonElement>(
+      '.social-gamebanana-finished-work-btn',
+    );
+    if (finishedWorkBtn) {
+      const modelName = finishedWorkBtn.getAttribute('data-gb-model');
+      const submissionId = finishedWorkBtn.getAttribute('data-gb-id');
+      if (modelName && submissionId) {
+        this.gameBananaLastDetailSource = {
+          modelName,
+          submissionId,
+          sourceKind: 'grid',
+          page: this.gameBananaModsPage,
+          scrollTop: this.getSocialMainScrollTop(),
+        };
+        await this.showGameBananaSubmissionDetails(modelName, submissionId);
+      }
+      return;
+    }
+
+    const externalGameBananaBtn = clickedElement.closest<HTMLButtonElement>(
+      '.social-gamebanana-external-btn',
+    );
+    if (externalGameBananaBtn) {
+      const url = externalGameBananaBtn.getAttribute('data-url');
+      if (url && window.electronAPI?.openUrl) {
+        await window.electronAPI.openUrl(url);
+      }
+      return;
+    }
+
+    const fileDownloadBtn = clickedElement.closest<HTMLButtonElement>(
+      '.social-gamebanana-file-download-btn',
+    );
+    if (fileDownloadBtn) {
+      if (fileDownloadBtn.disabled) return;
+
+      const downloadUrl = fileDownloadBtn.getAttribute('data-download-url');
+      if (downloadUrl && window.electronAPI?.openFightPlannerLink) {
+        const originalContent = fileDownloadBtn.innerHTML;
+        fileDownloadBtn.disabled = true;
+
+        try {
+          const shouldCheckDependencies =
+            await this.shouldCheckGameBananaDependenciesOnDownload();
+          fileDownloadBtn.innerHTML = shouldCheckDependencies
+            ? '<i class="bi bi-hourglass-split"></i><span>Checking</span>'
+            : '<i class="bi bi-download"></i><span>Downloading</span>';
+
+          const shouldContinue =
+            await this.confirmMissingGameBananaRequirements(downloadUrl);
+          if (!shouldContinue) return;
+
+          this.registerPendingGameBananaSocialDownload(downloadUrl);
+          const protocolUrl = downloadUrl.startsWith('fightplanner:')
+            ? downloadUrl
+            : `fightplanner:${downloadUrl}`;
+          await window.electronAPI.openFightPlannerLink(protocolUrl);
+        } finally {
+          fileDownloadBtn.disabled = false;
+          fileDownloadBtn.innerHTML = originalContent;
+        }
+      }
+      return;
+    }
+
+    const gameBananaCard = clickedElement.closest<HTMLElement>(
+      '.social-gamebanana-card',
+    );
+    if (gameBananaCard) {
+      const modelName = gameBananaCard.getAttribute('data-gb-model');
+      const submissionId = gameBananaCard.getAttribute('data-gb-id');
+      if (modelName && submissionId) {
+        this.captureGameBananaDiscoverSnapshot();
+        this.gameBananaLastDetailSource = {
+          modelName,
+          submissionId,
+          sourceKind: this.getGameBananaCardSourceKind(gameBananaCard),
+          page: this.gameBananaModsPage,
+          scrollTop: this.getSocialMainScrollTop(),
+        };
+        await this.showGameBananaSubmissionDetails(
+          modelName,
+          submissionId,
+          gameBananaCard,
+        );
+      }
+    }
   }
 
   getGameBananaSubfeedUrl(page = 1, searchQuery = '') {
+    const categoryFilter = this.getGameBananaCategoryFilterConfig();
+    if (categoryFilter?.model) {
+      return this.getGameBananaIndexedListUrl(page, categoryFilter);
+    }
+
     const params = new URLSearchParams({
       _nPage: String(Math.max(1, page)),
       _sSort: 'default',
@@ -154,6 +663,23 @@ class SocialGameBananaManager extends SocialManagerBase {
     }
 
     return `${this.GAMEBANANA_SUBFEED_URL}?${params.toString()}`;
+  }
+
+  getGameBananaIndexedListUrl(page = 1, categoryFilter: any) {
+    const params = new URLSearchParams({
+      _nPage: String(Math.max(1, page)),
+      _nPerpage: '15',
+      _sSort: 'Generic_Newest',
+    });
+    params.set('_aFilters[Generic_Game]', '6498');
+    if (categoryFilter.categoryId) {
+      params.set(
+        '_aFilters[Generic_Category]',
+        String(categoryFilter.categoryId),
+      );
+    }
+
+    return `${this.GAMEBANANA_API_URL}/${categoryFilter.model}/Index?${params.toString()}`;
   }
 
   async fetchGameBananaModsPage(
@@ -206,6 +732,7 @@ class SocialGameBananaManager extends SocialManagerBase {
       );
       if (requestId !== this.gameBananaModsRequestId) return;
 
+      this.gameBananaCurrentSubfeedData = subfeedData;
       modsContent.innerHTML = this.renderGameBananaModsPage(subfeedData);
       pagination.innerHTML = this.renderGameBananaPagination(subfeedData);
     } catch (error) {
@@ -220,17 +747,80 @@ class SocialGameBananaManager extends SocialManagerBase {
       ? subfeedData._aRecords
       : []
     ).filter((submission) => submission._sModelName !== 'Request');
-    records.forEach((mod) => this.cacheGameBananaSubmission(mod));
+    const visibleRecords = this.filterGameBananaSearchSubmissions(
+      this.filterDiscoverNsfwSubmissions(records),
+    );
+    visibleRecords.forEach((mod) => this.cacheGameBananaSubmission(mod));
 
-    if (records.length === 0) {
+    if (visibleRecords.length === 0) {
       return '<div class="social-empty-state"><i class="bi bi-inbox"></i><p>No mods found</p></div>';
     }
 
     return `
       <div class="social-gamebanana-grid">
-        ${records.map((mod) => this.renderGameBananaModCard(mod)).join('')}
+        ${visibleRecords.map((mod) => this.renderGameBananaModCard(mod)).join('')}
       </div>
     `;
+  }
+
+  filterDiscoverNsfwSubmissions<T extends GameBananaTopSubmission>(mods: T[]) {
+    if (!this.shouldHideGameBananaNsfwMods()) return mods;
+    return mods.filter((mod) => !this.isGameBananaSubmissionNsfw(mod));
+  }
+
+  filterGameBananaCategorySubmissions<T extends GameBananaTopSubmission>(
+    mods: T[],
+  ) {
+    const filter = this.getGameBananaCategoryFilterConfig();
+    if (!filter) return mods;
+    return mods.filter((mod) => {
+      if (filter.model && mod._sModelName !== filter.model) return false;
+      if (!filter.categoryId) return true;
+      return this.getGameBananaSubmissionCategoryIds(mod).includes(
+        filter.categoryId,
+      );
+    });
+  }
+
+  filterGameBananaSearchSubmissions<T extends GameBananaTopSubmission>(
+    submissions: T[],
+  ) {
+    const query = this.gameBananaSearchQuery.trim().toLowerCase();
+    if (!query || this.getGameBananaCategoryFilter() === 'all') {
+      return submissions;
+    }
+    return submissions.filter((submission) =>
+      String(submission._sName || '').toLowerCase().includes(query),
+    );
+  }
+
+  getGameBananaCategoryFilterConfig() {
+    const filter = this.getGameBananaCategoryFilter();
+    if (filter === 'all') return null;
+    const config =
+      this.getGameBananaCategoryFilters().find((item) => item.id === filter) ||
+      null;
+    if (config?.id === 'skins') {
+      return {
+        ...config,
+        categoryId: this.getGameBananaActiveSkinCategoryId(),
+      };
+    }
+    return config;
+  }
+
+  getFilteredGameBananaFeaturedMods() {
+    const source = Array.isArray(this.gameBananaFeaturedSourceMods)
+      ? this.gameBananaFeaturedSourceMods
+      : [];
+    return this.filterGameBananaCategorySubmissions(source).slice(0, 6);
+  }
+
+  getGameBananaSubmissionCategoryIds(mod: GameBananaTopSubmission) {
+    return [mod._aRootCategory?._sProfileUrl, mod._aSubCategory?._sProfileUrl]
+      .map((url) => String(url || '').match(/\/cats\/(\d+)/))
+      .filter((match): match is RegExpMatchArray => !!match)
+      .map((match) => Number(match[1]));
   }
 
   cacheGameBananaSubmission(mod: GameBananaTopSubmission) {
@@ -340,7 +930,9 @@ class SocialGameBananaManager extends SocialManagerBase {
   }
 
   renderGameBananaFeaturedStack() {
-    if (this.gameBananaFeaturedMods.length === 0) return '';
+    if (this.gameBananaFeaturedMods.length === 0) {
+      return '<div class="social-gamebanana-featured-empty">No featured mods in this category</div>';
+    }
 
     return this.gameBananaFeaturedMods
       .map((mod, index) => {
@@ -379,12 +971,16 @@ class SocialGameBananaManager extends SocialManagerBase {
     const comments = Number(mod._nPostCount || 0);
     const model = this.escapeHtml(mod._sModelName || 'Mod');
     const id = this.escapeHtml(mod._idRow);
+    const isNsfw = this.isGameBananaSubmissionNsfw(mod);
 
     return `
       <article class="social-gamebanana-card social-gamebanana-card-featured is-${position}" data-url="${url}" data-gb-id="${id}" data-gb-model="${model}" data-featured-index="${index}" data-featured-position="${position}">
         ${
           imageUrl
-            ? `<img src="${imageUrl}" alt="${name}" class="social-gamebanana-featured-image">`
+            ? this.renderGameBananaPreviewMedia(
+                `<img src="${imageUrl}" alt="${name}" class="social-gamebanana-featured-image">`,
+                this.shouldBlurGameBananaPreview(isNsfw),
+              )
             : '<div class="social-gamebanana-image-placeholder"><i class="bi bi-image"></i></div>'
         }
         <div class="social-gamebanana-featured-body">
@@ -419,12 +1015,16 @@ class SocialGameBananaManager extends SocialManagerBase {
     const views = Number(mod._nViewCount || 0);
     const model = this.escapeHtml(mod._sModelName || 'Mod');
     const id = this.escapeHtml(mod._idRow);
+    const isNsfw = this.isGameBananaSubmissionNsfw(mod);
 
     return `
       <article class="social-gamebanana-card social-gamebanana-card-compact" data-url="${url}" data-gb-id="${id}" data-gb-model="${model}">
         ${
           imageUrl
-            ? `<img src="${imageUrl}" alt="${name}" class="social-gamebanana-card-image">`
+            ? this.renderGameBananaPreviewMedia(
+                `<img src="${imageUrl}" alt="${name}" class="social-gamebanana-card-image">`,
+                this.shouldBlurGameBananaPreview(isNsfw),
+              )
             : '<div class="social-gamebanana-card-image social-gamebanana-image-placeholder"><i class="bi bi-image"></i></div>'
         }
         <div class="social-gamebanana-card-body">
@@ -441,6 +1041,94 @@ class SocialGameBananaManager extends SocialManagerBase {
         </div>
       </article>
     `;
+  }
+
+  renderGameBananaPreviewMedia(imageHtml: string, isNsfw: boolean) {
+    return `
+      <div class="social-gamebanana-preview-media ${isNsfw ? 'is-nsfw' : ''}">
+        ${imageHtml}
+        ${
+          isNsfw
+            ? `<div class="social-gamebanana-nsfw-overlay" aria-label="NSFW preview blurred">
+                <i class="bi bi-eye-slash"></i>
+                <span>NSFW</span>
+                <button class="social-gamebanana-nsfw-reveal-btn" type="button">Show anyway</button>
+              </div>`
+            : ''
+        }
+      </div>
+    `;
+  }
+
+  shouldHideGameBananaNsfwMods() {
+    return window.settingsManager?.settings?.hideNsfwDiscoverMods === true;
+  }
+
+  shouldShowGameBananaNsfwPreviews() {
+    return window.settingsManager?.settings?.showNsfwDiscoverPreviews === true;
+  }
+
+  shouldBlurGameBananaPreview(isNsfw: boolean) {
+    return isNsfw && !this.shouldShowGameBananaNsfwPreviews();
+  }
+
+  isGameBananaSubmissionNsfw(mod: GameBananaTopSubmission | null | undefined) {
+    if (!mod) return false;
+
+    const initialVisibility = String((mod as any)._sInitialVisibility || '')
+      .trim()
+      .toLowerCase();
+    if (initialVisibility === 'warn' || initialVisibility === 'hide') {
+      return true;
+    }
+
+    const explicitFlags = [
+      mod._bIsNsfw,
+      mod._bIsNSFW,
+      mod._bIsAdult,
+      (mod as any)._bIsMature,
+      (mod as any)._bIsObscene,
+    ];
+    if (explicitFlags.some((value) => value === true || value === 1)) {
+      return true;
+    }
+
+    const ratingFields = [
+      mod._sContentRating,
+      (mod as any)._sContentRatingName,
+      (mod as any)._sAgeRating,
+      (mod as any)._sRating,
+      ...(Array.isArray(mod._aContentRatings) ? mod._aContentRatings : []),
+      ...(Array.isArray(mod._aContentRating) ? mod._aContentRating : []),
+      ...(Array.isArray((mod as any)._aRatings) ? (mod as any)._aRatings : []),
+      ...(Array.isArray(mod._aTags) ? mod._aTags : []),
+    ];
+
+    const nsfwPattern =
+      /\b(nsfw|not safe for work|adult|mature|sexual|nudity|nude|suggestive|explicit|obscene|porn|lewd|erotic)\b/i;
+    const hasNsfwRating = ratingFields.some((field) =>
+      nsfwPattern.test(this.stringifyGameBananaRatingField(field)),
+    );
+
+    return hasNsfwRating || mod._bHasContentRatings === true;
+  }
+
+  stringifyGameBananaRatingField(value: any): string {
+    if (value == null) return '';
+    if (typeof value === 'string' || typeof value === 'number') {
+      return String(value);
+    }
+    if (Array.isArray(value)) {
+      return value
+        .map((item) => this.stringifyGameBananaRatingField(item))
+        .join(' ');
+    }
+    if (typeof value === 'object') {
+      return Object.values(value)
+        .map((item) => this.stringifyGameBananaRatingField(item))
+        .join(' ');
+    }
+    return '';
   }
 
   getGameBananaSubmissionImage(mod: GameBananaTopSubmission) {
@@ -1379,6 +2067,7 @@ class SocialGameBananaManager extends SocialManagerBase {
 
     const activeImage = galleryImages[0];
     const activeCaption = this.escapeHtml(activeImage.caption || '');
+    const isNsfw = this.isGameBananaSubmissionNsfw(mod);
     const imageStyle =
       activeImage.width && activeImage.height
         ? ` style="aspect-ratio: ${activeImage.width} / ${activeImage.height};"`
@@ -1387,7 +2076,10 @@ class SocialGameBananaManager extends SocialManagerBase {
     return `
       <div class="social-gamebanana-gallery" data-gallery-index="0">
         <div class="social-gamebanana-gallery-main">
-          <img src="${this.escapeHtml(activeImage.url)}" alt="${name}" class="social-gamebanana-detail-image"${imageStyle}>
+          ${this.renderGameBananaPreviewMedia(
+            `<img src="${this.escapeHtml(activeImage.url)}" alt="${name}" class="social-gamebanana-detail-image"${imageStyle}>`,
+            this.shouldBlurGameBananaPreview(isNsfw),
+          )}
           <div class="social-gamebanana-gallery-loading" aria-hidden="true">
             <div class="social-gamebanana-gallery-skeleton social-gamebanana-skeleton-block"></div>
             <div class="social-gamebanana-gallery-skeleton-caption">
@@ -1768,6 +2460,9 @@ class SocialGameBananaManager extends SocialManagerBase {
     const clone = document.createElement('img');
     clone.src = sourceImage.src;
     clone.className = 'social-gamebanana-preview-flyout';
+    if (sourceCard?.querySelector('.social-gamebanana-preview-media.is-nsfw')) {
+      clone.classList.add('is-nsfw');
+    }
     clone.style.objectFit = 'cover';
     clone.style.objectPosition = 'center';
     clone.style.left = `${sourceRect.left}px`;
@@ -1971,6 +2666,9 @@ class SocialGameBananaManager extends SocialManagerBase {
     const clone = document.createElement('img');
     clone.src = detailSrc;
     clone.className = 'social-gamebanana-preview-flyout';
+    if (targetImage.closest('.social-gamebanana-preview-media.is-nsfw')) {
+      clone.classList.add('is-nsfw');
+    }
     clone.style.objectFit = 'cover';
     clone.style.objectPosition = 'center';
     clone.style.left = `${detailRect.left}px`;

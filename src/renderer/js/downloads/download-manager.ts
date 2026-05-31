@@ -2,7 +2,7 @@ interface Download {
   id: string;
   url: string;
   fileName: string;
-  status: 'downloading' | 'extracting' | 'completed' | 'failed';
+  status: 'downloading' | 'extracting' | 'completed' | 'failed' | 'paused';
   progress: number;
   receivedBytes: number;
   totalBytes: number;
@@ -156,6 +156,29 @@ class DownloadManager {
    */
   startDownload(url: string, forcedId: string, statusText?: string, subItems?: string[]) {
     const downloadId = forcedId || Date.now().toString();
+    const existingDownload = this.activeDownloads.get(downloadId);
+
+    if (existingDownload) {
+      existingDownload.status = 'downloading';
+      existingDownload.statusText = statusText || 'Downloading...';
+      existingDownload.subItems = subItems || existingDownload.subItems;
+
+      const element = document.querySelector<HTMLElement>(
+        `[data-download-id="${downloadId}"]`,
+      );
+      if (element) {
+        element.classList.remove('download-failed');
+        this.updateActiveDownloadActions(element, existingDownload);
+        this.updateStatus(downloadId, existingDownload.statusText, existingDownload.subItems);
+      } else if (this.initialized) {
+        this.renderActiveDownload(existingDownload);
+      }
+
+      window.appSoundManager?.play('downloading');
+      this.updateUI();
+      this.updateBadge();
+      return downloadId;
+    }
 
     const download: Download = {
       id: downloadId,
@@ -467,6 +490,89 @@ class DownloadManager {
     }, 5000);
   }
 
+  pauseDownload(downloadId, receivedBytes = 0, totalBytes = 0) {
+    const download = this.activeDownloads.get(downloadId);
+    if (!download) return;
+
+    download.status = 'paused';
+    download.receivedBytes = receivedBytes || download.receivedBytes;
+    download.totalBytes = totalBytes || download.totalBytes;
+    download.statusText = 'Paused';
+    window.appSoundManager?.stop('downloading');
+
+    const element = document.querySelector<HTMLElement>(
+      `[data-download-id="${downloadId}"]`,
+    );
+
+    if (element) {
+      const statusText = element.querySelector<HTMLElement>(
+        '.download-status-text',
+      );
+      if (statusText) {
+        statusText.innerHTML = '<i class="bi bi-pause-circle"></i> Paused';
+        statusText.style.color = '#f59e0b';
+      }
+      this.updateActiveDownloadActions(element, download);
+    }
+
+    this.updateUI();
+    this.updateBadge();
+  }
+
+  async resumeDownload(downloadId) {
+    const download = this.activeDownloads.get(downloadId);
+    if (!download || download.status !== 'paused') return;
+
+    if (window.electronAPI?.resumeDownload) {
+      const result = await window.electronAPI.resumeDownload(downloadId);
+      if (!result?.success) {
+        this.failDownload(downloadId, result?.error || 'Unable to resume download');
+        return;
+      }
+    }
+
+    download.status = 'downloading';
+    download.statusText = 'Downloading...';
+    window.appSoundManager?.play('downloading');
+
+    const element = document.querySelector<HTMLElement>(
+      `[data-download-id="${downloadId}"]`,
+    );
+    if (element) {
+      element.classList.remove('download-failed');
+      const statusText = element.querySelector<HTMLElement>(
+        '.download-status-text',
+      );
+      if (statusText) {
+        statusText.innerHTML = 'Downloading...';
+        statusText.style.color = '';
+      }
+      this.updateActiveDownloadActions(element, download);
+    }
+  }
+
+  updateActiveDownloadActions(element: HTMLElement, download: Download) {
+    const actions = element.querySelector<HTMLElement>('.download-actions');
+    if (!actions) return;
+
+    if (download.status === 'paused') {
+      actions.innerHTML = `
+        <button class="download-action-btn" data-action="resume" title="Resume"><i class="bi bi-play-circle"></i></button>
+      `;
+      actions
+        .querySelector<HTMLElement>('[data-action="resume"]')
+        ?.addEventListener('click', () => this.resumeDownload(download.id));
+      return;
+    }
+
+    actions.innerHTML = `
+      <button class="download-action-btn" data-action="cancel" title="Cancel"><i class="bi bi-x-circle"></i></button>
+    `;
+    actions
+      .querySelector<HTMLElement>('[data-action="cancel"]')
+      ?.addEventListener('click', () => this.cancelDownload(download.id));
+  }
+
   /**
    * Render active download
    */
@@ -504,16 +610,7 @@ ${subItemsHtml}
 </div>
 `;
 
-    // Add event listeners for action buttons
-    const cancelBtn = element.querySelector<HTMLElement>(
-      '[data-action="cancel"]',
-    );
-
-    if (cancelBtn) {
-      cancelBtn.addEventListener('click', () =>
-        this.cancelDownload(download.id),
-      );
-    }
+    this.updateActiveDownloadActions(element, download);
 
     this.activeDownloadsList.appendChild(element);
   }
@@ -815,6 +912,11 @@ ${subItemsHtml}
       return;
     }
 
+    if (transferMethod === 'mtp') {
+      await this.sendToSwitchMtp();
+      return;
+    }
+
     const switchIp = window.settingsManager.getSwitchIp();
     const switchPort = parseInt(window.settingsManager.getSwitchPort());
     const switchFtpUser = window.settingsManager.getSwitchFtpUser();
@@ -963,6 +1065,138 @@ ${subItemsHtml}
     }
   }
 
+  async sendToSwitchMtp() {
+    if (!window.settingsManager || !window.settingsManager.hasModsPath()) {
+      if (window.toastManager) {
+        window.toastManager.error('toasts.modsFolderPathNotSet', 5000, {}, {
+          actionButton: {
+            text: window.i18n?.t?.('toasts.settings') || 'Settings',
+            onClick: () => this.navigateToSetting('paths', '#mods-folder-path'),
+          },
+        });
+      }
+      return;
+    }
+
+    if (
+      !window.electronAPI?.prepareMtpTransfer ||
+      !window.electronAPI?.readMtpTransferFile
+    ) {
+      window.toastManager?.error('toasts.ftpNotAvailable');
+      return;
+    }
+
+    const modsPath = window.settingsManager.getModsPath();
+    const pluginsPath = window.settingsManager.getPluginsPath?.() || null;
+    const switchFtpModsPath =
+      window.settingsManager.getSwitchFtpModsPath?.() ||
+      window.settingsManager.getSwitchFtpPath() ||
+      '/ultimate/mods';
+    const switchFtpPluginsPath =
+      window.settingsManager.getSwitchFtpPluginsPath?.() ||
+      '/ultimate/contents/01006A800016E000/romfs/skyline/plugins';
+
+    let mtpClient: MTPTransferClient | null = null;
+
+    try {
+      if (this.sendToSwitchBtn) {
+        this.sendToSwitchBtn.disabled = true;
+        const t = (key) =>
+          window.i18n && window.i18n.t ? window.i18n.t(key) : key;
+        this.sendToSwitchBtn.innerHTML = `<i class="bi bi-arrow-clockwise"></i> ${t(
+          'downloads.sending',
+        )}`;
+      }
+
+      window.appSoundManager?.play('loading', { volume: 0.55 });
+      window.toastManager?.info('toasts.startingMtpTransfer');
+
+      mtpClient = new MTPTransferClient();
+      await mtpClient.connect();
+
+      const manifest = await window.electronAPI.prepareMtpTransfer({
+        switchTransferMethod: 'mtp',
+        switchIp: '',
+        switchPort: 0,
+        switchFtpUser: null,
+        switchFtpPassword: null,
+        switchFtpPath: switchFtpModsPath,
+        switchFtpModsPath,
+        switchFtpPluginsPath,
+        switchDriveLetter: '',
+        modsPath,
+        pluginsPath,
+        recentDownloads: [],
+      });
+
+      if (!manifest.success) {
+        throw new Error(manifest.error || 'Unable to prepare MTP transfer');
+      }
+
+      this.ftpTransfer = {
+        id: Date.now().toString(),
+        status: 'uploading',
+        currentMod: 0,
+        totalMods: 0,
+        transferredCount: 0,
+        totalFiles: manifest.totalFiles || 0,
+        progress: 0,
+      };
+
+      const transferredCount = await mtpClient.uploadFiles(
+        manifest.files,
+        async (fileId) => {
+          const result = await window.electronAPI.readMtpTransferFile(fileId);
+          if (!result.success) {
+            throw new Error(
+              result.error || 'Unable to read file for MTP transfer',
+            );
+          }
+          return new Uint8Array(result.bytes);
+        },
+        (progress) => {
+          this.ftpTransfer = {
+            id: this.ftpTransfer?.id || Date.now().toString(),
+            status: 'uploading',
+            ...progress,
+          };
+          window.statusBarManager?.checkAndUpdateForDownloads();
+        },
+      );
+
+      this.ftpTransfer = null;
+      window.appSoundManager?.stop('loading');
+      window.appSoundManager?.play('complete');
+      window.statusBarManager?.completeFtpTransfer?.(transferredCount);
+      window.toastManager?.success('toasts.modsSentToSwitch', 3000, {
+        count: transferredCount,
+      });
+    } catch (error) {
+      console.error('Error sending mods to Switch over MTP:', error);
+      this.ftpTransfer = null;
+      window.appSoundManager?.stop('loading');
+      window.appSoundManager?.play('error');
+      window.statusBarManager?.updateExtendedBar?.({ type: 'none' });
+      window.statusBarManager?.refreshStandardStatus?.();
+      window.toastManager?.error('toasts.failedToSendMods', 3000, {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      if (mtpClient) {
+        await mtpClient.disconnect();
+      }
+
+      if (this.sendToSwitchBtn) {
+        this.sendToSwitchBtn.disabled = false;
+        const t = (key) =>
+          window.i18n && window.i18n.t ? window.i18n.t(key) : key;
+        this.sendToSwitchBtn.innerHTML = `<i class="bi bi-device-hdd"></i> ${t(
+          'downloads.sendToSwitch',
+        )}`;
+      }
+    }
+  }
+
   /**
    * Cancel a download
    */
@@ -970,38 +1204,12 @@ ${subItemsHtml}
     const download = this.activeDownloads.get(downloadId);
     if (!download) return;
 
-    // Call main process to cancel download
+    // Call main process to pause the download and keep the partial file.
     if (window.electronAPI && window.electronAPI.cancelDownload) {
       window.electronAPI.cancelDownload(downloadId);
     }
 
-    this.activeDownloads.delete(downloadId);
-
-    const element = document.querySelector<HTMLElement>(
-      `[data-download-id="${downloadId}"]`,
-    );
-    if (element) {
-      element.classList.add('download-failed');
-      const statusText = element.querySelector<HTMLElement>(
-        '.download-status-text',
-      );
-      if (statusText) {
-        statusText.innerHTML = '<i class="bi bi-x-circle"></i> Cancelled';
-        statusText.style.color = '#ef4444';
-      }
-    }
-
-    setTimeout(() => {
-      if (element && element.parentElement) {
-        element.remove();
-      }
-      this.updateUI();
-      this.updateBadge();
-    }, 2000);
-
-    if (window.toastManager) {
-      window.toastManager.warning('toasts.downloadCancelled');
-    }
+    this.pauseDownload(downloadId, download.receivedBytes, download.totalBytes);
   }
 }
 

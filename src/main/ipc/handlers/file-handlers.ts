@@ -5,6 +5,7 @@ import {
   createErrorResponse,
   ErrorCodes,
 } from '../../utils/error-handler';
+import { resolveVirtualPath } from '../../utils/virtual-paths';
 import { HandlerResponse } from '../../types/common';
 import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
@@ -143,10 +144,24 @@ const FileHandlers = {
     folderPath: string,
   ): HandlerResponse => {
     try {
-      if (fs.existsSync(folderPath)) {
-        await shell.openPath(folderPath);
+      console.log('[FileHandlers] Open folder requested:', folderPath);
+      const resolvedFolderPath = resolveVirtualPath(folderPath);
+      if (resolvedFolderPath !== folderPath) {
+        console.log('[FileHandlers] Open folder path resolved:', {
+          requestedPath: folderPath,
+          resolvedPath: resolvedFolderPath,
+        });
+      }
+
+      if (fs.existsSync(resolvedFolderPath)) {
+        await shell.openPath(resolvedFolderPath);
+        console.log('[FileHandlers] Folder opened:', resolvedFolderPath);
         return { success: true };
       } else {
+        console.error('[FileHandlers] Folder does not exist:', {
+          requestedPath: folderPath,
+          resolvedPath: resolvedFolderPath,
+        });
         return createErrorResponse(
           ErrorCodes.FOLDER_NOT_FOUND,
           'Folder does not exist',
@@ -163,10 +178,18 @@ const FileHandlers = {
     folderPath: string,
   ): HandlerResponse<{ exists: boolean }> => {
     try {
+      console.log('[FileHandlers] Folder exists check:', folderPath);
+      const resolvedFolderPath = folderPath ? resolveVirtualPath(folderPath) : '';
       const exists =
         !!folderPath &&
-        fs.existsSync(folderPath) &&
-        fs.statSync(folderPath).isDirectory();
+        fs.existsSync(resolvedFolderPath) &&
+        fs.statSync(resolvedFolderPath).isDirectory();
+
+      console.log('[FileHandlers] Folder exists result:', {
+        requestedPath: folderPath,
+        resolvedPath: resolvedFolderPath,
+        exists,
+      });
 
       return { success: true, exists };
     } catch (error) {

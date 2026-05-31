@@ -31,6 +31,8 @@ class SettingsManager {
       autoDisableNewMods: false,
       disableAllModsOnDownload: false,
       checkDependenciesOnDiscoverDownload: true,
+      hideNsfwDiscoverMods: true,
+      showNsfwDiscoverPreviews: false,
       devMode: false,
       devShowModHash: false,
       theme: 'dark',
@@ -71,6 +73,12 @@ class SettingsManager {
     const normalized =
       typeof emulatorType === 'string' ? emulatorType.toLowerCase() : '';
     return normalized === 'ryujinx' ? 'ryujinx' : 'yuzu';
+  }
+
+  normalizeSwitchTransferMethod(transferMethod) {
+    const normalized =
+      typeof transferMethod === 'string' ? transferMethod.toLowerCase() : '';
+    return ['ftp', 'drive', 'mtp'].includes(normalized) ? normalized : 'none';
   }
 
   setupEventListeners() {
@@ -343,6 +351,16 @@ class SettingsManager {
       console.log('Browse mods button listener attached');
     }
 
+    const modsPathInput = document.querySelector<HTMLInputElement>(
+      '#mods-folder-path',
+    );
+    if (modsPathInput && !modsPathInput.dataset.manualListenerAttached) {
+      modsPathInput.addEventListener('change', () =>
+        this.updateModsFolderFromInput(modsPathInput.value),
+      );
+      modsPathInput.dataset.manualListenerAttached = 'true';
+    }
+
     const browsePlugins = document.querySelector<HTMLElement>(
       '#browse-plugins-folder',
     );
@@ -350,6 +368,16 @@ class SettingsManager {
       browsePlugins.addEventListener('click', () => this.browsePluginsFolder());
       browsePlugins.dataset.listenerAttached = 'true';
       console.log('Browse plugins button listener attached');
+    }
+
+    const pluginsPathInput = document.querySelector<HTMLInputElement>(
+      '#plugins-folder-path',
+    );
+    if (pluginsPathInput && !pluginsPathInput.dataset.manualListenerAttached) {
+      pluginsPathInput.addEventListener('change', () =>
+        this.updatePluginsFolderFromInput(pluginsPathInput.value),
+      );
+      pluginsPathInput.dataset.manualListenerAttached = 'true';
     }
 
     const exportModsListBtn = document.querySelector<HTMLElement>(
@@ -638,7 +666,7 @@ class SettingsManager {
 
       options.forEach((option) => {
         option.addEventListener('click', () => {
-          const value = this.normalizeEmulatorType(option.dataset.value);
+          const value = this.normalizeSwitchTransferMethod(option.dataset.value);
           const text = option.querySelector<HTMLElement>('span')!.textContent;
           const i18nKey =
             option.querySelector<HTMLElement>('span')!.dataset.i18n;
@@ -775,6 +803,37 @@ class SettingsManager {
         this.saveSettings();
       });
       checkDependenciesOnDiscoverDownload.dataset.listenerAttached = 'true';
+    }
+
+    const hideNsfwDiscoverMods = document.querySelector<HTMLInputElement>(
+      '#hide-nsfw-discover-mods-enabled',
+    );
+    if (
+      hideNsfwDiscoverMods &&
+      !hideNsfwDiscoverMods.dataset.listenerAttached
+    ) {
+      hideNsfwDiscoverMods.addEventListener('change', () => {
+        this.settings.hideNsfwDiscoverMods = hideNsfwDiscoverMods.checked;
+        this.saveSettings();
+        this.refreshDiscoverForNsfwSettings();
+      });
+      hideNsfwDiscoverMods.dataset.listenerAttached = 'true';
+    }
+
+    const showNsfwDiscoverPreviews = document.querySelector<HTMLInputElement>(
+      '#show-nsfw-discover-previews-enabled',
+    );
+    if (
+      showNsfwDiscoverPreviews &&
+      !showNsfwDiscoverPreviews.dataset.listenerAttached
+    ) {
+      showNsfwDiscoverPreviews.addEventListener('change', () => {
+        this.settings.showNsfwDiscoverPreviews =
+          showNsfwDiscoverPreviews.checked;
+        this.saveSettings();
+        this.refreshDiscoverForNsfwSettings();
+      });
+      showNsfwDiscoverPreviews.dataset.listenerAttached = 'true';
     }
 
     const checkUpdatesBtn =
@@ -1030,6 +1089,7 @@ class SettingsManager {
     this.updateAutoDisableModsUI();
     this.updateDisableAllModsOnDownloadUI();
     this.updateCheckDependenciesOnDiscoverDownloadUI();
+    this.updateDiscoverNsfwUI();
     this.updateEnhancedStatusBarUI();
     this.updateStartupSplashUI();
     this.updateStartupSplashSoundUI();
@@ -1430,6 +1490,34 @@ class SettingsManager {
     }
   }
 
+  updateDiscoverNsfwUI() {
+    const hideToggle = document.querySelector<HTMLInputElement>(
+      '#hide-nsfw-discover-mods-enabled',
+    );
+    if (hideToggle) {
+      hideToggle.checked = this.settings.hideNsfwDiscoverMods === true;
+    }
+
+    const showToggle = document.querySelector<HTMLInputElement>(
+      '#show-nsfw-discover-previews-enabled',
+    );
+    if (showToggle) {
+      showToggle.checked = this.settings.showNsfwDiscoverPreviews === true;
+    }
+  }
+
+  refreshDiscoverForNsfwSettings() {
+    const discoverSection = document.querySelector<HTMLElement>(
+      '#social-section-discover',
+    );
+    if (
+      window.socialManager?.loadDiscover &&
+      discoverSection?.classList.contains('active')
+    ) {
+      window.socialManager.loadDiscover();
+    }
+  }
+
   updateEnhancedStatusBarUI() {
     const toggle = document.querySelector<HTMLInputElement>(
       '#enhanced-status-bar-enabled',
@@ -1528,23 +1616,58 @@ class SettingsManager {
       return;
     }
 
+    console.log('[SettingsManager] Browse mods folder requested');
     const folder = await window.electronAPI.selectFolder();
     if (folder) {
+      console.log('[SettingsManager] Mods folder selected:', {
+        previousPath: this.settings.modsPath,
+        nextPath: folder,
+      });
       this.settings.modsPath = folder;
       this.saveSettings();
       this.updateModsFolderUI();
       await this.refreshModsListForPath(folder);
       this.checkModsPath(folder, { force: true });
+    } else {
+      console.log('[SettingsManager] Mods folder selection cancelled');
     }
+  }
+
+  async updateModsFolderFromInput(value) {
+    const folder = value.trim();
+    if (!folder || folder === this.settings.modsPath) {
+      console.log('[SettingsManager] Mods folder manual change ignored:', {
+        value,
+        currentPath: this.settings.modsPath,
+      });
+      this.updateModsFolderUI();
+      return;
+    }
+
+    console.log('[SettingsManager] Mods folder changed manually:', {
+      previousPath: this.settings.modsPath,
+      nextPath: folder,
+    });
+    this.settings.modsPath = folder;
+    this.saveSettings();
+    this.updateModsFolderUI();
+    await this.refreshModsListForPath(folder);
+    this.checkModsPath(folder, { force: true });
   }
 
   async refreshModsListForPath(modsPath) {
     if (!modsPath || !window.modManager?.loadModsFromFolder) {
+      console.warn('[SettingsManager] Cannot refresh mods list:', {
+        modsPath,
+        hasModManager: !!window.modManager,
+      });
       return;
     }
 
     try {
+      console.log('[SettingsManager] Refreshing mods list for path:', modsPath);
       await window.modManager.loadModsFromFolder(modsPath);
+      console.log('[SettingsManager] Mods list refreshed:', modsPath);
     } catch (error) {
       console.error('Failed to refresh mods after path change:', error);
     }
@@ -1651,11 +1774,46 @@ ${t('settings.okUnderstand')}
       return;
     }
 
+    console.log('[SettingsManager] Browse plugins folder requested');
     const folder = await window.electronAPI.selectFolder();
     if (folder) {
+      console.log('[SettingsManager] Plugins folder selected:', {
+        previousPath: this.settings.pluginsPath,
+        nextPath: folder,
+      });
       this.settings.pluginsPath = folder;
       this.saveSettings();
       this.updatePluginsFolderUI();
+    } else {
+      console.log('[SettingsManager] Plugins folder selection cancelled');
+    }
+  }
+
+  async updatePluginsFolderFromInput(value) {
+    const folder = value.trim();
+    if (!folder || folder === this.settings.pluginsPath) {
+      console.log('[SettingsManager] Plugins folder manual change ignored:', {
+        value,
+        currentPath: this.settings.pluginsPath,
+      });
+      this.updatePluginsFolderUI();
+      return;
+    }
+
+    console.log('[SettingsManager] Plugins folder changed manually:', {
+      previousPath: this.settings.pluginsPath,
+      nextPath: folder,
+    });
+    this.settings.pluginsPath = folder;
+    this.saveSettings();
+    this.updatePluginsFolderUI();
+
+    try {
+      console.log('[SettingsManager] Refreshing plugins list for path:', folder);
+      await window.pluginManager?.loadPluginsFromFolder?.(folder);
+      console.log('[SettingsManager] Plugins list refreshed:', folder);
+    } catch (error) {
+      console.error('Failed to refresh plugins after path change:', error);
     }
   }
 
@@ -2356,6 +2514,12 @@ ${t('settings.okUnderstand')}
         await window.electronAPI.store.get(
           'checkDependenciesOnDiscoverDownload',
         );
+      const hideNsfwDiscoverMods = await window.electronAPI.store.get(
+        'hideNsfwDiscoverMods',
+      );
+      const showNsfwDiscoverPreviews = await window.electronAPI.store.get(
+        'showNsfwDiscoverPreviews',
+      );
       const startupSplashEnabled = await window.electronAPI.store.get(
         'startupSplashEnabled',
       );
@@ -2382,7 +2546,8 @@ ${t('settings.okUnderstand')}
         switchFtpPath: switchFtpPath || null,
         switchFtpModsPath: switchFtpModsPath || switchFtpPath || null,
         switchFtpPluginsPath: switchFtpPluginsPath || null,
-        switchTransferMethod: switchTransferMethod || 'none',
+        switchTransferMethod:
+          this.normalizeSwitchTransferMethod(switchTransferMethod),
         switchDriveLetter: switchDriveLetter || null,
         conflictDetectionEnabled: conflictDetectionEnabled !== false,
         autoCheckPluginUpdates: autoCheckPluginUpdates || false,
@@ -2392,6 +2557,8 @@ ${t('settings.okUnderstand')}
         disableAllModsOnDownload: disableAllModsOnDownload || false,
         checkDependenciesOnDiscoverDownload:
           checkDependenciesOnDiscoverDownload !== false,
+        hideNsfwDiscoverMods: hideNsfwDiscoverMods !== false,
+        showNsfwDiscoverPreviews: showNsfwDiscoverPreviews === true,
         startupSplashEnabled: startupSplashEnabled !== false,
         startupSplashSoundEnabled: startupSplashSoundEnabled !== false,
         startupSplashSoundPath:
@@ -2433,6 +2600,8 @@ ${t('settings.okUnderstand')}
         autoDisableNewMods: false,
         disableAllModsOnDownload: false,
         checkDependenciesOnDiscoverDownload: true,
+        hideNsfwDiscoverMods: true,
+        showNsfwDiscoverPreviews: false,
         startupSplashEnabled: true,
         startupSplashSoundEnabled: true,
         startupSplashSoundPath: null,
@@ -2524,6 +2693,14 @@ ${t('settings.okUnderstand')}
       await window.electronAPI.store.set(
         'checkDependenciesOnDiscoverDownload',
         this.settings.checkDependenciesOnDiscoverDownload,
+      );
+      await window.electronAPI.store.set(
+        'hideNsfwDiscoverMods',
+        this.settings.hideNsfwDiscoverMods,
+      );
+      await window.electronAPI.store.set(
+        'showNsfwDiscoverPreviews',
+        this.settings.showNsfwDiscoverPreviews,
       );
       await window.electronAPI.store.set(
         'startupSplashEnabled',
@@ -2633,6 +2810,9 @@ ${t('settings.okUnderstand')}
     }
     if (method === 'drive') {
       return !!this.settings.switchDriveLetter;
+    }
+    if (method === 'mtp') {
+      return true;
     }
     return !!(this.settings.switchIp && this.settings.switchPort);
   }

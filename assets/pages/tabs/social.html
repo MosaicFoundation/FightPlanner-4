@@ -401,24 +401,63 @@
               Account Settings
             </h3>
             <div class="social-profile-settings">
-              <div class="social-setting-item">
-                <label for="social-edit-username" class="social-setting-label"
-                  data-i18n="social.username">Username</label>
-                <div class="social-setting-input-group">
+              <div class="social-settings-row">
+                <div class="social-settings-row-copy">
+                  <label for="social-edit-username" class="social-setting-label"
+                    data-i18n="social.username">Username</label>
+                </div>
+                <div class="social-settings-row-control">
                   <input type="text" id="social-edit-username" class="social-setting-input"
                     data-i18n="social.usernamePlaceholder" data-i18n-placeholder placeholder="Username" />
-                  <button id="social-save-username" class="social-btn social-btn-secondary">
+                  <button id="social-save-username" class="social-icon-action-btn" type="button"
+                    title="Save username" data-i18n-title data-i18n="social.saveUsername">
                     <i class="bi bi-check"></i>
-                    <span data-i18n="social.saveUsername">Save</span>
                   </button>
                 </div>
               </div>
 
-              <!-- Settings hint -->
+              <div class="social-setting-item">
+                <h4 class="social-setting-section-title" data-i18n="social.privacySettings">
+                  Privacy Settings
+                </h4>
+                <div class="social-privacy-settings">
+                  <div class="social-settings-row">
+                    <div class="social-settings-row-copy">
+                      <label for="social-privacy-visibility" class="social-setting-label"
+                        data-i18n="social.modsVisibility">Mods Visibility</label>
+                    </div>
+                    <div class="social-settings-row-control">
+                      <select id="social-privacy-visibility" class="social-setting-select">
+                        <option value="global" data-i18n="social.visibilityEveryone">Everyone</option>
+                        <option value="friends" data-i18n="social.visibilityFriends">Friends Only</option>
+                        <option value="private" data-i18n="social.visibilityOnlyMe">Only Me</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="social-settings-row">
+                    <div class="social-settings-row-copy">
+                      <span class="social-setting-label" data-i18n="social.allowSync">
+                        Allow friends to sync my mods
+                      </span>
+                    </div>
+                    <label class="settings-switch">
+                      <input type="checkbox" id="social-privacy-sync" />
+                      <span class="settings-switch-slider"></span>
+                    </label>
+                  </div>
+                  <div class="social-settings-actions">
+                    <button id="social-save-privacy" class="social-compact-action-btn" type="button">
+                      <i class="bi bi-shield-check"></i>
+                      <span data-i18n="social.savePrivacy">Save Privacy Settings</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div class="social-settings-hint">
                 <i class="bi bi-info-circle"></i>
-                <span data-i18n="social.lookingForSettings">Looking for privacy and auto-download settings?</span>
-                <button id="social-go-to-settings-btn" class="social-btn-link">
+                <span data-i18n="social.lookingForSettings">Looking for more app settings?</span>
+                <button id="social-go-to-settings-btn" class="social-btn-link" type="button">
                   <span data-i18n="social.goToSettings">Go to Settings</span>
                   <i class="bi bi-arrow-right"></i>
                 </button>

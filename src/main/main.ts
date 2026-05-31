@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, session } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import store from './store';
@@ -75,6 +75,34 @@ const originalConsoleError = console.error;
 
 let mainWindow: BrowserWindow | null = null;
 let discordRPC: DiscordRPCManager | null = null;
+
+function setupWebUsbPermissions() {
+  const defaultSession = session.defaultSession;
+
+  defaultSession.setPermissionCheckHandler((_webContents, permission) => {
+    return String(permission) === 'usb';
+  });
+
+  defaultSession.setPermissionRequestHandler(
+    (_webContents, permission, callback) => {
+      callback(String(permission) === 'usb');
+    },
+  );
+
+  defaultSession.setDevicePermissionHandler((details) => {
+    return details.deviceType === 'usb';
+  });
+
+  defaultSession.on('select-usb-device', (event, details, callback) => {
+    event.preventDefault();
+
+    const mtpDevice = details.deviceList.find((device) => {
+      return device.deviceClass === 0x06;
+    });
+
+    callback((mtpDevice || details.deviceList[0])?.deviceId);
+  });
+}
 
 export interface MainEvents {
   'main-log': { level: string; message: string; timestamp: string };
@@ -291,6 +319,7 @@ if (!gotTheLock) {
   });
 
   app.whenReady().then(async () => {
+    setupWebUsbPermissions();
     registerAllHandlers(ipcMain, discordRPC);
 
     // Initialize PostHog analytics

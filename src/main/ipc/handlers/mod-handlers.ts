@@ -11,6 +11,7 @@ import {
   createErrorResponse,
   ErrorCodes,
 } from '../../utils/error-handler';
+import { resolveVirtualPath } from '../../utils/virtual-paths';
 import FppHandler from '../../fpp-handler';
 import { HandlerResponse } from '../../types/common';
 import { BaseHandlerArg, GenericHandler } from '../../types/common';
@@ -32,9 +33,17 @@ const ModHandlers = {
     disabledMods: Mod[];
   }> => {
     try {
+      console.log('[ModHandlers] Reading mods folder:', modsPath);
+      const result = ModUtils.readAllMods(modsPath);
+      console.log('[ModHandlers] Mods folder read complete:', {
+        modsPath,
+        activeCount: result.activeMods.length,
+        disabledCount: result.disabledMods.length,
+      });
+
       return {
         success: true,
-        ...ModUtils.readAllMods(modsPath),
+        ...result,
       };
     } catch (error) {
       handleError(error, 'read-mods-folder');
@@ -70,12 +79,23 @@ const ModHandlers = {
     modsPath: string,
   ): HandlerResponse => {
     try {
-      if (!modsPath || !fs.existsSync(modsPath) || !fs.statSync(modsPath).isDirectory()) {
+      console.log('[ModHandlers] Ensuring mods folder is available:', modsPath);
+      const resolvedModsPath = modsPath ? resolveVirtualPath(modsPath) : '';
+      if (!resolvedModsPath || !fs.existsSync(resolvedModsPath) || !fs.statSync(resolvedModsPath).isDirectory()) {
+        console.error('[ModHandlers] Mods folder unavailable:', {
+          requestedPath: modsPath,
+          resolvedPath: resolvedModsPath,
+        });
         return createErrorResponse(
           ErrorCodes.FOLDER_NOT_FOUND,
           `Mods folder is not available. Reconnect your Switch and make sure this folder exists: ${modsPath}`,
         );
       }
+
+      console.log('[ModHandlers] Mods folder is available:', {
+        requestedPath: modsPath,
+        resolvedPath: resolvedModsPath,
+      });
 
       return { success: true };
     } catch (error) {
@@ -340,11 +360,16 @@ const ModHandlers = {
     isNowActive: boolean;
   }> => {
     try {
+      console.log('[ModHandlers] Toggle mod requested:', {
+        modPath,
+        modsBasePath,
+      });
+      const resolvedModsBasePath = resolveVirtualPath(modsBasePath);
       const modName = path.basename(modPath);
-      const parentDir = path.dirname(modsBasePath);
+      const parentDir = path.dirname(resolvedModsBasePath);
       const disabledModsPath = path.join(parentDir, '{disabled_mod}');
       const isInActiveMods =
-        modPath.includes(modsBasePath) && !modPath.includes('{disabled_mods}');
+        modPath.includes(resolvedModsBasePath) && !modPath.includes('{disabled_mods}');
 
       let targetPath;
       if (isInActiveMods) {
@@ -353,7 +378,7 @@ const ModHandlers = {
         }
         targetPath = path.join(disabledModsPath, modName);
       } else {
-        targetPath = path.join(modsBasePath, modName);
+        targetPath = path.join(resolvedModsBasePath, modName);
       }
 
       if (fs.existsSync(targetPath)) {
@@ -364,6 +389,11 @@ const ModHandlers = {
       }
 
       fs.renameSync(modPath, targetPath);
+      console.log('[ModHandlers] Toggle mod complete:', {
+        modPath,
+        targetPath,
+        isNowActive: !isInActiveMods,
+      });
 
       return {
         success: true,

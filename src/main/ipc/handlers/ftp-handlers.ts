@@ -18,6 +18,16 @@ interface TransferItem {
   fileCount: number;
 }
 
+interface MtpTransferFile {
+  id: string;
+  localPath: string;
+  remotePath: string;
+  size: number;
+  itemName: string;
+  itemIndex: number;
+  totalItems: number;
+}
+
 interface FtpTransferProgressPayload {
   status: 'uploading';
   currentMod: number;
@@ -29,9 +39,69 @@ interface FtpTransferProgressPayload {
   currentFileName?: string;
 }
 
+const mtpTransferFiles = new Map<string, string>();
+
 /**
  * Copy directory recursively
  */
+function _filesMatch(src: string, dest: string): boolean {
+  if (!fs.existsSync(dest)) {
+    return false;
+  }
+
+  const srcStats = fs.statSync(src);
+  const destStats = fs.statSync(dest);
+  if (!srcStats.isFile() || !destStats.isFile()) {
+    return false;
+  }
+
+  if (srcStats.size !== destStats.size) {
+    return false;
+  }
+
+  const srcFile = fs.openSync(src, 'r');
+  const destFile = fs.openSync(dest, 'r');
+  const srcBuffer = Buffer.alloc(64 * 1024);
+  const destBuffer = Buffer.alloc(64 * 1024);
+
+  try {
+    let position = 0;
+    while (position < srcStats.size) {
+      const bytesToRead = Math.min(srcBuffer.length, srcStats.size - position);
+      const srcBytesRead = fs.readSync(
+        srcFile,
+        srcBuffer,
+        0,
+        bytesToRead,
+        position,
+      );
+      const destBytesRead = fs.readSync(
+        destFile,
+        destBuffer,
+        0,
+        bytesToRead,
+        position,
+      );
+
+      if (
+        srcBytesRead !== destBytesRead ||
+        !srcBuffer.subarray(0, srcBytesRead).equals(
+          destBuffer.subarray(0, destBytesRead),
+        )
+      ) {
+        return false;
+      }
+
+      position += srcBytesRead;
+    }
+
+    return true;
+  } finally {
+    fs.closeSync(srcFile);
+    fs.closeSync(destFile);
+  }
+}
+
 function _copyRecursiveSync(src, dest) {
   const exists = fs.existsSync(src);
   const stats = exists && fs.statSync(src);
@@ -42,15 +112,30 @@ function _copyRecursiveSync(src, dest) {
       fs.mkdirSync(dest, { recursive: true });
     }
 
+    let copiedCount = 0;
     fs.readdirSync(src).forEach((childItemName) => {
-      _copyRecursiveSync(
+      copiedCount += _copyRecursiveSync(
         path.join(src, childItemName),
         path.join(dest, childItemName),
       );
     });
+    return copiedCount;
   } else {
+    if (_filesMatch(src, dest)) {
+      console.log(`Skipped existing file: ${dest}`);
+      return 0;
+    }
+
+    const parentDir = path.dirname(dest);
+    if (!fs.existsSync(parentDir)) {
+      fs.mkdirSync(parentDir, { recursive: true });
+    }
+
     fs.copyFileSync(src, dest);
+    return 1;
   }
+
+  return 0;
 }
 
 function _countFilesRecursive(dirPath: string): number {
@@ -116,6 +201,67 @@ function _collectPluginFiles(pluginsPath?: string | null): TransferItem[] {
   }
 
   return items;
+}
+
+function _collectFilesForMtpTransfer(
+  transferItems: Array<TransferItem & { remoteBasePath: string }>,
+): MtpTransferFile[] {
+  const files: MtpTransferFile[] = [];
+  const totalItems = transferItems.length;
+
+  mtpTransferFiles.clear();
+
+  const addFile = (
+    localPath: string,
+    remotePath: string,
+    item: TransferItem,
+    itemIndex: number,
+  ) => {
+    const id = `${Date.now()}-${files.length}-${path.basename(localPath)}`;
+    const size = fs.statSync(localPath).size;
+
+    mtpTransferFiles.set(id, localPath);
+    files.push({
+      id,
+      localPath,
+      remotePath: remotePath.replace(/\\/g, '/'),
+      size,
+      itemName: item.itemName,
+      itemIndex,
+      totalItems,
+    });
+  };
+
+  const walkDirectory = (
+    localDir: string,
+    remoteDir: string,
+    item: TransferItem,
+    itemIndex: number,
+  ) => {
+    for (const entry of fs.readdirSync(localDir)) {
+      const localPath = path.join(localDir, entry);
+      const remotePath = path.posix.join(remoteDir, entry);
+      const stats = fs.statSync(localPath);
+
+      if (stats.isDirectory()) {
+        walkDirectory(localPath, remotePath, item, itemIndex);
+      } else if (stats.isFile()) {
+        addFile(localPath, remotePath, item, itemIndex);
+      }
+    }
+  };
+
+  transferItems.forEach((item, index) => {
+    const remotePath = path.posix.join(item.remoteBasePath, item.itemName);
+
+    if (item.kind === 'directory') {
+      walkDirectory(item.localPath, remotePath, item, index + 1);
+    } else {
+      addFile(item.localPath, remotePath, item, index + 1);
+    }
+  });
+
+  return files;
 }
 
 function _normalizeRemotePath(
@@ -193,18 +339,10 @@ async function _sendModsToDrive(config: Config) {
 
     for (const item of _collectModDirectories(config.modsPath)) {
       const targetModPath = path.join(targetModsPath, item.itemName);
-
-      if (fs.existsSync(targetModPath)) {
-        fs.rmSync(targetModPath, {
-          recursive: true,
-          force: true,
-        });
-      }
-
-      _copyRecursiveSync(item.localPath, targetModPath);
-      transferredCount += item.fileCount;
+      const copiedCount = _copyRecursiveSync(item.localPath, targetModPath);
+      transferredCount += copiedCount;
       console.log(
-        `Successfully copied mod: ${item.itemName} (${item.fileCount} files)`,
+        `Successfully copied mod: ${item.itemName} (${copiedCount} files)`,
       );
     }
 
@@ -216,6 +354,11 @@ async function _sendModsToDrive(config: Config) {
 
     for (const item of pluginItems) {
       const targetPluginPath = path.join(targetPluginsPath, item.itemName);
+      if (_filesMatch(item.localPath, targetPluginPath)) {
+        console.log(`Skipped existing plugin: ${item.itemName}`);
+        continue;
+      }
+
       fs.copyFileSync(item.localPath, targetPluginPath);
       transferredCount += item.fileCount;
       console.log(`Successfully copied plugin: ${item.itemName}`);
@@ -242,7 +385,7 @@ export interface Config {
   switchFtpModsPath?: string | null;
   switchFtpPluginsPath?: string | null;
   switchDriveLetter: string;
-  switchTransferMethod: 'ftp' | 'drive';
+  switchTransferMethod: 'ftp' | 'drive' | 'mtp';
   modsPath: string;
   pluginsPath?: string | null;
   recentDownloads: Array<{
@@ -371,8 +514,9 @@ const FtpHandlers = {
               },
             );
           } else {
-            await ftpClient.uploadFile(item.localPath, remoteItemPath);
-            count = 1;
+            count = (await ftpClient.uploadFile(item.localPath, remoteItemPath))
+              ? 1
+              : 0;
             const nextTransferredCount = transferredCount + count;
             sendProgress({
               status: 'uploading',
@@ -429,15 +573,85 @@ const FtpHandlers = {
   },
 } as const;
 
+const MtpHandlers = {
+  ['prepare-mtp-transfer']: async (
+    common: BaseHandlerArg,
+    config: Config,
+  ): HandlerResponse<{
+    files: Omit<MtpTransferFile, 'localPath'>[];
+    totalFiles: number;
+  }> => {
+    try {
+      const remoteModsPath = _normalizeRemotePath(
+        config.switchFtpModsPath || config.switchFtpPath,
+        '/ultimate/mods',
+      );
+      const remotePluginsPath = _normalizeRemotePath(
+        config.switchFtpPluginsPath,
+        '/ultimate/contents/01006A800016E000/romfs/skyline/plugins',
+      );
+      const transferItems = [
+        ..._collectModDirectories(config.modsPath).map((item) => ({
+          ...item,
+          remoteBasePath: remoteModsPath,
+        })),
+        ..._collectPluginFiles(config.pluginsPath).map((item) => ({
+          ...item,
+          remoteBasePath: remotePluginsPath,
+        })),
+      ];
+      const files = _collectFilesForMtpTransfer(transferItems).map(
+        ({ localPath, ...file }) => file,
+      );
+
+      return {
+        success: true,
+        files,
+        totalFiles: files.length,
+      };
+    } catch (error) {
+      handleError(error, 'prepare-mtp-transfer');
+      return createErrorResponse(ErrorCodes.FILE_READ_ERROR, error.message);
+    }
+  },
+
+  ['read-mtp-transfer-file']: async (
+    common: BaseHandlerArg,
+    fileId: string,
+  ): HandlerResponse<{
+    bytes: Uint8Array;
+  }> => {
+    try {
+      const filePath = mtpTransferFiles.get(fileId);
+      if (!filePath || !fs.existsSync(filePath)) {
+        return createErrorResponse(
+          ErrorCodes.FILE_NOT_FOUND,
+          'MTP transfer file not found',
+        );
+      }
+
+      return {
+        success: true,
+        bytes: new Uint8Array(fs.readFileSync(filePath)),
+      };
+    } catch (error) {
+      handleError(error, 'read-mtp-transfer-file');
+      return createErrorResponse(ErrorCodes.FILE_READ_ERROR, error.message);
+    }
+  },
+} as const;
+
+export type MtpHandlers = typeof MtpHandlers;
+
 /**
  * Register all IPC handlers related to FTP operations
  * @param {Electron.IpcMain} ipcMain - Electron IPC main instance
  */
 export function registerFtpHandlers(ipcMain: IpcMain) {
-  for (const channel of Object.keys(FtpHandlers) as Array<
-    keyof typeof FtpHandlers
-  >) {
-    const handler = FtpHandlers[channel] as GenericHandler;
+  const handlers = { ...FtpHandlers, ...MtpHandlers };
+
+  for (const channel of Object.keys(handlers) as Array<keyof typeof handlers>) {
+    const handler = handlers[channel] as GenericHandler;
 
     ipcMain.handle(channel, (event, ...rest: unknown[]) => {
       return handler({ event }, ...rest);

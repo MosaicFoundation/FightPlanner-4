@@ -34,6 +34,18 @@ class SocialProfileManager extends SocialFeedManager {
     ) as T;
   }
 
+  normalizeUserFields(data: any): UserFields {
+    const source = data?.fields ? this.parseFirestoreFields(data.fields) : data;
+    return {
+      ...source,
+      photoURL: source?.photoURL || source?.photo_url,
+      photoPublicId: source?.photoPublicId || source?.photo_public_id,
+      bannerURL: source?.bannerURL || source?.banner_url,
+      bannerPublicId: source?.bannerPublicId || source?.banner_public_id,
+      privacySettings: source?.privacySettings || source?.privacy_settings,
+    } as UserFields;
+  }
+
   getProfileBadgeMeta(badge: string) {
     const normalized = String(badge || '')
       .trim()
@@ -356,6 +368,7 @@ class SocialProfileManager extends SocialFeedManager {
         'file',
         new File([blob], fileName, { type: 'image/jpeg' }),
       );
+      formData.append('mediaType', state.type);
       if (previousPublicId) {
         formData.append('previousPublicId', previousPublicId);
       }
@@ -435,9 +448,9 @@ class SocialProfileManager extends SocialFeedManager {
         `${this.API_URL}/read/users/${this.userData.localId}`,
       );
       const data = await response.json();
-      const fields = data.fields || {};
+      const fields = this.normalizeUserFields(data);
       const key = type === 'avatar' ? 'photoPublicId' : 'bannerPublicId';
-      return fields[key]?.stringValue || '';
+      return fields[key] || '';
     } catch (error) {
       console.warn('Failed to read previous media public id:', error);
       return '';
@@ -480,12 +493,10 @@ class SocialProfileManager extends SocialFeedManager {
       const userId = this.userData.localId;
 
       const response = await fetch(`${this.API_URL}/read/users/${userId}`);
-      const data: {
-        fields: { [key: string]: string[] };
-      } = await response.json();
+      const data: any = await response.json();
 
-      if (response.ok && data.fields) {
-        const userFields = this.parseFirestoreFields<UserFields>(data.fields);
+      if (response.ok && !data.error) {
+        const userFields = this.normalizeUserFields(data);
 
         const usernameEl = document.querySelector<HTMLElement>(
           '#social-profile-username',
@@ -773,6 +784,16 @@ class SocialProfileManager extends SocialFeedManager {
         return false;
       }
 
+      const visibilityBtn = clickedElement.closest<HTMLButtonElement>(
+        '.social-mod-visibility-btn',
+      );
+      if (visibilityBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        await this.updateSocialModVisibility(visibilityBtn);
+        return false;
+      }
+
       const carouselButton = clickedElement.closest<HTMLElement>(
         '.social-gamebanana-carousel-btn',
       );
@@ -1032,7 +1053,8 @@ class SocialProfileManager extends SocialFeedManager {
       if (
         socialGameBananaCard &&
         !clickedElement.closest('.social-creator-link') &&
-        !clickedElement.closest('.social-mod-download-btn')
+        !clickedElement.closest('.social-mod-download-btn') &&
+        !clickedElement.closest('.social-mod-visibility-btn')
       ) {
         e.preventDefault();
         e.stopPropagation();
@@ -1047,7 +1069,11 @@ class SocialProfileManager extends SocialFeedManager {
         const creatorLink = clickedElement.closest('.social-creator-link');
         const username = creatorLink!.getAttribute('data-username');
         const userId = creatorLink!.getAttribute('data-userid');
-        if (username && !clickedElement.closest('.social-mod-download-btn')) {
+        if (
+          username &&
+          !clickedElement.closest('.social-mod-download-btn') &&
+          !clickedElement.closest('.social-mod-visibility-btn')
+        ) {
           this.showUserProfile(username, userId);
         }
       }
@@ -1755,14 +1781,10 @@ class SocialProfileManager extends SocialFeedManager {
               `${this.API_URL}/read/users/${userId}`,
             );
 
-            const userData: {
-              fields: { [key: string]: string[] };
-            } = await userResponse.json();
+            const userData: any = await userResponse.json();
 
-            if (userData.fields) {
-              const userFields = this.parseFirestoreFields<UserFields>(
-                userData.fields,
-              );
+            if (userData.fields || !userData.error) {
+              const userFields = this.normalizeUserFields(userData);
               const avatarEl = document.querySelector<HTMLImageElement>(
                 '#social-user-profile-avatar',
               );

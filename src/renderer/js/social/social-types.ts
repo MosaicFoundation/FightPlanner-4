@@ -10,7 +10,7 @@ interface UserFields {
     showEmail?: boolean;
     showFriendsList?: boolean;
     showModsList?: boolean;
-    modsVisibility?: 'public' | 'friends' | 'private';
+    modsVisibility?: 'global' | 'public' | 'friends' | 'private';
     allowSync?: boolean;
   };
 }
@@ -23,9 +23,18 @@ interface GameBananaTopSubmission {
   _sProfileUrl?: string;
   _sImageUrl?: string;
   _sThumbnailUrl?: string;
+  _sInitialVisibility?: string;
   _sText?: string;
   _sDescription?: string;
   _aRequirements?: [string, string][];
+  _bHasContentRatings?: boolean;
+  _bIsNsfw?: boolean;
+  _bIsNSFW?: boolean;
+  _bIsAdult?: boolean;
+  _sContentRating?: string;
+  _aContentRatings?: any[];
+  _aContentRating?: any[];
+  _aTags?: any[];
   _sPeriod?: string;
   _tsDateAdded?: number;
   _nLikeCount?: number;
@@ -63,10 +72,12 @@ interface GameBananaTopSubmission {
   };
   _aRootCategory?: {
     _sName?: string;
+    _sProfileUrl?: string;
     _sIconUrl?: string;
   };
   _aSubCategory?: {
     _sName?: string;
+    _sProfileUrl?: string;
     _sIconUrl?: string;
   };
 }
