@@ -7,7 +7,7 @@ import { StoreHandlers } from './ipc/handlers/store-handlers';
 import { AppHandlers } from './ipc/handlers/app-handlers';
 import { SystemHandlers } from './ipc/handlers/system-handlers';
 import { ProtocolHandlers } from './ipc/handlers/protocol-handlers';
-import { FtpHandlers } from './ipc/handlers/ftp-handlers';
+import { FtpHandlers, MtpHandlers } from './ipc/handlers/ftp-handlers';
 import { UpdateHandlers } from './ipc/handlers/update-handlers';
 import { TutorialHandlers } from './ipc/handlers/tutorial-handlers';
 import { MigrationHandlers } from './ipc/handlers/migration-handlers';
@@ -76,6 +76,7 @@ const invokeAppHandler = wrapInvoke<AppHandlers>();
 const invokeSystemHandler = wrapInvoke<SystemHandlers>();
 const invokeProtocolHandler = wrapInvoke<ProtocolHandlers>();
 const invokeFtpHandler = wrapInvoke<FtpHandlers>();
+const invokeMtpHandler = wrapInvoke<MtpHandlers>();
 const invokeUpdateHandler = wrapInvoke<UpdateHandlers>();
 const invokeTutorialHandler = wrapInvoke<TutorialHandlers>();
 const invokeMigrationHandler = wrapInvoke<MigrationHandlers>();
@@ -133,7 +134,10 @@ const electronAPI = {
   detectConflicts: invokeModHandler('detect-conflicts'),
   openTutorialWindow: invokeTutorialHandler('open-tutorial-window'),
   cancelDownload: invokeSystemHandler('cancel-download'),
+  resumeDownload: invokeSystemHandler('resume-download'),
   sendModsToSwitch: invokeFtpHandler('send-mods-to-switch'),
+  prepareMtpTransfer: invokeMtpHandler('prepare-mtp-transfer'),
+  readMtpTransferFile: invokeMtpHandler('read-mtp-transfer-file'),
   installModFromPath: invokeModHandler('install-mod-from-path'),
   selectModFile: invokeFileHandler('select-mod-file'),
   handleFilesDropped: invokeModHandler('handle-files-dropped'),
@@ -206,6 +210,7 @@ const electronAPI = {
 
   onModInstallStart: registerProtocolCallback('mod-install-start'),
   onModDownloadProgress: registerProtocolCallback('mod-download-progress'),
+  onModDownloadPaused: registerProtocolCallback('mod-download-paused'),
   onModExtractStart: registerProtocolCallback('mod-extract-start'),
   onModExtractComplete: registerProtocolCallback('mod-extract-complete'),
   onModInstallSuccess: registerProtocolCallback('mod-install-success'),

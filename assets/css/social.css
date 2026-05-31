@@ -550,6 +550,119 @@
   color: var(--text-muted);
 }
 
+.social-gamebanana-category-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px 0;
+}
+
+.social-gamebanana-category-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 11px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.social-gamebanana-category-filter i {
+  font-size: 13px;
+}
+
+.social-gamebanana-category-filter:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.social-gamebanana-category-filter.is-active {
+  border-color: var(--accent-color);
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--text-primary);
+}
+
+.social-gamebanana-subcategory-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -6px 0 16px 0;
+  padding-left: 2px;
+}
+
+.social-gamebanana-skin-picker {
+  align-items: center;
+  gap: 10px;
+}
+
+.social-gamebanana-skin-picker-label {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.social-gamebanana-skin-select {
+  min-height: 34px;
+  min-width: min(260px, 100%);
+  max-width: 100%;
+  padding: 0 34px 0 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.social-gamebanana-skin-select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.social-gamebanana-subcategory-filter {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.social-gamebanana-subcategory-filter:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.social-gamebanana-subcategory-filter.is-active {
+  border-color: var(--accent-color);
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--text-primary);
+}
+
+.social-gamebanana-subcategory-loading {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
 .social-gamebanana-carousel-actions {
   display: flex;
   gap: 8px;
@@ -621,6 +734,15 @@
   overflow: visible;
   perspective: 1000px;
   padding-bottom: 18px;
+}
+
+.social-gamebanana-featured-empty {
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 13px;
 }
 
 .social-gamebanana-grid {
@@ -705,6 +827,17 @@
   filter: brightness(0.9);
 }
 
+.social-gamebanana-preview-media {
+  position: relative;
+  overflow: hidden;
+  background: var(--border-color);
+  pointer-events: none;
+}
+
+.social-gamebanana-preview-media.is-nsfw {
+  pointer-events: auto;
+}
+
 .social-gamebanana-featured-image,
 .social-gamebanana-card-image,
 .social-gamebanana-image-placeholder {
@@ -722,6 +855,64 @@
 .social-gamebanana-card-image {
   aspect-ratio: 16 / 9;
   object-fit: cover;
+}
+
+.social-gamebanana-preview-media.is-nsfw img {
+  filter: blur(18px) saturate(0.72) brightness(0.7);
+  transform: scale(1.04);
+  pointer-events: none;
+}
+
+.social-gamebanana-preview-media.is-nsfw.is-revealed img {
+  filter: none;
+  transform: none;
+}
+
+.social-gamebanana-preview-flyout.is-nsfw {
+  filter: blur(18px) saturate(0.72) brightness(0.7);
+  transform: scale(1.04);
+}
+
+.social-gamebanana-nsfw-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  pointer-events: auto;
+}
+
+.social-gamebanana-preview-media.is-revealed .social-gamebanana-nsfw-overlay {
+  display: none;
+}
+
+.social-gamebanana-nsfw-overlay i {
+  font-size: 16px;
+}
+
+.social-gamebanana-nsfw-reveal-btn {
+  min-height: 30px;
+  padding: 0 11px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.48);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.social-gamebanana-nsfw-reveal-btn:hover {
+  background: rgba(0, 0, 0, 0.68);
 }
 
 .social-gamebanana-image-placeholder {
@@ -865,6 +1056,10 @@
 .social-gamebanana-gallery-main {
   position: relative;
   overflow: hidden;
+  border-radius: 10px;
+}
+
+.social-gamebanana-gallery-main .social-gamebanana-preview-media {
   border-radius: 10px;
 }
 
@@ -1740,16 +1935,53 @@
   margin: 0 0 24px 0;
 }
 
+.social-setting-section-title {
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
 .social-profile-settings {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 18px;
 }
 
 .social-setting-item {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.social-settings-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.32fr) minmax(260px, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--bg-transparent-08);
+}
+
+.social-settings-row:last-child {
+  border-bottom: 0;
+}
+
+.social-settings-row-copy {
+  min-width: 0;
+}
+
+.social-settings-row-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.social-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
 }
 
 .social-setting-label {
@@ -1766,6 +1998,7 @@
 
 .social-setting-input {
   flex: 1;
+  min-width: 0;
   padding: 10px 16px;
   background: var(--bg-input);
   border: 1px solid var(--bg-transparent-10);
@@ -1802,7 +2035,7 @@
 .social-privacy-settings {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
 }
 
 .social-privacy-option {
@@ -1814,6 +2047,40 @@
 .social-privacy-label {
   font-size: 14px;
   color: var(--text-secondary);
+}
+
+.social-icon-action-btn,
+.social-compact-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  border: 1px solid var(--bg-transparent-20);
+  border-radius: 8px;
+  background: var(--bg-transparent-10);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 0 0 auto;
+}
+
+.social-icon-action-btn {
+  width: 42px;
+  padding: 0;
+}
+
+.social-compact-action-btn {
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.social-icon-action-btn:hover,
+.social-compact-action-btn:hover {
+  background: var(--bg-transparent-15);
+  border-color: rgba(var(--accent-rgb), 0.4);
+  color: var(--accent-color);
 }
 
 .social-btn-secondary {
@@ -1888,6 +2155,10 @@
   border-color: rgba(var(--success-color-rgb), 0.4);
 }
 
+.social-mod-card.is-hidden {
+  border-color: rgba(var(--warning-color-rgb), 0.35);
+}
+
 .social-mod-image {
   width: 100%;
   height: 160px;
@@ -1954,6 +2225,18 @@
   margin-bottom: 12px;
 }
 
+.social-mod-badge.hidden {
+  background: rgba(var(--warning-color-rgb), 0.16);
+  border-color: rgba(var(--warning-color-rgb), 0.32);
+  color: var(--warning-color);
+}
+
+.social-mod-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .social-mod-download-btn {
   width: 100%;
   padding: 10px;
@@ -1969,6 +2252,29 @@
   gap: 8px;
   font-size: 14px;
   font-weight: 500;
+}
+
+.social-mod-visibility-btn {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid var(--bg-transparent-20);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.social-mod-visibility-btn:hover {
+  border-color: rgba(var(--accent-rgb), 0.35);
+  color: var(--text-primary);
+  background: var(--bg-transparent-10);
 }
 
 .social-mod-download-btn:hover {
@@ -2504,4 +2810,23 @@
 
 .social-btn-link i {
   font-size: 14px;
+}
+
+@media (max-width: 760px) {
+  .social-settings-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .social-settings-row-control {
+    width: 100%;
+  }
+
+  .social-settings-actions {
+    justify-content: stretch;
+  }
+
+  .social-compact-action-btn {
+    width: 100%;
+  }
 }

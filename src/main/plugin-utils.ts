@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { resolveVirtualPath } from './utils/virtual-paths';
 
 export interface SimplePlugin {
   name: string;
@@ -24,6 +25,15 @@ export default class PluginUtils {
    * @returns {object} Object with activePlugins and disabledPlugins arrays
    */
   static readAllPlugins(pluginsPath: string) {
+    const requestedPluginsPath = pluginsPath;
+    pluginsPath = resolveVirtualPath(pluginsPath);
+    if (pluginsPath !== requestedPluginsPath) {
+      console.log('[PluginUtils] Plugins path resolved:', {
+        requestedPath: requestedPluginsPath,
+        resolvedPath: pluginsPath,
+      });
+    }
+
     const result: {
       activePlugins: SimplePlugin[];
       disabledPlugins: SimplePlugin[];
@@ -48,6 +58,11 @@ export default class PluginUtils {
             });
           }
         });
+      } else {
+        console.warn('[PluginUtils] Plugins folder does not exist:', {
+          requestedPath: requestedPluginsPath,
+          resolvedPath: pluginsPath,
+        });
       }
 
       const disabledPluginsPath = this.getDisabledPluginsFolder(pluginsPath);
@@ -69,14 +84,26 @@ export default class PluginUtils {
         });
       }
 
+      console.log('[PluginUtils] Plugins folders scanned:', {
+        requestedPath: requestedPluginsPath,
+        resolvedPath: pluginsPath,
+        activeCount: result.activePlugins.length,
+        disabledCount: result.disabledPlugins.length,
+      });
+
       return result;
     } catch (error) {
-      console.error('Error reading plugins:', error);
+      console.error('[PluginUtils] Error reading plugins:', {
+        requestedPath: requestedPluginsPath,
+        resolvedPath: pluginsPath,
+        error: error?.message || String(error),
+      });
       throw error;
     }
   }
 
   static getDisabledPluginsFolder(pluginsBasePath: string) {
+    pluginsBasePath = resolveVirtualPath(pluginsBasePath);
     const parentDir = path.dirname(pluginsBasePath);
     return path.join(parentDir, 'disabled_plugins');
   }
@@ -119,6 +146,7 @@ export default class PluginUtils {
     pluginsBasePath: string,
     enabledPluginNames: string[],
   ) {
+    pluginsBasePath = resolveVirtualPath(pluginsBasePath);
     const currentState = this.readAllPlugins(pluginsBasePath);
     const activePlugins = currentState.activePlugins;
     const disabledPluginsPath = this.getDisabledPluginsFolder(pluginsBasePath);
@@ -226,6 +254,11 @@ export default class PluginUtils {
    */
   static togglePlugin(pluginPath: string, pluginsBasePath: string) {
     try {
+      console.log('[PluginUtils] Toggle plugin requested:', {
+        pluginPath,
+        pluginsBasePath,
+      });
+      pluginsBasePath = resolveVirtualPath(pluginsBasePath);
       const pluginName = path.basename(pluginPath);
       const parentDir = path.dirname(pluginsBasePath);
       const disabledPluginsPath = path.join(parentDir, 'disabled_plugins');
@@ -251,6 +284,11 @@ export default class PluginUtils {
       }
 
       fs.renameSync(pluginPath, targetPath);
+      console.log('[PluginUtils] Toggle plugin complete:', {
+        pluginPath,
+        targetPath,
+        isNowActive: !isActive,
+      });
       return {
         success: true,
         newPath: targetPath,
@@ -289,6 +327,7 @@ export default class PluginUtils {
    */
   static copyPlugin(sourcePath, targetFolder) {
     try {
+      targetFolder = resolveVirtualPath(targetFolder);
       if (!fs.existsSync(sourcePath)) {
         return { success: false, error: 'Source file does not exist' };
       }

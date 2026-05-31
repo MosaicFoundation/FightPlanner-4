@@ -62,6 +62,12 @@ export interface ProtocolHandlerEvents {
     error: string;
   };
 
+  'mod-download-paused': {
+    downloadId: string;
+    receivedBytes: number;
+    totalBytes: number;
+  };
+
   'gamebanana-pairing-success': {
     memberId: string;
   };
@@ -78,6 +84,8 @@ export default class ProtocolHandler {
       filePath: string;
       cancelled: boolean;
       paused?: boolean;
+      receivedBytes?: number;
+      totalBytes?: number;
     }
   >;
   pendingInstalls: Map<
@@ -685,6 +693,11 @@ export default class ProtocolHandler {
         _handleSaveError(new Error(modInstallResult.error));
       }
     } catch (error) {
+      if (error?.message === 'Download paused') {
+        console.log('[protocol][download] paused, keeping pending install:', downloadId);
+        return;
+      }
+
       _handleSaveError(error);
     }
   }
@@ -821,16 +834,28 @@ export default class ProtocolHandler {
         );
       }
 
-      let fileName = `mod-${Date.now()}${fileExt}`;
-      let filePath = path.join(tempDir, fileName);
+      const existingDownload = this.activeDownloads.get(downloadId);
+      let fileName = `mod-${downloadId}-${Date.now()}${fileExt}`;
+      let filePath = existingDownload?.filePath || path.join(tempDir, fileName);
+      let resumeFrom = 0;
+
+      if (existingDownload?.filePath && filePath && fs.existsSync(filePath)) {
+        try {
+          resumeFrom = fs.statSync(filePath).size;
+        } catch (error) {
+          console.warn('[protocol][download] failed to stat partial file:', error.message);
+          resumeFrom = 0;
+        }
+      }
 
       console.log('[protocol][download] to:', filePath);
 
       const protocol = url.startsWith('https') ? https : http;
 
-      const file = fs.createWriteStream(filePath);
-      let receivedBytes = 0;
+      let file: fs.WriteStream | null = null;
+      let receivedBytes = resumeFrom;
       let totalBytes = 0;
+      let settled = false;
 
       const requestOptions: RequestOptions = new URL(url);
       requestOptions.headers = {
@@ -838,12 +863,49 @@ export default class ProtocolHandler {
         Accept: '*/*',
       };
 
+      if (resumeFrom > 0) {
+        requestOptions.headers.Range = `bytes=${resumeFrom}-`;
+      }
+
+      const fail = (error: Error, deleteFile = true) => {
+        if (settled) return;
+        settled = true;
+
+        const download = this.activeDownloads.get(downloadId);
+        const keepPartial = download?.paused || error.message === 'Download paused';
+
+        if (!keepPartial) {
+          this.activeDownloads.delete(downloadId);
+        }
+
+        if (file) {
+          try {
+            file.destroy();
+          } catch (closeError) {
+            console.warn('[protocol][download] failed to close file:', closeError.message);
+          }
+        }
+
+        if (deleteFile && !keepPartial && filePath && fs.existsSync(filePath)) {
+          try {
+            fs.unlinkSync(filePath);
+          } catch (unlinkError) {
+            console.warn('[protocol][download] failed to delete file:', unlinkError.message);
+          }
+        }
+
+        reject(error);
+      };
+
       // Store download info for cancel
       this.activeDownloads.set(downloadId, {
         request: null, // Will be set after request is created
-        file: file,
+        file: null,
         filePath: filePath,
         cancelled: false,
+        paused: false,
+        receivedBytes,
+        totalBytes,
       });
 
       const request = protocol.get(requestOptions, (response) => {
@@ -856,13 +918,7 @@ export default class ProtocolHandler {
         // Check if cancelled before processing response
         if (download && download.cancelled) {
           response.destroy();
-          file.close();
-
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-          }
-
-          reject(new Error('Download cancelled'));
+          fail(new Error(download.paused ? 'Download paused' : 'Download cancelled'), !download.paused);
 
           return;
         }
@@ -872,10 +928,6 @@ export default class ProtocolHandler {
             '[protocol][download] redirect to:',
             response.headers.location,
           );
-          file.close();
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-          }
 
           this.downloadMod(response.headers.location as string, downloadId)
             .then(resolve)
@@ -884,15 +936,25 @@ export default class ProtocolHandler {
           return;
         }
 
-        if (response.statusCode !== 200) {
-          file.close();
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-          }
+        const canAppend = resumeFrom > 0 && response.statusCode === 206;
+        const shouldRestart = resumeFrom > 0 && response.statusCode === 200;
 
-          reject(
-            new Error(`Download failed with status ${response.statusCode}`),
-          );
+        if (response.statusCode === 416 && resumeFrom > 0 && fs.existsSync(filePath)) {
+          console.log('[protocol][download] range already satisfied, using partial file as complete');
+          response.resume();
+          const activeDownload = this.activeDownloads.get(downloadId);
+          if (activeDownload) {
+            activeDownload.request = null;
+            activeDownload.file = null;
+            activeDownload.filePath = filePath;
+          }
+          settled = true;
+          resolve(filePath);
+          return;
+        }
+
+        if (response.statusCode !== 200 && response.statusCode !== 206) {
+          fail(new Error(`Download failed with status ${response.statusCode}`));
           return;
         }
 
@@ -900,15 +962,15 @@ export default class ProtocolHandler {
         const contentType = response.headers['content-type'] || '';
 
         if (String(contentType).toLowerCase().includes('text/html')) {
-          this.activeDownloads.delete(downloadId);
           response.resume();
-          file.close();
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-          }
-
-          reject(new Error('Download returned a web page instead of an archive. GameBanana may have blocked or changed the download URL.'));
+          fail(new Error('Download returned a web page instead of an archive. GameBanana may have blocked or changed the download URL.'));
           return;
+        }
+
+        if (shouldRestart) {
+          console.log('[protocol][download] server ignored Range, restarting from byte 0');
+          receivedBytes = 0;
+          resumeFrom = 0;
         }
 
         if (
@@ -924,8 +986,24 @@ export default class ProtocolHandler {
           }
         }
 
+        const contentLength = parseInt(response.headers['content-length'] as string, 10) || 0;
+        const contentRange = response.headers['content-range'];
+        const rangeTotalMatch =
+          typeof contentRange === 'string' ? contentRange.match(/\/(\d+)$/) : null;
         totalBytes =
-          parseInt(response.headers['content-length'] as string, 10) || 0;
+          rangeTotalMatch && rangeTotalMatch[1]
+            ? parseInt(rangeTotalMatch[1], 10)
+            : contentLength + resumeFrom;
+
+        file = fs.createWriteStream(filePath, { flags: canAppend ? 'a' : 'w' });
+
+        const activeDownload = this.activeDownloads.get(downloadId);
+        if (activeDownload) {
+          activeDownload.file = file;
+          activeDownload.filePath = filePath;
+          activeDownload.receivedBytes = receivedBytes;
+          activeDownload.totalBytes = totalBytes;
+        }
 
         response.on('data', (chunk) => {
           // Check if cancelled during download
@@ -935,6 +1013,10 @@ export default class ProtocolHandler {
           }
 
           receivedBytes += chunk.length;
+          if (downloadCheck) {
+            downloadCheck.receivedBytes = receivedBytes;
+            downloadCheck.totalBytes = totalBytes;
+          }
 
           if (totalBytes > 0) {
             const progress = Math.round((receivedBytes / totalBytes) * 100);
@@ -959,12 +1041,11 @@ export default class ProtocolHandler {
           const downloadCheck = this.activeDownloads.get(downloadId);
           if (downloadCheck && downloadCheck.cancelled) {
             console.log('[protocol][download] cancelled during transfer');
-            this.activeDownloads.delete(downloadId);
-            reject(new Error('Download cancelled'));
+            fail(new Error(downloadCheck.paused ? 'Download paused' : 'Download cancelled'), !downloadCheck.paused);
             return;
           }
 
-          file.close(() => {
+          file?.close(() => {
             if (finalFilePath !== filePath && fs.existsSync(filePath)) {
               try {
                 fs.renameSync(filePath, finalFilePath);
@@ -987,25 +1068,24 @@ export default class ProtocolHandler {
               downloadCheck.file = null;
               downloadCheck.filePath = filePath;
             }
+            settled = true;
             resolve(filePath);
           });
+        });
+
+        file.on('error', (err) => {
+          fail(err);
         });
       });
 
       request.on('error', (err) => {
-        this.activeDownloads.delete(downloadId);
-        file.close();
-        fs.unlinkSync(filePath);
+        const download = this.activeDownloads.get(downloadId);
+        if (download?.cancelled) {
+          fail(new Error(download.paused ? 'Download paused' : 'Download cancelled'), !download.paused);
+          return;
+        }
 
-        reject(err);
-      });
-
-      file.on('error', (err) => {
-        this.activeDownloads.delete(downloadId);
-        file.close();
-        fs.unlinkSync(filePath);
-
-        reject(err);
+        fail(err);
       });
     });
   }
@@ -1341,48 +1421,70 @@ export default class ProtocolHandler {
       return { success: false, error: 'Download already cancelled' };
     }
 
+    const wasDownloading = !!download.request;
     download.cancelled = true;
 
-    // Destroy the request to stop data flow
-    const wasDownloading = !!download.request;
+    if (!wasDownloading) {
+      this.sendToRenderer('mod-install-error', {
+        downloadId,
+        error: 'Installation cancelled by user',
+      });
+      return { success: true };
+    }
 
+    download.paused = true;
+
+    // Destroy the request to stop data flow
     if (download.request) {
       download.request.destroy();
       download.request = null;
     }
 
-    // Close and delete the file
+    // Close the file but keep the partial download so it can be resumed later.
     if (download.file) {
-      // Ensure file is properly closed
       const filePath = download.filePath;
       try {
         download.file.destroy(); // Force close
       } catch (err) {
         console.warn('Error destroying file stream:', err);
       }
+      download.file = null;
 
-      // Try to delete the file
       if (filePath && fs.existsSync(filePath)) {
-        try {
-          fs.unlinkSync(filePath);
-          console.log('[protocol] Deleted cancelled download file:', filePath);
-        } catch (err) {
-          console.warn('Failed to delete cancelled download file:', err);
-        }
+        download.receivedBytes = fs.statSync(filePath).size;
       }
     }
 
-    // During extraction/install the entry must stay alive so isCancelled() keeps returning true.
-    if (wasDownloading) {
-      setTimeout(() => {
-        this.activeDownloads.delete(downloadId);
-      }, 1000);
+    this.sendToRenderer('mod-download-paused', {
+      downloadId,
+      receivedBytes: download.receivedBytes || 0,
+      totalBytes: download.totalBytes || 0,
+    });
+
+    return { success: true };
+  }
+
+  resumeDownload(downloadId: string) {
+    const download = this.activeDownloads.get(downloadId);
+    const installData = this.pendingInstalls.get(downloadId);
+
+    if (!download || !download.paused) {
+      return { success: false, error: 'Paused download not found' };
     }
 
-    // Notify renderer immediately
-    this.sendToRenderer('mod-install-error', {
-      downloadId,
-      error: 'Download cancelled by user',
+    if (!installData) {
+      return { success: false, error: 'Install data not found' };
+    }
+
+    download.cancelled = false;
+    download.paused = false;
+
+    this.proceedWithInstall(downloadId).catch((error) => {
+      console.error('[protocol][download] resume failed:', error);
+      this.sendToRenderer('mod-install-error', {
+        downloadId,
+        error: error.message,
+      });
     });
 
     return { success: true };

@@ -738,7 +738,6 @@
             data-i18n="settings.modsFolderPlaceholder"
             data-i18n-placeholder
             placeholder="Select mods folder..."
-            readonly
           />
           <button
             class="settings-btn"
@@ -765,7 +764,6 @@
             data-i18n="settings.pluginsFolderPlaceholder"
             data-i18n-placeholder
             placeholder="Select plugins folder..."
-            readonly
           />
           <button
             class="settings-btn"
@@ -1065,6 +1063,9 @@
                 <span data-i18n="settings.transferMethodDrive"
                   >Local Drive</span
                 >
+              </div>
+              <div class="custom-select-option" data-value="mtp">
+                <span data-i18n="settings.transferMethodMtp">MTP / USB</span>
               </div>
             </div>
           </div>
@@ -1716,6 +1717,45 @@
         >
           When enabled, FightPlanner warns about missing or disabled
           requirements before starting a Discover mod download.
+        </p>
+      </div>
+
+      <div class="settings-section">
+        <label class="settings-label" data-i18n="settings.discoverNsfwContent"
+          >Discover NSFW Content</label
+        >
+        <div class="settings-input-group">
+          <label class="settings-switch">
+            <input type="checkbox" id="hide-nsfw-discover-mods-enabled" />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.hideNsfwDiscoverMods"
+            >Hide NSFW mods from Discover</span
+          >
+        </div>
+        <p class="settings-hint" data-i18n="settings.hideNsfwDiscoverModsHint">
+          When enabled, NSFW mods are removed from Featured, search results, and
+          Discover pages.
+        </p>
+        <div class="settings-input-group" style="margin-top: 12px">
+          <label class="settings-switch">
+            <input type="checkbox" id="show-nsfw-discover-previews-enabled" />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.showNsfwDiscoverPreviews"
+            >Show NSFW previews without blur</span
+          >
+        </div>
+        <p
+          class="settings-hint"
+          data-i18n="settings.showNsfwDiscoverPreviewsHint"
+        >
+          When enabled, NSFW mods stay visible and their preview images are
+          shown directly.
         </p>
       </div>
 

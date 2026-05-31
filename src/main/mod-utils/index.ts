@@ -6,6 +6,7 @@ import { app } from 'electron';
 
 import { ModInstallResult } from '../plugin-update-installer';
 import { FileExtractor } from '../utils/file-extractor';
+import { resolveVirtualPath } from '../utils/virtual-paths';
 import { ModScanner } from './mod-scanner';
 import { CONFLICT_WHITELIST_PATTERNS } from '../config';
 import sharedStore from '../store';
@@ -148,6 +149,7 @@ export default class ModUtils {
    * @returns {string} Path to the disabled mods folder
    */
   static getDisabledModsFolder(activeModsPath) {
+    activeModsPath = resolveVirtualPath(activeModsPath);
     const parentDir = path.dirname(activeModsPath);
     return path.join(parentDir, '{disabled_mod}');
   }
@@ -162,10 +164,24 @@ export default class ModUtils {
     folderPath: string,
     status: 'active' | 'disabled' = 'active',
   ) {
+    const requestedFolderPath = folderPath;
+    folderPath = resolveVirtualPath(folderPath);
+    if (folderPath !== requestedFolderPath) {
+      console.log('[ModUtils] Folder path resolved:', {
+        requestedPath: requestedFolderPath,
+        resolvedPath: folderPath,
+        status,
+      });
+    }
+
     const mods: Mod[] = [];
 
     if (!fs.existsSync(folderPath)) {
-      console.log(`Folder does not exist: ${folderPath}`);
+      console.warn('[ModUtils] Mods folder does not exist:', {
+        requestedPath: requestedFolderPath,
+        resolvedPath: folderPath,
+        status,
+      });
       return mods;
     }
 
@@ -185,8 +201,20 @@ export default class ModUtils {
         }
       });
     } catch (error) {
-      console.error(`Error reading folder ${folderPath}:`, error);
+      console.error('[ModUtils] Error reading mods folder:', {
+        requestedPath: requestedFolderPath,
+        resolvedPath: folderPath,
+        status,
+        error: error?.message || String(error),
+      });
     }
+
+    console.log('[ModUtils] Mods folder scanned:', {
+      requestedPath: requestedFolderPath,
+      resolvedPath: folderPath,
+      status,
+      count: mods.length,
+    });
 
     return mods;
   }
@@ -317,6 +345,7 @@ export default class ModUtils {
    * @returns {Object} Object with activeMods and disabledMods arrays
    */
   static readAllMods(activeModsPath: string) {
+    activeModsPath = resolveVirtualPath(activeModsPath);
     const activeMods = this.readModsFromFolder(activeModsPath, 'active');
 
     const disabledModsPath = this.getDisabledModsFolder(activeModsPath);
@@ -369,6 +398,7 @@ export default class ModUtils {
     activeModsPath: string,
     enabledModNames: string[],
   ) {
+    activeModsPath = resolveVirtualPath(activeModsPath);
     const { activeMods, disabledMods } = this.readAllMods(activeModsPath);
     const enabledSet = new Set(enabledModNames);
     const disabledModsPath = this.getDisabledModsFolder(activeModsPath);
@@ -835,6 +865,7 @@ export default class ModUtils {
   }
 
   static async installFromDirectory(sourceDirPath: string, modsPath: string) {
+    modsPath = resolveVirtualPath(modsPath);
     console.log('Installing mod from directory:', sourceDirPath);
     const modName = path.basename(sourceDirPath);
 
@@ -863,6 +894,12 @@ export default class ModUtils {
     options: ModInstallOptions = {},
   ): Promise<ModInstallResult> {
     try {
+      console.log('[ModUtils] Install mod requested:', {
+        sourcePath,
+        modsPath,
+      });
+      modsPath = resolveVirtualPath(modsPath);
+      console.log('[ModUtils] Install mod destination resolved:', modsPath);
       if (!fs.existsSync(sourcePath)) {
         throw new Error(`Source path does not exist: ${sourcePath}`);
       }

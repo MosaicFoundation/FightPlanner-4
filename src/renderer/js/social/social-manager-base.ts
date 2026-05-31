@@ -3,6 +3,7 @@ class SocialManagerBase {
   API_URL: string;
   GAMEBANANA_TOP_SUBS_URL: string;
   GAMEBANANA_SUBFEED_URL: string;
+  GAMEBANANA_API_URL: string;
   authToken: string | null;
   tokenRefreshPromise: Promise<boolean> | null;
   userData: {
@@ -20,11 +21,17 @@ class SocialManagerBase {
   loginAnim: any;
   profileMediaUploadAnim: any;
   gameBananaFeaturedMods: GameBananaTopSubmission[];
+  gameBananaFeaturedSourceMods: GameBananaTopSubmission[];
   gameBananaFeaturedIndex: number;
   gameBananaFeaturedTimeline: any;
   gameBananaPreviewAnimation: Promise<void> | null;
   gameBananaModsPage: number;
   gameBananaModsTotalPages: number;
+  gameBananaCurrentSubfeedData: GameBananaSubfeedResponse | null;
+  gameBananaCategoryFilter: string;
+  gameBananaSkinSubcategoryOpen: boolean;
+  gameBananaSkinSubcategoryId: number | null;
+  gameBananaSkinSubcategories: any[] | null;
   gameBananaSearchQuery: string;
   gameBananaSearchDebounce: ReturnType<typeof setTimeout> | null;
   gameBananaModsRequestId: number;
@@ -69,11 +76,12 @@ class SocialManagerBase {
 
   constructor() {
     this.API_URL =
-      'https://fightplannersocialapi.nathancarlos19100.workers.dev';
+      'https://fightplanner-social-api.nathancarlos19100.workers.dev';
     this.GAMEBANANA_TOP_SUBS_URL =
-      'https://gamebanana.com/apiv11/Game/6498/TopSubs';
+      'https://gamebanana.com/apiv11/Game/6498/TopSubs?_csvProperties=_idRow,_sModelName,_sSingularTitle,_sName,_sProfileUrl,_sImageUrl,_sThumbnailUrl,_aPreviewMedia,_aSubmitter,_aRootCategory,_aSubCategory,_sPeriod,_nLikeCount,_nPostCount,_bHasContentRatings,_aContentRatings,_aContentRating,_sContentRating,_sContentRatingName,_bIsNSFW,_bIsNsfw,_bIsAdult,_aTags';
     this.GAMEBANANA_SUBFEED_URL =
       'https://gamebanana.com/apiv11/Game/6498/Subfeed';
+    this.GAMEBANANA_API_URL = 'https://gamebanana.com/apiv11';
     this.authToken = null;
     this.tokenRefreshPromise = null;
     this.userData = null;
@@ -84,11 +92,17 @@ class SocialManagerBase {
     this.serviceUnavailableShown = false;
     this.profileMediaUploadAnim = null;
     this.gameBananaFeaturedMods = [];
+    this.gameBananaFeaturedSourceMods = [];
     this.gameBananaFeaturedIndex = 0;
     this.gameBananaFeaturedTimeline = null;
     this.gameBananaPreviewAnimation = null;
     this.gameBananaModsPage = 1;
     this.gameBananaModsTotalPages = 1;
+    this.gameBananaCurrentSubfeedData = null;
+    this.gameBananaCategoryFilter = 'all';
+    this.gameBananaSkinSubcategoryOpen = false;
+    this.gameBananaSkinSubcategoryId = null;
+    this.gameBananaSkinSubcategories = null;
     this.gameBananaSearchQuery = '';
     this.gameBananaSearchDebounce = null;
     this.gameBananaModsRequestId = 0;
@@ -114,6 +128,11 @@ class SocialManagerBase {
       friends: { data: null, timestamp: 0, ttl: 2 * 60 * 1000 }, // 2 minutes
       notifications: { data: null, timestamp: 0, ttl: 1 * 60 * 1000 }, // 1 minute
       gameBananaTopSubs: { data: null, timestamp: 0, ttl: 10 * 60 * 1000 }, // 10 minutes
+      gameBananaTopSubsContentRatings: {
+        data: null,
+        timestamp: 0,
+        ttl: 10 * 60 * 1000,
+      },
     };
     this.pendingRequests = new Map(); // Éviter les requêtes simultanées
   }
@@ -205,7 +224,9 @@ class SocialManagerBase {
   }
 
   async refreshAuthTokenInternal(): Promise<boolean> {
-    if (!this.userData?.refreshToken) {
+    const refreshToken =
+      this.userData?.refreshToken || (this.userData as any)?.refresh_token;
+    if (!refreshToken) {
       console.log('[Social] No refresh token available');
       return false;
     }
@@ -216,7 +237,8 @@ class SocialManagerBase {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          refreshToken: this.userData.refreshToken,
+          refreshToken,
+          refresh_token: refreshToken,
         }),
       });
 
@@ -227,14 +249,21 @@ class SocialManagerBase {
         return false;
       }
 
-      this.authToken = data.id_token;
-      if (data.refresh_token) {
+      this.authToken = data.access_token;
+      if (this.userData && (this.userData as any).refresh_token) {
+        delete (this.userData as any).refresh_token;
+      }
+      if (data.refresh_token && this.userData) {
         this.userData.refreshToken = data.refresh_token;
       }
 
       if (window.electronAPI && window.electronAPI.store) {
-        await window.electronAPI.store.set('social.authToken', this.authToken);
-        await window.electronAPI.store.set('social.userData', this.userData);
+        if (this.authToken) {
+          await window.electronAPI.store.set('social.authToken', this.authToken);
+        }
+        if (this.userData) {
+          await window.electronAPI.store.set('social.userData', this.userData);
+        }
       }
 
       console.log('[Social] ✅ Token refreshed successfully');
@@ -700,43 +729,56 @@ class SocialManagerBase {
 
         let errorMessage = 'Login failed';
 
-        if (data.error) {
-          if (data.error.message === 'USER_DISABLED') {
-            const disableReason =
-              data.error.disableReason || 'Account has been disabled';
-            errorMessage = `Account disabled: ${disableReason}`;
-          } else if (data.error.message) {
-            const errorMessages = {
-              EMAIL_NOT_FOUND: 'Email not found',
-              INVALID_PASSWORD: 'Invalid password',
-              INVALID_EMAIL: 'Invalid email address',
-              USER_DISABLED: 'Account disabled',
-              TOO_MANY_ATTEMPTS_TRY_LATER:
-                'Too many attempts, please try again later',
-            };
-            errorMessage =
-              errorMessages[data.error.message] || data.error.message;
-          }
+        const supabaseErrorCode =
+          data.error?.message || data.error?.code || data.error_code;
+
+        if (data.error?.message === 'USER_DISABLED') {
+          const disableReason =
+            data.error.disableReason || 'Account has been disabled';
+          errorMessage = `Account disabled: ${disableReason}`;
+        } else if (supabaseErrorCode) {
+          const errorMessages = {
+            EMAIL_NOT_FOUND: 'Email not found',
+            INVALID_PASSWORD: 'Invalid password',
+            INVALID_EMAIL: 'Invalid email address',
+            USER_DISABLED: 'Account disabled',
+            TOO_MANY_ATTEMPTS_TRY_LATER:
+              'Too many attempts, please try again later',
+            email_not_confirmed:
+              'Please confirm your email before signing in. Check your inbox.',
+            invalid_credentials: 'Invalid email or password.',
+          } as Record<string, string>;
+          errorMessage =
+            errorMessages[supabaseErrorCode] ||
+            data.error?.message ||
+            data.msg ||
+            'Login failed';
+        } else if (data.msg) {
+          errorMessage = data.msg;
         }
 
         throw new Error(errorMessage);
       }
 
-      this.authToken = data.idToken;
+      this.authToken = data.access_token;
       this.userData = {
-        localId: data.localId,
-        email: data.email,
-        displayName: data.displayName || '',
-        refreshToken: data.refreshToken,
+        localId: data.user?.id || data.id,
+        email: data.user?.email || data.email,
+        displayName: data.user?.user_metadata?.username || data.user?.user_metadata?.display_name || '',
+        refreshToken: data.refresh_token,
       };
 
       if (window.electronAPI && window.electronAPI.store) {
         try {
-          await window.electronAPI.store.set(
-            'social.authToken',
-            this.authToken,
-          );
-          await window.electronAPI.store.set('social.userData', this.userData);
+          if (this.authToken) {
+            await window.electronAPI.store.set(
+              'social.authToken',
+              this.authToken,
+            );
+          }
+          if (this.userData) {
+            await window.electronAPI.store.set('social.userData', this.userData);
+          }
         } catch (e) {
           console.warn('Failed to save auth data:', e);
         }
@@ -806,7 +848,11 @@ class SocialManagerBase {
         try {
           if (window.toastManager) window.toastManager.info('toasts.signingIn');
 
-          await this.login(email, password);
+          const loginResult = await this.login(email, password);
+
+          if (!this.authToken || !loginResult?.success) {
+            throw new Error('toasts.loginFailed');
+          }
 
           if (window.toastManager)
             window.toastManager.success('toasts.signedInSuccessfully');
@@ -823,13 +869,14 @@ class SocialManagerBase {
 
           this.setupProtocolListeners();
         } catch (err) {
-          const errorMsg = err.message || 'toasts.loginFailed';
+          const errorMsg =
+            typeof err?.message === 'string' && err.message.trim().length > 0
+              ? err.message
+              : 'toasts.loginFailed';
           if (window.toastManager) {
-            // Si c'est une clé de traduction, utiliser directement, sinon utiliser le message d'erreur
             if (errorMsg.startsWith('toasts.')) {
               window.toastManager.error(errorMsg);
             } else {
-              // Message d'erreur personnalisé, on le garde tel quel
               window.toastManager.error(errorMsg);
             }
           }
@@ -1084,6 +1131,52 @@ class SocialManagerBase {
     }
   }
 
+  getRegistrationErrorToast(data: any): string {
+    const errorCode =
+      typeof data?.error_code === 'string' ? data.error_code.toLowerCase() : '';
+    const message =
+      typeof data?.msg === 'string'
+        ? data.msg
+        : typeof data?.message === 'string'
+          ? data.message
+          : typeof data?.error?.message === 'string'
+            ? data.error.message
+            : typeof data?.error === 'string'
+              ? data.error
+              : '';
+    const normalizedMessage = message.toLowerCase();
+
+    if (
+      errorCode.includes('user_already_exists') ||
+      errorCode.includes('email_exists') ||
+      normalizedMessage.includes('already registered') ||
+      normalizedMessage.includes('already exists')
+    ) {
+      return 'toasts.emailAlreadyExists';
+    }
+
+    if (
+      errorCode.includes('validation_failed') ||
+      errorCode.includes('invalid_email') ||
+      normalizedMessage.includes('invalid email') ||
+      normalizedMessage.includes('validate email') ||
+      normalizedMessage.includes('email address')
+    ) {
+      return 'toasts.invalidEmail';
+    }
+
+    if (
+      errorCode.includes('weak_password') ||
+      normalizedMessage.includes('weak password') ||
+      normalizedMessage.includes('password should') ||
+      normalizedMessage.includes('password must')
+    ) {
+      return 'toasts.weakPassword';
+    }
+
+    return 'toasts.failedToCreateAccount';
+  }
+
   setupRegisterModal() {
     const modal = document.querySelector<HTMLElement>('#social-register-modal');
     const closeBtn = document.querySelector<HTMLElement>(
@@ -1167,7 +1260,21 @@ class SocialManagerBase {
 
           const data = await response.json();
 
-          if (response.ok && !data.error && data.localId) {
+          if (response.ok && !data.error && (data.user?.id || data.id)) {
+            const emailConfirmed = Boolean(
+              data.user?.email_confirmed_at || data.user?.confirmed_at,
+            );
+
+            if (!emailConfirmed) {
+              if (window.toastManager) {
+                window.toastManager.success('toasts.accountCreatedCheckEmail');
+              }
+
+              this.hideRegisterModal();
+              this.showEmailConfirmationModal(email);
+              return;
+            }
+
             if (window.toastManager) {
               window.toastManager.success('toasts.accountCreated');
             }
@@ -1193,18 +1300,11 @@ class SocialManagerBase {
               }
             }
           } else {
-            const errorMsg = data.error?.message || 'Failed to create account';
-            let userMessage = 'Failed to create account';
-
-            if (errorMsg.includes('EMAIL_EXISTS')) {
-              userMessage = 'toasts.emailAlreadyExists';
-            } else if (errorMsg.includes('INVALID_EMAIL')) {
-              userMessage = 'toasts.invalidEmail';
-            } else if (errorMsg.includes('WEAK_PASSWORD')) {
-              userMessage = 'toasts.weakPassword';
-            } else {
-              userMessage = 'toasts.failedToCreateAccount';
-            }
+            console.warn('[Social] Registration failed:', {
+              status: response.status,
+              data,
+            });
+            const userMessage = this.getRegistrationErrorToast(data);
 
             if (window.toastManager) window.toastManager.error(userMessage);
           }
@@ -1327,6 +1427,60 @@ class SocialManagerBase {
         break;
       case 'user-profile':
         break;
+    }
+  }
+
+  // Afficher un modal informant l'utilisateur de vérifier son email
+  showEmailConfirmationModal(email: string) {
+    // Créer un modal simple
+    const modalId = 'social-email-confirmation-modal';
+    let modal = document.getElementById(modalId);
+
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = modalId;
+      modal.className = 'social-modal';
+      modal.innerHTML = `
+        <div class="social-modal-content" style="max-width: 400px; text-align: center;">
+          <div class="social-modal-header">
+            <h3>📧 Verify Your Email</h3>
+            <button class="social-modal-close">&times;</button>
+          </div>
+          <div class="social-modal-body" style="padding: 20px;">
+            <p>A confirmation email has been sent to:</p>
+            <p style="font-weight: bold; margin: 10px 0;">${email}</p>
+            <p>Please check your inbox and click the confirmation link before signing in.</p>
+            <button class="social-btn social-btn-primary" id="email-confirm-ok" style="margin-top: 20px;">
+              Got it!
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      // Fermer le modal
+      const closeBtn = modal.querySelector('.social-modal-close');
+      const okBtn = modal.querySelector('#email-confirm-ok');
+
+      const hideModal = () => {
+        if (modal) modal.style.display = 'none';
+      };
+
+      closeBtn?.addEventListener('click', hideModal);
+      okBtn?.addEventListener('click', hideModal);
+
+      // Fermer en cliquant à l'extérieur
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) hideModal();
+      });
+    } else {
+      // Mettre à jour l'email
+      const emailEl = modal.querySelector('.social-modal-body p:nth-child(2)');
+      if (emailEl) emailEl.textContent = email;
+    }
+
+    if (modal) {
+      modal.style.display = 'flex';
     }
   }
 }

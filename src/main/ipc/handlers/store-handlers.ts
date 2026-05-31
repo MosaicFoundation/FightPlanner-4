@@ -9,6 +9,16 @@ import { BaseHandlerArg, GenericHandler } from '../../types/common';
 
 export type StoreHandlers = typeof StoreHandlers;
 
+const LOGGED_SETTING_KEYS = new Set([
+  'modsPath',
+  'pluginsPath',
+  'emulatorPath',
+  'gamePath',
+  'switchIp',
+  'switchFtpPath',
+  'switchFtpPluginsPath',
+]);
+
 const StoreHandlers = {
   ['store-get']: async (
     common: BaseHandlerArg,
@@ -28,9 +38,19 @@ const StoreHandlers = {
     value: unknown,
   ) => {
     try {
+      if (LOGGED_SETTING_KEYS.has(key)) {
+        const previousValue = store.get(key);
+        console.log('[Store] Setting changed:', {
+          key,
+          previousValue,
+          nextValue: value,
+        });
+      }
+
       store.set(key, value);
       return { success: true };
     } catch (error) {
+      handleError(error, `store-set:${key}`);
       return createErrorResponse(
         ErrorCodes.STORE_OPERATION_ERROR,
         error.message,

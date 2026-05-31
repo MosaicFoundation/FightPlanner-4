@@ -98,6 +98,17 @@ export default class FTPClient {
             console.warn(`Could not ensure dir ${remoteDir}, continuing...`);
           }
 
+          if (
+            await this.remoteFileMatchesFile(
+              localFilePath,
+              remoteFilePath,
+              fileStats.size,
+            )
+          ) {
+            console.log(`Skipped existing file: ${remoteFilePath}`);
+            continue;
+          }
+
           await this.client.uploadFrom(localFilePath, remoteFilePath);
           uploadedCount++;
           const transferredCount =
@@ -134,8 +145,21 @@ export default class FTPClient {
   async uploadFile(localPath, remotePath) {
     try {
       const remoteDir = path.dirname(remotePath).replace(/\\/g, '/');
+      const normalizedRemotePath = remotePath.replace(/\\/g, '/');
+      const localSize = fs.statSync(localPath).size;
       await this.client.ensureDir(remoteDir);
-      await this.client.uploadFrom(localPath, remotePath.replace(/\\/g, '/'));
+      if (
+        await this.remoteFileMatchesFile(
+          localPath,
+          normalizedRemotePath,
+          localSize,
+        )
+      ) {
+        console.log(`Skipped existing file: ${normalizedRemotePath}`);
+        return false;
+      }
+
+      await this.client.uploadFrom(localPath, normalizedRemotePath);
       console.log(`Uploaded file: ${remotePath}`);
       return true;
     } catch (error) {
@@ -161,6 +185,19 @@ export default class FTPClient {
     } catch (error) {
       console.error('Error ensuring directory:', error);
       throw error;
+    }
+  }
+
+  private async remoteFileMatchesFile(
+    _localPath: string,
+    remotePath: string,
+    localSize: number,
+  ) {
+    try {
+      const remoteSize = await this.client.size(remotePath.replace(/\\/g, '/'));
+      return remoteSize === localSize;
+    } catch (error) {
+      return false;
     }
   }
 }

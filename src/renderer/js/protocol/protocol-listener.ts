@@ -62,6 +62,21 @@ class ProtocolListener {
       }
     });
 
+    window.electronAPI.onModDownloadPaused((data) => {
+      if (window.downloadManager && data.downloadId) {
+        const rendererId = this.idMap.get(data.downloadId) || data.downloadId;
+        window.downloadManager.pauseDownload(
+          rendererId,
+          data.receivedBytes,
+          data.totalBytes,
+        );
+      }
+
+      if (window.toastManager) {
+        window.toastManager.warning('toasts.downloadCancelled');
+      }
+    });
+
     window.electronAPI.onModExtractStart((data) => {
       if (window.downloadManager && data.downloadId) {
         const rendererId = this.idMap.get(data.downloadId) || data.downloadId;

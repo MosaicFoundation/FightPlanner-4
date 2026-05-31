@@ -41,3 +41,5 @@ desktop.ini
 scripts/bump-version.js
 worker.js
 CSS MANAGER/
+worker-supabase.js
+docs/supabase-schema.sql
