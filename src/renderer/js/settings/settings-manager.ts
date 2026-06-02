@@ -6,6 +6,7 @@ class SettingsManager {
   switchTabTimeout: any;
   readyPromise: Promise<void>;
   lastModsPathWarningPath: string | null;
+  socialAccountRefreshListenerAttached: boolean;
 
   constructor() {
     this.settings = {
@@ -47,6 +48,7 @@ class SettingsManager {
     this.tabSwitchingAttached = false;
     this.drivesLoaded = false;
     this.lastModsPathWarningPath = null;
+    this.socialAccountRefreshListenerAttached = false;
     this.readyPromise = this.initSettings();
     this.initializeUI();
   }
@@ -1397,23 +1399,17 @@ class SettingsManager {
       intervalInput.dataset.listenerAttached = 'true';
     }
 
-    // Update account status display
-    if (statusSpan && usernameSpan) {
-      const userData = (await window.electronAPI.store.get(
-        'social.userData',
-      )) as { displayName?: string } | null;
-      if (userData && userData.displayName) {
-        statusSpan.textContent =
-          this.translate('settings.socialConnected') || 'Connected';
-        statusSpan.style.color = 'var(--success-color)';
-        usernameSpan.textContent = userData.displayName;
-      } else {
-        statusSpan.textContent =
-          this.translate('settings.socialNotConnected') || 'Not connected';
-        statusSpan.style.color = 'var(--text-muted)';
-        usernameSpan.textContent = '-';
-      }
+    if (!this.socialAccountRefreshListenerAttached) {
+      window.addEventListener('social-account-updated', () => {
+        void this.refreshSocialAccountInfo();
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) void this.refreshSocialAccountInfo();
+      });
+      this.socialAccountRefreshListenerAttached = true;
     }
+
+    await this.refreshSocialAccountInfo();
 
     // Go to Social tab button
     if (goToSocialBtn && !goToSocialBtn.dataset.listenerAttached) {
@@ -1428,6 +1424,69 @@ class SettingsManager {
       });
       goToSocialBtn.dataset.listenerAttached = 'true';
     }
+  }
+
+  async refreshSocialAccountInfo() {
+    const statusSpan = document.querySelector<HTMLElement>(
+      '#settings-social-status',
+    );
+    const usernameSpan = document.querySelector<HTMLElement>(
+      '#settings-social-username',
+    );
+    if (!statusSpan || !usernameSpan) return;
+
+    const socialManager = window.socialManager;
+    let userData = socialManager?.userData || null;
+
+    if (!userData && window.electronAPI?.store) {
+      userData = (await window.electronAPI.store.get(
+        'social.userData',
+      )) as any;
+    }
+
+    if (!userData?.localId) {
+      statusSpan.textContent =
+        this.translate('settings.socialNotConnected') || 'Not connected';
+      statusSpan.style.color = 'var(--text-muted)';
+      usernameSpan.textContent = '-';
+      return;
+    }
+
+    let displayName =
+      userData.displayName ||
+      (userData as any).username ||
+      socialManager?.userData?.displayName ||
+      '';
+
+    if (!displayName && socialManager?.API_URL) {
+      try {
+        const response = await fetch(
+          `${socialManager.API_URL}/read/users/${userData.localId}`,
+        );
+        const data = await response.json();
+        const userFields = socialManager.normalizeUserFields
+          ? socialManager.normalizeUserFields(data)
+          : data;
+        displayName = userFields?.username || '';
+
+        if (displayName) {
+          userData = { ...userData, displayName };
+          if (socialManager.userData) {
+            socialManager.userData.displayName = displayName;
+          }
+          if (window.electronAPI?.store) {
+            await window.electronAPI.store.set('social.userData', userData);
+          }
+        }
+      } catch (error) {
+        console.warn('[SettingsManager] Failed to refresh social account:', error);
+      }
+    }
+
+    statusSpan.textContent =
+      this.translate('settings.socialConnected') || 'Connected';
+    statusSpan.style.color = 'var(--success-color)';
+    usernameSpan.textContent = displayName || userData.email || '-';
   }
 
   updateDeveloperModeUI() {

@@ -14,6 +14,8 @@ export interface Mod {
   path: string;
   status: 'active' | 'disabled' | 'conflict';
   hash?: string;
+  addedAt?: number;
+  modifiedAt?: number;
 }
 
 export interface SimpleMod {
@@ -28,6 +30,8 @@ interface SelectModOptions {
   range?: boolean;
 }
 
+type ModSortOrder = 'name-asc' | 'added-desc' | 'modified-desc';
+
 class ModManager {
   mods: Mod[];
   selectedMod: Mod | null;
@@ -36,6 +40,7 @@ class ModManager {
   modsPath: string | null;
   searchQuery: string;
   categoryFilter: string;
+  sortOrder: ModSortOrder;
   renderedModIds: Set<string>;
   selectionAnchorId: string | null;
   selectionUpdateToken: number;
@@ -66,6 +71,7 @@ class ModManager {
     this.modsPath = null;
     this.searchQuery = '';
     this.categoryFilter = '';
+    this.sortOrder = 'name-asc';
     this.renderedModIds = new Set();
     this.selectionAnchorId = null;
     this.selectionUpdateToken = 0;
@@ -131,6 +137,44 @@ class ModManager {
     this.updateVisibility();
   }
 
+  sortModsBy(order: string) {
+    const allowedOrders: ModSortOrder[] = [
+      'name-asc',
+      'added-desc',
+      'modified-desc',
+    ];
+    this.sortOrder = allowedOrders.includes(order as ModSortOrder)
+      ? (order as ModSortOrder)
+      : 'name-asc';
+    this.renderModList(true);
+  }
+
+  getSortedMods(mods: Mod[] = this.mods) {
+    const statusRank = { active: 0, conflict: 1, disabled: 2 };
+    const getTime = (mod: Mod, field: 'addedAt' | 'modifiedAt') => {
+      const value = Number(mod[field] || 0);
+      return Number.isFinite(value) ? value : 0;
+    };
+
+    return [...mods].sort((a, b) => {
+      if (this.sortOrder === 'added-desc') {
+        const delta = getTime(b, 'addedAt') - getTime(a, 'addedAt');
+        if (delta !== 0) return delta;
+      } else if (this.sortOrder === 'modified-desc') {
+        const delta = getTime(b, 'modifiedAt') - getTime(a, 'modifiedAt');
+        if (delta !== 0) return delta;
+      } else {
+        const statusDelta = statusRank[a.status] - statusRank[b.status];
+        if (statusDelta !== 0) return statusDelta;
+      }
+
+      return a.name.localeCompare(b.name, undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      });
+    });
+  }
+
   updateVisibility() {
     if (!this.modListContainer) {
       this.modListContainer = document.querySelector<HTMLElement>('#mod-list');
@@ -169,8 +213,20 @@ class ModManager {
   }
 
   mapFolderStateToMods(result: {
-    activeMods: Array<{ name: string; path: string; hash?: string }>;
-    disabledMods: Array<{ name: string; path: string; hash?: string }>;
+    activeMods: Array<{
+      name: string;
+      path: string;
+      hash?: string;
+      addedAt?: number;
+      modifiedAt?: number;
+    }>;
+    disabledMods: Array<{
+      name: string;
+      path: string;
+      hash?: string;
+      addedAt?: number;
+      modifiedAt?: number;
+    }>;
   }) {
     const allMods: Mod[] = [];
     let idCounter = 1;
@@ -187,6 +243,8 @@ class ModManager {
         path: mod.path,
         category: null,
         hash: mod.hash,
+        addedAt: mod.addedAt,
+        modifiedAt: mod.modifiedAt,
       });
     }
 
@@ -202,6 +260,8 @@ class ModManager {
         path: mod.path,
         category: null,
         hash: mod.hash,
+        addedAt: mod.addedAt,
+        modifiedAt: mod.modifiedAt,
       });
     }
 
@@ -209,8 +269,20 @@ class ModManager {
   }
 
   async refreshModsFromState(result: {
-    activeMods: Array<{ name: string; path: string; hash?: string }>;
-    disabledMods: Array<{ name: string; path: string; hash?: string }>;
+    activeMods: Array<{
+      name: string;
+      path: string;
+      hash?: string;
+      addedAt?: number;
+      modifiedAt?: number;
+    }>;
+    disabledMods: Array<{
+      name: string;
+      path: string;
+      hash?: string;
+      addedAt?: number;
+      modifiedAt?: number;
+    }>;
   }) {
     const allMods = this.mapFolderStateToMods(result);
 
@@ -298,7 +370,7 @@ class ModManager {
     }
 
     this.listRenderer.renderModList(
-      this.mods,
+      this.getSortedMods(),
       this.modListContainer,
       this.searchQuery,
       this.categoryFilter,
@@ -1411,6 +1483,41 @@ class ModManager {
 
       this.isCheckingConflicts = false;
       this.conflictGroups = (result.success && result.conflictGroups) || [];
+
+      if (result.success) {
+        const conflictModPaths = this.conflictGroups.reduce<Set<string>>(
+          (paths, group) => {
+            group.conflicts.forEach((conflict) => {
+              conflict.mods.forEach((mod) => {
+                paths.add(mod.path);
+              });
+            });
+
+            return paths;
+          },
+          new Set(),
+        );
+
+        let statusesChanged = false;
+        this.mods.forEach((mod) => {
+          if (mod.status === 'disabled') {
+            return;
+          }
+
+          const nextStatus = conflictModPaths.has(mod.path)
+            ? 'conflict'
+            : 'active';
+
+          if (mod.status !== nextStatus) {
+            mod.status = nextStatus;
+            statusesChanged = true;
+          }
+        });
+
+        if (statusesChanged) {
+          this.renderModList(true);
+        }
+      }
 
       if (window.statusBarManager) {
         if (result.success && result.totalConflicts > 0) {

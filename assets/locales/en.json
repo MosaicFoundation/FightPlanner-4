@@ -31,6 +31,11 @@
     "checkGameBanana": "Looking for something new? Check {{site}}!",
     "details": "Details",
     "selectMod": "Select a mod to view details",
+    "sort": {
+      "name": "Name",
+      "lastAdded": "Last Added",
+      "lastModified": "Last Modified"
+    },
     "editInfo": "Edit Info",
     "actionAdd": "Add",
     "actionImport": "Import",
@@ -456,6 +461,7 @@
       "applyChanges": "Apply Changes",
       "currentSlot": "Current: {{slot}}",
       "slotOption": "{{slot}}",
+      "moreSlots": "More... up to {{maxSlot}}",
       "filesWillBeModified": "{{count}} file(s) and folder(s) will be modified",
       "delete": "Delete",
       "newSlotNoFiles": "New slot - no files yet",
@@ -467,6 +473,7 @@
       "badge": "{{count}} files in conflicts",
       "changeSlot": "Change Slot",
       "autoChangeSlot": "Change Slots Automatically",
+      "disableMod": "Disable Mod",
       "summary": "The following conflicts were found between mods:",
       "fileHeader": "File",
       "conflictingModsHeader": "Conflicting Mods",
@@ -483,6 +490,12 @@
     "conflictSlot": {
       "title": "Change Slot for Conflicting Mod",
       "hint": "Select a mod to change its slot:"
+    },
+    "conflictDisable": {
+      "title": "Disable Conflicting Mod",
+      "hint": "Select a mod to disable:",
+      "conflictFiles": "{{count}} conflict file{{plural}}",
+      "conflictsWith": "With {{mods}}"
     },
     "autoSlotChange": {
       "title": "Change Slots Automatically",
@@ -597,6 +610,17 @@
     "back": "Back",
     "mods": "Mods",
     "addFriend": "Add Friend",
+    "addFriendByUsername": "Add friend by username",
+    "enterFriendUsername": "Enter a username.",
+    "searchingUser": "Searching...",
+    "sendingRequest": "Sending...",
+    "userNotFound": "User not found.",
+    "cannotAddYourself": "You cannot add yourself.",
+    "alreadyFriends": "You are already friends.",
+    "friendRequestAlreadySent": "Friend request already sent.",
+    "friendRequestAlreadyReceived": "This user already sent you a request.",
+    "friendRequestSentTo": "Friend request sent to {{username}}.",
+    "failedToAddFriend": "Failed to add this friend.",
     "loadingUserMods": "Loading user mods...",
     "accountSettings": "Account Settings",
     "saveUsername": "Save",

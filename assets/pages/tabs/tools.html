@@ -15,6 +15,26 @@
       <i class="bi bi-collection-fill"></i>
       <span id="mod-profile-btn-label">Profiles</span>
     </button>
+    <div class="custom-select short" id="mod-sort-order">
+      <div class="custom-select-trigger">
+        <span class="selected-value" data-i18n="tools.sort.name">Name</span>
+        <i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="custom-select-dropdown">
+        <div class="custom-select-option active" data-value="name-asc">
+          <i class="bi bi-sort-alpha-down"></i>
+          <span data-i18n="tools.sort.name">Name</span>
+        </div>
+        <div class="custom-select-option" data-value="added-desc">
+          <i class="bi bi-clock-history"></i>
+          <span data-i18n="tools.sort.lastAdded">Last Added</span>
+        </div>
+        <div class="custom-select-option" data-value="modified-desc">
+          <i class="bi bi-pencil-square"></i>
+          <span data-i18n="tools.sort.lastModified">Last Modified</span>
+        </div>
+      </div>
+    </div>
     <div class="custom-select short" id="category-filter">
       <div class="custom-select-trigger">
         <span class="selected-value" data-i18n="tools.allCategories">All Categories</span>

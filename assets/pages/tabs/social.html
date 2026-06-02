@@ -294,6 +294,20 @@
           </p>
         </div>
         <div id="social-friends-content" class="social-friends-content">
+          <form id="social-add-friend-form" class="social-add-friend-form">
+            <label for="social-add-friend-username" class="social-add-friend-label"
+              data-i18n="social.addFriendByUsername">Add friend by username</label>
+            <div class="social-add-friend-controls">
+              <input id="social-add-friend-username" class="social-input" type="text"
+                data-i18n="social.usernamePlaceholder" data-i18n-placeholder placeholder="Choose a username"
+                autocomplete="off" />
+              <button id="social-add-friend-submit" class="social-btn social-btn-primary" type="submit">
+                <i class="bi bi-person-plus"></i>
+                <span data-i18n="social.addFriend">Add Friend</span>
+              </button>
+            </div>
+            <p id="social-add-friend-feedback" class="social-add-friend-feedback" aria-live="polite"></p>
+          </form>
           <!-- Friend Requests -->
           <div id="social-friend-requests-section" style="display: none">
             <h3 class="social-friend-requests-title" data-i18n="social.friendRequests">

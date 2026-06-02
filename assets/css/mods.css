@@ -343,6 +343,9 @@ body.no-animations .action-btn-small {
   gap: 20px;
   border-left: 1px solid var(--border-color);
   flex-shrink: 0;
+  box-sizing: border-box;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .mod-item {
@@ -486,6 +489,7 @@ div.mod-item.selected {
 
 .mod-info-area {
   flex: 1;
+  min-height: 0;
   background-color: var(--border-color);
   border-radius: 12px;
   border: 1px solid var(--border-hover);
@@ -504,6 +508,7 @@ div.mod-item.selected {
 
 .mod-info-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   animation: modInfoContentFadeIn 0.3s ease;
 }

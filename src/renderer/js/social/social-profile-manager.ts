@@ -529,6 +529,14 @@ class SocialProfileManager extends SocialFeedManager {
         if (bannerEl) this.applyProfileMedia('banner', userFields.bannerURL);
         if (usernameInput) usernameInput.value = userFields.username || '';
 
+        if (userFields.username && this.userData) {
+          this.userData.displayName = userFields.username;
+          if (window.electronAPI?.store) {
+            await window.electronAPI.store.set('social.userData', this.userData);
+          }
+          window.dispatchEvent(new CustomEvent('social-account-updated'));
+        }
+
         if (
           userFields.privacySettings &&
           typeof userFields.privacySettings === 'object'
@@ -678,6 +686,16 @@ class SocialProfileManager extends SocialFeedManager {
     if (logoutBtn) {
       logoutBtn.addEventListener('click', async () => {
         await this.logout();
+      });
+    }
+
+    const addFriendForm = document.querySelector<HTMLFormElement>(
+      '#social-add-friend-form',
+    );
+    if (addFriendForm) {
+      addFriendForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        await this.addFriendByUsername();
       });
     }
 
@@ -1064,7 +1082,10 @@ class SocialProfileManager extends SocialFeedManager {
 
       if (
         clickedElement.closest('.social-creator-link') &&
-        !clickedElement.closest('.social-remove-friend-btn')
+        !clickedElement.closest('.social-remove-friend-btn') &&
+        !clickedElement.closest('.social-accept-friend-btn') &&
+        !clickedElement.closest('.social-reject-friend-btn') &&
+        !clickedElement.closest('.social-cancel-friend-btn')
       ) {
         const creatorLink = clickedElement.closest('.social-creator-link');
         const username = creatorLink!.getAttribute('data-username');
@@ -1168,6 +1189,14 @@ class SocialProfileManager extends SocialFeedManager {
         const requestId = btn!.getAttribute('data-request-id');
         if (requestId) {
           await this.rejectFriendRequest(requestId);
+        }
+      }
+
+      if (target.closest('.social-cancel-friend-btn')) {
+        const btn = target.closest('.social-cancel-friend-btn');
+        const requestId = btn!.getAttribute('data-request-id');
+        if (requestId) {
+          await this.cancelFriendRequest(requestId);
         }
       }
     });
@@ -1331,6 +1360,7 @@ class SocialProfileManager extends SocialFeedManager {
           if (data.friendRequestId)
             addFriendBtn.setAttribute('data-request-id', data.friendRequestId);
         }
+        this.invalidateCache('friends');
       } else {
         const errorMsg = data.error || 'toasts.failedToSendFriendRequest';
         if (window.toastManager) window.toastManager.error(errorMsg);
@@ -1343,6 +1373,214 @@ class SocialProfileManager extends SocialFeedManager {
         window.toastManager.error('toasts.failedToSendFriendRequest');
       if (addFriendBtn) addFriendBtn.disabled = false;
       if (addFriendText) addFriendText.textContent = 'Add Friend';
+    }
+  }
+
+  getSocialTranslation(key, fallback, params = {}) {
+    return window.i18n?.t?.(key, params) || fallback;
+  }
+
+  setAddFriendByUsernameFeedback(message, type = '') {
+    const feedback = document.querySelector<HTMLElement>(
+      '#social-add-friend-feedback',
+    );
+    if (!feedback) return;
+
+    feedback.textContent = message;
+    feedback.classList.toggle('is-error', type === 'error');
+    feedback.classList.toggle('is-success', type === 'success');
+  }
+
+  setAddFriendByUsernameLoading(isLoading, label = null) {
+    const submitBtn = document.querySelector<HTMLButtonElement>(
+      '#social-add-friend-submit',
+    );
+    const submitText = submitBtn?.querySelector<HTMLElement>('span');
+
+    if (submitBtn) submitBtn.disabled = isLoading;
+    if (submitText) {
+      submitText.textContent =
+        label ||
+        this.getSocialTranslation('social.addFriend', 'Add Friend');
+    }
+  }
+
+  async findUserByUsername(username) {
+    const response = await this.fetchWithAuth(
+      `${this.API_URL}/find-user-by-username`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idToken: this.authToken,
+          username,
+        }),
+      },
+    );
+
+    const data = await response.json();
+    if (!response.ok || data.error) {
+      throw new Error(data.error || data.message || 'User lookup failed');
+    }
+
+    return data.user || null;
+  }
+
+  async getFriendRelationWithUser(targetUserId) {
+    const data = await this.fetchWithCache(
+      `${this.API_URL}/links-friends`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: this.authToken }),
+      },
+      'friends',
+    );
+
+    if (!data.friends || !Array.isArray(data.friends) || !this.userData) {
+      return null;
+    }
+
+    const currentUserId = this.userData.localId;
+    return data.friends.find((friend) => {
+      const { user1, user2 } = this.getFriendRelationUsers(friend);
+      return (
+        (user1 === currentUserId && user2 === targetUserId) ||
+        (user1 === targetUserId && user2 === currentUserId)
+      );
+    });
+  }
+
+  async addFriendByUsername() {
+    if (!this.authToken || !this.userData) return;
+
+    const usernameInput = document.querySelector<HTMLInputElement>(
+      '#social-add-friend-username',
+    );
+    const username = usernameInput?.value.trim() || '';
+
+    if (!username) {
+      this.setAddFriendByUsernameFeedback(
+        this.getSocialTranslation(
+          'social.enterFriendUsername',
+          'Enter a username.',
+        ),
+        'error',
+      );
+      usernameInput?.focus();
+      return;
+    }
+
+    this.setAddFriendByUsernameFeedback('');
+    this.setAddFriendByUsernameLoading(
+      true,
+      this.getSocialTranslation('social.searchingUser', 'Searching...'),
+    );
+
+    try {
+      const user = await this.findUserByUsername(username);
+      if (!user?.id) {
+        this.setAddFriendByUsernameFeedback(
+          this.getSocialTranslation('social.userNotFound', 'User not found.'),
+          'error',
+        );
+        return;
+      }
+
+      if (user.id === this.userData.localId) {
+        this.setAddFriendByUsernameFeedback(
+          this.getSocialTranslation(
+            'social.cannotAddYourself',
+            'You cannot add yourself.',
+          ),
+          'error',
+        );
+        return;
+      }
+
+      const existingRelation = await this.getFriendRelationWithUser(user.id);
+      if (existingRelation) {
+        const status = this.getFriendRelationStatus(existingRelation);
+        const { user1 } = this.getFriendRelationUsers(existingRelation);
+
+        if (status === 'accepted') {
+          this.setAddFriendByUsernameFeedback(
+            this.getSocialTranslation(
+              'social.alreadyFriends',
+              'You are already friends.',
+            ),
+            'success',
+          );
+          return;
+        }
+
+        if (status === 'pending') {
+          const isSender = user1 === this.userData.localId;
+          this.setAddFriendByUsernameFeedback(
+            isSender
+              ? this.getSocialTranslation(
+                  'social.friendRequestAlreadySent',
+                  'Friend request already sent.',
+                )
+              : this.getSocialTranslation(
+                  'social.friendRequestAlreadyReceived',
+                  'This user already sent you a request.',
+                ),
+            isSender ? 'success' : '',
+          );
+          return;
+        }
+      }
+
+      this.setAddFriendByUsernameLoading(
+        true,
+        this.getSocialTranslation('social.sendingRequest', 'Sending...'),
+      );
+
+      const response = await this.fetchWithAuth(
+        `${this.API_URL}/create-friend-request`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            currentUserId: this.userData.localId,
+            targetUserId: user.id,
+            status: 'pending',
+            idToken: this.authToken,
+          }),
+        },
+      );
+
+      const data = await response.json();
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'Failed to send friend request');
+      }
+
+      this.invalidateCache('friends');
+      await this.loadFriends();
+      if (usernameInput) usernameInput.value = '';
+
+      this.setAddFriendByUsernameFeedback(
+        this.getSocialTranslation(
+          'social.friendRequestSentTo',
+          'Friend request sent.',
+          { username: user.username || username },
+        ),
+        'success',
+      );
+      if (window.toastManager)
+        window.toastManager.success('toasts.friendRequestSent');
+    } catch (error) {
+      console.error('[Social] Error adding friend by username:', error);
+      this.setAddFriendByUsernameFeedback(
+        this.getSocialTranslation(
+          'social.failedToAddFriend',
+          'Failed to add this friend.',
+        ),
+        'error',
+      );
+    } finally {
+      this.setAddFriendByUsernameLoading(false);
     }
   }
 
@@ -1368,6 +1606,7 @@ class SocialProfileManager extends SocialFeedManager {
         if (window.toastManager)
           window.toastManager.success('toasts.friendRequestAccepted');
 
+        this.invalidateCache('friends');
         this.loadFriends();
       } else {
         const errorMsg = data.error || 'toasts.failedToAcceptFriendRequest';
@@ -1402,6 +1641,7 @@ class SocialProfileManager extends SocialFeedManager {
         if (window.toastManager)
           window.toastManager.success('toasts.friendRequestRejected');
 
+        this.invalidateCache('friends');
         this.loadFriends();
       } else {
         const errorMsg = data.error || 'toasts.failedToRejectFriendRequest';
@@ -1409,6 +1649,41 @@ class SocialProfileManager extends SocialFeedManager {
       }
     } catch (error) {
       console.error('[Social] Error rejecting friend request:', error);
+      if (window.toastManager)
+        window.toastManager.error('toasts.failedToRejectFriendRequest');
+    }
+  }
+
+  async cancelFriendRequest(requestId) {
+    if (!this.authToken) return;
+
+    try {
+      const response = await this.fetchWithAuth(
+        `${this.API_URL}/reject-friend-request`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            requestId: requestId,
+            idToken: this.authToken,
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (response.ok && !data.error) {
+        if (window.toastManager)
+          window.toastManager.success('toasts.friendRequestRejected');
+
+        this.invalidateCache('friends');
+        this.loadFriends();
+      } else {
+        const errorMsg = data.error || 'toasts.failedToRejectFriendRequest';
+        if (window.toastManager) window.toastManager.error(errorMsg);
+      }
+    } catch (error) {
+      console.error('[Social] Error cancelling friend request:', error);
       if (window.toastManager)
         window.toastManager.error('toasts.failedToRejectFriendRequest');
     }
@@ -1491,10 +1766,14 @@ class SocialProfileManager extends SocialFeedManager {
     }
 
     const friendNameEl = modal.querySelector<HTMLElement>(
-      '#social-remove-friend-name',
+      '[data-i18n="social.removeFriendConfirm"]',
     );
     if (friendNameEl) {
-      friendNameEl.textContent = friendUsername;
+      const translated =
+        window.i18n?.t?.('social.removeFriendConfirm', {
+          name: friendUsername,
+        }) || `Are you sure you want to remove ${friendUsername} from your friends list?`;
+      friendNameEl.textContent = translated;
       console.log('[Social] Friend name set in modal:', friendUsername);
     } else {
       console.error('[Social] Friend name element not found in modal');
@@ -1590,6 +1869,7 @@ class SocialProfileManager extends SocialFeedManager {
         if (window.toastManager)
           window.toastManager.success('toasts.friendRemoved');
 
+        this.invalidateCache('friends');
         this.loadFriends();
       } else {
         const errorMsg = data.error || 'toasts.failedToRemoveFriend';

@@ -6,6 +6,7 @@ class SocialFeedManager extends SocialGameBananaManager {
     );
     if (!feedContent || !this.authToken) return;
 
+    const hadRenderedMods = !!feedContent.querySelector('.social-mods-grid');
     feedContent.innerHTML =
       '<div class="social-loading"><i class="bi bi-hourglass-split"></i><p>Loading mods...</p></div>';
 
@@ -44,6 +45,8 @@ class SocialFeedManager extends SocialGameBananaManager {
             .join('') +
           '</div>';
 
+        if (this.skipSocialModCardIntroAnimation || hadRenderedMods) return;
+
         setTimeout(() => {
           const cards =
             feedContent.querySelectorAll<HTMLElement>('.social-mod-card');
@@ -74,6 +77,7 @@ class SocialFeedManager extends SocialGameBananaManager {
     );
     if (!myModsContent || !this.userData) return;
 
+    const hadRenderedMods = !!myModsContent.querySelector('.social-mods-grid');
     myModsContent.innerHTML =
       '<div class="social-loading"><i class="bi bi-hourglass-split"></i><p>Loading your mods...</p></div>';
 
@@ -107,6 +111,8 @@ class SocialFeedManager extends SocialGameBananaManager {
             '<div class="social-mods-grid">' +
             myMods.map((mod) => this.renderModCard(mod, true)).join('') +
             '</div>';
+
+          if (this.skipSocialModCardIntroAnimation || hadRenderedMods) return;
 
           setTimeout(() => {
             const cards =
@@ -171,24 +177,37 @@ class SocialFeedManager extends SocialGameBananaManager {
       if (data.friends && Array.isArray(data.friends)) {
         const currentUserId = this.userData?.localId;
         const acceptedFriends = data.friends.filter(
-          (f) => f.status === 'accepted',
+          (friend) => this.getFriendRelationStatus(friend) === 'accepted',
         );
-        const pendingRequests = data.friends.filter((f) => {
-          if (f.status !== 'pending') return false;
-          const user1 = f.user_1 || f.user1;
-          const user2 = f.user_2 || f.user2;
-
-          return user2 === currentUserId;
+        const pendingIncomingRequests = data.friends.filter((friend) => {
+          const { user2 } = this.getFriendRelationUsers(friend);
+          return (
+            this.getFriendRelationStatus(friend) === 'pending' &&
+            user2 === currentUserId
+          );
+        });
+        const pendingOutgoingRequests = data.friends.filter((friend) => {
+          const { user1 } = this.getFriendRelationUsers(friend);
+          return (
+            this.getFriendRelationStatus(friend) === 'pending' &&
+            user1 === currentUserId
+          );
         });
 
         if (
-          pendingRequests.length > 0 &&
+          (pendingIncomingRequests.length > 0 ||
+            pendingOutgoingRequests.length > 0) &&
           friendRequestsList &&
           friendRequestsSection
         ) {
-          const requestPromises = pendingRequests.map((req) =>
-            this.renderFriendRequest(req),
-          );
+          const requestPromises = [
+            ...pendingIncomingRequests.map((req) =>
+              this.renderFriendRequest(req, 'incoming'),
+            ),
+            ...pendingOutgoingRequests.map((req) =>
+              this.renderFriendRequest(req, 'outgoing'),
+            ),
+          ];
           const renderedRequests = await Promise.all(requestPromises);
           friendRequestsList.innerHTML = renderedRequests.join('');
           friendRequestsSection.style.display = 'block';
@@ -251,42 +270,98 @@ class SocialFeedManager extends SocialGameBananaManager {
     }
   }
 
-  async renderFriendRequest(request) {
-    const senderId = request.user_1 || request.user1;
-    let senderUsername =
-      request.senderUsername || request.username || 'Unknown';
+  getFriendRelationUsers(relation) {
+    return {
+      user1:
+        relation.user_1 ||
+        relation.user1 ||
+        relation.currentUserId ||
+        relation.senderId ||
+        '',
+      user2:
+        relation.user_2 ||
+        relation.user2 ||
+        relation.targetUserId ||
+        relation.receiverId ||
+        relation.friendId ||
+        '',
+    };
+  }
 
-    if (senderId && senderUsername === 'Unknown') {
-      try {
-        const userResponse = await fetch(
-          `${this.API_URL}/read/users/${senderId}`,
-        );
-        const userData = await userResponse.json();
-        const userFields = this.normalizeUserFields(userData);
-        if (userFields.username) {
-          senderUsername = userFields.username;
-        }
-      } catch (e) {
-        console.warn('Failed to fetch sender username:', e);
-      }
+  getFriendRelationStatus(relation) {
+    return relation.status || relation.state || '';
+  }
+
+  getFriendRelationId(relation) {
+    return relation.id || relation.requestId || relation.friendRequestId || '';
+  }
+
+  getOtherFriendUserId(relation) {
+    const currentUserId = this.userData?.localId;
+    const { user1, user2 } = this.getFriendRelationUsers(relation);
+    if (user1 && user1 !== currentUserId) return user1;
+    if (user2 && user2 !== currentUserId) return user2;
+    return relation.friendId || relation.userId || '';
+  }
+
+  async fetchSocialUsername(userId, fallback = 'Unknown') {
+    if (!userId) return fallback;
+
+    try {
+      const userResponse = await fetch(`${this.API_URL}/read/users/${userId}`);
+      const userData = await userResponse.json();
+      const userFields = this.normalizeUserFields(userData);
+      return userFields.username || fallback;
+    } catch (e) {
+      console.warn('Failed to fetch social username:', e);
+      return fallback;
+    }
+  }
+
+  async renderFriendRequest(request, direction = 'incoming') {
+    const otherUserId = this.getOtherFriendUserId(request);
+    const requestId = this.getFriendRelationId(request);
+    let username =
+      request.senderUsername ||
+      request.receiverUsername ||
+      request.username ||
+      request.friendUsername ||
+      'Unknown';
+
+    if (username === 'Unknown') {
+      username = await this.fetchSocialUsername(otherUserId, username);
     }
 
+    const safeUsername = this.escapeHtml(username);
+    const statusText =
+      direction === 'incoming'
+        ? 'Wants to be your friend'
+        : 'Request sent';
+    const actions =
+      direction === 'incoming'
+        ? `
+                    <button class="social-btn social-btn-success social-accept-friend-btn" data-request-id="${this.escapeHtml(requestId)}">
+                        <i class="bi bi-check-lg"></i> Accept
+                    </button>
+                    <button class="social-btn social-btn-danger social-reject-friend-btn" data-request-id="${this.escapeHtml(requestId)}">
+                        <i class="bi bi-x-lg"></i> Reject
+                    </button>`
+        : `
+                    <button class="social-btn social-btn-secondary social-cancel-friend-btn" data-request-id="${this.escapeHtml(requestId)}">
+                        <i class="bi bi-x-lg"></i> Cancel
+                    </button>`;
+
     return `
-            <div class="social-friend-request-card">
+            <div class="social-friend-request-card social-creator-link" data-username="${safeUsername}" data-userid="${this.escapeHtml(otherUserId)}">
                 <div class="social-friend-avatar">
                     <i class="bi bi-person-circle"></i>
                 </div>
                 <div class="social-friend-info">
-                    <h3 class="social-friend-name">${senderUsername}</h3>
-                    <p class="social-friend-status">Wants to be your friend</p>
+                    <h3 class="social-friend-name">${safeUsername}</h3>
+                    <p class="social-friend-status">${statusText}</p>
                 </div>
                 <div class="social-friend-request-actions">
-                    <button class="social-btn social-btn-success social-accept-friend-btn" data-request-id="${request.id}">
-                        <i class="bi bi-check-lg"></i> Accept
-                    </button>
-                    <button class="social-btn social-btn-danger social-reject-friend-btn" data-request-id="${request.id}">
-                        <i class="bi bi-x-lg"></i> Reject
-                    </button>
+                    ${actions}
                 </div>
             </div>
         `;
@@ -428,45 +503,34 @@ class SocialFeedManager extends SocialGameBananaManager {
   }
 
   async renderFriendCard(friend) {
-    const friendId =
-      friend.friendId || friend.userId || friend.user_1 || friend.user_2 || '';
-    const friendRelationId = friend.id || '';
+    const friendId = this.getOtherFriendUserId(friend);
+    const friendRelationId = this.getFriendRelationId(friend);
     let friendUsername = friend.username || friend.friendUsername || 'Unknown';
     const photoURL = friend.photoURL || '';
 
-    if (
-      friendUsername === 'Unknown' &&
-      friendId &&
-      friendId !== this.userData?.localId
-    ) {
-      try {
-        const userResponse = await fetch(
-          `${this.API_URL}/read/users/${friendId}`,
-        );
-        const userData = await userResponse.json();
-        const userFields = this.normalizeUserFields(userData);
-        if (userFields.username) {
-          friendUsername = userFields.username;
-        }
-      } catch (e) {
-        console.warn('Failed to fetch friend username:', e);
-      }
+    if (friendUsername === 'Unknown' && friendId) {
+      friendUsername = await this.fetchSocialUsername(friendId, friendUsername);
     }
 
+    const safeFriendId = this.escapeHtml(friendId);
+    const safeRelationId = this.escapeHtml(friendRelationId);
+    const safeFriendUsername = this.escapeHtml(friendUsername);
+    const safePhotoURL = this.escapeHtml(photoURL);
+
     return `
-            <div class="social-friend-card social-creator-link" data-username="${friendUsername}" data-userid="${friendId}">
+            <div class="social-friend-card social-creator-link" data-username="${safeFriendUsername}" data-userid="${safeFriendId}">
                 <div class="social-friend-avatar">
                     ${
                       photoURL
-                        ? `<img src="${photoURL}" alt="${friendUsername}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">`
+                        ? `<img src="${safePhotoURL}" alt="${safeFriendUsername}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">`
                         : '<i class="bi bi-person-circle"></i>'
                     }
                 </div>
                 <div class="social-friend-info">
-                    <h3 class="social-friend-name">${friendUsername}</h3>
+                    <h3 class="social-friend-name">${safeFriendUsername}</h3>
                     <p class="social-friend-status">Friend</p>
                 </div>
-                <button class="social-remove-friend-btn" data-relation-id="${friendRelationId}" data-friend-id="${friendId}" title="Remove Friend">
+                <button class="social-remove-friend-btn" data-relation-id="${safeRelationId}" data-friend-id="${safeFriendId}" title="Remove Friend">
                     <i class="bi bi-x-lg"></i>
                 </button>
             </div>

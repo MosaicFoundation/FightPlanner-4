@@ -273,7 +273,7 @@
 
 .conflict-mod-select-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   padding: 12px 16px;
   background: var(--bg-transparent-03);
@@ -291,6 +291,16 @@
 .conflict-mod-select-item i {
   font-size: 20px;
   color: var(--accent-color);
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.conflict-mod-select-item-content {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .conflict-mod-select-item-name {
@@ -298,6 +308,15 @@
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.conflict-mod-select-item-meta {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .conflict-mod-select-item-path {
@@ -336,6 +355,25 @@
 }
 
 .conflict-auto-slot-footer-btn i {
+  font-size: 14px;
+}
+
+.conflict-disable-mod-footer-btn {
+  background: rgba(var(--danger-rgb), 0.1);
+  border: 1px solid rgba(var(--danger-rgb), 0.28);
+  color: var(--danger-color);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.conflict-disable-mod-footer-btn:hover {
+  background: rgba(var(--danger-rgb), 0.16);
+  border-color: rgba(var(--danger-rgb), 0.45);
+  color: var(--danger-color);
+}
+
+.conflict-disable-mod-footer-btn i {
   font-size: 14px;
 }
 

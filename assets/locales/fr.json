@@ -35,6 +35,11 @@
     "downloadOnGameBanana": "Téléchargez-en sur {{site}} !",
     "noModsForFilter": "Aucun mod ne correspond à cette recherche ou à ce filtre.",
     "checkGameBanana": "Vous cherchez quelque chose de nouveau ? Consultez {{site}} !",
+    "sort": {
+      "name": "Nom",
+      "lastAdded": "Ajout récent",
+      "lastModified": "Modification récente"
+    },
     "modInfo": {
       "name": "Nom",
       "authors": "Auteurs",
@@ -437,6 +442,7 @@
       "newSlot": "Nouveau Slot :",
       "currentSlot": "Actuel : {{slot}}",
       "slotOption": "{{slot}}",
+      "moreSlots": "Plus... jusqu'à {{maxSlot}}",
       "filesWillBeModified": "{{count}} fichier(s) et dossier(s) seront modifiés",
       "delete": "Supprimer",
       "newSlotNoFiles": "Nouveau slot - aucun fichier pour le moment",
@@ -448,6 +454,7 @@
       "badge": "{{count}} fichiers en conflit",
       "changeSlot": "Changer le Slot - {{characterName}}",
       "autoChangeSlot": "Changer les Slots Automatiquement",
+      "disableMod": "Désactiver un mod",
       "summary": "Les conflits suivants ont été trouvés entre les mods :",
       "fileHeader": "Fichier",
       "conflictingModsHeader": "Mods en Conflit",
@@ -464,6 +471,12 @@
     "conflictSlot": {
       "title": "Changer le Slot pour le Mod en Conflit",
       "hint": "Sélectionnez un mod pour changer son slot :"
+    },
+    "conflictDisable": {
+      "title": "Désactiver un mod en conflit",
+      "hint": "Sélectionnez le mod à désactiver :",
+      "conflictFiles": "{{count}} fichier{{plural}} en conflit",
+      "conflictsWith": "Avec {{mods}}"
     },
     "autoSlotChange": {
       "title": "Changer les Slots Automatiquement",
@@ -597,6 +610,17 @@
     "back": "Retour",
     "mods": "Mods",
     "addFriend": "Ajouter Ami",
+    "addFriendByUsername": "Ajouter un ami par pseudo",
+    "enterFriendUsername": "Entrez un pseudo.",
+    "searchingUser": "Recherche...",
+    "sendingRequest": "Envoi...",
+    "userNotFound": "Utilisateur introuvable.",
+    "cannotAddYourself": "Vous ne pouvez pas vous ajouter vous-même.",
+    "alreadyFriends": "Vous êtes déjà amis.",
+    "friendRequestAlreadySent": "Demande d'ami déjà envoyée.",
+    "friendRequestAlreadyReceived": "Cet utilisateur vous a déjà envoyé une demande.",
+    "friendRequestSentTo": "Demande d'ami envoyée à {{username}}.",
+    "failedToAddFriend": "Impossible d'ajouter cet ami.",
     "loadingUserMods": "Chargement des mods de l'utilisateur...",
     "accountSettings": "Paramètres du Compte",
     "saveUsername": "Enregistrer",
