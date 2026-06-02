@@ -2121,10 +2121,12 @@ class SocialGameBananaManager extends SocialManagerBase {
     modelName: string,
     submissionId: string,
     sourceCard?: HTMLElement,
+    sourceRectOverride?: DOMRect | null,
   ) {
     const fallback =
       this.getCachedGameBananaSubmission(modelName, submissionId) || null;
-    const sourceRect = this.getGameBananaSourcePreviewRect(sourceCard);
+    const sourceRect =
+      sourceRectOverride || this.getGameBananaSourcePreviewRect(sourceCard);
 
     if (fallback) {
       this.renderGameBananaDetailPage(null, fallback, false, [], true);
@@ -2282,6 +2284,7 @@ class SocialGameBananaManager extends SocialManagerBase {
     if (!submissionId) return;
 
     const previousSection = this.getActiveSocialSection();
+    const sourceRect = this.getGameBananaSourcePreviewRect(card);
     this.gameBananaDetailReturnSection =
       previousSection !== 'discover' ? previousSection : null;
     this.gameBananaDetailReturnScrollTop = this.getSocialMainScrollTop();
@@ -2312,7 +2315,12 @@ class SocialGameBananaManager extends SocialManagerBase {
       scrollTop: this.getSocialMainScrollTop(),
     };
 
-    await this.showGameBananaSubmissionDetails(modelName, submissionId);
+    await this.showGameBananaSubmissionDetails(
+      modelName,
+      submissionId,
+      card,
+      sourceRect,
+    );
   }
 
   keepGameBananaTargetVisible(target: HTMLElement) {
@@ -2448,7 +2456,7 @@ class SocialGameBananaManager extends SocialManagerBase {
       '.social-gamebanana-detail-image',
     );
     const sourceImage = sourceCard?.querySelector<HTMLImageElement>(
-      '.social-gamebanana-featured-image, .social-gamebanana-card-image',
+      '.social-gamebanana-featured-image, .social-gamebanana-card-image, .social-mod-image',
     );
 
     if (!gsapRef || !sourceRect || !targetImage || !sourceImage?.src) {
@@ -2530,6 +2538,22 @@ class SocialGameBananaManager extends SocialManagerBase {
       const returnSection = this.gameBananaDetailReturnSection;
       const returnScrollTop = this.gameBananaDetailReturnScrollTop;
 
+      if (returnSection && returnSection !== 'discover') {
+        await this.returnFromGameBananaDetailToSocialSection(
+          returnSection,
+          returnScrollTop,
+          source,
+          detailRect,
+          detailSrc,
+        );
+        this.gameBananaDiscoverSnapshot = null;
+        this.gameBananaCurrentDetail = null;
+        this.gameBananaLastDetailSource = null;
+        this.gameBananaDetailReturnSection = null;
+        this.gameBananaDetailReturnScrollTop = 0;
+        return;
+      }
+
       if (snapshot) {
         const discoverContent = document.querySelector<HTMLElement>(
           '#social-discover-content',
@@ -2570,12 +2594,6 @@ class SocialGameBananaManager extends SocialManagerBase {
       this.gameBananaDetailReturnSection = null;
       this.gameBananaDetailReturnScrollTop = 0;
 
-      if (returnSection && returnSection !== 'discover') {
-        this.switchSection(returnSection);
-        setTimeout(() => this.setSocialMainScrollTop(returnScrollTop), 280);
-        return;
-      }
-
       if (!source || !detailRect || !detailSrc) {
         return;
       }
@@ -2595,6 +2613,79 @@ class SocialGameBananaManager extends SocialManagerBase {
     } finally {
       this.gameBananaDetailReturnInProgress = false;
     }
+  }
+
+  async returnFromGameBananaDetailToSocialSection(
+    sectionName: string,
+    scrollTop: number,
+    source: SocialManagerBase['gameBananaLastDetailSource'],
+    detailRect: DOMRect | null,
+    detailSrc: string,
+  ) {
+    this.activateSocialSectionWithoutLoading(sectionName);
+
+    this.skipSocialModCardIntroAnimation = true;
+    try {
+      if (sectionName === 'people-downloads') {
+        await this.loadFeed();
+      } else if (sectionName === 'my-mods') {
+        await this.loadMyMods();
+      } else {
+        this.switchSection(sectionName);
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 280));
+      }
+    } finally {
+      this.skipSocialModCardIntroAnimation = false;
+    }
+
+    this.setSocialMainScrollTop(scrollTop);
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+
+    if (!source || !detailRect || !detailSrc) return;
+
+    const targetCard = this.findSocialGameBananaReturnTarget(
+      source,
+      sectionName,
+    );
+    const targetImage = targetCard?.querySelector<HTMLElement>(
+      '.social-mod-image',
+    );
+    if (targetCard) {
+      this.keepGameBananaTargetVisible(targetCard);
+    }
+    if (targetImage) {
+      this.animateGameBananaDetailToPreview(detailRect, detailSrc, targetImage);
+    }
+  }
+
+  findSocialGameBananaReturnTarget(
+    source: NonNullable<SocialManagerBase['gameBananaLastDetailSource']>,
+    sectionName: string,
+  ) {
+    const section = document.querySelector<HTMLElement>(
+      `#social-section-${sectionName}`,
+    );
+    const root = section || document;
+
+    return (
+      Array.from(
+        root.querySelectorAll<HTMLElement>(
+          '.social-mod-card.has-gamebanana-detail',
+        ),
+      ).find((card) => {
+        if (
+          card.getAttribute('data-gb-model') !== source.modelName ||
+          card.getAttribute('data-gb-id') !== source.submissionId
+        ) {
+          return false;
+        }
+
+        const rect = card.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      }) || null
+    );
   }
 
   startGameBananaGalleryBackToFirstImage() {

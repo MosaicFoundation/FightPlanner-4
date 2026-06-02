@@ -811,12 +811,13 @@ M.prototype._renderSlotList = function () {
     const selectDropdown = document.createElement('div');
     selectDropdown.className = 'custom-select-dropdown';
 
-    for (let slotNumber = 0; slotNumber <= 16; slotNumber++) {
+    const selectedSlotNumber = slotStringToNumber(selectedSlotString);
+    const visibleSlotLimit = 16;
+    const maxSlotNumber = 255;
+    const createSlotOption = (slotNumber: number) => {
       const slotString = slotNumberToString(slotNumber);
       const option = document.createElement('div');
       option.className = 'custom-select-option';
-
-      const selectedSlotNumber = slotStringToNumber(selectedSlotString);
 
       if (slotNumber === selectedSlotNumber) {
         option.classList.add('active');
@@ -865,7 +866,46 @@ M.prototype._renderSlotList = function () {
       });
 
       selectDropdown.appendChild(option);
+
+      return option;
+    };
+
+    for (let slotNumber = 0; slotNumber <= visibleSlotLimit; slotNumber++) {
+      createSlotOption(slotNumber);
     }
+
+    if (
+      selectedSlotNumber > visibleSlotLimit &&
+      selectedSlotNumber <= maxSlotNumber
+    ) {
+      createSlotOption(selectedSlotNumber);
+    }
+
+    const moreOption = document.createElement('div');
+    moreOption.className = 'custom-select-option slot-more-option';
+    const moreText = document.createElement('span');
+    moreText.textContent = t('modals.changeSlot.moreSlots', {
+      maxSlot: slotNumberToString(maxSlotNumber),
+    });
+    moreOption.appendChild(moreText);
+    moreOption.addEventListener('click', (e) => {
+      e.stopPropagation();
+      moreOption.remove();
+
+      for (
+        let slotNumber = visibleSlotLimit + 1;
+        slotNumber <= maxSlotNumber;
+        slotNumber++
+      ) {
+        if (slotNumber === selectedSlotNumber) {
+          continue;
+        }
+
+        createSlotOption(slotNumber);
+      }
+    });
+
+    selectDropdown.appendChild(moreOption);
 
     selectContainer.appendChild(selectTrigger);
 

@@ -100,6 +100,14 @@ class SocialSettingsManager extends SocialProfileManager {
         );
         if (usernameEl) usernameEl.textContent = newUsername;
 
+        if (this.userData) {
+          this.userData.displayName = newUsername;
+          if (window.electronAPI?.store) {
+            await window.electronAPI.store.set('social.userData', this.userData);
+          }
+          window.dispatchEvent(new CustomEvent('social-account-updated'));
+        }
+
         if (window.toastManager)
           window.toastManager.success('toasts.usernameUpdated');
       } else {
@@ -176,6 +184,8 @@ class SocialSettingsManager extends SocialProfileManager {
         } catch (e) {}
       }
 
+      window.dispatchEvent(new CustomEvent('social-account-updated'));
+
       const profileContainer = document.querySelector<HTMLElement>(
         '#social-profile-container',
       );
@@ -203,6 +213,7 @@ class SocialSettingsManager extends SocialProfileManager {
         '#social-profile-container',
       );
       if (profileContainer) profileContainer.style.display = 'none';
+      window.dispatchEvent(new CustomEvent('social-account-updated'));
       this.showLoginScreen();
     }
   }

@@ -784,6 +784,8 @@ class SocialManagerBase {
         }
       }
 
+      window.dispatchEvent(new CustomEvent('social-account-updated'));
+
       return { success: true, data };
     } catch (error) {
       console.error('Login error:', error);

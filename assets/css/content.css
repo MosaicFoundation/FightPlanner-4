@@ -1199,6 +1199,7 @@
 .top-inputs {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .input-field {
@@ -1214,6 +1215,7 @@
 
 .input-field:first-child {
   flex: 2;
+  min-width: 220px;
 }
 
 .input-field.short {
@@ -1253,6 +1255,7 @@
 
 .input-btn.short {
   flex: 1;
+  min-width: 132px;
 }
 
 .custom-select {
@@ -1267,6 +1270,7 @@
 
 .custom-select.short {
   flex: 1;
+  min-width: 150px;
 }
 
 .custom-select-trigger {
@@ -1737,6 +1741,7 @@ body.no-animations .action-btn-small {
   width: 100%;
   max-height: 400px;
   min-height: 80px;
+  flex-shrink: 0;
   background-color: var(--border-color);
   border-radius: 12px;
   border: 1px solid var(--border-hover);

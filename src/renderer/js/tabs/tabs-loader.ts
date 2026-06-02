@@ -11,6 +11,7 @@ const tabConfigs = {
 
 // Track document click listeners to prevent duplicates
 let categoryFilterDocumentListener: ((e: Event) => void) | null = null;
+let modSortOrderDocumentListener: ((e: Event) => void) | null = null;
 
 function getToastSettingsLabel() {
   return window.i18n?.t?.('toasts.settings') || 'Settings';
@@ -367,6 +368,82 @@ function initializeTabFeatures(tabName) {
 
             if (window.modManager) {
               window.modManager.filterByCategory(value);
+            }
+          });
+        });
+      }
+    }
+
+    const modSortOrder =
+      document.querySelector<HTMLElement>('#mod-sort-order');
+    if (modSortOrder) {
+      const newModSortOrder = modSortOrder.cloneNode(true);
+      modSortOrder.parentNode!.replaceChild(newModSortOrder, modSortOrder);
+
+      const finalModSortOrder =
+        document.querySelector<HTMLElement>('#mod-sort-order');
+      if (finalModSortOrder) {
+        const trigger = finalModSortOrder.querySelector<HTMLElement>(
+          '.custom-select-trigger',
+        );
+        const options = finalModSortOrder.querySelectorAll<HTMLElement>(
+          '.custom-select-option',
+        );
+        const selectedValue =
+          finalModSortOrder.querySelector<HTMLElement>('.selected-value');
+        const currentOrder = window.modManager?.sortOrder || 'name-asc';
+        const currentOption =
+          Array.from(options).find(
+            (option) => option.dataset.value === currentOrder,
+          ) || options[0];
+
+        if (currentOption) {
+          options.forEach((option) => option.classList.remove('active'));
+          currentOption.classList.add('active');
+
+          const currentText =
+            currentOption.querySelector<HTMLElement>('span')?.textContent;
+          if (selectedValue && currentText) {
+            selectedValue.textContent = currentText;
+          }
+        }
+
+        if (trigger) {
+          trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            finalModSortOrder.classList.toggle('open');
+          });
+        }
+
+        if (modSortOrderDocumentListener) {
+          document.removeEventListener('click', modSortOrderDocumentListener);
+        }
+
+        modSortOrderDocumentListener = (e) => {
+          const target = e.target as HTMLElement;
+
+          if (!finalModSortOrder.contains(target)) {
+            finalModSortOrder.classList.remove('open');
+          }
+        };
+        document.addEventListener('click', modSortOrderDocumentListener);
+
+        options.forEach((option) => {
+          option.addEventListener('click', () => {
+            const value = option.dataset.value || 'name-asc';
+            const text = option.querySelector<HTMLElement>('span')!.textContent;
+
+            if (selectedValue) {
+              selectedValue.textContent = text;
+            }
+
+            options.forEach((opt) => opt.classList.remove('active'));
+            option.classList.add('active');
+
+            finalModSortOrder.classList.remove('open');
+
+            if (window.modManager) {
+              window.modManager.sortModsBy(value);
             }
           });
         });

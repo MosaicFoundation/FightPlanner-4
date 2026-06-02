@@ -543,11 +543,58 @@
           >
         </button>
         <button
+          class="modal-btn conflict-disable-mod-footer-btn"
+          onclick="window.conflictModalManager.openDisableModModal()"
+        >
+          <i class="bi bi-toggle-off"></i>
+          <span data-i18n="modals.conflict.disableMod">Disable Mod</span>
+        </button>
+        <button
           class="modal-btn modal-btn-cancel"
           onclick="window.conflictModalManager.closeConflictModal()"
         >
           <i class="bi bi-x-lg"></i>
           <span data-i18n="modals.close">Close</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Conflict Disable Mod Modal -->
+    <div
+      id="conflict-disable-mod-modal"
+      class="modal modal-conflict"
+      style="display: none"
+    >
+      <div class="modal-header conflict-modal-header">
+        <div class="conflict-header-left">
+          <i class="bi bi-toggle-off"></i>
+          <h3 data-i18n="modals.conflictDisable.title">
+            Disable Conflicting Mod
+          </h3>
+        </div>
+        <button
+          class="modal-close"
+          onclick="window.conflictModalManager.closeDisableModModal()"
+        >
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-hint" data-i18n="modals.conflictDisable.hint">
+          Select a mod to disable:
+        </p>
+        <div
+          id="conflict-disable-mod-select-container"
+          class="conflict-mod-select"
+        ></div>
+      </div>
+      <div class="modal-footer">
+        <button
+          class="modal-btn modal-btn-cancel"
+          onclick="window.conflictModalManager.closeDisableModModal()"
+        >
+          <i class="bi bi-x-lg"></i>
+          <span data-i18n="common.cancel">Cancel</span>
         </button>
       </div>
     </div>

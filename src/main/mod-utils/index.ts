@@ -52,6 +52,8 @@ export interface Mod {
   path: string;
   status: 'active' | 'disabled';
   hash?: string;
+  addedAt?: number;
+  modifiedAt?: number;
 }
 
 type BatchModState = 'active' | 'disabled';
@@ -191,12 +193,31 @@ export default class ModUtils {
       entries.forEach((entry) => {
         if (entry.isDirectory()) {
           const modPath = path.join(folderPath, entry.name);
+          let addedAt = 0;
+          let modifiedAt = 0;
+
+          try {
+            const stats = fs.statSync(modPath);
+            addedAt =
+              stats.birthtimeMs && stats.birthtimeMs > 0
+                ? stats.birthtimeMs
+                : stats.ctimeMs;
+            modifiedAt = stats.mtimeMs;
+          } catch (error) {
+            console.warn('[ModUtils] Failed to read mod timestamps:', {
+              modPath,
+              error: error?.message || String(error),
+            });
+          }
+
           const hash = crypto.createHash('sha256').update(entry.name).digest('hex').substring(0, 12);
           mods.push({
             name: entry.name,
             path: modPath,
             status: status,
-            hash
+            hash,
+            addedAt,
+            modifiedAt,
           });
         }
       });

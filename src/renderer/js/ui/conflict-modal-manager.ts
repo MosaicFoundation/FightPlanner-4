@@ -1,5 +1,10 @@
 import { SimpleMod } from '../mods/mod-manager';
 
+interface DisableModCandidate extends SimpleMod {
+  conflictCount: number;
+  conflictsWith: Array<{ name: string; path: string }>;
+}
+
 export class ConflictModalManager {
   currentConflictFile: string | null;
   currentConflictingMods: Array<{ name: string; path: string }>;
@@ -364,6 +369,22 @@ export class ConflictModalManager {
     this.currentConflictingMods = [];
   }
 
+  closeDisableModModal() {
+    const modal = document.querySelector<HTMLElement>(
+      '#conflict-disable-mod-modal',
+    );
+    if (modal) {
+      modal.classList.add('closing');
+      setTimeout(() => {
+        modal.style.display = 'none';
+        modal.classList.remove('closing');
+      }, 300);
+    }
+    if (window.modalManager) {
+      window.modalManager.hideOverlay();
+    }
+  }
+
   async selectModForSlotChange(selectedMod) {
     this.closeSlotChangeModal();
 
@@ -399,6 +420,120 @@ export class ConflictModalManager {
     });
 
     return modsMap;
+  }
+
+  _getDisableModCandidates(): DisableModCandidate[] {
+    const modsMap: Map<
+      string,
+      SimpleMod & {
+        conflictCount: number;
+        conflictsWith: Map<string, { name: string; path: string }>;
+      }
+    > = new Map();
+
+    window.modManager.conflictGroups.forEach((group) => {
+      group.conflicts.forEach((conflict) => {
+        conflict.mods.forEach((mod) => {
+          const fullMod = window.modManager.mods.find(
+            (candidate) => candidate.path === mod.path,
+          );
+
+          if (fullMod?.status === 'disabled') {
+            return;
+          }
+
+          let candidate = modsMap.get(mod.path);
+
+          if (!candidate) {
+            candidate = {
+              name: mod.name,
+              path: mod.path,
+              category: fullMod ? fullMod.category : null,
+              conflictCount: 0,
+              conflictsWith: new Map(),
+            };
+            modsMap.set(mod.path, candidate);
+          }
+
+          candidate.conflictCount += 1;
+
+          conflict.mods.forEach((otherMod) => {
+            if (otherMod.path === mod.path) {
+              return;
+            }
+
+            candidate.conflictsWith.set(otherMod.path, {
+              name: otherMod.name,
+              path: otherMod.path,
+            });
+          });
+        });
+      });
+    });
+
+    return Array.from(modsMap.values()).map((mod) => ({
+      name: mod.name,
+      path: mod.path,
+      category: mod.category,
+      conflictCount: mod.conflictCount,
+      conflictsWith: Array.from(mod.conflictsWith.values()).sort((a, b) =>
+        a.name.localeCompare(b.name),
+      ),
+    }));
+  }
+
+  async selectModForDisable(selectedMod: SimpleMod) {
+    this.closeDisableModModal();
+
+    if (!window.electronAPI?.toggleMod || !window.modManager?.modsPath) {
+      window.toastManager?.error('toasts.cannotToggleModStatus');
+      return;
+    }
+
+    const fullMod = window.modManager.mods.find(
+      (mod) => mod.path === selectedMod.path,
+    );
+
+    if (fullMod?.status === 'disabled') {
+      window.toastManager?.success('toasts.modDisabled');
+      return;
+    }
+
+    const result = await window.electronAPI.toggleMod(
+      selectedMod.path,
+      window.modManager.modsPath,
+    );
+
+    if (!result.success) {
+      window.toastManager?.error('toasts.failedToToggleMod', 3000, {
+        error: result.error || 'Unknown error',
+      });
+      return;
+    }
+
+    if (result.isNowActive) {
+      window.toastManager?.error('toasts.failedToToggleMod', 3000, {
+        error: 'Selected mod was already disabled',
+      });
+      await window.modManager.fetchMods();
+      return;
+    }
+
+    window.toastManager?.success('toasts.modDisabled');
+    await window.modManager.fetchMods();
+
+    const whitelistPatterns =
+      window.settingsManager?.settings.conflictWhitelistPatterns || [];
+    const conflictResult = await window.modManager.checkConflicts(
+      whitelistPatterns,
+    );
+
+    if (conflictResult.success && window.modManager.conflictGroups.length > 0) {
+      await this.showConflictModal();
+    } else {
+      this.closeConflictModal();
+      window.toastManager?.success('toasts.noConflictsDetected', 3000);
+    }
   }
 
   openGlobalSlotChange() {
@@ -448,6 +583,96 @@ export class ConflictModalManager {
 
       selectItem.appendChild(icon);
       selectItem.appendChild(name);
+      container.appendChild(selectItem);
+    });
+
+    this.closeConflictModal(true);
+
+    if (window.modalManager) {
+      window.modalManager.showOverlay();
+    }
+
+    setTimeout(() => {
+      modal.classList.remove('closing');
+      modal.style.display = 'block';
+
+      if (window.i18n && window.i18n.updateDOM) {
+        window.i18n.updateDOM();
+      }
+    }, 100);
+  }
+
+  openDisableModModal() {
+    if (
+      !window.modManager ||
+      !window.modManager.conflictGroups ||
+      window.modManager.conflictGroups.length === 0
+    ) {
+      if (window.toastManager) {
+        window.toastManager.error('toasts.noConflictsDetected');
+      }
+      return;
+    }
+
+    const modal = document.querySelector<HTMLElement>(
+      '#conflict-disable-mod-modal',
+    );
+    const container = document.querySelector<HTMLElement>(
+      '#conflict-disable-mod-select-container',
+    );
+
+    if (!modal || !container) return;
+
+    const uniqueMods = this._getDisableModCandidates();
+
+    if (uniqueMods.length === 0) {
+      if (window.toastManager) {
+        window.toastManager.error('toasts.noModsFoundInConflicts');
+      }
+      return;
+    }
+
+    container.innerHTML = '';
+
+    uniqueMods.forEach((mod) => {
+      const selectItem = document.createElement('div');
+      selectItem.className = 'conflict-mod-select-item';
+      selectItem.addEventListener('click', () => {
+        this.selectModForDisable(mod);
+      });
+
+      const icon = document.createElement('i');
+      icon.className = 'bi bi-toggle-off';
+
+      const details = document.createElement('div');
+      details.className = 'conflict-mod-select-item-content';
+
+      const name = document.createElement('div');
+      name.className = 'conflict-mod-select-item-name';
+      name.textContent = mod.name;
+
+      const conflictsWithNames = mod.conflictsWith
+        .map((conflictingMod) => conflictingMod.name)
+        .join(', ');
+
+      const meta = document.createElement('div');
+      meta.className = 'conflict-mod-select-item-meta';
+      meta.textContent = [
+        this.t('modals.conflictDisable.conflictFiles', {
+          count: mod.conflictCount,
+          plural: mod.conflictCount > 1 ? 's' : '',
+        }),
+        this.t('modals.conflictDisable.conflictsWith', {
+          mods: conflictsWithNames,
+        }),
+      ].join(' • ');
+      meta.title = conflictsWithNames;
+
+      details.appendChild(name);
+      details.appendChild(meta);
+
+      selectItem.appendChild(icon);
+      selectItem.appendChild(details);
       container.appendChild(selectItem);
     });
 
@@ -625,6 +850,83 @@ export class ConflictModalManager {
     let errorCount = 0;
 
     const errors: string[] = [];
+    const changingModPaths = new Set(modsToChange.map((mod) => mod.path));
+    const candidateSlots = Array.from(
+      { length: 17 },
+      (_, index) => `c${index.toString().padStart(2, '0')}`,
+    );
+    const occupiedSlotsByFighter = new Map<string, Set<string>>();
+
+    const reserveSlot = (fighterId: string, slotName: string) => {
+      if (!occupiedSlotsByFighter.has(fighterId)) {
+        occupiedSlotsByFighter.set(fighterId, new Set());
+      }
+
+      occupiedSlotsByFighter.get(fighterId)!.add(slotName);
+    };
+
+    const getFreeSlot = (
+      fighterId: string,
+      currentSlots: Set<string>,
+      reservedSlots: Set<string>,
+    ): string | null => {
+      const occupiedSlots =
+        occupiedSlotsByFighter.get(fighterId) || new Set<string>();
+
+      const preferredSlot = candidateSlots.find(
+        (slotName) =>
+          !currentSlots.has(slotName) &&
+          !occupiedSlots.has(slotName) &&
+          !reservedSlots.has(slotName),
+      );
+
+      if (preferredSlot) {
+        return preferredSlot;
+      }
+
+      return (
+        candidateSlots.find(
+          (slotName) =>
+            !occupiedSlots.has(slotName) && !reservedSlots.has(slotName),
+        ) || null
+      );
+    };
+
+    if (window.electronAPI?.scanMod && window.modManager.mods) {
+      const occupiedMods = window.modManager.mods.filter(
+        (mod) =>
+          mod.status !== 'disabled' &&
+          !!mod.path &&
+          !changingModPaths.has(mod.path),
+      );
+
+      for (const occupiedMod of occupiedMods) {
+        try {
+          const scanModResult = await window.electronAPI.scanMod(
+            occupiedMod.path,
+          );
+
+          if (!scanModResult.success || !scanModResult.data?.pathData) {
+            continue;
+          }
+
+          Object.entries(scanModResult.data.pathData).forEach(
+            ([fighterId, fighterData]) => {
+              Object.keys(fighterData as Record<string, unknown>).forEach(
+                (slotName) => {
+                  reserveSlot(fighterId, slotName);
+                },
+              );
+            },
+          );
+        } catch (error) {
+          console.warn(
+            `Unable to scan occupied slots for ${occupiedMod.name}:`,
+            error,
+          );
+        }
+      }
+    }
 
     for (const mod of modsToChange) {
       try {
@@ -647,49 +949,47 @@ export class ConflictModalManager {
           continue;
         }
 
-        let availableSlotName: string | null = null;
-
-        for (let i = 0; i <= 7; i++) {
-          const slotName = `c${i.toString().padStart(2, '0')}`;
-          let hasUnusedSlotForAllFighters = true;
-
-          for (const fighterId of Object.keys(scanModResult.data.pathData)) {
-            const usedSlots = Object.keys(
-              scanModResult.data.pathData[fighterId],
-            );
-
-            if (usedSlots.includes(slotName)) {
-              hasUnusedSlotForAllFighters = false;
-              break;
-            }
-          }
-
-          if (hasUnusedSlotForAllFighters) {
-            availableSlotName = slotName;
-            break;
-          }
-        }
-
-        if (availableSlotName === null) {
-          errors.push(`${mod.name}: No available slot for all fighters`);
-          errorCount++;
-          continue;
-        }
-
         const slotAssignmentsByFighter = new Map<string, Map<string, string>>();
+        const reservedSlotsByFighter = new Map<string, Set<string>>();
+        let hasMissingSlot = false;
 
         for (const fighterId of Object.keys(scanModResult.data.pathData)) {
           const fighterSlots = Object.keys(
             scanModResult.data.pathData[fighterId],
-          );
+          ).sort();
+          const currentSlots = new Set(fighterSlots);
 
           const slotAssignments = new Map<string, string>();
+          const reservedSlots = new Set<string>();
+          reservedSlotsByFighter.set(fighterId, reservedSlots);
 
           for (const originalSlot of fighterSlots) {
+            const availableSlotName = getFreeSlot(
+              fighterId,
+              currentSlots,
+              reservedSlots,
+            );
+
+            if (!availableSlotName) {
+              errors.push(
+                `${mod.name}: No available slot for ${fighterId}/${originalSlot}`,
+              );
+              errorCount++;
+              hasMissingSlot = true;
+              break;
+            }
+
             slotAssignments.set(originalSlot, availableSlotName);
+            reservedSlots.add(availableSlotName);
           }
 
+          if (hasMissingSlot) break;
+
           slotAssignmentsByFighter.set(fighterId, slotAssignments);
+        }
+
+        if (hasMissingSlot) {
+          continue;
         }
 
         if (slotAssignmentsByFighter.size > 0) {
@@ -702,6 +1002,9 @@ export class ConflictModalManager {
             );
 
             if (applyResult.success) {
+              reservedSlotsByFighter.forEach((slots, fighterId) => {
+                slots.forEach((slotName) => reserveSlot(fighterId, slotName));
+              });
               successCount++;
             } else {
               errors.push(

@@ -447,7 +447,7 @@
 }
 
 .social-gamebanana-featured {
-  max-height: 520px;
+  max-height: 560px;
   overflow: hidden;
   transition:
     max-height 0.28s ease,
@@ -730,10 +730,10 @@
 
 .social-gamebanana-carousel {
   position: relative;
-  min-height: 430px;
+  min-height: 456px;
   overflow: visible;
   perspective: 1000px;
-  padding-bottom: 18px;
+  padding-bottom: 28px;
 }
 
 .social-gamebanana-featured-empty {
@@ -1698,8 +1698,8 @@
 
 @media (max-width: 720px) {
   .social-gamebanana-carousel {
-    min-height: 370px;
-    padding-bottom: 16px;
+    min-height: 392px;
+    padding-bottom: 24px;
   }
 
   .social-gamebanana-card-featured {
@@ -2736,6 +2736,49 @@
   margin: 0 0 16px 0;
 }
 
+.social-add-friend-form {
+  margin: 0 0 24px 0;
+  padding: 16px;
+  background: rgba(20, 20, 24, 0.7);
+  border: 1px solid var(--bg-transparent-10);
+  border-radius: 10px;
+}
+
+.social-add-friend-label {
+  display: block;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 10px 0;
+}
+
+.social-add-friend-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.social-add-friend-controls .social-btn {
+  min-height: 42px;
+  white-space: nowrap;
+}
+
+.social-add-friend-feedback {
+  min-height: 18px;
+  margin: 8px 0 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.social-add-friend-feedback.is-error {
+  color: var(--danger-color, #ff6b6b);
+}
+
+.social-add-friend-feedback.is-success {
+  color: var(--success-color, #63d471);
+}
+
 .social-friend-request-card {
   display: flex;
   align-items: center;
@@ -2766,6 +2809,17 @@
   padding: 8px 16px;
   font-size: 14px;
   min-width: auto;
+}
+
+@media (max-width: 640px) {
+  .social-add-friend-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .social-add-friend-controls .social-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* Settings Hint */
