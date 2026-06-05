@@ -145,6 +145,34 @@ export class ConflictModalManager {
     }
   }
 
+  async ignoreConflictPath(filePath: string) {
+    if (!window.settingsManager || !window.modManager) {
+      window.toastManager?.error('toasts.settingsManagerNotAvailable', 4000);
+      return;
+    }
+
+    const added = await window.settingsManager.addIgnoredConflictPath(filePath, {
+      refreshConflicts: false,
+    });
+
+    if (!added) {
+      return;
+    }
+
+    const whitelistPatterns =
+      window.settingsManager.settings.conflictWhitelistPatterns || [];
+    const conflictResult = await window.modManager.checkConflicts(
+      whitelistPatterns,
+    );
+
+    if (conflictResult.success && window.modManager.conflictGroups.length > 0) {
+      await this.showConflictModal();
+    } else {
+      this.closeConflictModal();
+      window.toastManager?.success('toasts.noConflictsDetected', 3000);
+    }
+  }
+
   async showConflictModal() {
     if (
       !window.modManager ||
@@ -271,10 +299,44 @@ export class ConflictModalManager {
 
         const tdFile = document.createElement('td');
         tdFile.className = 'conflict-td-file';
+
+        const fileCell = document.createElement('div');
+        fileCell.className = 'conflict-file-cell';
+
         const filePath = document.createElement('span');
         filePath.className = 'conflict-file-path-text';
         filePath.textContent = conflict.filePath;
-        tdFile.appendChild(filePath);
+
+        const fileActions = document.createElement('div');
+        fileActions.className = 'conflict-file-actions';
+
+        const ignoreButton = document.createElement('button');
+        ignoreButton.type = 'button';
+        ignoreButton.className = 'conflict-ignore-file-btn';
+        ignoreButton.setAttribute(
+          'aria-label',
+          this.t('modals.conflict.ignoreFileAria', {
+            filePath: conflict.filePath,
+          }),
+        );
+        ignoreButton.title = this.t('modals.conflict.ignoreFile');
+        ignoreButton.addEventListener('click', (event) => {
+          event.stopPropagation();
+          this.ignoreConflictPath(conflict.filePath);
+        });
+
+        const ignoreIcon = document.createElement('i');
+        ignoreIcon.className = 'bi bi-eye-slash';
+        const ignoreLabel = document.createElement('span');
+        ignoreLabel.textContent = this.t('modals.conflict.ignoreFile');
+
+        ignoreButton.appendChild(ignoreIcon);
+        ignoreButton.appendChild(ignoreLabel);
+        fileActions.appendChild(ignoreButton);
+
+        fileCell.appendChild(filePath);
+        fileCell.appendChild(fileActions);
+        tdFile.appendChild(fileCell);
 
         const tdMods = document.createElement('td');
         tdMods.className = 'conflict-td-mods';
@@ -691,6 +753,7 @@ export class ConflictModalManager {
       }
     }, 100);
   }
+
 
   openAutoSlotChangeModal() {
     if (

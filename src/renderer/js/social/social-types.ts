@@ -15,6 +15,31 @@ interface UserFields {
   };
 }
 
+interface ProfileBadgeMeta {
+  label: string;
+  icon: string;
+  className: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  color?: string;
+  background?: string;
+  borderColor?: string;
+}
+
+interface ProfileBadgeDefinition {
+  id?: string;
+  label?: string;
+  icon?: string;
+  className?: string;
+  imageUrl?: string;
+  image_url?: string;
+  imageAlt?: string;
+  image_alt?: string;
+  color?: string;
+  background?: string;
+  borderColor?: string;
+}
+
 interface GameBananaTopSubmission {
   _idRow: number;
   _sModelName?: string;
@@ -35,11 +60,13 @@ interface GameBananaTopSubmission {
   _aContentRatings?: any[];
   _aContentRating?: any[];
   _aTags?: any[];
+  _aFiles?: GameBananaFileEntry[];
   _sPeriod?: string;
   _tsDateAdded?: number;
   _nLikeCount?: number;
   _nPostCount?: number;
   _nViewCount?: number;
+  _nDownloadCount?: number;
   _aPreviewMedia?: {
     _aMetadata?: {
       _sSnippet?: string;
@@ -81,6 +108,8 @@ interface GameBananaTopSubmission {
     _sIconUrl?: string;
   };
 }
+
+type GameBananaDiscoverSort = 'recent' | 'popularity' | 'downloads';
 
 interface GameBananaSubfeedResponse {
   _aMetadata?: {
