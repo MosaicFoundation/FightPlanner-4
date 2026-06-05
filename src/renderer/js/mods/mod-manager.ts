@@ -32,8 +32,6 @@ interface SelectModOptions {
 
 type ModSortOrder = 'name-asc' | 'added-desc' | 'modified-desc';
 
-type ModSortOrder = 'name-asc' | 'added-desc' | 'modified-desc';
-
 class ModManager {
   mods: Mod[];
   selectedMod: Mod | null;
