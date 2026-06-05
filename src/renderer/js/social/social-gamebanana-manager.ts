@@ -67,8 +67,11 @@ class SocialGameBananaManager extends SocialManagerBase {
             <div class="social-gamebanana-mods-title-row">
               <h3 class="social-gamebanana-section-title">Mods</h3>
             </div>
-            <div id="social-gamebanana-pagination" class="social-gamebanana-pagination">
-              ${this.renderGameBananaPagination(subfeedData)}
+            <div class="social-gamebanana-mods-actions">
+              ${this.renderGameBananaSortControl()}
+              <div id="social-gamebanana-pagination" class="social-gamebanana-pagination">
+                ${this.renderGameBananaPagination(subfeedData)}
+              </div>
             </div>
           </div>
           ${this.renderGameBananaCategoryFilters()}
@@ -79,6 +82,7 @@ class SocialGameBananaManager extends SocialManagerBase {
       `;
 
       this.setGameBananaFeaturedCardPositions();
+      this.hydrateVisibleGameBananaDownloadCounts();
     } catch (error) {
       console.error('[Social] Error loading GameBanana featured mods:', error);
       discoverContent.innerHTML =
@@ -94,6 +98,42 @@ class SocialGameBananaManager extends SocialManagerBase {
         <i class="bi bi-search"></i>
         <input id="social-gamebanana-search-input" type="search" value="${query}" placeholder="Search GameBanana mods" autocomplete="off">
       </label>
+    `;
+  }
+
+  renderGameBananaSortControl() {
+    const activeSort = this.getGameBananaDiscoverSort();
+    const options: {
+      id: GameBananaDiscoverSort;
+      label: string;
+      icon: string;
+    }[] = [
+      { id: 'recent', label: 'Recent', icon: 'clock-history' },
+      { id: 'popularity', label: 'Popularity', icon: 'hand-thumbs-up' },
+      { id: 'downloads', label: 'Downloads', icon: 'download' },
+    ];
+
+    return `
+      <div class="custom-select social-gamebanana-sort" id="social-gamebanana-sort-select" role="button" tabindex="0" aria-label="Sort Discover mods">
+        <div class="custom-select-trigger">
+          <span class="selected-value">
+            ${this.escapeHtml(options.find((option) => option.id === activeSort)?.label || 'Recent')}
+          </span>
+          <i class="bi bi-chevron-down"></i>
+        </div>
+        <div class="custom-select-dropdown">
+          ${options
+            .map(
+              (option) => `
+                <div class="custom-select-option ${activeSort === option.id ? 'active' : ''}" data-sort-value="${option.id}">
+                  <i class="bi bi-${option.icon}"></i>
+                  <span>${option.label}</span>
+                </div>
+              `,
+            )
+            .join('')}
+        </div>
+      </div>
     `;
   }
 
@@ -234,6 +274,63 @@ class SocialGameBananaManager extends SocialManagerBase {
     await this.loadGameBananaModsPage(1, this.gameBananaSearchQuery);
   }
 
+  getGameBananaDiscoverSort() {
+    const sort = this.gameBananaDiscoverSort;
+    return sort === 'popularity' || sort === 'downloads' ? sort : 'recent';
+  }
+
+  getGameBananaApiSort() {
+    const sort = this.getGameBananaDiscoverSort();
+    const apiSorts: Record<GameBananaDiscoverSort, string> = {
+      recent: 'Generic_Newest',
+      popularity: 'Generic_MostLiked',
+      downloads: 'Generic_MostDownloaded',
+    };
+
+    return apiSorts[sort];
+  }
+
+  async setGameBananaDiscoverSort(sort: string) {
+    const nextSort =
+      sort === 'popularity' || sort === 'downloads' ? sort : 'recent';
+    if (nextSort === this.getGameBananaDiscoverSort()) return;
+
+    this.gameBananaDiscoverSort = nextSort;
+    this.refreshGameBananaSortControlUI();
+    this.gameBananaModsTotalPages = 1;
+    await this.loadGameBananaModsPage(1, this.gameBananaSearchQuery);
+  }
+
+  refreshGameBananaSortControlUI() {
+    const sortSelect = document.querySelector<HTMLElement>(
+      '#social-gamebanana-sort-select',
+    );
+    if (!sortSelect) return;
+
+    const activeSort = this.getGameBananaDiscoverSort();
+    const selectedOption = sortSelect.querySelector<HTMLElement>(
+      `.custom-select-option[data-sort-value="${activeSort}"]`,
+    );
+    const selectedValue =
+      sortSelect.querySelector<HTMLElement>('.selected-value');
+    const selectedText =
+      selectedOption?.querySelector<HTMLElement>('span')?.textContent ||
+      'Recent';
+
+    if (selectedValue) {
+      selectedValue.textContent = selectedText;
+    }
+
+    sortSelect
+      .querySelectorAll<HTMLElement>('.custom-select-option')
+      .forEach((option) => {
+        option.classList.toggle(
+          'active',
+          option.getAttribute('data-sort-value') === activeSort,
+        );
+      });
+  }
+
   async loadGameBananaSkinSubcategories() {
     try {
       const response = await fetch(
@@ -293,6 +390,7 @@ class SocialGameBananaManager extends SocialManagerBase {
       modsContent.innerHTML = this.renderGameBananaModsPage(
         this.gameBananaCurrentSubfeedData,
       );
+      this.hydrateVisibleGameBananaDownloadCounts();
     }
   }
 
@@ -346,9 +444,31 @@ class SocialGameBananaManager extends SocialManagerBase {
 
     document.addEventListener('change', (event) => {
       const select = event.target as HTMLSelectElement;
-      if (select?.id !== 'social-gamebanana-skin-select') return;
+      if (select?.id === 'social-gamebanana-skin-select') {
+        void this.setGameBananaSkinSubcategory(Number(select.value));
+      }
+    });
 
-      void this.setGameBananaSkinSubcategory(Number(select.value));
+    document.addEventListener('keydown', (event) => {
+      const target = event.target as HTMLElement;
+      const sortSelect = target?.closest<HTMLElement>(
+        '.social-gamebanana-sort',
+      );
+      if (!sortSelect || !['Enter', ' '].includes(event.key)) return;
+
+      event.preventDefault();
+      sortSelect.classList.toggle('open');
+    });
+
+    document.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement;
+      document
+        .querySelectorAll<HTMLElement>('.social-gamebanana-sort.open')
+        .forEach((sortSelect) => {
+          if (!sortSelect.contains(target)) {
+            sortSelect.classList.remove('open');
+          }
+        });
     });
   }
 
@@ -365,6 +485,8 @@ class SocialGameBananaManager extends SocialManagerBase {
         const gameBananaTarget = target.closest(
           [
             '.social-gamebanana-nsfw-reveal-btn',
+            '.social-gamebanana-sort',
+            '.social-gamebanana-sort .custom-select-option',
             '.social-gamebanana-category-filter',
             '.social-gamebanana-carousel-btn',
             '.social-gamebanana-card-featured',
@@ -408,6 +530,33 @@ class SocialGameBananaManager extends SocialManagerBase {
       nsfwRevealButton
         .closest<HTMLElement>('.social-gamebanana-preview-media')
         ?.classList.add('is-revealed');
+      return;
+    }
+
+    const sortOption = clickedElement.closest<HTMLElement>(
+      '.social-gamebanana-sort .custom-select-option',
+    );
+    if (sortOption) {
+      sortOption
+        .closest<HTMLElement>('.social-gamebanana-sort')
+        ?.classList.remove('open');
+      await this.setGameBananaDiscoverSort(
+        sortOption.getAttribute('data-sort-value') || 'recent',
+      );
+      return;
+    }
+
+    const sortSelect = clickedElement.closest<HTMLElement>(
+      '.social-gamebanana-sort',
+    );
+    if (sortSelect) {
+      const wasOpen = sortSelect.classList.contains('open');
+      document
+        .querySelectorAll<HTMLElement>('.custom-select.open')
+        .forEach((select) => {
+          if (select !== sortSelect) select.classList.remove('open');
+        });
+      sortSelect.classList.toggle('open', !wasOpen);
       return;
     }
 
@@ -648,8 +797,15 @@ class SocialGameBananaManager extends SocialManagerBase {
 
   getGameBananaSubfeedUrl(page = 1, searchQuery = '') {
     const categoryFilter = this.getGameBananaCategoryFilterConfig();
-    if (categoryFilter?.model) {
-      return this.getGameBananaIndexedListUrl(page, categoryFilter);
+    if (
+      categoryFilter?.model ||
+      this.getGameBananaDiscoverSort() !== 'recent'
+    ) {
+      return this.getGameBananaIndexedListUrl(
+        page,
+        categoryFilter || { model: 'Mod' },
+        searchQuery,
+      );
     }
 
     const params = new URLSearchParams({
@@ -665,13 +821,21 @@ class SocialGameBananaManager extends SocialManagerBase {
     return `${this.GAMEBANANA_SUBFEED_URL}?${params.toString()}`;
   }
 
-  getGameBananaIndexedListUrl(page = 1, categoryFilter: any) {
+  getGameBananaIndexedListUrl(
+    page = 1,
+    categoryFilter: any,
+    searchQuery = '',
+  ) {
     const params = new URLSearchParams({
       _nPage: String(Math.max(1, page)),
       _nPerpage: '15',
-      _sSort: 'Generic_Newest',
+      _sSort: this.getGameBananaApiSort(),
     });
     params.set('_aFilters[Generic_Game]', '6498');
+    const trimmedSearch = searchQuery.trim();
+    if (trimmedSearch) {
+      params.set('_aFilters[Generic_Name]', trimmedSearch);
+    }
     if (categoryFilter.categoryId) {
       params.set(
         '_aFilters[Generic_Category]',
@@ -735,6 +899,7 @@ class SocialGameBananaManager extends SocialManagerBase {
       this.gameBananaCurrentSubfeedData = subfeedData;
       modsContent.innerHTML = this.renderGameBananaModsPage(subfeedData);
       pagination.innerHTML = this.renderGameBananaPagination(subfeedData);
+      this.hydrateVisibleGameBananaDownloadCounts(requestId);
     } catch (error) {
       console.error('[Social] Error loading GameBanana mods page:', error);
       modsContent.innerHTML =
@@ -761,6 +926,172 @@ class SocialGameBananaManager extends SocialManagerBase {
         ${visibleRecords.map((mod) => this.renderGameBananaModCard(mod)).join('')}
       </div>
     `;
+  }
+
+  getGameBananaSubmissionCacheKey(modelName: string, submissionId: string) {
+    return `${modelName || 'Mod'}:${submissionId}`;
+  }
+
+  getGameBananaSubmissionDownloadCount(mod: GameBananaTopSubmission | any) {
+    const directCount = Number(mod?._nDownloadCount);
+    if (Number.isFinite(directCount)) return directCount;
+
+    const files = Array.isArray(mod?._aFiles) ? mod._aFiles : [];
+    if (!files.length) return null;
+
+    return files.reduce((total, file) => {
+      const count = Number(file?._nDownloadCount);
+      return Number.isFinite(count) ? total + count : total;
+    }, 0);
+  }
+
+  renderGameBananaDownloadStat(
+    mod: GameBananaTopSubmission,
+    modelName: string,
+    submissionId: string,
+  ) {
+    const count = this.getGameBananaSubmissionDownloadCount(mod);
+    const value = count == null ? '...' : this.formatGameBananaCount(count);
+
+    return `
+      <span class="social-gamebanana-card-downloads" data-gb-model="${this.escapeHtml(modelName)}" data-gb-id="${this.escapeHtml(submissionId)}" title="Total downloads">
+        <i class="bi bi-download"></i>
+        <span>${value}</span>
+      </span>
+    `;
+  }
+
+  formatGameBananaCount(value: number) {
+    if (!Number.isFinite(value)) return '0';
+    return new Intl.NumberFormat(undefined, {
+      notation: value >= 10000 ? 'compact' : 'standard',
+      maximumFractionDigits: value >= 10000 ? 1 : 0,
+    }).format(value);
+  }
+
+  async hydrateVisibleGameBananaDownloadCounts(
+    requestId = this.gameBananaModsRequestId,
+  ) {
+    const targets = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        '#social-discover-content .social-gamebanana-card-downloads',
+      ),
+    );
+    const uniqueTargets = targets.filter((target, index, list) => {
+      const key = this.getGameBananaSubmissionCacheKey(
+        target.getAttribute('data-gb-model') || 'Mod',
+        target.getAttribute('data-gb-id') || '',
+      );
+      return (
+        target.getAttribute('data-gb-id') &&
+        list.findIndex((item) =>
+          this.getGameBananaSubmissionCacheKey(
+            item.getAttribute('data-gb-model') || 'Mod',
+            item.getAttribute('data-gb-id') || '',
+          ) === key,
+        ) === index
+      );
+    });
+
+    for (let index = 0; index < uniqueTargets.length; index += 4) {
+      if (requestId !== this.gameBananaModsRequestId) return;
+      const chunk = uniqueTargets.slice(index, index + 4);
+      await Promise.all(
+        chunk.map(async (target) => {
+          const modelName = target.getAttribute('data-gb-model') || 'Mod';
+          const submissionId = target.getAttribute('data-gb-id') || '';
+          if (!submissionId) return;
+
+          const count = await this.getGameBananaDownloadCount(
+            modelName,
+            submissionId,
+          );
+          if (requestId !== this.gameBananaModsRequestId || count == null) {
+            return;
+          }
+
+          this.updateGameBananaDownloadCountElements(
+            modelName,
+            submissionId,
+            count,
+          );
+        }),
+      );
+    }
+  }
+
+  async getGameBananaDownloadCount(modelName: string, submissionId: string) {
+    const key = this.getGameBananaSubmissionCacheKey(modelName, submissionId);
+    if (this.gameBananaDownloadCountCache.has(key)) {
+      return this.gameBananaDownloadCountCache.get(key) ?? null;
+    }
+
+    const cachedSubmission = this.getCachedGameBananaSubmission(
+      modelName,
+      submissionId,
+    );
+    const cachedCount = this.getGameBananaSubmissionDownloadCount(
+      cachedSubmission,
+    );
+    if (cachedCount != null) {
+      this.gameBananaDownloadCountCache.set(key, cachedCount);
+      return cachedCount;
+    }
+
+    if (this.gameBananaDownloadCountRequests.has(key)) {
+      return this.gameBananaDownloadCountRequests.get(key) ?? null;
+    }
+
+    const request = this.fetchGameBananaDownloadCount(modelName, submissionId);
+    this.gameBananaDownloadCountRequests.set(key, request);
+
+    try {
+      const count = await request;
+      this.gameBananaDownloadCountCache.set(key, count);
+      return count;
+    } finally {
+      this.gameBananaDownloadCountRequests.delete(key);
+    }
+  }
+
+  async fetchGameBananaDownloadCount(modelName: string, submissionId: string) {
+    if (!window.electronAPI?.fetchGameBananaDetails) return null;
+
+    try {
+      const result = await window.electronAPI.fetchGameBananaDetails(
+        modelName,
+        submissionId,
+      );
+      if (!result?.success) return null;
+
+      const count = this.getGameBananaSubmissionDownloadCount(result.data);
+      return count == null ? null : count;
+    } catch (error) {
+      console.warn('[Social] Failed to fetch GameBanana download count:', error);
+      return null;
+    }
+  }
+
+  updateGameBananaDownloadCountElements(
+    modelName: string,
+    submissionId: string,
+    count: number,
+  ) {
+    document
+      .querySelectorAll<HTMLElement>('.social-gamebanana-card-downloads')
+      .forEach((element) => {
+        if (
+          element.getAttribute('data-gb-model') !== modelName ||
+          element.getAttribute('data-gb-id') !== submissionId
+        ) {
+          return;
+        }
+
+        const value = element.querySelector<HTMLElement>('span');
+        if (value) {
+          value.textContent = this.formatGameBananaCount(count);
+        }
+      });
   }
 
   filterDiscoverNsfwSubmissions<T extends GameBananaTopSubmission>(mods: T[]) {
@@ -993,6 +1324,7 @@ class SocialGameBananaManager extends SocialManagerBase {
           <div class="social-gamebanana-card-footer">
             <span><i class="bi bi-hand-thumbs-up"></i> ${likes}</span>
             <span><i class="bi bi-chat-left"></i> ${comments}</span>
+            ${this.renderGameBananaDownloadStat(mod, model, id)}
           </div>
         </div>
       </article>
@@ -1034,6 +1366,7 @@ class SocialGameBananaManager extends SocialManagerBase {
           <div class="social-gamebanana-card-footer">
             <span><i class="bi bi-hand-thumbs-up"></i> ${likes}</span>
             <span><i class="bi bi-eye"></i> ${views}</span>
+            ${this.renderGameBananaDownloadStat(mod, model, id)}
             <button class="social-gamebanana-open-btn" data-url="${url}">
               <i class="bi bi-info-circle"></i>
             </button>

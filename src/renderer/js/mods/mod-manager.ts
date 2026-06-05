@@ -1476,9 +1476,21 @@ class ModManager {
     }
 
     try {
+      const ignoredConflictPaths =
+        window.settingsManager?.settings.ignoredConflictPaths || [];
+      const ignoredConflictPatterns = ignoredConflictPaths
+        .filter((value): value is string => typeof value === 'string')
+        .map((value) => this.createExactConflictPathPattern(value));
+      const combinedPatterns = Array.from(
+        new Set([
+          ...whitelistPatterns,
+          ...ignoredConflictPatterns,
+        ]),
+      );
+
       const result = await window.electronAPI.detectConflicts(
         this.modsPath,
-        whitelistPatterns,
+        combinedPatterns,
       );
 
       this.isCheckingConflicts = false;
@@ -1579,6 +1591,12 @@ class ModManager {
       }
       return { success: false, error: error.message };
     }
+  }
+
+  createExactConflictPathPattern(filePath: string) {
+    const normalizedPath = filePath.replace(/\\/g, '/');
+    const escapedPath = normalizedPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return `^${escapedPath}$`;
   }
 
   async askExportFormat() {

@@ -46,46 +46,169 @@ class SocialProfileManager extends SocialFeedManager {
     } as UserFields;
   }
 
-  getProfileBadgeMeta(badge: string) {
+  normalizeBadgeId(badge: string) {
+    return String(badge || '')
+      .trim()
+      .toLowerCase();
+  }
+
+  getReadableBadgeLabel(badge: string) {
+    return (
+      this.normalizeBadgeId(badge)
+        .split(/[_-]+/)
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ') || 'Badge'
+    );
+  }
+
+  getBadgeClassName(badge: string) {
+    return `badge-${this.normalizeBadgeId(badge).replace(/[^a-z0-9-]/g, '-')}`;
+  }
+
+  normalizeProfileBadgeDefinitions(data: any): Record<string, ProfileBadgeMeta> {
+    const source = data?.fields ? this.parseFirestoreFields(data.fields) : data;
+    const rawDefinitions =
+      source?.definitions ||
+      source?.badges ||
+      source?.badgeDefinitions ||
+      source?.data ||
+      source ||
+      [];
+    const entries = Array.isArray(rawDefinitions)
+      ? rawDefinitions.map((definition: ProfileBadgeDefinition) => [
+          definition?.id,
+          definition,
+        ])
+      : Object.entries(rawDefinitions);
+
+    return Object.fromEntries(
+      entries
+        .map(([id, definition]: [string, any]) => {
+          const badgeId = this.normalizeBadgeId(id);
+          if (!badgeId || !definition || typeof definition !== 'object') {
+            return null;
+          }
+
+          return [
+            badgeId,
+            {
+              label:
+                String(definition.label || '').trim() ||
+                this.getReadableBadgeLabel(badgeId),
+              icon:
+                String(definition.icon || '').trim() ||
+                'bi-patch-check-fill',
+              className:
+                String(definition.className || '').trim() ||
+                this.getBadgeClassName(badgeId),
+              imageUrl:
+                String(definition.imageUrl || definition.image_url || '').trim() ||
+                undefined,
+              imageAlt:
+                String(definition.imageAlt || definition.image_alt || '').trim() ||
+                undefined,
+              color: definition.color,
+              background: definition.background,
+              borderColor: definition.borderColor || definition.border_color,
+            },
+          ];
+        })
+        .filter(Boolean) as [string, ProfileBadgeMeta][],
+    );
+  }
+
+  async loadProfileBadgeDefinitions(): Promise<Record<string, ProfileBadgeMeta>> {
+    const cached = this.getCached('profileBadgeDefinitions');
+    if (cached) return cached;
+
+    const requestKey = 'profileBadgeDefinitions';
+    if (this.pendingRequests.has(requestKey)) {
+      return this.pendingRequests.get(requestKey);
+    }
+
+    const request = this.fetchProfileBadgeDefinitions()
+      .catch((error) => {
+        console.warn('[Social] Failed to load badge definitions:', error);
+        return {};
+      })
+      .then((definitions) => {
+        this.setCache('profileBadgeDefinitions', definitions);
+        return definitions;
+      })
+      .finally(() => {
+        this.pendingRequests.delete(requestKey);
+      });
+
+    this.pendingRequests.set(requestKey, request);
+    return request;
+  }
+
+  async fetchProfileBadgeDefinitions(): Promise<Record<string, ProfileBadgeMeta>> {
+    const endpoints = [`${this.API_URL}/read/badges`];
+
+    for (const endpoint of endpoints) {
+      const response = await fetch(endpoint);
+      if (!response.ok) continue;
+
+      const data = await response.json();
+      if (data?.error) continue;
+
+      const definitions = this.normalizeProfileBadgeDefinitions(data);
+      if (Object.keys(definitions).length > 0) return definitions;
+    }
+
+    return {};
+  }
+
+  getProfileBadgeMeta(
+    badge: string,
+    definitions: Record<string, ProfileBadgeMeta> = {},
+  ): ProfileBadgeMeta {
     const normalized = String(badge || '')
       .trim()
       .toLowerCase();
-    const badgeMap: Record<
-      string,
-      { label: string; icon: string; className: string }
-    > = {
-      owner: {
-        label: 'Owner',
-        icon: 'bi-shield-fill-check',
-        className: 'badge-owner',
-      },
-      fightplanner_creator: {
-        label: 'FightPlanner Creator',
-        icon: 'bi-stars',
-        className: 'badge-fightplanner-creator',
-      },
-      tester: {
-        label: 'Tester',
-        icon: 'bi-bug-fill',
-        className: 'badge-tester',
-      },
-    };
 
     return (
-      badgeMap[normalized] || {
-        label:
-          normalized
-            .split('_')
-            .filter(Boolean)
-            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-            .join(' ') || 'Badge',
+      definitions[normalized] || {
+        label: this.getReadableBadgeLabel(normalized),
         icon: 'bi-patch-check-fill',
-        className: `badge-${normalized.replace(/[^a-z0-9-]/g, '-')}`,
+        className: this.getBadgeClassName(normalized),
       }
     );
   }
 
-  renderProfileBadges(badges: string[] = []) {
+  isSafeBadgeStyleValue(value: any) {
+    const text = String(value || '').trim();
+    return (
+      /^#[0-9a-f]{3,8}$/i.test(text) ||
+      /^rgba?\([\d\s,.%]+\)$/i.test(text) ||
+      /^hsla?\([\d\s,.%]+\)$/i.test(text) ||
+      /^var\(--[a-z0-9-]+\)$/i.test(text)
+    );
+  }
+
+  renderBadgeStyle(meta: ProfileBadgeMeta) {
+    const styles: string[] = [];
+    if (this.isSafeBadgeStyleValue(meta.color)) {
+      styles.push(`color: ${meta.color}`);
+    }
+    if (this.isSafeBadgeStyleValue(meta.background)) {
+      styles.push(`background: ${meta.background}`);
+    }
+    if (this.isSafeBadgeStyleValue(meta.borderColor)) {
+      styles.push(`border-color: ${meta.borderColor}`);
+    }
+
+    return styles.length
+      ? ` style="${this.escapeHtml(styles.join('; '))}"`
+      : '';
+  }
+
+  renderProfileBadges(
+    badges: string[] = [],
+    definitions: Record<string, ProfileBadgeMeta> = {},
+  ) {
     const uniqueBadges = Array.from(
       new Set(
         badges.map((badge) => String(badge || '').trim()).filter(Boolean),
@@ -94,21 +217,81 @@ class SocialProfileManager extends SocialFeedManager {
 
     return uniqueBadges
       .map((badge) => {
-        const meta = this.getProfileBadgeMeta(badge);
-        return `<span class="social-profile-badge ${this.escapeHtml(meta.className)}" title="${this.escapeHtml(meta.label)}">
-<i class="bi ${this.escapeHtml(meta.icon)}"></i>
+        const meta = this.getProfileBadgeMeta(badge, definitions);
+        if (meta.imageUrl) {
+          return `<span class="social-profile-badge social-profile-badge-fullimage" title="${this.escapeHtml(meta.label)}">
+${this.renderProfileBadgeVisual(meta)}
+</span>`;
+        }
+
+        return `<span class="social-profile-badge ${this.escapeHtml(meta.className)}" title="${this.escapeHtml(meta.label)}"${this.renderBadgeStyle(meta)}>
+${this.renderProfileBadgeVisual(meta)}
 <span>${this.escapeHtml(meta.label)}</span>
 </span>`;
       })
       .join('');
   }
 
-  applyProfileBadges(selector: string, badges?: string[]) {
+  renderProfileBadgeVisual(meta: ProfileBadgeMeta) {
+    if (meta.imageUrl) {
+      return `<img class="social-profile-badge-image" src="${this.escapeHtml(meta.imageUrl)}" alt="${this.escapeHtml(meta.imageAlt || '')}" loading="lazy" />`;
+    }
+
+    return `<i class="bi ${this.escapeHtml(meta.icon)}"></i>`;
+  }
+
+  async applyProfileBadges(selector: string, badges?: string[]) {
     const badgesEl = document.querySelector<HTMLElement>(selector);
     if (!badgesEl) return;
-    badgesEl.innerHTML = Array.isArray(badges)
-      ? this.renderProfileBadges(badges)
-      : '';
+    if (!Array.isArray(badges)) {
+      badgesEl.innerHTML = '';
+      return;
+    }
+
+    const definitions = await this.loadProfileBadgeDefinitions();
+    badgesEl.innerHTML = this.renderProfileBadges(badges, definitions);
+  }
+
+  getUserBanReason(userFields: any) {
+    const isBanned =
+      userFields?.banned === true ||
+      userFields?.isBanned === true ||
+      userFields?.is_banned === true ||
+      userFields?.disabled === true ||
+      userFields?.isDisabled === true ||
+      userFields?.is_disabled === true ||
+      userFields?.status === 'banned' ||
+      userFields?.status === 'disabled';
+    const reason =
+      String(
+        userFields?.disableReason ||
+          userFields?.disable_reason ||
+          '',
+      ).trim() || null;
+
+    return isBanned || reason ? reason || 'This account is banned.' : null;
+  }
+
+  applyUserProfileBanNotice(userFields?: any) {
+    const notice = document.querySelector<HTMLElement>(
+      '#social-user-profile-ban-notice',
+    );
+    if (!notice) return;
+
+    const reason = this.getUserBanReason(userFields);
+    if (!reason) {
+      notice.style.display = 'none';
+      return;
+    }
+
+    const textEl = notice.querySelector<HTMLElement>('span');
+    if (textEl) {
+      textEl.textContent =
+        reason === 'This account is banned.'
+          ? reason
+          : `This account is banned: ${reason}`;
+    }
+    notice.style.display = 'inline-flex';
   }
 
   setupProfileMediaButtons() {
@@ -445,7 +628,7 @@ class SocialProfileManager extends SocialFeedManager {
     if (!this.userData) return '';
     try {
       const response = await fetch(
-        `${this.API_URL}/read/users/${this.userData.localId}`,
+        `${this.API_URL}/read/users/${this.userData.localId}?idToken=${encodeURIComponent(this.authToken || '')}`,
       );
       const data = await response.json();
       const fields = this.normalizeUserFields(data);
@@ -492,7 +675,9 @@ class SocialProfileManager extends SocialFeedManager {
     try {
       const userId = this.userData.localId;
 
-      const response = await fetch(`${this.API_URL}/read/users/${userId}`);
+      const response = await fetch(
+        `${this.API_URL}/read/users/${userId}?idToken=${encodeURIComponent(this.authToken)}`,
+      );
       const data: any = await response.json();
 
       if (response.ok && !data.error) {
@@ -1978,6 +2163,7 @@ class SocialProfileManager extends SocialFeedManager {
       }, 10);
     }
     this.applyProfileBadges('#social-user-profile-badges', []);
+    this.applyUserProfileBanNotice();
     if (avatarEl) {
       avatarEl.style.opacity = '0';
       avatarEl.src = 'https://files.catbox.moe/xry0hs.png';
@@ -2096,6 +2282,7 @@ class SocialProfileManager extends SocialFeedManager {
                 '#social-user-profile-badges',
                 userFields.badges,
               );
+              this.applyUserProfileBanNotice(userFields);
             }
           } catch (e) {
             console.warn('Failed to fetch user info:', e);

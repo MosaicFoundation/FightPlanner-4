@@ -334,9 +334,7 @@ class SocialFeedManager extends SocialGameBananaManager {
 
     const safeUsername = this.escapeHtml(username);
     const statusText =
-      direction === 'incoming'
-        ? 'Wants to be your friend'
-        : 'Request sent';
+      direction === 'incoming' ? 'Wants to be your friend' : 'Request sent';
     const actions =
       direction === 'incoming'
         ? `

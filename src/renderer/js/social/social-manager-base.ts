@@ -27,6 +27,7 @@ class SocialManagerBase {
   gameBananaPreviewAnimation: Promise<void> | null;
   gameBananaModsPage: number;
   gameBananaModsTotalPages: number;
+  gameBananaDiscoverSort: GameBananaDiscoverSort;
   gameBananaCurrentSubfeedData: GameBananaSubfeedResponse | null;
   gameBananaCategoryFilter: string;
   gameBananaSkinSubcategoryOpen: boolean;
@@ -37,6 +38,8 @@ class SocialManagerBase {
   gameBananaModsRequestId: number;
   gameBananaSearchListenerBound: boolean;
   gameBananaSubmissionCache: Map<string, GameBananaTopSubmission>;
+  gameBananaDownloadCountCache: Map<string, number | null>;
+  gameBananaDownloadCountRequests: Map<string, Promise<number | null>>;
   gameBananaLastDetailSource: {
     modelName: string;
     submissionId: string;
@@ -98,6 +101,7 @@ class SocialManagerBase {
     this.gameBananaPreviewAnimation = null;
     this.gameBananaModsPage = 1;
     this.gameBananaModsTotalPages = 1;
+    this.gameBananaDiscoverSort = 'recent';
     this.gameBananaCurrentSubfeedData = null;
     this.gameBananaCategoryFilter = 'all';
     this.gameBananaSkinSubcategoryOpen = false;
@@ -108,6 +112,8 @@ class SocialManagerBase {
     this.gameBananaModsRequestId = 0;
     this.gameBananaSearchListenerBound = false;
     this.gameBananaSubmissionCache = new Map();
+    this.gameBananaDownloadCountCache = new Map();
+    this.gameBananaDownloadCountRequests = new Map();
     this.gameBananaLastDetailSource = null;
     this.gameBananaDetailReturnSection = null;
     this.gameBananaDetailReturnScrollTop = 0;
@@ -129,6 +135,11 @@ class SocialManagerBase {
       notifications: { data: null, timestamp: 0, ttl: 1 * 60 * 1000 }, // 1 minute
       gameBananaTopSubs: { data: null, timestamp: 0, ttl: 10 * 60 * 1000 }, // 10 minutes
       gameBananaTopSubsContentRatings: {
+        data: null,
+        timestamp: 0,
+        ttl: 10 * 60 * 1000,
+      },
+      profileBadgeDefinitions: {
         data: null,
         timestamp: 0,
         ttl: 10 * 60 * 1000,
@@ -200,6 +211,70 @@ class SocialManagerBase {
     );
   }
 
+  isAccountDisabledPayload(data: any) {
+    const rawMessage =
+      typeof data === 'string'
+        ? data
+        : data?.error?.message ||
+          data?.error?.code ||
+          data?.error_code ||
+          data?.code ||
+          data?.msg ||
+          data?.message ||
+          '';
+    const message = String(rawMessage).toLowerCase();
+    return (
+      message.includes('user_disabled') ||
+      message.includes('user disabled') ||
+      message.includes('account disabled') ||
+      message.includes('user_banned') ||
+      message.includes('user banned') ||
+      message.includes('banned')
+    );
+  }
+
+  getAccountDisabledMessage(data: any) {
+    const reason =
+      data?.error?.disableReason ||
+      data?.error?.disable_reason ||
+      data?.disableReason ||
+      data?.disable_reason;
+    return reason
+      ? `Account disabled: ${reason}`
+      : 'Account disabled. You have been signed out.';
+  }
+
+  async clearStoredSocialSession() {
+    this.authToken = null;
+    this.userData = null;
+    this.stopAutoDownloadCheck();
+    this.invalidateCache();
+
+    if (window.electronAPI?.store) {
+      try {
+        await window.electronAPI.store.delete('social.authToken');
+        await window.electronAPI.store.delete('social.userData');
+      } catch (error) {
+        console.warn('[Social] Failed to clear stored auth data:', error);
+      }
+    }
+
+    window.dispatchEvent(new CustomEvent('social-account-updated'));
+  }
+
+  async handleAccountDisabled(data: any) {
+    const message = this.getAccountDisabledMessage(data);
+    this.accountDisabledHandled = true;
+    await this.clearStoredSocialSession();
+    this.showLoginScreen();
+
+    if (window.modalManager?.showAlert) {
+      window.modalManager.showAlert('error', 'Account disabled', message);
+    } else if (window.toastManager) {
+      window.toastManager.error(message);
+    }
+  }
+
   async parseJsonResponse(response: Response) {
     const text = await response.text();
     if (!text) return null;
@@ -245,6 +320,9 @@ class SocialManagerBase {
       const data = await response.json();
 
       if (!response.ok || data.error) {
+        if (this.isAccountDisabledPayload(data)) {
+          await this.handleAccountDisabled(data);
+        }
         console.error('[Social] Token refresh failed:', data.error);
         return false;
       }
@@ -431,6 +509,12 @@ class SocialManagerBase {
         if (storedToken && storedUserData) {
           this.authToken = storedToken;
           this.userData = storedUserData;
+
+          if (!(await this.refreshAuthToken())) {
+            if (this.accountDisabledHandled || !this.authToken || !this.userData) {
+              return;
+            }
+          }
 
           await this.showProfileScreen();
 

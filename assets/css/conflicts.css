@@ -135,6 +135,47 @@
   overflow-wrap: break-word;
 }
 
+.conflict-file-cell {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.conflict-file-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.conflict-ignore-file-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent-color);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.conflict-ignore-file-btn i {
+  font-size: 14px;
+}
+
+.conflict-ignore-file-btn:hover {
+  background: rgba(var(--accent-rgb), 0.2);
+  border-color: rgba(var(--accent-rgb), 0.45);
+  color: var(--accent-hover);
+}
+
 .conflict-td-mods {
   width: 60%;
   padding: 10px 8px;

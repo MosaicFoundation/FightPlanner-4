@@ -209,7 +209,15 @@ const ProtocolHandlers = {
         });
 
       const profileUrl = `https://gamebanana.com/apiv11/${safeModelName}/${safeSubmissionId}?_csvProperties=%40gbprofile`;
-      const textUrl = `https://gamebanana.com/apiv11/${safeModelName}/${safeSubmissionId}?_csvProperties=_sText,_sDescription,_aRequirements`;
+      const descriptionProperties = [
+        '_nDownloadCount',
+        '_sText',
+        '_sDescription',
+        ...(String(modelName || 'Mod').toLowerCase() === 'wip'
+          ? []
+          : ['_aRequirements']),
+      ].join(',');
+      const textUrl = `https://gamebanana.com/apiv11/${safeModelName}/${safeSubmissionId}?_csvProperties=${encodeURIComponent(descriptionProperties)}`;
       const [profileData, textResult] = await Promise.all([
         fetchGameBananaJson(profileUrl),
         fetchGameBananaJson(textUrl).catch((error) => {

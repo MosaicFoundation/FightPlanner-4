@@ -1203,6 +1203,50 @@
         <p class="settings-hint" data-i18n="settings.conflictDetectionHint">
           Automatically check for file conflicts between mods
         </p>
+
+        <div class="ignored-conflicts">
+          <div class="ignored-conflicts-header">
+            <div class="ignored-conflicts-title">
+              <i class="bi bi-slash-circle"></i>
+              <span data-i18n="settings.ignoredConflictsTitle">
+                Ignored Conflicts
+              </span>
+            </div>
+            <button
+              class="settings-btn ignored-conflict-clear-btn"
+              id="ignored-conflict-clear-btn"
+              type="button"
+            >
+              <i class="bi bi-trash"></i>
+              <span data-i18n="settings.clearIgnoredConflicts">Clear All</span>
+            </button>
+          </div>
+
+          <div class="ignored-conflicts-input">
+            <input
+              type="text"
+              id="ignored-conflict-input"
+              class="settings-input"
+              placeholder="fighter/slot/file.ext"
+              data-i18n="settings.ignoredConflictPlaceholder"
+              data-i18n-placeholder
+            />
+            <button
+              class="settings-btn ignored-conflict-add-btn"
+              id="ignored-conflict-add-btn"
+              type="button"
+            >
+              <i class="bi bi-plus-lg"></i>
+              <span data-i18n="settings.addIgnoredConflict">Add</span>
+            </button>
+          </div>
+
+          <p class="settings-hint" data-i18n="settings.ignoredConflictHint">
+            File paths added here will be ignored during conflict detection.
+          </p>
+
+          <div class="ignored-conflict-list" id="ignored-conflict-list"></div>
+        </div>
       </div>
 
       <div class="settings-section">
