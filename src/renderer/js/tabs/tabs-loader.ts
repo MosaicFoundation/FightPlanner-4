@@ -613,8 +613,10 @@ async function loadTabContent(tabName) {
     tabElement.dataset.loaded = 'true';
     console.log(`✓ Successfully loaded content for tab: ${tabName}`);
 
-    // Wait a bit for DOM to be ready before initializing features
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    // Social should paint immediately; other tabs keep a short DOM settle delay.
+    if (tabName !== 'social') {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
 
     // Reapply theme after loading tab content
     if (window.settingsManager) {

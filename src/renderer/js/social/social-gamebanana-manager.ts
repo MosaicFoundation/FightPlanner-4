@@ -353,7 +353,10 @@ class SocialGameBananaManager extends SocialManagerBase {
           String(a._sName || '').localeCompare(String(b._sName || '')),
         );
     } catch (error) {
-      console.error('[Social] Error loading GameBanana skin categories:', error);
+      console.error(
+        '[Social] Error loading GameBanana skin categories:',
+        error,
+      );
       this.gameBananaSkinSubcategories = [];
     }
   }
@@ -821,11 +824,7 @@ class SocialGameBananaManager extends SocialManagerBase {
     return `${this.GAMEBANANA_SUBFEED_URL}?${params.toString()}`;
   }
 
-  getGameBananaIndexedListUrl(
-    page = 1,
-    categoryFilter: any,
-    searchQuery = '',
-  ) {
+  getGameBananaIndexedListUrl(page = 1, categoryFilter: any, searchQuery = '') {
     const params = new URLSearchParams({
       _nPage: String(Math.max(1, page)),
       _nPerpage: '15',
@@ -908,9 +907,8 @@ class SocialGameBananaManager extends SocialManagerBase {
   }
 
   renderGameBananaModsPage(subfeedData: GameBananaSubfeedResponse) {
-    const records = (Array.isArray(subfeedData?._aRecords)
-      ? subfeedData._aRecords
-      : []
+    const records = (
+      Array.isArray(subfeedData?._aRecords) ? subfeedData._aRecords : []
     ).filter((submission) => submission._sModelName !== 'Request');
     const visibleRecords = this.filterGameBananaSearchSubmissions(
       this.filterDiscoverNsfwSubmissions(records),
@@ -984,11 +982,12 @@ class SocialGameBananaManager extends SocialManagerBase {
       );
       return (
         target.getAttribute('data-gb-id') &&
-        list.findIndex((item) =>
-          this.getGameBananaSubmissionCacheKey(
-            item.getAttribute('data-gb-model') || 'Mod',
-            item.getAttribute('data-gb-id') || '',
-          ) === key,
+        list.findIndex(
+          (item) =>
+            this.getGameBananaSubmissionCacheKey(
+              item.getAttribute('data-gb-model') || 'Mod',
+              item.getAttribute('data-gb-id') || '',
+            ) === key,
         ) === index
       );
     });
@@ -1030,9 +1029,8 @@ class SocialGameBananaManager extends SocialManagerBase {
       modelName,
       submissionId,
     );
-    const cachedCount = this.getGameBananaSubmissionDownloadCount(
-      cachedSubmission,
-    );
+    const cachedCount =
+      this.getGameBananaSubmissionDownloadCount(cachedSubmission);
     if (cachedCount != null) {
       this.gameBananaDownloadCountCache.set(key, cachedCount);
       return cachedCount;
@@ -1067,7 +1065,10 @@ class SocialGameBananaManager extends SocialManagerBase {
       const count = this.getGameBananaSubmissionDownloadCount(result.data);
       return count == null ? null : count;
     } catch (error) {
-      console.warn('[Social] Failed to fetch GameBanana download count:', error);
+      console.warn(
+        '[Social] Failed to fetch GameBanana download count:',
+        error,
+      );
       return null;
     }
   }
@@ -1121,7 +1122,9 @@ class SocialGameBananaManager extends SocialManagerBase {
       return submissions;
     }
     return submissions.filter((submission) =>
-      String(submission._sName || '').toLowerCase().includes(query),
+      String(submission._sName || '')
+        .toLowerCase()
+        .includes(query),
     );
   }
 
@@ -1666,7 +1669,9 @@ class SocialGameBananaManager extends SocialManagerBase {
   }
 
   normalizeLocalPath(value: string) {
-    return String(value || '').replace(/\\/g, '/').replace(/\/+$/, '');
+    return String(value || '')
+      .replace(/\\/g, '/')
+      .replace(/\/+$/, '');
   }
 
   getSkylineRomfsDirsFromSettings() {
@@ -1807,8 +1812,7 @@ class SocialGameBananaManager extends SocialManagerBase {
         (candidate) =>
           aliases.has(candidate) ||
           Array.from(aliases).some(
-            (alias) =>
-              candidate.includes(alias) || alias.includes(candidate),
+            (alias) => candidate.includes(alias) || alias.includes(candidate),
           ),
       );
     });
@@ -2035,7 +2039,10 @@ class SocialGameBananaManager extends SocialManagerBase {
       .replace(/\s*[:=-]\s*https?:\/\/\S+.*$/i, '')
       .replace(/https?:\/\/\S+/gi, '')
       .replace(/\s+-\s*$/, '')
-      .replace(/\b(?:plugin|dependency|dependencies|required|requirement)\b/gi, '')
+      .replace(
+        /\b(?:plugin|dependency|dependencies|required|requirement)\b/gi,
+        '',
+      )
       .replace(/\s*\([^)]*(?:optional|already included)[^)]*\)\s*$/i, '')
       .replace(/\s{2,}/g, ' ')
       .trim();
@@ -2083,7 +2090,8 @@ class SocialGameBananaManager extends SocialManagerBase {
       return entry.aliases.some((alias) => {
         const normalizedAlias = this.normalizeDependencyName(alias);
         return (
-          normalizedAlias.length >= 3 && normalizedLine.includes(normalizedAlias)
+          normalizedAlias.length >= 3 &&
+          normalizedLine.includes(normalizedAlias)
         );
       });
     });
@@ -2100,9 +2108,7 @@ class SocialGameBananaManager extends SocialManagerBase {
     const normalizedText = this.normalizeDependencyName(text);
     const mentionsDependencySection =
       /dependenc|requirement|prerequisite|required plugin/i.test(text) ||
-      /dependenc|requirement|prerequisite|requiredplugin/i.test(
-        normalizedText,
-      );
+      /dependenc|requirement|prerequisite|requiredplugin/i.test(normalizedText);
 
     if (!mentionsDependencySection) return [];
 
@@ -2202,10 +2208,7 @@ class SocialGameBananaManager extends SocialManagerBase {
   }
 
   async getGameBananaReadmeRequirements(downloadUrl = '') {
-    if (
-      !downloadUrl ||
-      !window.electronAPI?.scanGameBananaReadme
-    ) {
+    if (!downloadUrl || !window.electronAPI?.scanGameBananaReadme) {
       return [];
     }
 
@@ -2365,10 +2368,7 @@ class SocialGameBananaManager extends SocialManagerBase {
       );
       return storedValue !== false;
     } catch (error) {
-      console.warn(
-        '[Social] Failed to read dependency check setting:',
-        error,
-      );
+      console.warn('[Social] Failed to read dependency check setting:', error);
       return true;
     }
   }
@@ -2982,9 +2982,8 @@ class SocialGameBananaManager extends SocialManagerBase {
       source,
       sectionName,
     );
-    const targetImage = targetCard?.querySelector<HTMLElement>(
-      '.social-mod-image',
-    );
+    const targetImage =
+      targetCard?.querySelector<HTMLElement>('.social-mod-image');
     if (targetCard) {
       this.keepGameBananaTargetVisible(targetCard);
     }
@@ -3690,11 +3689,13 @@ class SocialGameBananaManager extends SocialManagerBase {
         return isOwner && (sameLink || sameDownload);
       });
       const docId = existing?.id || this.createSocialDocumentId();
+      const now = new Date().toISOString();
       const payload = {
         id: docId,
         availableFiles: JSON.stringify(pending.availableFiles),
-        createdAt: existing?.createdAt || new Date().toISOString(),
+        createdAt: existing?.createdAt || now,
         creator: pending.creator,
+        downloadedAt: now,
         image_url: pending.imageUrl,
         isHidden: false,
         link: pending.link,
@@ -3704,6 +3705,7 @@ class SocialGameBananaManager extends SocialManagerBase {
         needsFileSelection:
           pending.availableFiles.length > 1 ? 'true' : 'false',
         pseudo: username,
+        updatedAt: now,
         userId: this.userData.localId,
       };
 

@@ -21,8 +21,9 @@ class SocialFeedManager extends SocialGameBananaManager {
       const mods = Array.isArray(modsData)
         ? modsData
         : modsData.documents || [];
+      const sortedMods = this.sortSocialModsByLatestDownload(mods);
 
-      if (Array.isArray(mods) && mods.length > 0) {
+      if (sortedMods.length > 0) {
         const userId = this.userData?.localId;
         const usernameEl = document.querySelector<HTMLElement>(
           '#social-profile-username',
@@ -31,7 +32,7 @@ class SocialFeedManager extends SocialGameBananaManager {
 
         feedContent.innerHTML =
           '<div class="social-mods-grid">' +
-          mods
+          sortedMods
             .map((mod) => {
               const modUserId = mod.userId;
               const modPseudo = mod.pseudo;
@@ -69,6 +70,57 @@ class SocialFeedManager extends SocialGameBananaManager {
       feedContent.innerHTML =
         '<div class="social-error-state"><i class="bi bi-exclamation-triangle"></i><p>Failed to load mods</p></div>';
     }
+  }
+
+  sortSocialModsByLatestDownload(mods) {
+    if (!Array.isArray(mods)) return [];
+
+    return mods
+      .map((mod, index) => ({
+        mod,
+        index,
+        time: this.getSocialModDownloadTime(mod),
+      }))
+      .sort((a, b) => b.time - a.time || a.index - b.index)
+      .map(({ mod }) => mod);
+  }
+
+  getSocialModDownloadTime(mod) {
+    const dateFields = [
+      mod?.downloadedAt,
+      mod?.updatedAt,
+      mod?.createdAt,
+      mod?.created_at,
+    ];
+
+    for (const value of dateFields) {
+      const timestamp = this.parseSocialDateTimestamp(value);
+      if (timestamp > 0) return timestamp;
+    }
+
+    return 0;
+  }
+
+  parseSocialDateTimestamp(value) {
+    if (!value) return 0;
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value < 1000000000000 ? value * 1000 : value;
+    }
+
+    if (typeof value === 'string') {
+      const parsed = Date.parse(value);
+      return Number.isNaN(parsed) ? 0 : parsed;
+    }
+
+    if (typeof value === 'object') {
+      const seconds = value.seconds ?? value._seconds;
+      if (typeof seconds === 'number' && Number.isFinite(seconds)) {
+        return seconds * 1000;
+      }
+    }
+
+    return 0;
   }
 
   async loadMyMods() {

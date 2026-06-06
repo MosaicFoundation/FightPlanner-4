@@ -2427,6 +2427,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tc!.style.display = 'flex';
       tc!.classList.add('show');
       document.querySelector<HTMLElement>('.tutorial-window')!.classList.add('white-bg');
+      await window.tutorialAPI?.tutorialIntroComplete?.();
       renderProgressDots().then(() => renderStep(0));
     } else {
       startAnimation();
@@ -2494,6 +2495,7 @@ document.addEventListener('DOMContentLoaded', () => {
       welcomeText!.style.display = 'none';
       screenshotPreview!.style.display = 'none';
       tutorialContainer!.style.display = 'flex';
+      await window.tutorialAPI?.tutorialIntroComplete?.();
 
       await renderProgressDots();
       renderStep(0);

@@ -61,6 +61,15 @@ const TutorialHandlers = {
     return { success: true };
   },
 
+  ['tutorial-intro-complete']: async (common: BaseHandlerArg) => {
+    const win = BrowserWindow.fromWebContents(common.event.sender);
+    if (win && !win.isDestroyed()) {
+      win.setAlwaysOnTop(false);
+    }
+
+    return { success: true };
+  },
+
   ['detect-sd-drives']: async (common: BaseHandlerArg) => {
     try {
       const drives = await detectWindowsDrives();

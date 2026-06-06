@@ -490,6 +490,16 @@ class SocialManagerBase {
   }
 
   async initialize() {
+    if (this.socialInitialized) {
+      this.setupButtons();
+      this.setupProfileButtons();
+      this.setupGameBananaSearchEvents();
+      this.setupNavigation();
+      return;
+    }
+
+    this.socialInitialized = true;
+
     try {
       setTimeout(() => {
         this.hideRegisterModal();
@@ -498,29 +508,23 @@ class SocialManagerBase {
       }, 10);
 
       if (window.electronAPI && window.electronAPI.store) {
-        const storedToken = (await window.electronAPI.store.get(
-          'social.authToken',
-        )) as string | null;
-
-        const storedUserData = (await window.electronAPI.store.get(
-          'social.userData',
-        )) as typeof this.userData | null;
+        const [storedToken, storedUserData] = (await Promise.all([
+          window.electronAPI.store.get('social.authToken'),
+          window.electronAPI.store.get('social.userData'),
+        ])) as [string | null, typeof this.userData | null];
 
         if (storedToken && storedUserData) {
           this.authToken = storedToken;
           this.userData = storedUserData;
-
-          if (!(await this.refreshAuthToken())) {
-            if (this.accountDisabledHandled || !this.authToken || !this.userData) {
-              return;
-            }
-          }
 
           await this.showProfileScreen();
 
           this.startAutoDownloadCheck();
 
           this.setupProtocolListeners();
+          this.refreshAuthToken().catch((error) => {
+            console.warn('[Social] Background token refresh failed:', error);
+          });
           return;
         }
       }
@@ -574,17 +578,15 @@ class SocialManagerBase {
   startOnboarding() {
     this.hideChrome();
 
-    setTimeout(() => {
-      const onboarding =
-        document.querySelector<HTMLElement>('#social-onboarding');
-      if (onboarding) {
-        onboarding.style.display = 'flex';
+    const onboarding =
+      document.querySelector<HTMLElement>('#social-onboarding');
+    if (onboarding) {
+      onboarding.style.display = 'flex';
 
-        setTimeout(() => {
-          this.loadOnboardingAnimation();
-        }, 50);
-      }
-    }, 500);
+      setTimeout(() => {
+        this.loadOnboardingAnimation();
+      }, 0);
+    }
   }
 
   loadOnboardingAnimation() {
