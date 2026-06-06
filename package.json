@@ -155,7 +155,7 @@
           ]
         }
       ],
-      "icon": "assets/app-icons/icon.icns",
+      "icon": "assets/app-icons/icon.icon",
       "category": "public.app-category.utilities"
     },
     "linux": {

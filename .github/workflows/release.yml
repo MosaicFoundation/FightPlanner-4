@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-26]
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       CI: true
@@ -46,6 +46,11 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
+      - name: Verify Xcode toolchain
+        if: matrix.os == 'macos-26'
+        run: |
+          xcodebuild -version
+          xcrun actool --version
       - name: Calculate and set version
         if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
         shell: bash
@@ -66,8 +71,19 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: npm run dist -- --publish ${{ github.event_name == 'pull_request' && 'never' || 'always' }}
       - name: Upload dist artifacts (fallback)
-        if: always()
+        if: github.event_name == 'pull_request' && always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.os }}
-          path: dist/**
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.zip
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.blockmap
+            dist/*.yml
+            dist/*.yaml
+          if-no-files-found: ignore
+          retention-days: 3
