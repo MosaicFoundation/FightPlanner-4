@@ -14,7 +14,7 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
           DISCORD_USERNAME: "FightPlanner Updates"
-          DISCORD_AVATAR: "https://raw.githubusercontent.com/FIREXDF/FightPlanner-4/main/assets/images/logo.png"
+          DISCORD_AVATAR: "https://raw.githubusercontent.com/FightPlanner/FightPlanner-4/main/assets/images/logo.png"
           DISCORD_EMBEDS: |
             [{
               "title": "${{ github.event.release.name || github.event.release.tag_name }}",

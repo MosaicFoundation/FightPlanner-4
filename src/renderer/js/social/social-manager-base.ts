@@ -517,6 +517,12 @@ class SocialManagerBase {
           this.authToken = storedToken;
           this.userData = storedUserData;
 
+          if (!(await this.refreshAuthToken())) {
+            if (this.accountDisabledHandled || !this.authToken || !this.userData) {
+              return;
+            }
+          }
+
           await this.showProfileScreen();
 
           this.startAutoDownloadCheck();
