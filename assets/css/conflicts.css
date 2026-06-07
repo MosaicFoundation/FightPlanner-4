@@ -399,6 +399,25 @@
   font-size: 14px;
 }
 
+.conflict-auto-slot-footer-options {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: auto;
+  min-width: 0;
+}
+
+.conflict-auto-slot-range-title {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.conflict-auto-slot-range-switch {
+  flex-shrink: 0;
+}
+
 .conflict-disable-mod-footer-btn {
   background: rgba(var(--danger-rgb), 0.1);
   border: 1px solid rgba(var(--danger-rgb), 0.28);

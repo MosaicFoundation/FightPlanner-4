@@ -74,6 +74,12 @@
   box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.2);
 }
 
+.logs-action-btn.active {
+  background: rgba(var(--accent-rgb), 0.18);
+  color: var(--accent-color);
+  border-color: rgba(var(--accent-rgb), 0.45);
+}
+
 .logs-container {
   height: 500px;
   max-height: calc(100vh - 350px);

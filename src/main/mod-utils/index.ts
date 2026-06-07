@@ -7,7 +7,6 @@ import { app } from 'electron';
 import { ModInstallResult } from '../plugin-update-installer';
 import { FileExtractor } from '../utils/file-extractor';
 import { resolveVirtualPath } from '../utils/virtual-paths';
-import { ModScanner } from './mod-scanner';
 import { CONFLICT_WHITELIST_PATTERNS } from '../config';
 import sharedStore from '../store';
 
@@ -67,6 +66,98 @@ interface BatchModMove {
 }
 
 export default class ModUtils {
+  private static normalizeRelativeModPath(relativePath: string): string {
+    return relativePath
+      .replace(/\\/g, '/')
+      .split('/')
+      .filter((part) => part && part !== '.')
+      .join('/');
+  }
+
+  private static async scanRelativeFilePaths(
+    modPath: string,
+  ): Promise<string[]> {
+    const relativeFilePaths: string[] = [];
+    const stack = [modPath];
+
+    while (stack.length > 0) {
+      const currentPath = stack.pop();
+      if (!currentPath) continue;
+
+      let entries: fs.Dirent[];
+      try {
+        entries = await fsPromises.readdir(currentPath, {
+          withFileTypes: true,
+        });
+      } catch (error) {
+        console.warn('[ModUtils] Failed to scan mod directory:', {
+          modPath,
+          currentPath,
+          error: error?.message || String(error),
+        });
+        continue;
+      }
+
+      entries.sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, {
+          numeric: true,
+          sensitivity: 'base',
+        }),
+      );
+
+      for (const entry of entries) {
+        const fullPath = path.join(currentPath, entry.name);
+
+        if (entry.isFile()) {
+          const relativePath = path.relative(modPath, fullPath);
+          const normalizedPath = this.normalizeRelativeModPath(relativePath);
+
+          if (normalizedPath) {
+            relativeFilePaths.push(normalizedPath);
+          }
+        }
+      }
+
+      for (let index = entries.length - 1; index >= 0; index--) {
+        const entry = entries[index];
+
+        if (entry.isDirectory()) {
+          stack.push(path.join(currentPath, entry.name));
+        }
+      }
+    }
+
+    return relativeFilePaths;
+  }
+
+  private static getConflictGroupMetadata(relativeFilePath: string): {
+    fighter: string;
+    slot: string;
+  } {
+    const pathParts = relativeFilePath.split('/');
+    const fileName = path.basename(relativeFilePath);
+    const charaUiMatch = fileName.match(
+      /^chara_\d+_([a-z_]+?)_(\d{2,3})(?:\.[^.]+)$/i,
+    );
+    const fighterIndex = pathParts.indexOf('fighter');
+    const fighter =
+      fighterIndex !== -1 && pathParts.length > fighterIndex + 1
+        ? pathParts[fighterIndex + 1]
+        : charaUiMatch?.[1] || 'unknown';
+    const pathSlot =
+      fighterIndex !== -1
+        ? pathParts
+            .slice(fighterIndex + 2)
+            .find((part) => /^c\d{2,3}$/i.test(part))
+        : pathParts.find((part) => /^c\d{2,3}$/i.test(part));
+    const slot = pathSlot || (charaUiMatch ? `c${charaUiMatch[2]}` : null);
+
+    return {
+      fighter,
+      slot: slot || 'unknown',
+    };
+  }
+
   private static getDirectorySize(dirPath: string): number {
     let total = 0;
 
@@ -210,7 +301,11 @@ export default class ModUtils {
             });
           }
 
-          const hash = crypto.createHash('sha256').update(entry.name).digest('hex').substring(0, 12);
+          const hash = crypto
+            .createHash('sha256')
+            .update(entry.name)
+            .digest('hex')
+            .substring(0, 12);
           mods.push({
             name: entry.name,
             path: modPath,
@@ -415,10 +510,7 @@ export default class ModUtils {
     }
   }
 
-  static applyModBatchState(
-    activeModsPath: string,
-    enabledModNames: string[],
-  ) {
+  static applyModBatchState(activeModsPath: string, enabledModNames: string[]) {
     activeModsPath = resolveVirtualPath(activeModsPath);
     const { activeMods, disabledMods } = this.readAllMods(activeModsPath);
     const enabledSet = new Set(enabledModNames);
@@ -449,7 +541,9 @@ export default class ModUtils {
         continue;
       }
 
-      const targetStatus: BatchModState = shouldBeActive ? 'active' : 'disabled';
+      const targetStatus: BatchModState = shouldBeActive
+        ? 'active'
+        : 'disabled';
       const targetBasePath =
         targetStatus === 'active' ? activeModsPath : disabledModsPath;
       const targetPath = path.join(targetBasePath, mod.name);
@@ -505,7 +599,6 @@ export default class ModUtils {
     activeMods: Mod[],
     whitelistPatterns: string[] = [],
   ) {
-    // Group conflicts by fighter and slot
     const conflictGroups: Map<
       string,
       {
@@ -524,9 +617,6 @@ export default class ModUtils {
         modIndex: number;
         modName: string;
         modPath: string;
-        filePath: string;
-        fighter?: string;
-        slot?: string;
       }>
     >();
 
@@ -538,67 +628,59 @@ export default class ModUtils {
     const scanResults = await Promise.all(
       activeMods.map(async (mod, modIndex) => {
         if (mod.path && fs.existsSync(mod.path)) {
-          return ModScanner.scanModFiles(mod.path);
+          return {
+            modIndex,
+            files: await this.scanRelativeFilePaths(mod.path),
+          };
         }
+
+        return {
+          modIndex,
+          files: [],
+        };
       }),
     );
 
-    function _addToFileMap(
-      modIndex: number,
-      filePath: string,
-      fighter?: string,
-      slot?: string,
-    ) {
+    function _addToFileMap(modIndex: number, filePath: string) {
+      const normalizedFilePath = ModUtils.normalizeRelativeModPath(filePath);
+
+      if (!normalizedFilePath) {
+        return;
+      }
+
       if (
         allWhitelistPatterns.some((pattern) => {
           const regex = new RegExp(pattern);
-          return regex.test(filePath);
+          return regex.test(normalizedFilePath);
         })
       ) {
         return;
       }
 
-      if (!fileToMods.has(filePath)) {
-        fileToMods.set(filePath, []);
+      if (!fileToMods.has(normalizedFilePath)) {
+        fileToMods.set(normalizedFilePath, []);
       }
 
-      const fileList = fileToMods.get(filePath);
+      const fileList = fileToMods.get(normalizedFilePath);
 
       if (fileList) {
         fileList.push({
           modIndex,
           modName: activeMods[modIndex].name,
           modPath: activeMods[modIndex].path,
-          filePath: filePath,
-          fighter,
-          slot,
         });
       }
     }
 
-    for (const [index, scanResult] of scanResults.entries()) {
-      if (scanResult) {
-        for (const unknownFile of scanResult.unknownFiles) {
-          _addToFileMap(index, unknownFile);
-        }
-
-        for (const fighter of Object.keys(scanResult.pathData)) {
-          for (const slot of Object.keys(scanResult.pathData[fighter])) {
-            const slotData = scanResult.pathData[fighter][slot];
-
-            for (const { original } of slotData.filesToBeModified) {
-              _addToFileMap(index, original, fighter, slot);
-            }
-          }
-        }
+    for (const scanResult of scanResults) {
+      for (const relativeFilePath of scanResult.files) {
+        _addToFileMap(scanResult.modIndex, relativeFilePath);
       }
     }
 
-    // Group conflicts by fighter and slot
     fileToMods.forEach((modsList, filePath) => {
       if (modsList.length > 1) {
-        const fighter = modsList[0].fighter || 'unknown';
-        const slot = modsList[0].slot || 'unknown';
+        const { fighter, slot } = this.getConflictGroupMetadata(filePath);
         const groupKey = `${fighter}-${slot}`;
 
         if (!conflictGroups.has(groupKey)) {
@@ -653,7 +735,11 @@ export default class ModUtils {
     }
   }
 
-  static async copyRecursive(src: string, dest: string, isCancelled?: () => boolean) {
+  static async copyRecursive(
+    src: string,
+    dest: string,
+    isCancelled?: () => boolean,
+  ) {
     if (isCancelled?.()) {
       throw new Error('Installation cancelled');
     }
@@ -687,7 +773,10 @@ export default class ModUtils {
   ) {
     let tempExtractDir: string | null;
 
-    console.log('[installFromArchive] Installing mod from archive:', sourceArchivePath);
+    console.log(
+      '[installFromArchive] Installing mod from archive:',
+      sourceArchivePath,
+    );
 
     tempExtractDir = path.join(
       app.getPath('temp'),
@@ -700,7 +789,8 @@ export default class ModUtils {
       throw new Error('Installation cancelled');
     }
 
-    const estimatedSize = await FileExtractor.estimateArchiveUncompressedSize(sourceArchivePath);
+    const estimatedSize =
+      await FileExtractor.estimateArchiveUncompressedSize(sourceArchivePath);
     let lastProgress = -1;
     let lastLoggedProgress = -1;
     console.log('[extract-progress][mod-utils] extraction prepared', {
@@ -763,7 +853,10 @@ export default class ModUtils {
       try {
         await fsPromises.rm(tempExtractDir, { recursive: true, force: true });
       } catch (cleanupError) {
-        console.warn('[installFromArchive] Failed to cleanup cancelled extraction:', cleanupError.message);
+        console.warn(
+          '[installFromArchive] Failed to cleanup cancelled extraction:',
+          cleanupError.message,
+        );
       }
       throw error;
     }
@@ -772,7 +865,12 @@ export default class ModUtils {
       throw new Error('Installation cancelled');
     }
 
-    reportProgress(100, undefined, 'complete', this.getDirectorySize(tempExtractDir));
+    reportProgress(
+      100,
+      undefined,
+      'complete',
+      this.getDirectorySize(tempExtractDir),
+    );
     if (options.isCancelled?.()) {
       throw new Error('Installation cancelled');
     }
@@ -781,7 +879,9 @@ export default class ModUtils {
     let isSingleFolderExtract = false;
 
     if (extractedItems.length === 1) {
-      const firstItemStat = await fsPromises.stat(path.join(tempExtractDir, extractedItems[0]));
+      const firstItemStat = await fsPromises.stat(
+        path.join(tempExtractDir, extractedItems[0]),
+      );
       isSingleFolderExtract = firstItemStat.isDirectory();
     }
 
@@ -812,15 +912,19 @@ export default class ModUtils {
 
       try {
         await fsPromises.access(modPath);
-        console.log(`[installFromArchive] Mod ${modName} already exists, removing old version`);
+        console.log(
+          `[installFromArchive] Mod ${modName} already exists, removing old version`,
+        );
         await fsPromises.rm(modPath, { recursive: true, force: true });
-      } catch { }
+      } catch {}
 
       return modPath;
     }
 
     if (!dirsWithModFiles.length) {
-      console.log('[installFromArchive] Copying multiple items to mods folder...');
+      console.log(
+        '[installFromArchive] Copying multiple items to mods folder...',
+      );
       await this.copyRecursive(
         tempExtractDir,
         await _prepareModPath(tempExtractDir),
@@ -832,7 +936,9 @@ export default class ModUtils {
           throw new Error('Installation cancelled');
         }
 
-        console.log(`[installFromArchive] Copying mod files from ${dir} to mods folder...`);
+        console.log(
+          `[installFromArchive] Copying mod files from ${dir} to mods folder...`,
+        );
 
         const modPath = await _prepareModPath(dir);
         await this.copyRecursive(dir, modPath, options.isCancelled);
@@ -847,9 +953,11 @@ export default class ModUtils {
               await fsPromises.access(infoTomlDest);
             } catch {
               await fsPromises.copyFile(infoTomlSource, infoTomlDest);
-              console.log('[installFromArchive] Copied info.toml from top level directory');
+              console.log(
+                '[installFromArchive] Copied info.toml from top level directory',
+              );
             }
-          } catch { }
+          } catch {}
 
           const previewSource = path.join(topLevelModDir, 'preview.webp');
           const previewDest = path.join(modPath, 'preview.webp');
@@ -860,9 +968,11 @@ export default class ModUtils {
               await fsPromises.access(previewDest);
             } catch {
               await fsPromises.copyFile(previewSource, previewDest);
-              console.log('[installFromArchive] Copied preview.webp from top level directory');
+              console.log(
+                '[installFromArchive] Copied preview.webp from top level directory',
+              );
             }
-          } catch { }
+          } catch {}
         }
       }
     }
@@ -871,7 +981,10 @@ export default class ModUtils {
       try {
         await fsPromises.rm(tempExtractDir, { recursive: true, force: true });
       } catch (err) {
-        console.warn('[installFromArchive] Failed to cleanup temp directory:', err.message);
+        console.warn(
+          '[installFromArchive] Failed to cleanup temp directory:',
+          err.message,
+        );
       }
     }
 
@@ -879,7 +992,10 @@ export default class ModUtils {
       await fsPromises.unlink(sourceArchivePath);
       console.log('[installFromArchive] Deleted original archive file');
     } catch (err) {
-      console.warn('[installFromArchive] Failed to delete original archive:', err.message);
+      console.warn(
+        '[installFromArchive] Failed to delete original archive:',
+        err.message,
+      );
     }
 
     return resultingMods;
@@ -943,7 +1059,11 @@ export default class ModUtils {
       let resultingMods: Awaited<ReturnType<typeof this.installFromArchive>>;
 
       if (isArchive) {
-        resultingMods = await this.installFromArchive(sourcePath, modsPath, options);
+        resultingMods = await this.installFromArchive(
+          sourcePath,
+          modsPath,
+          options,
+        );
       } else if (isDirectory) {
         resultingMods = [await this.installFromDirectory(sourcePath, modsPath)];
       } else {

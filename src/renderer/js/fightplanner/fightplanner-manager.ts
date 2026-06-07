@@ -3,28 +3,73 @@ class FightPlannerManager {
   oldTestersExpanded: boolean;
   localeChangedHandler: (() => void) | null;
   logoStorageKey: string;
+  sidebarPrideTabsStorageKey: string;
   defaultLogoVariantId: string;
-  logoVariants: Array<{ id: string; label: string; src: string }>;
+  logoVariants: Array<{
+    id: string;
+    label: string;
+    src: string;
+    sidebarIconBackground: string;
+  }>;
 
   constructor() {
     this.initialized = false;
     this.oldTestersExpanded = false;
     this.localeChangedHandler = null;
     this.logoStorageKey = 'fightplanner_logo_variant';
+    this.sidebarPrideTabsStorageKey = 'sidebar_pride_tabs_enabled';
     this.defaultLogoVariantId = 'pride';
     this.logoVariants = [
-      { id: 'default', label: 'Default', src: '../images/logo.png' },
-      { id: 'pride', label: 'Pride', src: '../images/pride-logo/pride.png' },
-      { id: 'trans', label: 'Trans', src: '../images/pride-logo/trans.png' },
-      { id: 'bi', label: 'Bi', src: '../images/pride-logo/bi.png' },
-      { id: 'gay', label: 'Gay', src: '../images/pride-logo/gay.png' },
-      { id: 'lesbian', label: 'Lesbian', src: '../images/pride-logo/lesbian.png' },
+      {
+        id: 'default',
+        label: 'Default',
+        src: '../images/logo.png',
+        sidebarIconBackground: 'linear-gradient(#ffffff, #ffffff)',
+      },
+      {
+        id: 'pride',
+        label: 'Pride',
+        src: '../images/pride-logo/pride.png',
+        sidebarIconBackground:
+          'linear-gradient(180deg, #e40303 0 16.66%, #ff8c00 16.66% 33.33%, #ffed00 33.33% 50%, #008026 50% 66.66%, #24408e 66.66% 83.33%, #732982 83.33% 100%)',
+      },
+      {
+        id: 'trans',
+        label: 'Trans',
+        src: '../images/pride-logo/trans.png',
+        sidebarIconBackground:
+          'linear-gradient(180deg, #5bcefa 0 20%, #f5a9b8 20% 40%, #ffffff 40% 60%, #f5a9b8 60% 80%, #5bcefa 80% 100%)',
+      },
+      {
+        id: 'bi',
+        label: 'Bi',
+        src: '../images/pride-logo/bi.png',
+        sidebarIconBackground:
+          'linear-gradient(180deg, #d60270 0 40%, #9b4f96 40% 60%, #0038a8 60% 100%)',
+      },
+      {
+        id: 'gay',
+        label: 'Gay',
+        src: '../images/pride-logo/gay.png',
+        sidebarIconBackground:
+          'linear-gradient(180deg, #078d70 0 14.28%, #26ceaa 14.28% 28.57%, #98e8c1 28.57% 42.85%, #ffffff 42.85% 57.14%, #7bade2 57.14% 71.42%, #5049cc 71.42% 85.71%, #3d1a78 85.71% 100%)',
+      },
+      {
+        id: 'lesbian',
+        label: 'Lesbian',
+        src: '../images/pride-logo/lesbian.png',
+        sidebarIconBackground:
+          'linear-gradient(180deg, #d52d00 0 20%, #ef7627 20% 40%, #ffffff 40% 60%, #b55690 60% 80%, #a30262 80% 100%)',
+      },
       {
         id: 'omnisexual',
         label: 'Omnisexual',
         src: '../images/pride-logo/omnisexual.png',
+        sidebarIconBackground:
+          'linear-gradient(180deg, #fe9ace 0 20%, #ff53bf 20% 40%, #200044 40% 60%, #6760fe 60% 80%, #8ea6ff 80% 100%)',
       },
     ];
+    this.applySidebarPrideTabsEnabled(this.areSidebarPrideTabsEnabled());
     console.log('FightPlanner Manager created');
   }
 
@@ -130,6 +175,31 @@ class FightPlannerManager {
     this.applyLogoVariant(this.getSavedLogoVariant().id);
   }
 
+  areSidebarPrideTabsEnabled() {
+    return localStorage.getItem(this.sidebarPrideTabsStorageKey) !== 'false';
+  }
+
+  applySidebarPrideTabsEnabled(enabled: boolean, persist = false) {
+    document.documentElement.classList.toggle(
+      'sidebar-pride-tabs-disabled',
+      !enabled,
+    );
+
+    if (persist) {
+      localStorage.setItem(
+        this.sidebarPrideTabsStorageKey,
+        enabled ? 'true' : 'false',
+      );
+    }
+  }
+
+  applySidebarActiveLogo(backgroundImage: string) {
+    document.documentElement.style.setProperty(
+      '--sidebar-active-logo',
+      backgroundImage,
+    );
+  }
+
   applyLogoVariant(variantId: string, persist = true) {
     const variant =
       this.logoVariants.find((entry) => entry.id === variantId) ||
@@ -145,6 +215,8 @@ class FightPlannerManager {
         logo.src = variant.src;
         logo.dataset.logoVariant = variant.id;
       });
+
+    this.applySidebarActiveLogo(variant.sidebarIconBackground);
   }
 
   setupLogoVariantPicker() {
