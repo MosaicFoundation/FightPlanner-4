@@ -38,6 +38,7 @@ class SettingsManager {
       devMode: false,
       devShowModHash: false,
       theme: 'dark',
+      sidebarPrideTabsEnabled: true,
       enhancedStatusBar: true,
       startupSplashEnabled: true,
       startupSplashSoundEnabled: true,
@@ -57,6 +58,7 @@ class SettingsManager {
   async initSettings() {
     this.settings = await this.loadSettings();
     this.applyTheme(this.settings.theme);
+    this.applySidebarPrideTabsSetting(this.settings.sidebarPrideTabsEnabled);
     this.applyAppSoundSettings();
     this.initialized = true;
     this.setupEventListeners();
@@ -1203,6 +1205,24 @@ class SettingsManager {
 
       themeSelect.dataset.listenerAttached = 'true';
       this.updateThemeUI();
+    }
+
+    const sidebarPrideTabsToggle = document.querySelector<HTMLInputElement>(
+      '#sidebar-pride-tabs-enabled',
+    );
+    if (
+      sidebarPrideTabsToggle &&
+      !sidebarPrideTabsToggle.dataset.listenerAttached
+    ) {
+      sidebarPrideTabsToggle.checked =
+        this.settings.sidebarPrideTabsEnabled !== false;
+      sidebarPrideTabsToggle.addEventListener('change', async () => {
+        const enabled = sidebarPrideTabsToggle.checked;
+        this.settings.sidebarPrideTabsEnabled = enabled;
+        this.applySidebarPrideTabsSetting(enabled);
+        await window.electronAPI.store.set('sidebarPrideTabsEnabled', enabled);
+      });
+      sidebarPrideTabsToggle.dataset.listenerAttached = 'true';
     }
 
     const emulatorTypeSelect = document.querySelector<HTMLElement>(
@@ -2724,6 +2744,19 @@ ${t('settings.okUnderstand')}
     }
   }
 
+  applySidebarPrideTabsSetting(enabled: boolean) {
+    const isEnabled = enabled !== false;
+    document.documentElement.classList.toggle(
+      'sidebar-pride-tabs-disabled',
+      !isEnabled,
+    );
+    localStorage.setItem(
+      'sidebar_pride_tabs_enabled',
+      isEnabled ? 'true' : 'false',
+    );
+    window.fightPlannerManager?.applySidebarPrideTabsEnabled?.(isEnabled);
+  }
+
   async loadSettings() {
     try {
       const modsPath = await window.electronAPI.store.get('modsPath');
@@ -2762,6 +2795,9 @@ ${t('settings.okUnderstand')}
         'pluginUpdateIntroShown',
       );
       const theme = await window.electronAPI.store.get('theme');
+      const sidebarPrideTabsEnabled = await window.electronAPI.store.get(
+        'sidebarPrideTabsEnabled',
+      );
       const autoDisableNewMods =
         await window.electronAPI.store.get('autoDisableNewMods');
       const disableAllModsOnDownload = await window.electronAPI.store.get(
@@ -2817,6 +2853,7 @@ ${t('settings.okUnderstand')}
         autoCheckPluginUpdates: autoCheckPluginUpdates || false,
         pluginUpdateIntroShown: pluginUpdateIntroShown || false,
         theme: theme || 'dark',
+        sidebarPrideTabsEnabled: sidebarPrideTabsEnabled !== false,
         autoDisableNewMods: autoDisableNewMods || false,
         disableAllModsOnDownload: disableAllModsOnDownload || false,
         checkDependenciesOnDiscoverDownload:
@@ -2862,6 +2899,7 @@ ${t('settings.okUnderstand')}
         autoCheckPluginUpdates: false,
         pluginUpdateIntroShown: false,
         theme: 'dark',
+        sidebarPrideTabsEnabled: true,
         autoDisableNewMods: false,
         disableAllModsOnDownload: false,
         checkDependenciesOnDiscoverDownload: true,
@@ -2947,6 +2985,10 @@ ${t('settings.okUnderstand')}
         this.settings.pluginUpdateIntroShown,
       );
       await window.electronAPI.store.set('theme', this.settings.theme);
+      await window.electronAPI.store.set(
+        'sidebarPrideTabsEnabled',
+        this.settings.sidebarPrideTabsEnabled !== false,
+      );
       await window.electronAPI.store.set(
         'autoDisableNewMods',
         this.settings.autoDisableNewMods,

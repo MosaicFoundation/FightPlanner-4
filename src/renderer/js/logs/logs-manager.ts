@@ -10,6 +10,7 @@ class LogsManager {
   logs: Array<Log>;
   maxLogs: number;
   currentFilter: string;
+  showDeveloperLogs: boolean;
   logsContainer: HTMLElement | null;
   initialized: boolean;
 
@@ -17,6 +18,7 @@ class LogsManager {
     this.logs = [];
     this.maxLogs = 1000;
     this.currentFilter = 'all';
+    this.showDeveloperLogs = false;
     this.logsContainer = null;
     this.initialized = false;
 
@@ -156,11 +158,81 @@ class LogsManager {
       openLogsFolderBtn.addEventListener('click', () => this.openLogsFolder());
       openLogsFolderBtn.dataset.listenerAttached = 'true';
     }
+
+    const developerLogsBtn = document.querySelector<HTMLElement>(
+      '#toggle-developer-logs-btn',
+    );
+    if (developerLogsBtn && !developerLogsBtn.dataset.listenerAttached) {
+      developerLogsBtn.addEventListener('click', () => {
+        this.setDeveloperLogsVisible(!this.showDeveloperLogs);
+      });
+      developerLogsBtn.dataset.listenerAttached = 'true';
+    }
+
+    this.updateDeveloperLogsButton();
   }
 
   setFilter(level) {
     this.currentFilter = level;
     this.renderLogs();
+  }
+
+  setDeveloperLogsVisible(visible: boolean) {
+    this.showDeveloperLogs = visible;
+    this.updateDeveloperLogsButton();
+    this.renderLogs();
+  }
+
+  updateDeveloperLogsButton() {
+    const developerLogsBtn = document.querySelector<HTMLElement>(
+      '#toggle-developer-logs-btn',
+    );
+    if (!developerLogsBtn) return;
+
+    developerLogsBtn.classList.toggle('active', this.showDeveloperLogs);
+    developerLogsBtn.setAttribute('aria-pressed', String(this.showDeveloperLogs));
+  }
+
+  isDeveloperLog(log: Log) {
+    if (log.level === 'error') {
+      return false;
+    }
+
+    const message = log.message.trim();
+    const developerLogPatterns = [
+      /^Tab already loaded:/i,
+      /^Tab switched to:/i,
+      /^Switched to tab:/i,
+      /^Initializing features for tab:/i,
+      /^Updating \d+ elements with data-i18n$/i,
+      /^Updated \d+ elements$/i,
+      /^Install confirm toggle:/i,
+      /^Install confirm toggle changed!$/i,
+      /^Install confirm toggle listener attached$/i,
+      /^Sending Discord RPC update:/i,
+      /^Received discord-rpc-update:/i,
+      /^Discord RPC manager not initialized/i,
+      /^Setting .* tab/i,
+      /^Setting Idle state$/i,
+      /^Setting up Discord RPC listeners/i,
+      /^Found \d+ tab buttons$/i,
+      /^Discord RPC Client initialized$/i,
+      /^Main process logs listener initialized$/i,
+      /^Logs Manager initialized$/i,
+      /^\[UpdateManager\]/i,
+      /^\[extract-progress\]/i,
+      /^\[renderer-ipc\]/i,
+    ];
+
+    return developerLogPatterns.some((pattern) => pattern.test(message));
+  }
+
+  isLogVisible(log: Log) {
+    if (this.currentFilter !== 'all' && log.level !== this.currentFilter) {
+      return false;
+    }
+
+    return this.showDeveloperLogs || !this.isDeveloperLog(log);
   }
 
   clearLogs() {
@@ -195,7 +267,7 @@ class LogsManager {
 
   copyLogsToClipboard() {
     try {
-      const logsText = this.logs
+      const logsText = this.getFilteredLogs()
         .map((log) => {
           const time = log.timestamp.toLocaleTimeString();
           const date = log.timestamp.toLocaleDateString();
@@ -227,10 +299,7 @@ class LogsManager {
   renderLogs() {
     if (!this.logsContainer) return;
 
-    const filteredLogs =
-      this.currentFilter === 'all'
-        ? this.logs
-        : this.logs.filter((log) => log.level === this.currentFilter);
+    const filteredLogs = this.getFilteredLogs();
 
     if (filteredLogs.length === 0) {
       this.logsContainer.innerHTML = `
@@ -251,7 +320,7 @@ class LogsManager {
   appendLogEntry(log, shouldScroll = true) {
     if (!this.logsContainer) return;
 
-    if (this.currentFilter !== 'all' && log.level !== this.currentFilter) {
+    if (!this.isLogVisible(log)) {
       return;
     }
 
@@ -304,6 +373,10 @@ class LogsManager {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  getFilteredLogs() {
+    return this.logs.filter((log) => this.isLogVisible(log));
   }
 }
 

@@ -670,6 +670,25 @@
         ></div>
       </div>
       <div class="modal-footer">
+        <div class="conflict-auto-slot-footer-options">
+          <span
+            class="conflict-auto-slot-range-title"
+            data-i18n="modals.autoSlotChange.allowExtendedSlots"
+            >Allow c16+ slots</span
+          >
+          <label
+            class="settings-switch conflict-auto-slot-range-switch"
+            data-i18n="modals.autoSlotChange.allowExtendedSlots"
+            data-i18n-title
+            title="Allow c16+ slots"
+          >
+            <input
+              type="checkbox"
+              id="conflict-auto-slot-extended-range"
+            />
+            <span class="settings-switch-slider"></span>
+          </label>
+        </div>
         <button
           class="modal-btn modal-btn-primary"
           onclick="window.conflictModalManager.applyAutoSlotChanges()"

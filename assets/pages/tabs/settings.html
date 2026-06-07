@@ -129,6 +129,26 @@
       </div>
 
       <div class="settings-section">
+        <label class="settings-label" data-i18n="settings.prideTabIcons">
+          Pride Tab Icons
+        </label>
+        <div class="settings-input-group">
+          <label class="settings-switch">
+            <input type="checkbox" id="sidebar-pride-tabs-enabled" checked />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.enablePrideTabIcons"
+            >Color the active tab icon with the selected FightPlanner logo</span
+          >
+        </div>
+        <p class="settings-hint" data-i18n="settings.prideTabIconsHint">
+          When disabled, active tab icons stay in their normal white style.
+        </p>
+      </div>
+
+      <div class="settings-section">
         <label class="settings-label" data-i18n="settings.animations"
           >Animations</label
         >
@@ -2080,6 +2100,16 @@
             </button>
           </div>
           <div class="logs-action-buttons">
+            <button
+              class="logs-action-btn"
+              id="toggle-developer-logs-btn"
+              data-i18n="settings.showDeveloperLogs"
+              data-i18n-title
+              title="Show developer logs"
+              aria-pressed="false"
+            >
+              <i class="bi bi-code-slash"></i>
+            </button>
             <button
               class="logs-action-btn"
               id="clear-logs-btn"

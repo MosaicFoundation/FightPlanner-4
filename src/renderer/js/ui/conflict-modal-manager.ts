@@ -776,6 +776,13 @@ export class ConflictModalManager {
 
     if (!modal || !container) return;
 
+    const extendedRangeToggle = document.querySelector<HTMLInputElement>(
+      '#conflict-auto-slot-extended-range',
+    );
+    if (extendedRangeToggle) {
+      extendedRangeToggle.checked = false;
+    }
+
     const modsMap = this._getModsMap();
 
     this.autoSlotChangeMods = Array.from(modsMap.values());
@@ -914,8 +921,12 @@ export class ConflictModalManager {
 
     const errors: string[] = [];
     const changingModPaths = new Set(modsToChange.map((mod) => mod.path));
+    const allowExtendedSlots = !!document.querySelector<HTMLInputElement>(
+      '#conflict-auto-slot-extended-range',
+    )?.checked;
+    const maxCandidateSlot = allowExtendedSlots ? 32 : 15;
     const candidateSlots = Array.from(
-      { length: 17 },
+      { length: maxCandidateSlot + 1 },
       (_, index) => `c${index.toString().padStart(2, '0')}`,
     );
     const occupiedSlotsByFighter = new Map<string, Set<string>>();
