@@ -60,6 +60,9 @@ class SocialManagerBase {
     fallback: GameBananaTopSubmission | null;
     files: GameBananaFileEntry[];
   } | null;
+  socialFeedPage: number;
+  socialFeedPerPage: number;
+  socialFeedMods: any[];
   skylineInstalledCache: boolean | null;
   pendingGameBananaSocialDownloads: Map<
     string,
@@ -120,6 +123,9 @@ class SocialManagerBase {
     this.gameBananaDetailReturnInProgress = false;
     this.gameBananaDiscoverSnapshot = null;
     this.gameBananaCurrentDetail = null;
+    this.socialFeedPage = 1;
+    this.socialFeedPerPage = 12;
+    this.socialFeedMods = [];
     this.skylineInstalledCache = null;
     this.pendingGameBananaSocialDownloads = new Map();
     this.profileMediaCropState = null;
@@ -146,6 +152,20 @@ class SocialManagerBase {
       },
     };
     this.pendingRequests = new Map(); // Éviter les requêtes simultanées
+  }
+
+  bindBackdropClose(modal: HTMLElement, onClose: () => void) {
+    let pointerStartedOnBackdrop = false;
+    modal.addEventListener('pointerdown', (event) => {
+      pointerStartedOnBackdrop = event.target === modal;
+    });
+    modal.addEventListener('click', (event) => {
+      const shouldClose = pointerStartedOnBackdrop && event.target === modal;
+      pointerStartedOnBackdrop = false;
+      if (shouldClose) {
+        onClose();
+      }
+    });
   }
 
   // Vérifier si le cache est valide
@@ -337,7 +357,10 @@ class SocialManagerBase {
 
       if (window.electronAPI && window.electronAPI.store) {
         if (this.authToken) {
-          await window.electronAPI.store.set('social.authToken', this.authToken);
+          await window.electronAPI.store.set(
+            'social.authToken',
+            this.authToken,
+          );
         }
         if (this.userData) {
           await window.electronAPI.store.set('social.userData', this.userData);
@@ -518,7 +541,11 @@ class SocialManagerBase {
           this.userData = storedUserData;
 
           if (!(await this.refreshAuthToken())) {
-            if (this.accountDisabledHandled || !this.authToken || !this.userData) {
+            if (
+              this.accountDisabledHandled ||
+              !this.authToken ||
+              !this.userData
+            ) {
               return;
             }
           }
@@ -856,7 +883,10 @@ class SocialManagerBase {
       this.userData = {
         localId: data.user?.id || data.id,
         email: data.user?.email || data.email,
-        displayName: data.user?.user_metadata?.username || data.user?.user_metadata?.display_name || '',
+        displayName:
+          data.user?.user_metadata?.username ||
+          data.user?.user_metadata?.display_name ||
+          '',
         refreshToken: data.refresh_token,
       };
 
@@ -869,7 +899,10 @@ class SocialManagerBase {
             );
           }
           if (this.userData) {
-            await window.electronAPI.store.set('social.userData', this.userData);
+            await window.electronAPI.store.set(
+              'social.userData',
+              this.userData,
+            );
           }
         } catch (e) {
           console.warn('Failed to save auth data:', e);
@@ -1119,11 +1152,7 @@ class SocialManagerBase {
     }
 
     if (modal) {
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-          this.hideForgotPasswordModal();
-        }
-      });
+      this.bindBackdropClose(modal, () => this.hideForgotPasswordModal());
     }
 
     if (form && emailInput) {
@@ -1300,11 +1329,7 @@ class SocialManagerBase {
     }
 
     if (modal) {
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-          this.hideRegisterModal();
-        }
-      });
+      this.bindBackdropClose(modal, () => this.hideRegisterModal());
     }
 
     if (
@@ -1564,9 +1589,7 @@ class SocialManagerBase {
       okBtn?.addEventListener('click', hideModal);
 
       // Fermer en cliquant à l'extérieur
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) hideModal();
-      });
+      this.bindBackdropClose(modal, hideModal);
     } else {
       // Mettre à jour l'email
       const emailEl = modal.querySelector('.social-modal-body p:nth-child(2)');

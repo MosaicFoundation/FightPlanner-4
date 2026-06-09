@@ -66,7 +66,9 @@ class SocialProfileManager extends SocialFeedManager {
     return `badge-${this.normalizeBadgeId(badge).replace(/[^a-z0-9-]/g, '-')}`;
   }
 
-  normalizeProfileBadgeDefinitions(data: any): Record<string, ProfileBadgeMeta> {
+  normalizeProfileBadgeDefinitions(
+    data: any,
+  ): Record<string, ProfileBadgeMeta> {
     const source = data?.fields ? this.parseFirestoreFields(data.fields) : data;
     const rawDefinitions =
       source?.definitions ||
@@ -97,17 +99,18 @@ class SocialProfileManager extends SocialFeedManager {
                 String(definition.label || '').trim() ||
                 this.getReadableBadgeLabel(badgeId),
               icon:
-                String(definition.icon || '').trim() ||
-                'bi-patch-check-fill',
+                String(definition.icon || '').trim() || 'bi-patch-check-fill',
               className:
                 String(definition.className || '').trim() ||
                 this.getBadgeClassName(badgeId),
               imageUrl:
-                String(definition.imageUrl || definition.image_url || '').trim() ||
-                undefined,
+                String(
+                  definition.imageUrl || definition.image_url || '',
+                ).trim() || undefined,
               imageAlt:
-                String(definition.imageAlt || definition.image_alt || '').trim() ||
-                undefined,
+                String(
+                  definition.imageAlt || definition.image_alt || '',
+                ).trim() || undefined,
               color: definition.color,
               background: definition.background,
               borderColor: definition.borderColor || definition.border_color,
@@ -118,7 +121,9 @@ class SocialProfileManager extends SocialFeedManager {
     );
   }
 
-  async loadProfileBadgeDefinitions(): Promise<Record<string, ProfileBadgeMeta>> {
+  async loadProfileBadgeDefinitions(): Promise<
+    Record<string, ProfileBadgeMeta>
+  > {
     const cached = this.getCached('profileBadgeDefinitions');
     if (cached) return cached;
 
@@ -144,7 +149,9 @@ class SocialProfileManager extends SocialFeedManager {
     return request;
   }
 
-  async fetchProfileBadgeDefinitions(): Promise<Record<string, ProfileBadgeMeta>> {
+  async fetchProfileBadgeDefinitions(): Promise<
+    Record<string, ProfileBadgeMeta>
+  > {
     const endpoints = [`${this.API_URL}/read/badges`];
 
     for (const endpoint of endpoints) {
@@ -264,9 +271,7 @@ ${this.renderProfileBadgeVisual(meta)}
       userFields?.status === 'disabled';
     const reason =
       String(
-        userFields?.disableReason ||
-          userFields?.disable_reason ||
-          '',
+        userFields?.disableReason || userFields?.disable_reason || '',
       ).trim() || null;
 
     return isBanned || reason ? reason || 'This account is banned.' : null;
@@ -717,7 +722,10 @@ ${this.renderProfileBadgeVisual(meta)}
         if (userFields.username && this.userData) {
           this.userData.displayName = userFields.username;
           if (window.electronAPI?.store) {
-            await window.electronAPI.store.set('social.userData', this.userData);
+            await window.electronAPI.store.set(
+              'social.userData',
+              this.userData,
+            );
           }
           window.dispatchEvent(new CustomEvent('social-account-updated'));
         }
@@ -1006,6 +1014,21 @@ ${this.renderProfileBadgeVisual(meta)}
         const direction =
           carouselButton.getAttribute('data-direction') === 'next' ? 1 : -1;
         this.scrollGameBananaCarousel(direction);
+        return false;
+      }
+
+      const socialFeedPageButton = clickedElement.closest<HTMLButtonElement>(
+        '.social-feed-page-btn',
+      );
+      if (socialFeedPageButton) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (socialFeedPageButton.disabled) return false;
+
+        const action = socialFeedPageButton.getAttribute('data-page-action');
+        const nextPage =
+          action === 'next' ? this.socialFeedPage + 1 : this.socialFeedPage - 1;
+        this.setSocialFeedPage(nextPage);
         return false;
       }
 
@@ -1585,8 +1608,7 @@ ${this.renderProfileBadgeVisual(meta)}
     if (submitBtn) submitBtn.disabled = isLoading;
     if (submitText) {
       submitText.textContent =
-        label ||
-        this.getSocialTranslation('social.addFriend', 'Add Friend');
+        label || this.getSocialTranslation('social.addFriend', 'Add Friend');
     }
   }
 
@@ -1957,7 +1979,8 @@ ${this.renderProfileBadgeVisual(meta)}
       const translated =
         window.i18n?.t?.('social.removeFriendConfirm', {
           name: friendUsername,
-        }) || `Are you sure you want to remove ${friendUsername} from your friends list?`;
+        }) ||
+        `Are you sure you want to remove ${friendUsername} from your friends list?`;
       friendNameEl.textContent = translated;
       console.log('[Social] Friend name set in modal:', friendUsername);
     } else {
@@ -2123,11 +2146,7 @@ ${this.renderProfileBadgeVisual(meta)}
         });
       }
 
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-          this.hideRemoveFriendModal();
-        }
-      });
+      this.bindBackdropClose(modal, () => this.hideRemoveFriendModal());
     }, 100);
   }
 

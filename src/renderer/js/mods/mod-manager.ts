@@ -341,7 +341,11 @@ class ModManager {
     }
 
     if (this.mods.length === 0) {
-      const t = (key: string, fallback: string, params: Record<string, string> = {}) => {
+      const t = (
+        key: string,
+        fallback: string,
+        params: Record<string, string> = {},
+      ) => {
         const translated = window.i18n?.t?.(key, params);
         return translated && translated !== key ? translated : fallback;
       };
@@ -403,8 +407,8 @@ class ModManager {
       return;
     }
 
-    const refreshedSelection = this.mods.filter((mod) =>
-      selectedIds.has(mod.id) || selectedPaths.has(mod.path),
+    const refreshedSelection = this.mods.filter(
+      (mod) => selectedIds.has(mod.id) || selectedPaths.has(mod.path),
     );
 
     if (refreshedSelection.length === 0) {
@@ -528,10 +532,7 @@ class ModManager {
       const modId = item.dataset.modId;
       const isSelected = !!modId && selectedIds.has(modId);
 
-      item.classList.toggle(
-        'selected',
-        isSelected,
-      );
+      item.classList.toggle('selected', isSelected);
 
       if (isSelected && modId && showSelectionIndexes) {
         item.dataset.selectionIndex = `${selectionIndexes.get(modId)}`;
@@ -611,15 +612,22 @@ class ModManager {
     };
 
     closeBtn?.addEventListener('click', closeZoom, { once: true });
-    zoomOverlay.addEventListener(
-      'click',
-      (event) => {
-        if (event.target === zoomOverlay) {
-          closeZoom();
-        }
-      },
-      { once: true },
-    );
+    let pointerStartedOnZoomOverlay = false;
+    const zoomPointerHandler = (event: PointerEvent) => {
+      pointerStartedOnZoomOverlay = event.target === zoomOverlay;
+    };
+    const zoomBackdropClickHandler = (event: MouseEvent) => {
+      const shouldClose =
+        pointerStartedOnZoomOverlay && event.target === zoomOverlay;
+      pointerStartedOnZoomOverlay = false;
+      if (shouldClose) {
+        closeZoom();
+        zoomOverlay.removeEventListener('pointerdown', zoomPointerHandler);
+        zoomOverlay.removeEventListener('click', zoomBackdropClickHandler);
+      }
+    };
+    zoomOverlay.addEventListener('pointerdown', zoomPointerHandler);
+    zoomOverlay.addEventListener('click', zoomBackdropClickHandler);
 
     const escHandler = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -1482,10 +1490,7 @@ class ModManager {
         .filter((value): value is string => typeof value === 'string')
         .map((value) => this.createExactConflictPathPattern(value));
       const combinedPatterns = Array.from(
-        new Set([
-          ...whitelistPatterns,
-          ...ignoredConflictPatterns,
-        ]),
+        new Set([...whitelistPatterns, ...ignoredConflictPatterns]),
       );
 
       const result = await window.electronAPI.detectConflicts(

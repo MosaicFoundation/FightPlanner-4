@@ -1,23 +1,26 @@
 export {};
 (function () {
   const M = (window as any).ModalManagerClass;
-  if (!M) { console.error('[plugin-modals] ModalManagerClass not found'); return; }
+  if (!M) {
+    console.error('[plugin-modals] ModalManagerClass not found');
+    return;
+  }
 
   M.prototype.openPluginUpdateModal = function (updates, plugins) {
-  const modal = document.createElement('div');
-  modal.className = 'modal';
-  modal.id = 'plugin-update-modal';
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'plugin-update-modal';
 
-  const updatesList = updates
-    .map((update) => {
-      const plugin = plugins.find(
-        (p) =>
-          p.name === update.pluginName ||
-          p.name.replace('.nro', '') === update.pluginName,
-      );
-      const pluginPath = plugin ? plugin.filePath : null;
+    const updatesList = updates
+      .map((update) => {
+        const plugin = plugins.find(
+          (p) =>
+            p.name === update.pluginName ||
+            p.name.replace('.nro', '') === update.pluginName,
+        );
+        const pluginPath = plugin ? plugin.filePath : null;
 
-      return `
+        return `
         <div class="plugin-update-item" data-plugin-name="${update.pluginName}">
           <div class="plugin-update-info">
             <span class="plugin-update-name">${this.escapeHtml(update.pluginName)}</span>
@@ -34,10 +37,10 @@ export {};
           </button>
         </div>
       `;
-    })
-    .join('');
+      })
+      .join('');
 
-  modal.innerHTML = `
+    modal.innerHTML = `
     <div class="modal-header">
       <h2>Plugin Updates Available</h2>
     </div>
@@ -59,159 +62,164 @@ export {};
     </div>
   `;
 
-  const overlay = document.querySelector<HTMLElement>('#modal-overlay');
-  if (!overlay) {
-    const newOverlay = document.createElement('div');
-    newOverlay.id = 'modal-overlay';
-    document.body.appendChild(newOverlay);
-  }
+    const overlay = document.querySelector<HTMLElement>('#modal-overlay');
+    if (!overlay) {
+      const newOverlay = document.createElement('div');
+      newOverlay.id = 'modal-overlay';
+      document.body.appendChild(newOverlay);
+    }
 
-  document.body.appendChild(modal);
-  this.showOverlay();
-  modal.style.display = 'block';
+    document.body.appendChild(modal);
+    this.showOverlay();
+    modal.style.display = 'block';
 
-  const closeBtn = modal.querySelector<HTMLButtonElement>('#close-plugin-update-modal');
-  closeBtn!.addEventListener('click', () => {
-    this.closePluginUpdateModal();
-  });
+    const closeBtn = modal.querySelector<HTMLButtonElement>(
+      '#close-plugin-update-modal',
+    );
+    closeBtn!.addEventListener('click', () => {
+      this.closePluginUpdateModal();
+    });
 
-  const updateAllBtn = modal.querySelector<HTMLButtonElement>('#update-all-plugins-btn');
-
-  updateAllBtn!.addEventListener('click', async () => {
-    const updateButtons = modal.querySelectorAll<HTMLButtonElement>(
-      '.update-plugin-btn:not(:disabled)',
+    const updateAllBtn = modal.querySelector<HTMLButtonElement>(
+      '#update-all-plugins-btn',
     );
 
-    if (updateButtons.length === 0) {
-      if (window.toastManager) {
-        window.toastManager.info('No plugins to update');
-      }
-      return;
-    }
-
-    updateAllBtn!.disabled = true;
-    updateAllBtn!.textContent = 'Updating all...';
-
-    for (const btn of updateButtons) {
-      const pluginName = btn.dataset.pluginName;
-      const downloadUrl = btn.dataset.downloadUrl;
-      const pluginPath = btn.dataset.pluginPath;
-      const targetVersion = btn.dataset.latestVersion;
-
-      if (!downloadUrl || !pluginPath) {
-        continue;
-      }
-
-      btn.disabled = true;
-      btn.textContent = 'Updating...';
-
-      if (window.pluginManager) {
-        await window.pluginManager.updatePlugin(
-          pluginName,
-          downloadUrl,
-          pluginPath,
-          targetVersion,
-        );
-      }
-
-      const updateItem = modal.querySelector<HTMLElement>(
-        `[data-plugin-name="${pluginName}"]`,
+    updateAllBtn!.addEventListener('click', async () => {
+      const updateButtons = modal.querySelectorAll<HTMLButtonElement>(
+        '.update-plugin-btn:not(:disabled)',
       );
-      if (updateItem) {
-        updateItem.style.opacity = '0.5';
-      }
-    }
 
-    setTimeout(() => {
-      this.closePluginUpdateModal();
-
-      if (window.toastManager) {
-        window.toastManager.success('All updates completed');
-      }
-    }, 1000);
-  });
-
-  const updateButtons = modal.querySelectorAll<HTMLButtonElement>('.update-plugin-btn');
-
-  updateButtons.forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const pluginName = btn.dataset.pluginName;
-      const downloadUrl = btn.dataset.downloadUrl;
-      const pluginPath = btn.dataset.pluginPath;
-      const targetVersion = btn.dataset.latestVersion;
-
-      if (!downloadUrl) {
+      if (updateButtons.length === 0) {
         if (window.toastManager) {
-          window.toastManager.error(
-            `No download URL available for ${pluginName}`,
-          );
+          window.toastManager.info('No plugins to update');
         }
         return;
       }
 
-      if (!pluginPath) {
-        if (window.toastManager) {
-          window.toastManager.error(
-            `Plugin path not found for ${pluginName}`,
+      updateAllBtn!.disabled = true;
+      updateAllBtn!.textContent = 'Updating all...';
+
+      for (const btn of updateButtons) {
+        const pluginName = btn.dataset.pluginName;
+        const downloadUrl = btn.dataset.downloadUrl;
+        const pluginPath = btn.dataset.pluginPath;
+        const targetVersion = btn.dataset.latestVersion;
+
+        if (!downloadUrl || !pluginPath) {
+          continue;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Updating...';
+
+        if (window.pluginManager) {
+          await window.pluginManager.updatePlugin(
+            pluginName,
+            downloadUrl,
+            pluginPath,
+            targetVersion,
           );
         }
-        return;
-      }
 
-      btn.disabled = true;
-      btn.textContent = 'Updating...';
-
-      if (window.pluginManager) {
-        await window.pluginManager.updatePlugin(
-          pluginName,
-          downloadUrl,
-          pluginPath,
-          targetVersion,
+        const updateItem = modal.querySelector<HTMLElement>(
+          `[data-plugin-name="${pluginName}"]`,
         );
+        if (updateItem) {
+          updateItem.style.opacity = '0.5';
+        }
       }
 
-      const updateItem = modal.querySelector<HTMLElement>(
-        `[data-plugin-name="${pluginName}"]`,
-      );
+      setTimeout(() => {
+        this.closePluginUpdateModal();
 
-      if (updateItem) {
-        updateItem.style.opacity = '0.5';
-      }
-
-      const remainingUpdates = modal.querySelectorAll<HTMLElement>(
-        ".plugin-update-item:not([style*='opacity: 0.5'])",
-      );
-      if (remainingUpdates.length === 0) {
-        setTimeout(() => {
-          this.closePluginUpdateModal();
-
-          if (window.toastManager) {
-            window.toastManager.success('All updates completed');
-          }
-        }, 1000);
-      }
+        if (window.toastManager) {
+          window.toastManager.success('All updates completed');
+        }
+      }, 1000);
     });
-  });
 
-  const escapeHandler = (e) => {
-    if (e.key === 'Escape') {
-      this.closePluginUpdateModal();
-      document.removeEventListener('keydown', escapeHandler);
-    }
+    const updateButtons =
+      modal.querySelectorAll<HTMLButtonElement>('.update-plugin-btn');
+
+    updateButtons.forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const pluginName = btn.dataset.pluginName;
+        const downloadUrl = btn.dataset.downloadUrl;
+        const pluginPath = btn.dataset.pluginPath;
+        const targetVersion = btn.dataset.latestVersion;
+
+        if (!downloadUrl) {
+          if (window.toastManager) {
+            window.toastManager.error(
+              `No download URL available for ${pluginName}`,
+            );
+          }
+          return;
+        }
+
+        if (!pluginPath) {
+          if (window.toastManager) {
+            window.toastManager.error(
+              `Plugin path not found for ${pluginName}`,
+            );
+          }
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Updating...';
+
+        if (window.pluginManager) {
+          await window.pluginManager.updatePlugin(
+            pluginName,
+            downloadUrl,
+            pluginPath,
+            targetVersion,
+          );
+        }
+
+        const updateItem = modal.querySelector<HTMLElement>(
+          `[data-plugin-name="${pluginName}"]`,
+        );
+
+        if (updateItem) {
+          updateItem.style.opacity = '0.5';
+        }
+
+        const remainingUpdates = modal.querySelectorAll<HTMLElement>(
+          ".plugin-update-item:not([style*='opacity: 0.5'])",
+        );
+        if (remainingUpdates.length === 0) {
+          setTimeout(() => {
+            this.closePluginUpdateModal();
+
+            if (window.toastManager) {
+              window.toastManager.success('All updates completed');
+            }
+          }, 1000);
+        }
+      });
+    });
+
+    const escapeHandler = (e) => {
+      if (e.key === 'Escape') {
+        this.closePluginUpdateModal();
+        document.removeEventListener('keydown', escapeHandler);
+      }
+    };
+    document.addEventListener('keydown', escapeHandler);
   };
-  document.addEventListener('keydown', escapeHandler);
-};
 
-M.prototype.closePluginUpdateModal = function () {
-  this.closeModal('plugin-update-modal');
-};
+  M.prototype.closePluginUpdateModal = function () {
+    this.closeModal('plugin-update-modal');
+  };
 
-M.prototype.openPluginMarketplaceModal = async function () {
-  const modal = document.createElement('div');
-  modal.className = 'modal modal-large modal-marketplace';
-  modal.id = 'plugin-marketplace-modal';
+  M.prototype.openPluginMarketplaceModal = async function () {
+    const modal = document.createElement('div');
+    modal.className = 'modal modal-large modal-marketplace';
+    modal.id = 'plugin-marketplace-modal';
 
-  modal.innerHTML = `
+    modal.innerHTML = `
     <div class="modal-header">
       <h2 data-i18n="plugins.marketplace">Plugin Marketplace</h2>
     </div>
@@ -226,88 +234,99 @@ M.prototype.openPluginMarketplaceModal = async function () {
     </div>
   `;
 
-  const overlay = document.querySelector<HTMLElement>('#modal-overlay');
-  if (!overlay) {
-    const newOverlay = document.createElement('div');
-    newOverlay.id = 'modal-overlay';
-    document.body.appendChild(newOverlay);
-  }
+    const overlay = document.querySelector<HTMLElement>('#modal-overlay');
+    if (!overlay) {
+      const newOverlay = document.createElement('div');
+      newOverlay.id = 'modal-overlay';
+      document.body.appendChild(newOverlay);
+    }
 
-  document.body.appendChild(modal);
-  this.showOverlay();
-  modal.style.display = 'block';
+    document.body.appendChild(modal);
+    this.showOverlay();
+    modal.style.display = 'block';
 
-  if (window.i18n) {
-    window.i18n.updateDOM();
-  }
+    if (window.i18n) {
+      window.i18n.updateDOM();
+    }
 
-  const resultsContainer = modal.querySelector<HTMLElement>('#marketplace-results');
+    const resultsContainer = modal.querySelector<HTMLElement>(
+      '#marketplace-results',
+    );
 
-  let installedRepos: string[] = [];
-  if (window.electronAPI && window.electronAPI.getPluginRepoMapping) {
-    try {
-      const result = await window.electronAPI.getPluginRepoMapping();
-      if (result.success && result.mappings) {
-        installedRepos = Object.values(result.mappings) as string[];
+    let installedRepos: string[] = [];
+    if (window.electronAPI && window.electronAPI.getPluginRepoMapping) {
+      try {
+        const result = await window.electronAPI.getPluginRepoMapping();
+        if (result.success && result.mappings) {
+          installedRepos = Object.values(result.mappings) as string[];
+        }
+      } catch (error) {
+        console.warn(
+          '[openPluginMarketplaceModal] Failed to get plugin repo mappings:',
+          error,
+        );
       }
-    } catch (error) {
-      console.warn('[openPluginMarketplaceModal] Failed to get plugin repo mappings:', error);
     }
-  }
 
-  if (window.pluginMarketplace) {
-    const plugins = window.pluginMarketplace.getPlugins();
-    this.renderMarketplaceResults(plugins, resultsContainer!, installedRepos);
-  }
+    if (window.pluginMarketplace) {
+      const plugins = window.pluginMarketplace.getPlugins();
+      this.renderMarketplaceResults(plugins, resultsContainer!, installedRepos);
+    }
 
-  const closeBtn = modal.querySelector<HTMLElement>('#close-marketplace-modal');
+    const closeBtn = modal.querySelector<HTMLElement>(
+      '#close-marketplace-modal',
+    );
 
-  closeBtn!.addEventListener('click', () => {
-    this.closePluginMarketplaceModal();
-  });
-
-  const escapeHandler = (e) => {
-    if (e.key === 'Escape') {
+    closeBtn!.addEventListener('click', () => {
       this.closePluginMarketplaceModal();
-      document.removeEventListener('keydown', escapeHandler);
-    }
-  };
-  document.addEventListener('keydown', escapeHandler);
-};
+    });
 
-M.prototype.renderMarketplaceResults = function (plugins: any[], container: HTMLElement, installedRepos: string[] = []) {
-  if (!plugins || plugins.length === 0) {
-    container.innerHTML = `
+    const escapeHandler = (e) => {
+      if (e.key === 'Escape') {
+        this.closePluginMarketplaceModal();
+        document.removeEventListener('keydown', escapeHandler);
+      }
+    };
+    document.addEventListener('keydown', escapeHandler);
+  };
+
+  M.prototype.renderMarketplaceResults = function (
+    plugins: any[],
+    container: HTMLElement,
+    installedRepos: string[] = [],
+  ) {
+    if (!plugins || plugins.length === 0) {
+      container.innerHTML = `
       <div class="marketplace-empty">
         <i class="bi bi-inbox" style="font-size: 48px; opacity: 0.3; margin-bottom: 16px;"></i>
         <p data-i18n="plugins.marketplaceNoResults">No plugins available</p>
       </div>
     `;
-    if (window.i18n) {
-      window.i18n.updateDOM();
+      if (window.i18n) {
+        window.i18n.updateDOM();
+      }
+      return;
     }
-    return;
-  }
 
-  const pluginsGrid = plugins
-    .map((plugin) => {
-      const isInstalled = installedRepos.some(
-        (installedRepo) =>
-          installedRepo.toLowerCase() === plugin.repo.toLowerCase(),
-      );
-      const buttonClass = isInstalled
-        ? 'marketplace-card-install-btn installed'
-        : 'marketplace-card-install-btn';
-      const buttonIcon = isInstalled ? 'bi-arrow-clockwise' : 'bi-download';
-      const buttonTextKey = isInstalled
-        ? 'plugins.reinstall'
-        : 'plugins.install';
-      const buttonDefaultText = isInstalled ? 'Reinstall' : 'Install';
-      const cardClass = isInstalled
-        ? 'marketplace-plugin-card installed'
-        : 'marketplace-plugin-card';
+    const pluginsGrid = plugins
+      .map((plugin) => {
+        const isInstalled = installedRepos.some(
+          (installedRepo) =>
+            installedRepo.toLowerCase() === plugin.repo.toLowerCase(),
+        );
+        const buttonClass = isInstalled
+          ? 'marketplace-card-install-btn installed'
+          : 'marketplace-card-install-btn';
+        const buttonIcon = isInstalled ? 'bi-arrow-clockwise' : 'bi-download';
+        const buttonTextKey = isInstalled
+          ? 'plugins.reinstall'
+          : 'plugins.install';
+        const buttonDefaultText = isInstalled ? 'Reinstall' : 'Install';
+        const cardClass = isInstalled
+          ? 'marketplace-plugin-card installed'
+          : 'marketplace-plugin-card';
 
-      return `
+        return `
       <div class="${cardClass}" data-installed="${isInstalled}">
         <div class="marketplace-card-header">
           <div class="marketplace-card-title-section">
@@ -333,99 +352,105 @@ M.prototype.renderMarketplaceResults = function (plugins: any[], container: HTML
         </div>
       </div>
     `;
-    })
-    .join('');
+      })
+      .join('');
 
-  container.innerHTML = `<div class="marketplace-grid">${pluginsGrid}</div>`;
+    container.innerHTML = `<div class="marketplace-grid">${pluginsGrid}</div>`;
 
-  if (window.i18n) {
-    window.i18n.updateDOM();
-  }
+    if (window.i18n) {
+      window.i18n.updateDOM();
+    }
 
-  const githubLinks = container.querySelectorAll<HTMLElement>('.marketplace-card-link');
-  githubLinks.forEach((link) => {
-    link.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const url = link.getAttribute('href');
-      if (url && window.electronAPI && window.electronAPI.openUrl) {
-        await window.electronAPI.openUrl(url);
-      } else if (url) {
-        window.open(url, '_blank');
-      }
+    const githubLinks = container.querySelectorAll<HTMLElement>(
+      '.marketplace-card-link',
+    );
+    githubLinks.forEach((link) => {
+      link.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const url = link.getAttribute('href');
+        if (url && window.electronAPI && window.electronAPI.openUrl) {
+          await window.electronAPI.openUrl(url);
+        } else if (url) {
+          window.open(url, '_blank');
+        }
+      });
     });
-  });
 
-  const installButtons = container.querySelectorAll<HTMLButtonElement>('.marketplace-card-install-btn');
+    const installButtons = container.querySelectorAll<HTMLButtonElement>(
+      '.marketplace-card-install-btn',
+    );
 
-  installButtons.forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const pluginName = btn.dataset.pluginName as string;
-      const pluginRepo = btn.dataset.pluginRepo as string;
+    installButtons.forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const pluginName = btn.dataset.pluginName as string;
+        const pluginRepo = btn.dataset.pluginRepo as string;
 
-      btn.disabled = true;
-      btn.innerHTML =
-        '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite;"></i> <span data-i18n="plugins.installing">Installing...</span>';
-      if (window.i18n) {
-        window.i18n.updateDOM();
-      }
+        btn.disabled = true;
+        btn.innerHTML =
+          '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite;"></i> <span data-i18n="plugins.installing">Installing...</span>';
+        if (window.i18n) {
+          window.i18n.updateDOM();
+        }
 
-      if (window.pluginMarketplace) {
-        const downloadUrl =
-          await window.pluginMarketplace.getLatestReleaseDownloadUrl(pluginRepo);
+        if (window.pluginMarketplace) {
+          const downloadUrl =
+            await window.pluginMarketplace.getLatestReleaseDownloadUrl(
+              pluginRepo,
+            );
 
-        if (downloadUrl) {
-          await window.pluginMarketplace.downloadAndInstallPlugin(
-            pluginName,
-            pluginRepo,
-            downloadUrl,
-          );
+          if (downloadUrl) {
+            await window.pluginMarketplace.downloadAndInstallPlugin(
+              pluginName,
+              pluginRepo,
+              downloadUrl,
+            );
 
-          const card = btn.closest('.marketplace-plugin-card');
-          if (card) {
-            card.classList.add('installed');
+            const card = btn.closest('.marketplace-plugin-card');
+            if (card) {
+              card.classList.add('installed');
+              btn.disabled = false;
+              btn.innerHTML =
+                '<i class="bi bi-check-circle-fill"></i> <span data-i18n="plugins.installed">Installed</span>';
+              if (window.i18n) {
+                window.i18n.updateDOM();
+              }
+            }
+          } else {
+            console.error(
+              `[renderMarketplaceResults] Failed to get download URL for ${pluginName} from repo ${pluginRepo}`,
+            );
+            if (window.toastManager) {
+              window.toastManager.error(
+                `No .nro or .zip file found in latest release for ${pluginName}. Please check the GitHub repository.`,
+              );
+            }
             btn.disabled = false;
             btn.innerHTML =
-              '<i class="bi bi-check-circle-fill"></i> <span data-i18n="plugins.installed">Installed</span>';
+              '<i class="bi bi-download"></i> <span data-i18n="plugins.install">Install</span>';
             if (window.i18n) {
               window.i18n.updateDOM();
             }
           }
-        } else {
-          console.error(
-            `[renderMarketplaceResults] Failed to get download URL for ${pluginName} from repo ${pluginRepo}`,
-          );
-          if (window.toastManager) {
-            window.toastManager.error(
-              `No .nro or .zip file found in latest release for ${pluginName}. Please check the GitHub repository.`,
-            );
-          }
-          btn.disabled = false;
-          btn.innerHTML =
-            '<i class="bi bi-download"></i> <span data-i18n="plugins.install">Install</span>';
-          if (window.i18n) {
-            window.i18n.updateDOM();
-          }
         }
-      }
+      });
     });
-  });
-};
+  };
 
-M.prototype.closePluginMarketplaceModal = function () {
-  this.closeModal('plugin-marketplace-modal');
-};
+  M.prototype.closePluginMarketplaceModal = function () {
+    this.closeModal('plugin-marketplace-modal');
+  };
 
-M.prototype.openPluginUpdateIntroModal = function (onEnable, onDisable) {
-  const modal = document.createElement('div');
+  M.prototype.openPluginUpdateIntroModal = function (onEnable, onDisable) {
+    const modal = document.createElement('div');
 
-  modal.className = 'modal';
-  modal.id = 'plugin-intro-modal';
-  modal.style.maxWidth = '500px';
-  modal.dataset.blocking = 'true';
+    modal.className = 'modal';
+    modal.id = 'plugin-intro-modal';
+    modal.style.maxWidth = '500px';
+    modal.dataset.blocking = 'true';
 
-  modal.style.transform = 'translate(-50%, -50%)';
+    modal.style.transform = 'translate(-50%, -50%)';
 
-  modal.innerHTML = `
+    modal.innerHTML = `
     <div class="modal-header">
       <h3 data-i18n="modals.pluginIntro.title">Automatic Plugin Updates</h3>
     </div>
@@ -444,22 +469,26 @@ M.prototype.openPluginUpdateIntroModal = function (onEnable, onDisable) {
     </div>
   `;
 
-  document.body.appendChild(modal);
-  this.showOverlay();
-  modal.style.display = 'block';
+    document.body.appendChild(modal);
+    this.showOverlay();
+    modal.style.display = 'block';
 
-  if (window.i18n) {
-    window.i18n.updateDOM();
-  }
+    if (window.i18n) {
+      window.i18n.updateDOM();
+    }
 
-  const enableBtn = modal.querySelector<HTMLElement>('#enable-plugin-updates');
-  const disableBtn = modal.querySelector<HTMLElement>('#disable-plugin-updates');
-  const overlay = document.querySelector<HTMLElement>('#modal-overlay');
+    const enableBtn = modal.querySelector<HTMLElement>(
+      '#enable-plugin-updates',
+    );
+    const disableBtn = modal.querySelector<HTMLElement>(
+      '#disable-plugin-updates',
+    );
+    const overlay = document.querySelector<HTMLElement>('#modal-overlay');
 
-  if (!document.querySelector<HTMLElement>('#shake-style')) {
-    const style = document.createElement('style');
-    style.id = 'shake-style';
-    style.textContent = `
+    if (!document.querySelector<HTMLElement>('#shake-style')) {
+      const style = document.createElement('style');
+      style.id = 'shake-style';
+      style.textContent = `
       @keyframes shake {
           0%, 100% { transform: translate(-50%, -50%); }
           10%, 30%, 50%, 70%, 90% { transform: translate(-50%, -50%) translateX(-5px); }
@@ -469,42 +498,48 @@ M.prototype.openPluginUpdateIntroModal = function (onEnable, onDisable) {
           animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
       }
     `;
-    document.head.appendChild(style);
-  }
-
-  const shakeHandler = (e) => {
-    if (e.target === overlay) {
-      console.log('[openPluginUpdateIntroModal] Shake handler triggered');
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-
-      modal.classList.remove('shake-animation');
-      void modal.offsetWidth;
-      modal.classList.add('shake-animation');
+      document.head.appendChild(style);
     }
-  };
 
-  if (overlay) {
-    overlay.addEventListener('click', shakeHandler, true);
-  }
+    let pointerStartedOnOverlay = false;
+    const shakePointerHandler = (e) => {
+      pointerStartedOnOverlay = e.target === overlay;
+    };
+    const shakeHandler = (e) => {
+      const shouldShake = pointerStartedOnOverlay && e.target === overlay;
+      pointerStartedOnOverlay = false;
+      if (shouldShake) {
+        console.log('[openPluginUpdateIntroModal] Shake handler triggered');
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
 
-  enableBtn!.addEventListener('click', () => {
-    if (onEnable) {
-      const keepOverlay = onEnable();
+        modal.classList.remove('shake-animation');
+        void modal.offsetWidth;
+        modal.classList.add('shake-animation');
+      }
+    };
 
-      this.closeModal(modal, {
-        skipHideOverlay: keepOverlay,
-      });
-    } else {
+    if (overlay) {
+      overlay.addEventListener('pointerdown', shakePointerHandler, true);
+      overlay.addEventListener('click', shakeHandler, true);
+    }
+
+    enableBtn!.addEventListener('click', () => {
+      if (onEnable) {
+        const keepOverlay = onEnable();
+
+        this.closeModal(modal, {
+          skipHideOverlay: keepOverlay,
+        });
+      } else {
+        this.closeModal(modal);
+      }
+    });
+
+    disableBtn!.addEventListener('click', () => {
+      if (onDisable) onDisable();
       this.closeModal(modal);
-    }
-  });
-
-  disableBtn!.addEventListener('click', () => {
-    if (onDisable) onDisable();
-    this.closeModal(modal);
-  });
-};
+    });
+  };
 })();
-

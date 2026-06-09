@@ -832,7 +832,9 @@ class SocialGameBananaManager extends SocialManagerBase {
     });
     params.set('_aFilters[Generic_Game]', '6498');
     const trimmedSearch = searchQuery.trim();
-    if (trimmedSearch) {
+    // GameBanana returns 400 for some category + name filter combinations.
+    // Category searches are filtered client-side after fetching the category page.
+    if (trimmedSearch && !categoryFilter.categoryId) {
       params.set('_aFilters[Generic_Name]', trimmedSearch);
     }
     if (categoryFilter.categoryId) {
@@ -900,6 +902,8 @@ class SocialGameBananaManager extends SocialManagerBase {
       pagination.innerHTML = this.renderGameBananaPagination(subfeedData);
       this.hydrateVisibleGameBananaDownloadCounts(requestId);
     } catch (error) {
+      if (requestId !== this.gameBananaModsRequestId) return;
+
       console.error('[Social] Error loading GameBanana mods page:', error);
       modsContent.innerHTML =
         '<div class="social-error-state"><i class="bi bi-exclamation-triangle"></i><p>Failed to load mods</p></div>';
@@ -2972,18 +2976,31 @@ class SocialGameBananaManager extends SocialManagerBase {
     }
 
     this.setSocialMainScrollTop(scrollTop);
+
+    const canAnimateReturn = !!source && !!detailRect && !!detailSrc;
+    let targetCard = canAnimateReturn
+      ? this.findSocialGameBananaReturnTarget(source, sectionName)
+      : null;
+    let targetImage =
+      targetCard?.querySelector<HTMLElement>('.social-mod-image') || null;
+    const gsapRef = window.gsap as any;
+    if (gsapRef && targetImage) {
+      gsapRef.killTweensOf(targetImage);
+      gsapRef.set(targetImage, { autoAlpha: 0 });
+    }
+
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
     );
 
     if (!source || !detailRect || !detailSrc) return;
 
-    const targetCard = this.findSocialGameBananaReturnTarget(
-      source,
-      sectionName,
-    );
-    const targetImage =
-      targetCard?.querySelector<HTMLElement>('.social-mod-image');
+    targetCard =
+      targetCard || this.findSocialGameBananaReturnTarget(source, sectionName);
+    targetImage =
+      targetImage ||
+      targetCard?.querySelector<HTMLElement>('.social-mod-image') ||
+      null;
     if (targetCard) {
       this.keepGameBananaTargetVisible(targetCard);
     }
@@ -3100,6 +3117,9 @@ class SocialGameBananaManager extends SocialManagerBase {
     clone.style.height = `${detailRect.height}px`;
     document.body.appendChild(clone);
 
+    gsapRef.killTweensOf(targetImage);
+    gsapRef.set(targetImage, { autoAlpha: 0 });
+
     gsapRef.fromTo(
       clone,
       {
@@ -3120,8 +3140,10 @@ class SocialGameBananaManager extends SocialManagerBase {
             autoAlpha: 1,
             duration: 0.12,
             ease: 'power1.out',
+            onComplete: () => {
+              clone.remove();
+            },
           });
-          clone.remove();
         },
       },
     );
