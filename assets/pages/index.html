@@ -527,6 +527,17 @@
       </div>
       <div class="modal-footer">
         <button
+          id="conflict-delete-selected-footer-btn"
+          class="modal-btn conflict-delete-selected-footer-btn"
+          onclick="window.conflictModalManager.deleteSelectedConflictFiles()"
+          disabled
+        >
+          <i class="bi bi-trash3"></i>
+          <span data-i18n="modals.conflict.deleteSelectedFiles"
+            >Delete selected</span
+          >
+        </button>
+        <button
           class="modal-btn conflict-change-slot-footer-btn"
           onclick="window.conflictModalManager.openGlobalSlotChange()"
         >

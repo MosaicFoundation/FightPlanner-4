@@ -5,15 +5,22 @@ interface DisableModCandidate extends SimpleMod {
   conflictsWith: Array<{ name: string; path: string }>;
 }
 
+interface SelectedConflictFile {
+  mod: { name: string; path: string };
+  filePath: string;
+}
+
 export class ConflictModalManager {
   currentConflictFile: string | null;
   currentConflictingMods: Array<{ name: string; path: string }>;
   autoSlotChangeMods: Array<SimpleMod>;
+  selectedConflictFiles: Map<string, SelectedConflictFile>;
 
   constructor() {
     this.currentConflictFile = null;
     this.currentConflictingMods = [];
     this.autoSlotChangeMods = [];
+    this.selectedConflictFiles = new Map();
   }
 
   t(key: string, params = {}) {
@@ -24,11 +31,21 @@ export class ConflictModalManager {
     mod: { name: string; path: string },
     filePath: string,
   ): Promise<boolean> {
+    return this.confirmConflictFilesDeletion([mod], filePath);
+  }
+
+  async confirmConflictFilesDeletion(
+    mods: Array<{ name: string; path: string }>,
+    filePath: string,
+  ): Promise<boolean> {
+    const modNames = mods.map((mod) => mod.name).join(', ');
+
     if (!window.modalManager?.showCustomModal) {
       return window.confirm(
         this.t('modals.conflict.deleteFileConfirm', {
           filePath,
-          modName: mod.name,
+          modName: modNames,
+          count: mods.length,
         }),
       );
     }
@@ -47,9 +64,14 @@ export class ConflictModalManager {
 
       const warning = document.createElement('p');
       warning.className = 'modal-warning';
-      warning.textContent = this.t('modals.conflict.deleteFileWarning', {
-        modName: mod.name,
-      });
+      warning.textContent =
+        mods.length === 1
+          ? this.t('modals.conflict.deleteFileWarning', {
+              modName: mods[0].name,
+            })
+          : this.t('modals.conflict.deleteMultipleFilesWarning', {
+              count: mods.length,
+            });
 
       const file = document.createElement('div');
       file.className = 'conflict-delete-confirm-file';
@@ -69,6 +91,124 @@ export class ConflictModalManager {
       file.appendChild(filePathEl);
       body.appendChild(warning);
       body.appendChild(file);
+
+      if (mods.length > 1) {
+        const modList = document.createElement('div');
+        modList.className = 'conflict-delete-confirm-file';
+
+        const modListLabel = document.createElement('span');
+        modListLabel.className = 'conflict-delete-confirm-file-label';
+        modListLabel.textContent = this.t(
+          'modals.conflict.deleteFileModsLabel',
+        );
+
+        const modNamesList = document.createElement('ul');
+        modNamesList.className = 'conflict-delete-confirm-mod-list';
+
+        mods.forEach((selectedMod) => {
+          const item = document.createElement('li');
+          item.textContent = selectedMod.name;
+          modNamesList.appendChild(item);
+        });
+
+        modList.appendChild(modListLabel);
+        modList.appendChild(modNamesList);
+        body.appendChild(modList);
+      }
+
+      body.appendChild(hint);
+
+      window.modalManager.showCustomModal({
+        id: 'conflict-delete-file-confirm-modal',
+        title: this.t('modals.conflict.deleteFileTitle'),
+        body,
+        size: 'small',
+        clickOverlayToClose: false,
+        buttons: [
+          {
+            text: this.t('common.cancel'),
+            type: 'cancel',
+            onClick: () => {
+              shouldDelete = false;
+            },
+          },
+          {
+            text: this.t('common.delete'),
+            type: 'danger',
+            onClick: () => {
+              shouldDelete = true;
+            },
+          },
+        ],
+        onClose: () => {
+          resolveOnce(shouldDelete);
+        },
+      });
+    });
+  }
+
+  async confirmSelectedConflictFilesDeletion(
+    items: SelectedConflictFile[],
+  ): Promise<boolean> {
+    if (items.length === 1) {
+      return this.confirmConflictFileDeletion(items[0].mod, items[0].filePath);
+    }
+
+    if (!window.modalManager?.showCustomModal) {
+      return window.confirm(
+        this.t('modals.conflict.deleteSelectedConfirm', {
+          count: items.length,
+        }),
+      );
+    }
+
+    return new Promise((resolve) => {
+      let shouldDelete = false;
+      let resolved = false;
+      const resolveOnce = (value: boolean) => {
+        if (resolved) return;
+        resolved = true;
+        resolve(value);
+      };
+
+      const body = document.createElement('div');
+      body.className = 'conflict-delete-confirm-body';
+
+      const warning = document.createElement('p');
+      warning.className = 'modal-warning';
+      warning.textContent = this.t(
+        'modals.conflict.deleteSelectedWarning',
+        {
+          count: items.length,
+        },
+      );
+
+      const fileList = document.createElement('div');
+      fileList.className = 'conflict-delete-confirm-file';
+
+      const fileListLabel = document.createElement('span');
+      fileListLabel.className = 'conflict-delete-confirm-file-label';
+      fileListLabel.textContent = this.t(
+        'modals.conflict.deleteSelectedFilesLabel',
+      );
+
+      const selectedList = document.createElement('ul');
+      selectedList.className = 'conflict-delete-confirm-mod-list';
+
+      items.forEach((item) => {
+        const listItem = document.createElement('li');
+        listItem.textContent = `${item.mod.name} - ${item.filePath}`;
+        selectedList.appendChild(listItem);
+      });
+
+      const hint = document.createElement('p');
+      hint.className = 'modal-hint';
+      hint.textContent = this.t('modals.conflict.deleteFileHint');
+
+      fileList.appendChild(fileListLabel);
+      fileList.appendChild(selectedList);
+      body.appendChild(warning);
+      body.appendChild(fileList);
       body.appendChild(hint);
 
       window.modalManager.showCustomModal({
@@ -127,7 +267,144 @@ export class ConflictModalManager {
       return;
     }
 
-    window.toastManager?.success('toasts.conflictFileDeleted', 3000);
+    await this.refreshConflictsAfterConflictFileDeletion();
+  }
+
+  async deleteConflictFiles(
+    mods: Array<{ name: string; path: string }>,
+    filePath: string,
+  ) {
+    if (!window.electronAPI?.deleteConflictFile || !window.modManager) {
+      window.toastManager?.error('toasts.failedToDeleteConflictFile', 5000, {
+        error: 'API not available',
+      });
+      return;
+    }
+
+    const uniqueMods = Array.from(
+      new Map(mods.map((mod) => [mod.path, mod])).values(),
+    );
+
+    if (uniqueMods.length === 0) return;
+
+    if (uniqueMods.length === 1) {
+      await this.deleteConflictFile(uniqueMods[0], filePath);
+      return;
+    }
+
+    const confirmed = await this.confirmConflictFilesDeletion(
+      uniqueMods,
+      filePath,
+    );
+
+    if (!confirmed) return;
+
+    for (const mod of uniqueMods) {
+      const result = await window.electronAPI.deleteConflictFile(
+        mod.path,
+        filePath,
+      );
+
+      if (!result.success) {
+        window.toastManager?.error('toasts.failedToDeleteConflictFile', 5000, {
+          error: result.error || 'Unknown error',
+        });
+        return;
+      }
+    }
+
+    window.toastManager?.success('toasts.conflictFilesDeleted', 3000, {
+      count: uniqueMods.length,
+    });
+
+    await this.refreshConflictsAfterConflictFileDeletion(false);
+  }
+
+  getSelectedConflictFileKey(
+    mod: { name: string; path: string },
+    filePath: string,
+  ) {
+    return `${mod.path}\u0000${filePath}`;
+  }
+
+  setConflictFileSelected(
+    mod: { name: string; path: string },
+    filePath: string,
+    selected: boolean,
+  ) {
+    const key = this.getSelectedConflictFileKey(mod, filePath);
+
+    if (selected) {
+      this.selectedConflictFiles.set(key, { mod, filePath });
+    } else {
+      this.selectedConflictFiles.delete(key);
+    }
+
+    this.updateSelectedConflictFilesFooter();
+  }
+
+  updateSelectedConflictFilesFooter() {
+    const button = document.querySelector<HTMLButtonElement>(
+      '#conflict-delete-selected-footer-btn',
+    );
+    const label = button?.querySelector('span');
+    const selectedCount = this.selectedConflictFiles.size;
+
+    if (!button || !label) return;
+
+    button.disabled = selectedCount === 0;
+    label.textContent =
+      selectedCount === 0
+        ? this.t('modals.conflict.deleteSelectedFiles')
+        : this.t('modals.conflict.deleteSelectedFilesCount', {
+            count: selectedCount,
+          });
+  }
+
+  async deleteSelectedConflictFiles() {
+    if (!window.electronAPI?.deleteConflictFile || !window.modManager) {
+      window.toastManager?.error('toasts.failedToDeleteConflictFile', 5000, {
+        error: 'API not available',
+      });
+      return;
+    }
+
+    const selectedItems = Array.from(this.selectedConflictFiles.values());
+    if (selectedItems.length === 0) return;
+
+    const confirmed =
+      await this.confirmSelectedConflictFilesDeletion(selectedItems);
+
+    if (!confirmed) return;
+
+    for (const item of selectedItems) {
+      const result = await window.electronAPI.deleteConflictFile(
+        item.mod.path,
+        item.filePath,
+      );
+
+      if (!result.success) {
+        window.toastManager?.error('toasts.failedToDeleteConflictFile', 5000, {
+          error: result.error || 'Unknown error',
+        });
+        await this.refreshConflictsAfterConflictFileDeletion(false);
+        return;
+      }
+    }
+
+    window.toastManager?.success('toasts.conflictFilesDeleted', 3000, {
+      count: selectedItems.length,
+    });
+
+    this.selectedConflictFiles.clear();
+    this.updateSelectedConflictFilesFooter();
+    await this.refreshConflictsAfterConflictFileDeletion(false);
+  }
+
+  async refreshConflictsAfterConflictFileDeletion(showDeletedToast = true) {
+    if (showDeletedToast) {
+      window.toastManager?.success('toasts.conflictFileDeleted', 3000);
+    }
 
     await window.modManager.fetchMods();
 
@@ -221,6 +498,8 @@ export class ConflictModalManager {
     summaryEl.textContent = t('modals.conflict.summary');
 
     container.innerHTML = '';
+    this.selectedConflictFiles.clear();
+    this.updateSelectedConflictFilesFooter();
 
     // Create grouped display
     conflictGroups.forEach((group) => {
@@ -345,6 +624,28 @@ export class ConflictModalManager {
         conflict.mods.forEach((mod) => {
           const modItem = document.createElement('div');
           modItem.className = 'conflict-mod-item';
+
+          const selectLabel = document.createElement('label');
+          selectLabel.className = 'conflict-mod-select-checkbox';
+
+          const selectCheckbox = document.createElement('input');
+          selectCheckbox.type = 'checkbox';
+          selectCheckbox.setAttribute(
+            'aria-label',
+            this.t('modals.conflict.selectFileForDeletion', {
+              modName: mod.name,
+            }),
+          );
+          selectCheckbox.addEventListener('change', () => {
+            this.setConflictFileSelected(
+              mod,
+              conflict.filePath,
+              selectCheckbox.checked,
+            );
+          });
+
+          selectLabel.appendChild(selectCheckbox);
+
           const modWarningIcon = document.createElement('i');
           modWarningIcon.className = 'bi bi-exclamation-circle-fill';
           const modName = document.createElement('span');
@@ -363,6 +664,7 @@ export class ConflictModalManager {
           const deleteIcon = document.createElement('i');
           deleteIcon.className = 'bi bi-trash3';
           deleteButton.appendChild(deleteIcon);
+          modItem.appendChild(selectLabel);
           modItem.appendChild(modWarningIcon);
           modItem.appendChild(modName);
           modItem.appendChild(deleteButton);

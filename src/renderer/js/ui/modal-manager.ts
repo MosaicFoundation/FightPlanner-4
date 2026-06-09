@@ -11,7 +11,10 @@ export interface CustomModalButton {
   text: string;
   type?: string;
   id?: string;
-  onClick?: (e: MouseEvent, modal: HTMLElement) => void | boolean | Promise<void>;
+  onClick?: (
+    e: MouseEvent,
+    modal: HTMLElement,
+  ) => void | boolean | Promise<void>;
   closeOnClick?: boolean;
 }
 
@@ -53,9 +56,9 @@ class ModalManager {
 
   changeSlotCallback?:
     | ((
-      slotAssignments: SlotAssignmentsByFighter,
-      deletedSlots: Map<string, Set<string>>,
-    ) => void)
+        slotAssignments: SlotAssignmentsByFighter,
+        deletedSlots: Map<string, Set<string>>,
+      ) => void)
     | null;
 
   constructor() {
@@ -215,7 +218,8 @@ class ModalManager {
     }
 
     const modal = document.createElement('div');
-    const sizeClass = options.size && options.size !== 'normal' ? `modal-${options.size}` : '';
+    const sizeClass =
+      options.size && options.size !== 'normal' ? `modal-${options.size}` : '';
     modal.className = `modal ${sizeClass}`.trim();
     modal.id = modalId;
     if (options.clickOverlayToClose === false) {
@@ -269,7 +273,7 @@ class ModalManager {
               onModalClosed: () => {
                 modal.remove();
                 if (options.onClose) options.onClose();
-              }
+              },
             });
             if (escapeHandler) {
               document.removeEventListener('keydown', escapeHandler);
@@ -291,7 +295,7 @@ class ModalManager {
           onModalClosed: () => {
             modal.remove();
             if (options.onClose) options.onClose();
-          }
+          },
         });
         if (escapeHandler) {
           document.removeEventListener('keydown', escapeHandler);
@@ -319,8 +323,11 @@ class ModalManager {
     let escapeHandler: ((e: KeyboardEvent) => void) | null = null;
     if (options.escapeToClose !== false) {
       escapeHandler = (e: KeyboardEvent) => {
-        const visibleModals = Array.from(document.querySelectorAll<HTMLElement>('.modal')).filter(
-          m => m.style.display === 'block' && !m.classList.contains('closing')
+        const visibleModals = Array.from(
+          document.querySelectorAll<HTMLElement>('.modal'),
+        ).filter(
+          (m) =>
+            m.style.display === 'block' && !m.classList.contains('closing'),
         );
         const isTopmost = visibleModals[visibleModals.length - 1] === modal;
 
@@ -329,7 +336,7 @@ class ModalManager {
             onModalClosed: () => {
               modal.remove();
               if (options.onClose) options.onClose();
-            }
+            },
           });
           document.removeEventListener('keydown', escapeHandler!);
         }
@@ -350,7 +357,17 @@ if (typeof window !== 'undefined') {
     const overlay = document.querySelector<HTMLElement>('#modal-overlay');
 
     if (overlay) {
+      let pointerStartedOnOverlay = false;
+      overlay.addEventListener('pointerdown', (e) => {
+        pointerStartedOnOverlay = e.target === overlay;
+      });
       overlay.addEventListener('click', (e) => {
+        const shouldClose = pointerStartedOnOverlay && e.target === overlay;
+        pointerStartedOnOverlay = false;
+        if (!shouldClose) {
+          return;
+        }
+
         const blockingModal = document.querySelector<HTMLElement>(
           '.modal[data-blocking="true"]',
         );

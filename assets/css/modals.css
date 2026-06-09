@@ -331,6 +331,18 @@
   overflow-wrap: anywhere;
 }
 
+.conflict-delete-confirm-mod-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.conflict-delete-confirm-mod-list li {
+  overflow-wrap: anywhere;
+}
+
 .modal-conflict .modal-hint {
   position: sticky;
   top: 0;

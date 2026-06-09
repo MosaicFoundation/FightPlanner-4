@@ -22,29 +22,15 @@ class SocialFeedManager extends SocialGameBananaManager {
         ? modsData
         : modsData.documents || [];
       const sortedMods = this.sortSocialModsByLatestDownload(mods);
+      this.socialFeedMods = sortedMods;
 
       if (sortedMods.length > 0) {
-        const userId = this.userData?.localId;
-        const usernameEl = document.querySelector<HTMLElement>(
-          '#social-profile-username',
+        const totalPages = this.getSocialFeedTotalPages();
+        this.socialFeedPage = Math.min(
+          Math.max(1, this.socialFeedPage || 1),
+          totalPages,
         );
-        const username = usernameEl ? usernameEl.textContent : null;
-
-        feedContent.innerHTML =
-          '<div class="social-mods-grid">' +
-          sortedMods
-            .map((mod) => {
-              const modUserId = mod.userId;
-              const modPseudo = mod.pseudo;
-              const isOwn = !!(
-                modUserId === userId ||
-                (username && modPseudo === username)
-              );
-
-              return this.renderModCard(mod, isOwn);
-            })
-            .join('') +
-          '</div>';
+        feedContent.innerHTML = this.renderSocialFeedPage();
 
         if (this.skipSocialModCardIntroAnimation || hadRenderedMods) return;
 
@@ -62,6 +48,7 @@ class SocialFeedManager extends SocialGameBananaManager {
           });
         }, 50);
       } else {
+        this.socialFeedPage = 1;
         feedContent.innerHTML =
           '<div class="social-empty-state"><i class="bi bi-inbox"></i><p>No mods to discover yet</p></div>';
       }
@@ -70,6 +57,80 @@ class SocialFeedManager extends SocialGameBananaManager {
       feedContent.innerHTML =
         '<div class="social-error-state"><i class="bi bi-exclamation-triangle"></i><p>Failed to load mods</p></div>';
     }
+  }
+
+  getSocialFeedTotalPages() {
+    const perPage = Math.max(1, Number(this.socialFeedPerPage || 12));
+    return Math.max(1, Math.ceil((this.socialFeedMods?.length || 0) / perPage));
+  }
+
+  renderSocialFeedPage() {
+    const mods = Array.isArray(this.socialFeedMods) ? this.socialFeedMods : [];
+    const totalPages = this.getSocialFeedTotalPages();
+    const currentPage = Math.min(
+      Math.max(1, this.socialFeedPage || 1),
+      totalPages,
+    );
+    const perPage = Math.max(1, Number(this.socialFeedPerPage || 12));
+    const startIndex = (currentPage - 1) * perPage;
+    const pageMods = mods.slice(startIndex, startIndex + perPage);
+    const userId = this.userData?.localId;
+    const usernameEl = document.querySelector<HTMLElement>(
+      '#social-profile-username',
+    );
+    const username = usernameEl ? usernameEl.textContent : null;
+    const pagination =
+      totalPages > 1
+        ? this.renderSocialFeedPagination(currentPage, totalPages)
+        : '';
+
+    return `
+      ${pagination}
+      <div class="social-mods-grid">
+        ${pageMods
+          .map((mod) => {
+            const modUserId = mod.userId;
+            const modPseudo = mod.pseudo;
+            const isOwn = !!(
+              modUserId === userId ||
+              (username && modPseudo === username)
+            );
+
+            return this.renderModCard(mod, isOwn);
+          })
+          .join('')}
+      </div>
+      ${pagination}
+    `;
+  }
+
+  renderSocialFeedPagination(currentPage: number, totalPages: number) {
+    const canGoBack = currentPage > 1;
+    const canGoNext = currentPage < totalPages;
+
+    return `
+      <div class="social-feed-pagination">
+        <button class="social-feed-page-btn" data-page-action="prev" ${canGoBack ? '' : 'disabled'}>
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <span class="social-gamebanana-page-label">Page ${currentPage} / ${totalPages}</span>
+        <button class="social-feed-page-btn" data-page-action="next" ${canGoNext ? '' : 'disabled'}>
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    `;
+  }
+
+  setSocialFeedPage(page: number) {
+    const feedContent = document.querySelector<HTMLElement>(
+      '#social-feed-content',
+    );
+    if (!feedContent) return;
+
+    const totalPages = this.getSocialFeedTotalPages();
+    this.socialFeedPage = Math.min(Math.max(1, page), totalPages);
+    feedContent.innerHTML = this.renderSocialFeedPage();
+    this.setSocialMainScrollTop(0);
   }
 
   sortSocialModsByLatestDownload(mods) {

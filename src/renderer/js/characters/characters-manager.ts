@@ -6,6 +6,21 @@ interface Character {
   mods: { name: string; path: string; status: string }[];
 }
 
+interface CharacterMovesetMod {
+  name: string;
+  path: string;
+  status: 'active' | 'disabled';
+  category: string;
+  description: string;
+  slots: string[];
+}
+
+interface CharacterMovesetGroup {
+  id: string;
+  info: { name: string; number: string };
+  mods: CharacterMovesetMod[];
+}
+
 interface CharacterCssEntry {
   id: string;
   nameId: string;
@@ -44,6 +59,7 @@ interface CharacterCssSlot {
 
 class CharactersManager {
   characters: Map<string, Character>;
+  movesetCharacters: Map<string, CharacterMovesetGroup>;
   allCharacters: any[];
   searchQuery: string;
   initialized: boolean;
@@ -63,6 +79,7 @@ class CharactersManager {
 
   constructor() {
     this.characters = new Map();
+    this.movesetCharacters = new Map();
     this.allCharacters = [];
     this.searchQuery = '';
     this.initialized = false;
@@ -135,6 +152,20 @@ class CharactersManager {
     }, 300);
   }
 
+  bindBackdropClose(modal: HTMLElement, onClose: () => void) {
+    let pointerStartedOnBackdrop = false;
+    modal.addEventListener('pointerdown', (event) => {
+      pointerStartedOnBackdrop = event.target === modal;
+    });
+    modal.addEventListener('click', (event) => {
+      const shouldClose = pointerStartedOnBackdrop && event.target === modal;
+      pointerStartedOnBackdrop = false;
+      if (shouldClose) {
+        onClose();
+      }
+    });
+  }
+
   async initialize() {
     if (this.initialized) {
       console.log('Characters already initialized, skipping refresh.');
@@ -165,8 +196,9 @@ class CharactersManager {
       });
     }
 
-    const editCssButton =
-      document.querySelector<HTMLButtonElement>('#edit-character-css-btn');
+    const editCssButton = document.querySelector<HTMLButtonElement>(
+      '#edit-character-css-btn',
+    );
     if (editCssButton) {
       const replacement = editCssButton.cloneNode(true) as HTMLButtonElement;
       editCssButton.parentNode?.replaceChild(replacement, editCssButton);
@@ -175,8 +207,36 @@ class CharactersManager {
       });
     }
 
-    const backButton =
-      document.querySelector<HTMLButtonElement>('#character-css-back-btn');
+    const movesetsButton = document.querySelector<HTMLButtonElement>(
+      '#character-movesets-btn',
+    );
+    if (movesetsButton) {
+      const replacement = movesetsButton.cloneNode(true) as HTMLButtonElement;
+      movesetsButton.parentNode?.replaceChild(replacement, movesetsButton);
+      replacement.addEventListener('click', () => {
+        this.openMovesetTracker();
+      });
+    }
+
+    const movesetsBackButton = document.querySelector<HTMLButtonElement>(
+      '#character-movesets-back-btn',
+    );
+    if (movesetsBackButton) {
+      const replacement = movesetsBackButton.cloneNode(
+        true,
+      ) as HTMLButtonElement;
+      movesetsBackButton.parentNode?.replaceChild(
+        replacement,
+        movesetsBackButton,
+      );
+      replacement.addEventListener('click', () => {
+        this.closeMovesetTracker();
+      });
+    }
+
+    const backButton = document.querySelector<HTMLButtonElement>(
+      '#character-css-back-btn',
+    );
     if (backButton) {
       const replacement = backButton.cloneNode(true) as HTMLButtonElement;
       backButton.parentNode?.replaceChild(replacement, backButton);
@@ -185,8 +245,9 @@ class CharactersManager {
       });
     }
 
-    const hiddenButton =
-      document.querySelector<HTMLButtonElement>('#character-css-hidden-btn');
+    const hiddenButton = document.querySelector<HTMLButtonElement>(
+      '#character-css-hidden-btn',
+    );
     if (hiddenButton) {
       const replacement = hiddenButton.cloneNode(true) as HTMLButtonElement;
       hiddenButton.parentNode?.replaceChild(replacement, hiddenButton);
@@ -195,8 +256,9 @@ class CharactersManager {
       });
     }
 
-    const saveButton =
-      document.querySelector<HTMLButtonElement>('#character-css-save-btn');
+    const saveButton = document.querySelector<HTMLButtonElement>(
+      '#character-css-save-btn',
+    );
     if (saveButton) {
       const replacement = saveButton.cloneNode(true) as HTMLButtonElement;
       saveButton.parentNode?.replaceChild(replacement, saveButton);
@@ -205,8 +267,9 @@ class CharactersManager {
       });
     }
 
-    const randomizeButton =
-      document.querySelector<HTMLButtonElement>('#character-css-randomize-btn');
+    const randomizeButton = document.querySelector<HTMLButtonElement>(
+      '#character-css-randomize-btn',
+    );
     if (randomizeButton) {
       const replacement = randomizeButton.cloneNode(true) as HTMLButtonElement;
       randomizeButton.parentNode?.replaceChild(replacement, randomizeButton);
@@ -215,8 +278,9 @@ class CharactersManager {
       });
     }
 
-    const previewButton =
-      document.querySelector<HTMLButtonElement>('#character-css-preview-btn');
+    const previewButton = document.querySelector<HTMLButtonElement>(
+      '#character-css-preview-btn',
+    );
     if (previewButton) {
       const replacement = previewButton.cloneNode(true) as HTMLButtonElement;
       previewButton.parentNode?.replaceChild(replacement, previewButton);
@@ -226,10 +290,9 @@ class CharactersManager {
     }
 
     const cssGrid = document.querySelector<HTMLElement>('#character-css-grid');
-    if (cssGrid) {
-      const replacement = cssGrid.cloneNode(false) as HTMLElement;
-      cssGrid.parentNode?.replaceChild(replacement, cssGrid);
-      replacement.addEventListener('dragstart', (event) => {
+    if (cssGrid && cssGrid.dataset.listenersBound !== 'true') {
+      cssGrid.dataset.listenersBound = 'true';
+      cssGrid.addEventListener('dragstart', (event) => {
         const cell = (event.target as HTMLElement | null)?.closest<HTMLElement>(
           '.character-css-cell',
         );
@@ -241,13 +304,15 @@ class CharactersManager {
           event.dataTransfer.effectAllowed = 'move';
         }
       });
-      replacement.addEventListener('dragend', () => {
-        replacement
+      cssGrid.addEventListener('dragend', () => {
+        cssGrid
           .querySelectorAll('.is-dragging, .is-drop-target')
-          .forEach((node) => node.classList.remove('is-dragging', 'is-drop-target'));
+          .forEach((node) =>
+            node.classList.remove('is-dragging', 'is-drop-target'),
+          );
         this.cssDraggedCharacterId = null;
       });
-      replacement.addEventListener('dragover', (event) => {
+      cssGrid.addEventListener('dragover', (event) => {
         const cell = (event.target as HTMLElement | null)?.closest<HTMLElement>(
           '.character-css-cell',
         );
@@ -255,7 +320,7 @@ class CharactersManager {
         event.preventDefault();
         cell.classList.add('is-drop-target');
       });
-      replacement.addEventListener('dragleave', (event) => {
+      cssGrid.addEventListener('dragleave', (event) => {
         const cell = (event.target as HTMLElement | null)?.closest<HTMLElement>(
           '.character-css-cell',
         );
@@ -264,15 +329,18 @@ class CharactersManager {
           cell.classList.remove('is-drop-target');
         }
       });
-      replacement.addEventListener('drop', (event) => {
+      cssGrid.addEventListener('drop', (event) => {
         const cell = (event.target as HTMLElement | null)?.closest<HTMLElement>(
           '.character-css-cell',
         );
         if (!cell?.dataset.characterId || !this.cssDraggedCharacterId) return;
         event.preventDefault();
-        this.moveCssCharacter(this.cssDraggedCharacterId, cell.dataset.characterId);
+        this.moveCssCharacter(
+          this.cssDraggedCharacterId,
+          cell.dataset.characterId,
+        );
       });
-      replacement.addEventListener('contextmenu', (event) => {
+      cssGrid.addEventListener('contextmenu', (event) => {
         const cell = (event.target as HTMLElement | null)?.closest<HTMLElement>(
           '.character-css-cell',
         );
@@ -280,7 +348,7 @@ class CharactersManager {
         event.preventDefault();
         this.hideCssCharacter(cell.dataset.characterId);
       });
-      replacement.addEventListener('click', (event) => {
+      cssGrid.addEventListener('click', (event) => {
         const cell = (event.target as HTMLElement | null)?.closest<HTMLElement>(
           '.character-css-cell',
         );
@@ -367,12 +435,24 @@ class CharactersManager {
       }
 
       this.characters.clear();
+      this.movesetCharacters.clear();
 
-      const allMods = [...result.activeMods.map(m => ({ mod: m, status: 'active' as const })), ...result.disabledMods.map(m => ({ mod: m, status: 'disabled' as const }))];
+      const allMods = [
+        ...result.activeMods.map((m) => ({
+          mod: m,
+          status: 'active' as const,
+        })),
+        ...result.disabledMods.map((m) => ({
+          mod: m,
+          status: 'disabled' as const,
+        })),
+      ];
 
       for (let i = 0; i < allMods.length; i++) {
         const { mod, status } = allMods[i];
-        this.updateLoadingStatus(`Scanning ${mod.name} (${i + 1}/${allMods.length})...`);
+        this.updateLoadingStatus(
+          `Scanning ${mod.name} (${i + 1}/${allMods.length})...`,
+        );
         await this.scanModForCharacters(mod, status);
       }
 
@@ -392,6 +472,19 @@ class CharactersManager {
 
       if (scanModResult.success && scanModResult.data.fighterNames.length > 0) {
         const resolvedIds = new Set<string>();
+        const modInfo = await this.getModInfo(mod);
+        const isMovesetMod = this.isMovesetModInfo(modInfo, mod.name);
+        const movesetMod: CharacterMovesetMod = {
+          name: modInfo?.display_name || mod.name,
+          path: mod.path,
+          status,
+          category: modInfo?.category || '',
+          description: modInfo?.description || '',
+          slots: [],
+        };
+        const slotsByFighterId = this.getSlotsByResolvedFighterId(
+          scanModResult.data.pathData,
+        );
 
         scanModResult.data.fighterNames.forEach((rawFighterId: string) => {
           const fighterId = window.resolveFolderName
@@ -427,10 +520,94 @@ class CharactersManager {
               status: status,
             });
           }
+
+          if (isMovesetMod) {
+            this.addMovesetModForCharacter(fighterId, {
+              ...movesetMod,
+              slots: slotsByFighterId.get(fighterId) || [],
+            });
+          }
         });
       }
     } catch (error) {
       console.error(`Error scanning mod ${mod.name}:`, error);
+    }
+  }
+
+  async getModInfo(mod: Mod) {
+    if (!window.electronAPI?.getModInfo || !mod.path) {
+      return null;
+    }
+
+    try {
+      return await window.electronAPI.getModInfo(mod.path);
+    } catch (error) {
+      console.warn(`Failed to read info.toml for ${mod.name}:`, error);
+      return null;
+    }
+  }
+
+  isMovesetModInfo(modInfo: any, fallbackName: string) {
+    if (!modInfo) {
+      return false;
+    }
+
+    const searchableInfo = [
+      modInfo.category,
+      modInfo.display_name,
+      modInfo.s_name,
+      modInfo.description,
+      fallbackName,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    return /\bmovesets?\b/.test(searchableInfo);
+  }
+
+  getSlotsByResolvedFighterId(pathData: Record<string, Record<string, any>>) {
+    const slotsByFighterId = new Map<string, string[]>();
+
+    Object.entries(pathData || {}).forEach(([rawFighterId, slots]) => {
+      const fighterId = window.resolveFolderName
+        ? window.resolveFolderName(rawFighterId)
+        : rawFighterId.toLowerCase();
+      const detectedSlots = Object.keys(slots || {})
+        .filter((slot) => slot !== 'unknown')
+        .sort((a, b) => {
+          const numA = parseInt(a.replace(/^c/i, ''), 10);
+          const numB = parseInt(b.replace(/^c/i, ''), 10);
+          return numA - numB;
+        });
+
+      slotsByFighterId.set(fighterId, detectedSlots);
+    });
+
+    return slotsByFighterId;
+  }
+
+  addMovesetModForCharacter(fighterId: string, mod: CharacterMovesetMod) {
+    const charInfo = window.SSBU_CHARACTERS?.[fighterId];
+    if (!charInfo) {
+      return;
+    }
+
+    if (!this.movesetCharacters.has(fighterId)) {
+      this.movesetCharacters.set(fighterId, {
+        id: fighterId,
+        info: charInfo,
+        mods: [],
+      });
+    }
+
+    const group = this.movesetCharacters.get(fighterId);
+    if (!group) {
+      return;
+    }
+
+    if (!group.mods.some((entry) => entry.path === mod.path)) {
+      group.mods.push(mod);
     }
   }
 
@@ -499,15 +676,15 @@ onerror="this.style.display='none'; this.nextElementSibling.classList.add('show-
 </div>
 <div class="character-mods-list">
 ${char.mods
-        .map(
-          (mod) => `
+  .map(
+    (mod) => `
 <div class="character-mod-item ${mod.status}" data-mod-path="${this.escapeHtml(mod.path)}">
 <span class="mod-status-dot"></span>
 <span class="mod-name">${this.escapeHtml(mod.name)}</span>
 </div>
 `,
-        )
-        .join('')}
+  )
+  .join('')}
 </div>
 </div>
 `;
@@ -550,16 +727,16 @@ ${char.mods
 <p class="character-modal-count">${char.mods.length} mod${char.mods.length > 1 ? 's' : ''} for this character</p>
 <div class="character-modal-mods">
 ${char.mods
-        .map(
-          (mod) => `
+  .map(
+    (mod) => `
 <div class="character-modal-mod-item ${mod.status}" data-mod-path="${this.escapeHtml(mod.path)}">
 <span class="mod-status-indicator ${mod.status}"></span>
 <span class="mod-name">${this.escapeHtml(mod.name)}</span>
 <i class="bi bi-arrow-right-circle"></i>
 </div>
 `,
-        )
-        .join('')}
+  )
+  .join('')}
 </div>
 </div>
 </div>
@@ -581,7 +758,8 @@ ${char.mods
       if (modalContent) {
         modalContent.style.opacity = '1';
         modalContent.style.transform =
-          'scale(1) translateY(-50%) translateX(-50%)';
+          'translate(-50%, -50%) scale(1) translateY(0)';
+        modalContent.style.filter = 'blur(0px)';
         modalContent.style.animation = 'none';
         modalContent.style.position = 'absolute';
         modalContent.style.left = '50%';
@@ -598,10 +776,8 @@ ${char.mods
       this.closeCharacterModal(modal, escapeHandler || undefined);
     });
 
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        this.closeCharacterModal(modal, escapeHandler || undefined);
-      }
+    this.bindBackdropClose(modal, () => {
+      this.closeCharacterModal(modal, escapeHandler || undefined);
     });
 
     const modalContent = modal.querySelector<HTMLElement>('.character-modal');
@@ -666,15 +842,66 @@ ${char.mods
     }, 300);
   }
 
-  async openCssEditor() {
-    const browserView =
-      document.querySelector<HTMLElement>('#characters-browser-view');
-    const cssEditor =
-      document.querySelector<HTMLElement>('#character-css-editor');
+  openMovesetTracker() {
+    const browserView = document.querySelector<HTMLElement>(
+      '#characters-browser-view',
+    );
+    const movesetsView = document.querySelector<HTMLElement>(
+      '#character-movesets-view',
+    );
 
-    if (!browserView || !cssEditor) {
+    if (!browserView || !movesetsView) {
       return;
     }
+
+    this.renderMovesetTracker();
+    this.switchCharacterView(
+      this.getActiveCharacterSubview(),
+      movesetsView,
+      'forward',
+    );
+  }
+
+  closeMovesetTracker() {
+    const browserView = document.querySelector<HTMLElement>(
+      '#characters-browser-view',
+    );
+    const movesetsView = document.querySelector<HTMLElement>(
+      '#character-movesets-view',
+    );
+
+    if (!browserView || !movesetsView) {
+      return;
+    }
+
+    this.switchCharacterView(movesetsView, browserView, 'back');
+  }
+
+  switchCharacterView(
+    fromView: HTMLElement | null,
+    toView: HTMLElement,
+    direction: 'forward' | 'back',
+  ) {
+    if (fromView === toView) {
+      toView.hidden = false;
+      return;
+    }
+
+    document
+      .querySelectorAll<HTMLElement>(
+        '#characters-browser-view, #character-movesets-view, #character-css-editor',
+      )
+      .forEach((view) => {
+        if (view !== fromView && view !== toView) {
+          view.hidden = true;
+          view.classList.remove(
+            'characters-view-enter-from-left',
+            'characters-view-enter-from-right',
+            'characters-view-exit-left',
+            'characters-view-exit-right',
+          );
+        }
+      });
 
     const isNoAnimations = document.body.classList.contains('no-animations');
     const animClasses = [
@@ -683,26 +910,434 @@ ${char.mods
       'characters-view-exit-left',
       'characters-view-exit-right',
     ];
-    browserView.classList.remove(...animClasses);
-    cssEditor.classList.remove(...animClasses);
+    fromView?.classList.remove(...animClasses);
+    toView.classList.remove(...animClasses);
 
     if (isNoAnimations) {
-      browserView.hidden = true;
-      cssEditor.hidden = false;
-    } else {
-      browserView.classList.add('characters-view-exit-left');
-      window.setTimeout(() => {
-        browserView.hidden = true;
-        browserView.classList.remove('characters-view-exit-left');
-      }, 320);
+      if (fromView) {
+        fromView.hidden = true;
+      }
+      toView.hidden = false;
+      return;
+    }
 
-      cssEditor.hidden = false;
-      void cssEditor.offsetWidth;
-      cssEditor.classList.add('characters-view-enter-from-right');
+    if (fromView) {
+      fromView.classList.add(
+        direction === 'forward'
+          ? 'characters-view-exit-left'
+          : 'characters-view-exit-right',
+      );
       window.setTimeout(() => {
-        cssEditor.classList.remove('characters-view-enter-from-right');
+        fromView.hidden = true;
+        fromView.classList.remove(
+          'characters-view-exit-left',
+          'characters-view-exit-right',
+        );
       }, 320);
     }
+
+    toView.hidden = false;
+    void toView.offsetWidth;
+    toView.classList.add(
+      direction === 'forward'
+        ? 'characters-view-enter-from-right'
+        : 'characters-view-enter-from-left',
+    );
+    window.setTimeout(() => {
+      toView.classList.remove(
+        'characters-view-enter-from-right',
+        'characters-view-enter-from-left',
+      );
+    }, 320);
+  }
+
+  getActiveCharacterSubview() {
+    return (
+      document.querySelector<HTMLElement>(
+        '#characters-browser-view:not([hidden]), #character-movesets-view:not([hidden]), #character-css-editor:not([hidden])',
+      ) || null
+    );
+  }
+
+  renderMovesetTracker() {
+    const list = document.querySelector<HTMLElement>(
+      '#character-movesets-list',
+    );
+    const count = document.querySelector<HTMLElement>(
+      '#character-movesets-count',
+    );
+    if (!list) {
+      return;
+    }
+
+    const movesetGroups = Array.from(this.movesetCharacters.values()).sort(
+      (a, b) => {
+        const numA = parseFloat(a.info.number.replace('ε', '.5'));
+        const numB = parseFloat(b.info.number.replace('ε', '.5'));
+        return numA - numB;
+      },
+    );
+    const totalMovesets = movesetGroups.reduce(
+      (total, character) => total + character.mods.length,
+      0,
+    );
+
+    if (count) {
+      count.textContent = `${totalMovesets} moveset mod${totalMovesets !== 1 ? 's' : ''}`;
+    }
+
+    if (movesetGroups.length === 0) {
+      list.innerHTML = `
+<div class="characters-empty-state character-movesets-empty">
+<i class="bi bi-controller"></i>
+<h3>No moveset mods found</h3>
+<p>Moveset mods show here when a character mod's info.toml says moveset.</p>
+</div>
+`;
+      return;
+    }
+
+    list.innerHTML = movesetGroups
+      .map((character) => this.renderMovesetCharacterGroup(character))
+      .join('');
+
+    list.querySelectorAll<HTMLElement>('[data-mod-path]').forEach((item) => {
+      item.addEventListener('click', () => {
+        this.openModInToolsTab(item.dataset.modPath);
+      });
+    });
+
+    list
+      .querySelectorAll<HTMLButtonElement>('[data-add-moveset-css]')
+      .forEach((button) => {
+        button.addEventListener('click', (event) => {
+          event.stopPropagation();
+          const characterId = button.dataset.addMovesetCss;
+          if (!characterId) {
+            return;
+          }
+          void this.openAddMovesetToCssFlow(characterId);
+        });
+      });
+  }
+
+  renderMovesetCharacterGroup(character: CharacterMovesetGroup) {
+    const imageUrl =
+      window.CHARACTER_IMAGES[character.id] ||
+      'https://www.smashbros.com/assets_v2/img/fighter/mario/main.png';
+    const escapedName = this.escapeHtml(character.info.name);
+
+    return `
+<section class="character-moveset-group">
+<div class="character-moveset-character">
+<div class="character-moveset-image-frame">
+<img src="${imageUrl}" alt="${escapedName}" onerror="this.hidden=true; this.nextElementSibling.hidden=false;">
+<i class="bi bi-person-circle" hidden></i>
+</div>
+<div>
+<strong>${escapedName}</strong>
+<span>#${this.escapeHtml(character.info.number)} · ${character.mods.length} moveset mod${character.mods.length !== 1 ? 's' : ''}</span>
+</div>
+<button class="input-btn character-moveset-add-css-btn" type="button" data-add-moveset-css="${this.escapeHtml(character.id)}">
+<i class="bi bi-plus-square"></i>
+<span>Add to CSS</span>
+</button>
+</div>
+<div class="character-moveset-mods">
+${character.mods.map((mod) => this.renderMovesetModRow(mod)).join('')}
+</div>
+</section>
+`;
+  }
+
+  renderMovesetModRow(mod: CharacterMovesetMod) {
+    const description = mod.description
+      ? `<span class="character-moveset-description">${this.escapeHtml(mod.description)}</span>`
+      : '';
+    const category = mod.category
+      ? `<span class="character-moveset-category">${this.escapeHtml(mod.category)}</span>`
+      : '';
+    const slotBadges =
+      mod.slots.length > 0
+        ? mod.slots
+            .map(
+              (slot) =>
+                `<span class="character-moveset-slot">${this.escapeHtml(slot)}</span>`,
+            )
+            .join('')
+        : '<span class="character-moveset-slot is-unknown">Slot unknown</span>';
+
+    return `
+<button class="character-moveset-mod ${mod.status}" type="button" data-mod-path="${this.escapeHtml(mod.path)}">
+<span class="mod-status-dot"></span>
+<span class="character-moveset-mod-main">
+<strong>${this.escapeHtml(mod.name)}</strong>
+${description}
+</span>
+<span class="character-moveset-slots" aria-label="Detected moveset slots">
+${slotBadges}
+</span>
+${category}
+<i class="bi bi-arrow-right-circle"></i>
+</button>
+`;
+  }
+
+  async openAddMovesetToCssFlow(characterId: string) {
+    if (this.cssSaving) {
+      return;
+    }
+
+    if (!this.cssLoaded) {
+      await this.loadCssLayout();
+    }
+
+    if (!this.cssLoaded) {
+      return;
+    }
+
+    const movesetCharacter = this.movesetCharacters.get(characterId);
+    if (!movesetCharacter) {
+      return;
+    }
+
+    const duplicateOptions =
+      await this.openAddMovesetToCssModal(movesetCharacter);
+    if (!duplicateOptions) {
+      return;
+    }
+
+    this.cssSaving = true;
+    this.renderCssEditor();
+
+    try {
+      const result = await window.electronAPI.duplicateCharacterCssEntry({
+        sourceCharacterId: duplicateOptions.sourceCharacterId,
+        newUiCharaId: duplicateOptions.newUiCharaId,
+        newNameId: duplicateOptions.newNameId,
+        newDisplayName: duplicateOptions.newDisplayName,
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to add moveset to CSS');
+      }
+
+      this.cssVisibleCharacters = result.visibleCharacters.map((entry) =>
+        this.hydrateCssCharacter(entry),
+      );
+      this.cssHiddenCharacters = result.hiddenCharacters.map((entry) =>
+        this.hydrateCssCharacter(entry),
+      );
+      this.cssSelectedCharacterId = duplicateOptions.newUiCharaId;
+      this.cssSelectedSlotIndex = 0;
+      this.cssPanelMode = 'msbt';
+      this.cssRenamedCharacters.clear();
+      this.cssCharacterUpdates.clear();
+      this.cssDirty = true;
+      window.toastManager?.success?.(
+        'Moveset character added to CSS. Edit slots, then Apply Layout.',
+        4500,
+      );
+      await this.openCssEditor();
+    } catch (error) {
+      console.error('[CharactersManager] Failed to add moveset to CSS:', error);
+      window.toastManager?.error(
+        `Failed to add moveset to CSS: ${error.message || 'Unknown error'}`,
+        5000,
+      );
+    } finally {
+      this.cssSaving = false;
+      this.renderCssEditor();
+    }
+  }
+
+  openAddMovesetToCssModal(movesetCharacter: CharacterMovesetGroup): Promise<{
+    sourceCharacterId: string;
+    newUiCharaId: string;
+    newNameId: string;
+    newDisplayName: string;
+  } | null> {
+    return new Promise((resolve) => {
+      const existingModal = document.querySelector<HTMLElement>(
+        '.character-css-add-moveset-modal-overlay',
+      );
+      existingModal?.remove();
+
+      const cssCharacters = [
+        ...this.cssVisibleCharacters,
+        ...this.cssHiddenCharacters,
+      ].filter((character) => !character.isRandom);
+      const preferredSource =
+        cssCharacters.find(
+          (character) =>
+            character.nameId === movesetCharacter.id ||
+            character.id === `ui_chara_${movesetCharacter.id}`,
+        ) || cssCharacters[0];
+      const suggestedNameId = this.getUniqueCssNameId(
+        `${movesetCharacter.id}_moveset`,
+      );
+      const sourceOptions = cssCharacters
+        .map(
+          (character) => `
+<option value="${this.escapeHtml(character.id)}" ${character.id === preferredSource?.id ? 'selected' : ''}>
+${this.escapeHtml(character.displayName)} (${this.escapeHtml(character.id)})
+</option>`,
+        )
+        .join('');
+
+      const modal = document.createElement('div');
+      modal.className =
+        'character-modal-overlay character-css-add-moveset-modal-overlay';
+      modal.innerHTML = `
+<div class="character-modal character-css-duplicate-modal">
+<div class="character-modal-header">
+<h2>Add ${this.escapeHtml(movesetCharacter.info.name)} to CSS</h2>
+<button class="character-modal-close" type="button">
+<i class="bi bi-x-lg"></i>
+</button>
+</div>
+<form class="character-modal-body character-css-duplicate-form">
+<label class="character-css-field">
+<span>Duplicate CSS Character</span>
+<select name="sourceCharacterId">${sourceOptions}</select>
+</label>
+<label class="character-css-field">
+<span>New Character ID</span>
+<input name="newUiCharaId" value="ui_chara_${this.escapeHtml(suggestedNameId)}" autocomplete="off">
+</label>
+<label class="character-css-field">
+<span>New Name ID</span>
+<input name="newNameId" value="${this.escapeHtml(suggestedNameId)}" autocomplete="off">
+</label>
+<label class="character-css-field">
+<span>Display Name</span>
+<input name="newDisplayName" value="${this.escapeHtml(movesetCharacter.info.name)}" autocomplete="off">
+</label>
+<div class="character-css-duplicate-error" hidden></div>
+<div class="character-css-duplicate-actions">
+<button class="input-btn" type="button" data-action="cancel">Cancel</button>
+<button class="input-btn character-css-save-btn" type="submit">
+<i class="bi bi-plus-square"></i>
+Add to CSS
+</button>
+</div>
+</form>
+</div>
+`;
+
+      document.body.appendChild(modal);
+
+      const form = modal.querySelector<HTMLFormElement>(
+        '.character-css-duplicate-form',
+      )!;
+      const errorEl = modal.querySelector<HTMLElement>(
+        '.character-css-duplicate-error',
+      )!;
+      const close = (
+        value: {
+          sourceCharacterId: string;
+          newUiCharaId: string;
+          newNameId: string;
+          newDisplayName: string;
+        } | null,
+      ) => {
+        this.closeCharacterModal(modal);
+        resolve(value);
+      };
+
+      modal
+        .querySelector<HTMLElement>('.character-modal-close')
+        ?.addEventListener('click', () => close(null));
+      modal
+        .querySelector<HTMLElement>('[data-action="cancel"]')
+        ?.addEventListener('click', () => close(null));
+      this.bindBackdropClose(modal, () => close(null));
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const data = new FormData(form);
+        const sourceCharacterId = String(
+          data.get('sourceCharacterId') || '',
+        ).trim();
+        const newUiCharaId = String(data.get('newUiCharaId') || '').trim();
+        const newNameId = String(data.get('newNameId') || '').trim();
+        const newDisplayName = String(data.get('newDisplayName') || '').trim();
+
+        if (!sourceCharacterId) {
+          errorEl.textContent = 'Choose the CSS character to duplicate.';
+          errorEl.hidden = false;
+          return;
+        }
+
+        if (!newUiCharaId.startsWith('ui_chara_')) {
+          errorEl.textContent = 'Character ID must start with ui_chara_.';
+          errorEl.hidden = false;
+          return;
+        }
+
+        if (!newNameId) {
+          errorEl.textContent = 'Name ID cannot be empty.';
+          errorEl.hidden = false;
+          return;
+        }
+
+        close({
+          sourceCharacterId,
+          newUiCharaId,
+          newNameId,
+          newDisplayName: newDisplayName || newNameId,
+        });
+      });
+
+      form
+        .querySelector<HTMLSelectElement>('select[name="sourceCharacterId"]')
+        ?.focus();
+    });
+  }
+
+  getUniqueCssNameId(baseNameId: string) {
+    const usedIds = new Set(
+      [...this.cssVisibleCharacters, ...this.cssHiddenCharacters].flatMap(
+        (character) => [
+          character.nameId,
+          character.id.replace(/^ui_chara_/, ''),
+        ],
+      ),
+    );
+    const normalizedBase =
+      baseNameId
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'moveset';
+
+    let candidate = normalizedBase;
+    let suffix = 2;
+    while (usedIds.has(candidate) || usedIds.has(`ui_chara_${candidate}`)) {
+      candidate = `${normalizedBase}_${suffix}`;
+      suffix += 1;
+    }
+
+    return candidate;
+  }
+
+  async openCssEditor() {
+    const browserView = document.querySelector<HTMLElement>(
+      '#characters-browser-view',
+    );
+    const cssEditor = document.querySelector<HTMLElement>(
+      '#character-css-editor',
+    );
+
+    if (!browserView || !cssEditor) {
+      return;
+    }
+
+    this.switchCharacterView(
+      this.getActiveCharacterSubview(),
+      cssEditor,
+      'forward',
+    );
 
     if (!this.cssLoaded) {
       await this.loadCssLayout();
@@ -713,41 +1348,15 @@ ${char.mods
   }
 
   closeCssEditor() {
-    const browserView =
-      document.querySelector<HTMLElement>('#characters-browser-view');
-    const cssEditor =
-      document.querySelector<HTMLElement>('#character-css-editor');
+    const browserView = document.querySelector<HTMLElement>(
+      '#characters-browser-view',
+    );
+    const cssEditor = document.querySelector<HTMLElement>(
+      '#character-css-editor',
+    );
 
-    const isNoAnimations = document.body.classList.contains('no-animations');
-    const animClasses = [
-      'characters-view-enter-from-left',
-      'characters-view-enter-from-right',
-      'characters-view-exit-left',
-      'characters-view-exit-right',
-    ];
-
-    if (browserView) {
-      browserView.classList.remove(...animClasses);
-      browserView.hidden = false;
-      if (!isNoAnimations) {
-        void browserView.offsetWidth;
-        browserView.classList.add('characters-view-enter-from-left');
-        window.setTimeout(() => {
-          browserView.classList.remove('characters-view-enter-from-left');
-        }, 320);
-      }
-    }
-    if (cssEditor) {
-      cssEditor.classList.remove(...animClasses);
-      if (isNoAnimations) {
-        cssEditor.hidden = true;
-      } else {
-        cssEditor.classList.add('characters-view-exit-right');
-        window.setTimeout(() => {
-          cssEditor.hidden = true;
-          cssEditor.classList.remove('characters-view-exit-right');
-        }, 320);
-      }
+    if (browserView && cssEditor) {
+      this.switchCharacterView(cssEditor, browserView, 'back');
     }
   }
 
@@ -781,7 +1390,8 @@ ${char.mods
       this.cssRenamedCharacters.clear();
       this.cssCharacterUpdates.clear();
       this.cssSelectedCharacterId =
-        this.cssVisibleCharacters.find((character) => !character.isRandom)?.id ||
+        this.cssVisibleCharacters.find((character) => !character.isRandom)
+          ?.id ||
         this.cssVisibleCharacters[0]?.id ||
         null;
       this.cssLoaded = true;
@@ -838,14 +1448,18 @@ ${char.mods
     });
     this.renderCssInspector();
 
-    const visibleCount =
-      document.querySelector<HTMLElement>('#character-css-visible-count');
-    const hiddenCount =
-      document.querySelector<HTMLElement>('#character-css-hidden-count');
-    const hiddenButton =
-      document.querySelector<HTMLButtonElement>('#character-css-hidden-btn');
-    const saveButton =
-      document.querySelector<HTMLButtonElement>('#character-css-save-btn');
+    const visibleCount = document.querySelector<HTMLElement>(
+      '#character-css-visible-count',
+    );
+    const hiddenCount = document.querySelector<HTMLElement>(
+      '#character-css-hidden-count',
+    );
+    const hiddenButton = document.querySelector<HTMLButtonElement>(
+      '#character-css-hidden-btn',
+    );
+    const saveButton = document.querySelector<HTMLButtonElement>(
+      '#character-css-save-btn',
+    );
 
     if (visibleCount) {
       visibleCount.textContent = String(this.cssVisibleCharacters.length);
@@ -854,7 +1468,8 @@ ${char.mods
       hiddenCount.textContent = `${this.cssHiddenCharacters.length} hidden`;
     }
     if (hiddenButton) {
-      hiddenButton.disabled = this.cssHiddenCharacters.length === 0 || this.cssSaving;
+      hiddenButton.disabled =
+        this.cssHiddenCharacters.length === 0 || this.cssSaving;
     }
     if (saveButton) {
       saveButton.disabled = this.cssSaving;
@@ -894,7 +1509,9 @@ ${character.number ? `<span class="character-css-number">#${this.escapeHtml(char
 </button>
 `;
 
-    const hideButton = cell.querySelector<HTMLButtonElement>('.character-css-hide-btn');
+    const hideButton = cell.querySelector<HTMLButtonElement>(
+      '.character-css-hide-btn',
+    );
     hideButton?.addEventListener('click', (event) => {
       event.stopPropagation();
       this.hideCssCharacter(character.id);
@@ -914,7 +1531,9 @@ ${character.number ? `<span class="character-css-number">#${this.escapeHtml(char
   }
 
   renderCssInspector() {
-    const inspector = document.querySelector<HTMLElement>('#character-css-inspector');
+    const inspector = document.querySelector<HTMLElement>(
+      '#character-css-inspector',
+    );
     if (!inspector) {
       return;
     }
@@ -934,7 +1553,8 @@ ${character.number ? `<span class="character-css-number">#${this.escapeHtml(char
       return;
     }
 
-    const slot = character.slots[this.cssSelectedSlotIndex] || character.slots[0];
+    const slot =
+      character.slots[this.cssSelectedSlotIndex] || character.slots[0];
     const escapedName = this.escapeHtml(character.displayName);
     const tabButton = (mode: 'prc' | 'msbt', label: string) => `
 <button class="character-css-tab ${this.cssPanelMode === mode ? 'is-active' : ''}" type="button" data-css-panel-mode="${mode}">
@@ -968,32 +1588,49 @@ ${tabButton('msbt', 'MSBT Names')}
 ${this.cssPanelMode === 'prc' ? this.renderCssPrcPanel(character) : this.renderCssMsbtPanel(character, slot)}
 `;
 
-    inspector.querySelectorAll<HTMLButtonElement>('[data-css-panel-mode]').forEach((button) => {
-      button.addEventListener('click', () => {
-        this.cssPanelMode = button.dataset.cssPanelMode as 'prc' | 'msbt';
-        this.renderCssInspector();
+    inspector
+      .querySelectorAll<HTMLButtonElement>('[data-css-panel-mode]')
+      .forEach((button) => {
+        button.addEventListener('click', () => {
+          this.cssPanelMode = button.dataset.cssPanelMode as 'prc' | 'msbt';
+          this.renderCssInspector();
+        });
       });
-    });
 
-    inspector.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('[data-css-field]').forEach((field) => {
-      field.addEventListener('input', () => {
-        this.updateSelectedCssCharacterFromInspector(field);
+    inspector
+      .querySelectorAll<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >('[data-css-field]')
+      .forEach((field) => {
+        field.addEventListener('input', () => {
+          this.updateSelectedCssCharacterFromInspector(field);
+        });
+        field.addEventListener('change', () => {
+          this.updateSelectedCssCharacterFromInspector(field);
+        });
       });
-      field.addEventListener('change', () => {
-        this.updateSelectedCssCharacterFromInspector(field);
-      });
-    });
 
-    inspector.querySelector<HTMLButtonElement>('[data-css-action="duplicate-character"]')?.addEventListener('click', () => {
-      void this.duplicateSelectedCssCharacter();
-    });
-    inspector.querySelector<HTMLButtonElement>('[data-css-action="remove-character"]')?.addEventListener('click', () => {
-      void this.removeSelectedCssCharacter();
-    });
+    inspector
+      .querySelector<HTMLButtonElement>(
+        '[data-css-action="duplicate-character"]',
+      )
+      ?.addEventListener('click', () => {
+        void this.duplicateSelectedCssCharacter();
+      });
+    inspector
+      .querySelector<HTMLButtonElement>('[data-css-action="remove-character"]')
+      ?.addEventListener('click', () => {
+        void this.removeSelectedCssCharacter();
+      });
   }
 
   renderCssPrcPanel(character: CharacterCssEntry) {
-    const field = (label: string, key: string, value: string, type = 'text') => `
+    const field = (
+      label: string,
+      key: string,
+      value: string,
+      type = 'text',
+    ) => `
 <label class="character-css-field">
 <span>${label}</span>
 <input type="${type}" data-css-field="${key}" value="${this.escapeHtml(value)}">
@@ -1036,12 +1673,19 @@ ${checkbox('Hidden Boss', 'isHiddenBoss', character.isHiddenBoss)}
           `<option value="${entry.slotIndex}" ${entry.slotIndex === slot.slotIndex ? 'selected' : ''}>Slot ${entry.slotIndex + 1}</option>`,
       )
       .join('');
-    const field = (label: string, key: string, value: string, multiline = false) => `
+    const field = (
+      label: string,
+      key: string,
+      value: string,
+      multiline = false,
+    ) => `
 <label class="character-css-field">
 <span>${label}</span>
-${multiline
-        ? `<textarea data-css-field="${key}" rows="3">${this.escapeHtml(value)}</textarea>`
-        : `<input type="text" data-css-field="${key}" value="${this.escapeHtml(value)}">`}
+${
+  multiline
+    ? `<textarea data-css-field="${key}" rows="3">${this.escapeHtml(value)}</textarea>`
+    : `<input type="text" data-css-field="${key}" value="${this.escapeHtml(value)}">`
+}
 </label>`;
 
     return `
@@ -1066,8 +1710,12 @@ ${field('nam_stage_name', 'namStageName', slot.namStageName, true)}
 
   findCssCharacter(characterId: string) {
     return (
-      this.cssVisibleCharacters.find((character) => character.id === characterId) ||
-      this.cssHiddenCharacters.find((character) => character.id === characterId) ||
+      this.cssVisibleCharacters.find(
+        (character) => character.id === characterId,
+      ) ||
+      this.cssHiddenCharacters.find(
+        (character) => character.id === characterId,
+      ) ||
       null
     );
   }
@@ -1228,9 +1876,15 @@ ${field('nam_stage_name', 'namStageName', slot.namStageName, true)}
       this.cssRenamedCharacters.clear();
       this.cssCharacterUpdates.clear();
       this.cssDirty = true;
-      window.toastManager?.success?.('Character duplicated. Apply Layout to generate the mod.', 4000);
+      window.toastManager?.success?.(
+        'Character duplicated. Apply Layout to generate the mod.',
+        4000,
+      );
     } catch (error) {
-      console.error('[CharactersManager] Failed to duplicate CSS character:', error);
+      console.error(
+        '[CharactersManager] Failed to duplicate CSS character:',
+        error,
+      );
       window.toastManager?.error(
         `Failed to duplicate character: ${error.message || 'Unknown error'}`,
         5000,
@@ -1299,12 +1953,14 @@ Duplicate
       const errorEl = modal.querySelector<HTMLElement>(
         '.character-css-duplicate-error',
       )!;
-      const close = (value: {
-        newUiCharaId: string;
-        newNameId: string;
-        newDisplayName: string;
-      } | null) => {
-        modal.remove();
+      const close = (
+        value: {
+          newUiCharaId: string;
+          newNameId: string;
+          newDisplayName: string;
+        } | null,
+      ) => {
+        this.closeCharacterModal(modal);
         resolve(value);
       };
 
@@ -1314,11 +1970,7 @@ Duplicate
       modal
         .querySelector<HTMLElement>('[data-action="cancel"]')
         ?.addEventListener('click', () => close(null));
-      modal.addEventListener('click', (event) => {
-        if (event.target === modal) {
-          close(null);
-        }
-      });
+      this.bindBackdropClose(modal, () => close(null));
 
       form.addEventListener('submit', (event) => {
         event.preventDefault();
@@ -1346,7 +1998,9 @@ Duplicate
         });
       });
 
-      form.querySelector<HTMLInputElement>('input[name="newUiCharaId"]')?.focus();
+      form
+        .querySelector<HTMLInputElement>('input[name="newUiCharaId"]')
+        ?.focus();
     });
   }
 
@@ -1391,9 +2045,15 @@ Duplicate
       this.cssRenamedCharacters.clear();
       this.cssCharacterUpdates.clear();
       this.cssDirty = true;
-      window.toastManager?.success?.('Character removed. Apply Layout to generate the mod.', 4000);
+      window.toastManager?.success?.(
+        'Character removed. Apply Layout to generate the mod.',
+        4000,
+      );
     } catch (error) {
-      console.error('[CharactersManager] Failed to remove CSS character:', error);
+      console.error(
+        '[CharactersManager] Failed to remove CSS character:',
+        error,
+      );
       window.toastManager?.error(
         `Failed to remove character: ${error.message || 'Unknown error'}`,
         5000,
@@ -1447,7 +2107,7 @@ Remove
       document.body.appendChild(modal);
 
       const close = (value: boolean) => {
-        modal.remove();
+        this.closeCharacterModal(modal);
         resolve(value);
       };
 
@@ -1460,11 +2120,7 @@ Remove
       modal
         .querySelector<HTMLElement>('[data-action="confirm-remove"]')
         ?.addEventListener('click', () => close(true));
-      modal.addEventListener('click', (event) => {
-        if (event.target === modal) {
-          close(false);
-        }
-      });
+      this.bindBackdropClose(modal, () => close(false));
     });
   }
 
@@ -1540,7 +2196,8 @@ Remove
     existingModal?.remove();
 
     const modal = document.createElement('div');
-    modal.className = 'character-modal-overlay character-css-hidden-modal-overlay';
+    modal.className =
+      'character-modal-overlay character-css-hidden-modal-overlay';
     modal.innerHTML = `
 <div class="character-modal character-css-hidden-modal">
 <div class="character-modal-header">
@@ -1551,10 +2208,11 @@ Remove
 </div>
 <div class="character-modal-body">
 <div class="character-css-hidden-list">
-${this.cssHiddenCharacters
-        .map((character) => {
-          const imageUrl = character.imageUrl || '';
-          return `
+${
+  this.cssHiddenCharacters
+    .map((character) => {
+      const imageUrl = character.imageUrl || '';
+      return `
 <div class="character-css-hidden-row" data-character-id="${this.escapeHtml(character.id)}">
 <div class="character-css-hidden-thumb">
 ${imageUrl ? `<img src="${imageUrl}" alt="${this.escapeHtml(character.displayName)}">` : '<i class="bi bi-person-circle"></i>'}
@@ -1566,8 +2224,10 @@ Unhide
 </button>
 </div>
 `;
-        })
-        .join('') || '<div class="characters-empty-state">No hidden characters</div>'}
+    })
+    .join('') ||
+  '<div class="characters-empty-state">No hidden characters</div>'
+}
 </div>
 </div>
 </div>
@@ -1575,21 +2235,21 @@ Unhide
 
     document.body.appendChild(modal);
 
-    const close = () => modal.remove();
-    modal.querySelector<HTMLElement>('.character-modal-close')?.addEventListener('click', close);
-    modal.addEventListener('click', (event) => {
-      if (event.target === modal) {
-        close();
-      }
-    });
-    modal.querySelectorAll<HTMLElement>('[data-action="unhide-character"]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const row = button.closest<HTMLElement>('.character-css-hidden-row');
-        if (!row?.dataset.characterId) return;
-        this.unhideCssCharacter(row.dataset.characterId);
-        close();
+    const close = () => this.closeCharacterModal(modal);
+    modal
+      .querySelector<HTMLElement>('.character-modal-close')
+      ?.addEventListener('click', close);
+    this.bindBackdropClose(modal, close);
+    modal
+      .querySelectorAll<HTMLElement>('[data-action="unhide-character"]')
+      .forEach((button) => {
+        button.addEventListener('click', () => {
+          const row = button.closest<HTMLElement>('.character-css-hidden-row');
+          if (!row?.dataset.characterId) return;
+          this.unhideCssCharacter(row.dataset.characterId);
+          close();
+        });
       });
-    });
   }
 
   openCssPreviewModal() {
@@ -1609,8 +2269,8 @@ Unhide
 </button>
 <div class="character-css-preview-grid">
 ${visibleCharacters
-        .map((character) => this.renderCssPreviewTile(character))
-        .join('')}
+  .map((character) => this.renderCssPreviewTile(character))
+  .join('')}
 </div>
 </div>
 `;
@@ -1621,11 +2281,7 @@ ${visibleCharacters
     modal
       .querySelector<HTMLElement>('.character-css-preview-close')
       ?.addEventListener('click', close);
-    modal.addEventListener('click', (event) => {
-      if (event.target === modal) {
-        close();
-      }
-    });
+    this.bindBackdropClose(modal, close);
     const escapeHandler = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         document.removeEventListener('keydown', escapeHandler);
@@ -1663,8 +2319,12 @@ ${image}
     try {
       const renamedCharacters = Object.fromEntries(this.cssRenamedCharacters);
       const result = await window.electronAPI.saveCharacterCssLayout({
-        visibleCharacterIds: this.cssVisibleCharacters.map((character) => character.id),
-        hiddenCharacterIds: this.cssHiddenCharacters.map((character) => character.id),
+        visibleCharacterIds: this.cssVisibleCharacters.map(
+          (character) => character.id,
+        ),
+        hiddenCharacterIds: this.cssHiddenCharacters.map(
+          (character) => character.id,
+        ),
         renamedCharacters,
         characterUpdates: Object.fromEntries(this.cssCharacterUpdates),
       });
@@ -1715,8 +2375,10 @@ ${image}
     console.log('Refreshing characters...');
     this.showLoading();
     this.characters.clear();
+    this.movesetCharacters.clear();
     await this.scanMods();
     this.renderCharacters();
+    this.renderMovesetTracker();
   }
 
   updateLoadingStatus(text: string) {
@@ -1736,7 +2398,9 @@ ${image}
 <p id="characters-loading-status" style="font-size: 13px; color: var(--text-muted); margin-top: 8px;"></p>
 </div>
 `;
-      const lottieContainer = document.getElementById('characters-loading-lottie');
+      const lottieContainer = document.getElementById(
+        'characters-loading-lottie',
+      );
       if (lottieContainer && window.lottie) {
         window.lottie.loadAnimation({
           container: lottieContainer,

@@ -95,7 +95,9 @@ class SettingsManager {
       .join('/');
   }
 
-  async updateIgnoredConflictPathsStorage(options = { refreshConflicts: true }) {
+  async updateIgnoredConflictPathsStorage(
+    options = { refreshConflicts: true },
+  ) {
     if (!this.initialized) {
       return false;
     }
@@ -120,7 +122,10 @@ class SettingsManager {
     }
   }
 
-  async addIgnoredConflictPath(value: string, options = { refreshConflicts: true }) {
+  async addIgnoredConflictPath(
+    value: string,
+    options = { refreshConflicts: true },
+  ) {
     const sanitized = this.sanitizeIgnoredConflictPath(value.trim());
     if (!sanitized) {
       this.showToast(this.translate('settings.invalidPath'), 'error');
@@ -135,7 +140,10 @@ class SettingsManager {
     this.settings.ignoredConflictPaths.push(sanitized);
     const saved = await this.updateIgnoredConflictPathsStorage(options);
     if (saved) {
-      this.showToast(this.translate('settings.ignoredConflictAdded'), 'success');
+      this.showToast(
+        this.translate('settings.ignoredConflictAdded'),
+        'success',
+      );
     }
     return saved;
   }
@@ -152,7 +160,10 @@ class SettingsManager {
     this.settings.ignoredConflictPaths = nextList;
     const saved = await this.updateIgnoredConflictPathsStorage();
     if (saved) {
-      this.showToast(this.translate('settings.ignoredConflictRemoved'), 'success');
+      this.showToast(
+        this.translate('settings.ignoredConflictRemoved'),
+        'success',
+      );
     }
     return saved;
   }
@@ -165,7 +176,10 @@ class SettingsManager {
     this.settings.ignoredConflictPaths = [];
     const saved = await this.updateIgnoredConflictPathsStorage();
     if (saved) {
-      this.showToast(this.translate('settings.ignoredConflictsCleared'), 'success');
+      this.showToast(
+        this.translate('settings.ignoredConflictsCleared'),
+        'success',
+      );
     }
     return saved;
   }
@@ -549,9 +563,8 @@ class SettingsManager {
       console.log('Browse mods button listener attached');
     }
 
-    const modsPathInput = document.querySelector<HTMLInputElement>(
-      '#mods-folder-path',
-    );
+    const modsPathInput =
+      document.querySelector<HTMLInputElement>('#mods-folder-path');
     if (modsPathInput && !modsPathInput.dataset.manualListenerAttached) {
       modsPathInput.addEventListener('change', () =>
         this.updateModsFolderFromInput(modsPathInput.value),
@@ -864,7 +877,9 @@ class SettingsManager {
 
       options.forEach((option) => {
         option.addEventListener('click', () => {
-          const value = this.normalizeSwitchTransferMethod(option.dataset.value);
+          const value = this.normalizeSwitchTransferMethod(
+            option.dataset.value,
+          );
           const text = option.querySelector<HTMLElement>('span')!.textContent;
           const i18nKey =
             option.querySelector<HTMLElement>('span')!.dataset.i18n;
@@ -1654,9 +1669,7 @@ class SettingsManager {
     let userData = socialManager?.userData || null;
 
     if (!userData && window.electronAPI?.store) {
-      userData = (await window.electronAPI.store.get(
-        'social.userData',
-      )) as any;
+      userData = (await window.electronAPI.store.get('social.userData')) as any;
     }
 
     if (!userData?.localId) {
@@ -1694,7 +1707,10 @@ class SettingsManager {
           }
         }
       } catch (error) {
-        console.warn('[SettingsManager] Failed to refresh social account:', error);
+        console.warn(
+          '[SettingsManager] Failed to refresh social account:',
+          error,
+        );
       }
     }
 
@@ -1807,80 +1823,100 @@ class SettingsManager {
     );
     if (!newActive) return;
 
+    const contentArea = document.querySelector<HTMLElement>(
+      '.settings-content-area',
+    );
+    const allContents = Array.from(
+      document.querySelectorAll<HTMLElement>('.settings-tab-content'),
+    );
+    const allButtons = Array.from(
+      document.querySelectorAll<HTMLElement>('.settings-tab-btn'),
+    );
     const currentActive = document.querySelector<HTMLElement>(
-      '.settings-tab-content.active:not(.fade-out)',
+      '.settings-tab-content.active',
+    );
+    const activeBtn = document.querySelector<HTMLElement>(
+      `[data-settings-tab="${tabName}"]`,
     );
 
-    if (this.switchTabTimeout) {
-      clearTimeout(this.switchTabTimeout);
-      this.switchTabTimeout = null;
-    }
-
-    if (currentActive && currentActive !== newActive) {
-      currentActive.classList.add('fade-out');
-
-      this.switchTabTimeout = setTimeout(() => {
-        document
-          .querySelectorAll<HTMLElement>('.settings-tab-content')
-          .forEach((content) => {
-            content.classList.remove('active', 'fade-out');
-          });
-
-        document
-          .querySelectorAll<HTMLElement>('.settings-tab-btn')
-          .forEach((btn) => {
-            btn.classList.remove('active');
-          });
-
-        const activeBtn = document.querySelector<HTMLElement>(
-          `[data-settings-tab="${tabName}"]`,
+    const resetTransitionClasses = () => {
+      allContents.forEach((content) => {
+        content.classList.remove(
+          'entering',
+          'fade-out',
+          'settings-tab-forward',
+          'settings-tab-back',
         );
-        if (activeBtn) {
-          activeBtn.classList.add('active');
-        }
+      });
+    };
 
-        newActive.classList.add('active');
+    const activateTab = () => {
+      allContents.forEach((content) => {
+        content.classList.remove('active');
+      });
 
-        const contentArea = document.querySelector<HTMLElement>(
-          '.settings-content-area',
-        );
-        if (contentArea) {
-          contentArea.scrollTop = 0;
-        }
+      allButtons.forEach((btn) => {
+        btn.classList.remove('active');
+      });
 
-        this.maybeWarnForCurrentModsPath();
-        this.switchTabTimeout = null;
-      }, 200);
-    } else {
-      document
-        .querySelectorAll<HTMLElement>('.settings-tab-content')
-        .forEach((content) => {
-          content.classList.remove('active', 'fade-out');
-        });
-
-      document
-        .querySelectorAll<HTMLElement>('.settings-tab-btn')
-        .forEach((btn) => {
-          btn.classList.remove('active');
-        });
-
-      const activeBtn = document.querySelector<HTMLElement>(
-        `[data-settings-tab="${tabName}"]`,
-      );
       if (activeBtn) {
         activeBtn.classList.add('active');
       }
 
       newActive.classList.add('active');
 
-      const contentArea = document.querySelector<HTMLElement>(
-        '.settings-content-area',
-      );
       if (contentArea) {
         contentArea.scrollTop = 0;
       }
 
       this.maybeWarnForCurrentModsPath();
+    };
+
+    if (this.switchTabTimeout) {
+      clearTimeout(this.switchTabTimeout);
+      this.switchTabTimeout = null;
+      resetTransitionClasses();
+    }
+
+    const animationsDisabled = document.body.classList.contains('no-animations');
+
+    if (currentActive && currentActive !== newActive && !animationsDisabled) {
+      const currentTabName = currentActive.id.replace('settings-', '');
+      const currentIndex = allButtons.findIndex(
+        (btn) => btn.dataset.settingsTab === currentTabName,
+      );
+      const nextIndex = allButtons.findIndex(
+        (btn) => btn.dataset.settingsTab === tabName,
+      );
+      const directionClass =
+        nextIndex >= currentIndex ? 'settings-tab-forward' : 'settings-tab-back';
+
+      allButtons.forEach((btn) => {
+        btn.classList.remove('active');
+      });
+
+      if (activeBtn) {
+        activeBtn.classList.add('active');
+      }
+
+      if (contentArea) {
+        contentArea.scrollTop = 0;
+      }
+
+      allContents.forEach((content) => {
+        content.classList.remove('active');
+      });
+      newActive.classList.add('active', 'entering', directionClass);
+
+      this.switchTabTimeout = setTimeout(() => {
+        resetTransitionClasses();
+        newActive.classList.add('active');
+        this.maybeWarnForCurrentModsPath();
+        this.switchTabTimeout = null;
+      }, 360);
+    } else {
+      resetTransitionClasses();
+      activateTab();
     }
   }
 
@@ -2027,8 +2063,14 @@ ${t('settings.okUnderstand')}
       modal.remove();
     });
 
+    let pointerStartedOnBackdrop = false;
+    modal.addEventListener('pointerdown', (e) => {
+      pointerStartedOnBackdrop = e.target === modal;
+    });
     modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
+      const shouldClose = pointerStartedOnBackdrop && e.target === modal;
+      pointerStartedOnBackdrop = false;
+      if (shouldClose) {
         modal.remove();
       }
     });
@@ -2083,7 +2125,10 @@ ${t('settings.okUnderstand')}
     this.updatePluginsFolderUI();
 
     try {
-      console.log('[SettingsManager] Refreshing plugins list for path:', folder);
+      console.log(
+        '[SettingsManager] Refreshing plugins list for path:',
+        folder,
+      );
       await window.pluginManager?.loadPluginsFromFolder?.(folder);
       console.log('[SettingsManager] Plugins list refreshed:', folder);
     } catch (error) {
@@ -2172,7 +2217,9 @@ ${t('settings.okUnderstand')}
       const options = emulatorTypeSelect.querySelectorAll<HTMLElement>(
         '.custom-select-option',
       );
-      const currentType = this.normalizeEmulatorType(this.settings.emulatorType);
+      const currentType = this.normalizeEmulatorType(
+        this.settings.emulatorType,
+      );
       this.settings.emulatorType = currentType;
 
       options.forEach((option) => {
@@ -2227,7 +2274,9 @@ ${t('settings.okUnderstand')}
       '.settings-section',
     ) as HTMLElement;
     if (fullscreenSection) {
-      if (this.normalizeEmulatorType(this.settings.emulatorType) === 'ryujinx') {
+      if (
+        this.normalizeEmulatorType(this.settings.emulatorType) === 'ryujinx'
+      ) {
         fullscreenSection.style.display = 'none';
       } else {
         fullscreenSection.style.display = 'block';
@@ -2845,9 +2894,7 @@ ${t('settings.okUnderstand')}
         conflictDetectionEnabled: conflictDetectionEnabled !== false,
         ignoredConflictPaths: Array.isArray(ignoredConflictPaths)
           ? ignoredConflictPaths
-              .map((value) =>
-                typeof value === 'string' ? value.trim() : '',
-              )
+              .map((value) => (typeof value === 'string' ? value.trim() : ''))
               .filter((value) => value.length > 0)
           : [],
         autoCheckPluginUpdates: autoCheckPluginUpdates || false,
