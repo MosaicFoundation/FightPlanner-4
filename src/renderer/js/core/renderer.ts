@@ -122,6 +122,11 @@ actionButtons.forEach((btn) => {
 });
 
 window.addEventListener('DOMContentLoaded', async () => {
+  if (window.HardwareConnectionManager && !window.hardwareConnectionManager) {
+    window.hardwareConnectionManager = new window.HardwareConnectionManager();
+    await window.hardwareConnectionManager.initialize();
+  }
+
   // Initialize Animation Manager
   if (window.animationManager) {
     window.animationManager.initialize();

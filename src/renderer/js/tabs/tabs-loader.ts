@@ -28,6 +28,41 @@ function navigateToEmulatorSettings() {
   }, 100);
 }
 
+async function isRealHardwareMode() {
+  if (!window.settingsManager) {
+    return false;
+  }
+
+  await window.settingsManager.readyPromise;
+  return window.settingsManager.getAppRunMode?.() === 'hardware';
+}
+
+function updatePlayActionButtonForMode(btn: HTMLButtonElement) {
+  isRealHardwareMode()
+    .then((isHardwareMode) => {
+      const icon = btn.querySelector<HTMLElement>('i');
+      if (isHardwareMode) {
+        btn.title =
+          window.i18n?.t?.('downloads.sendToSwitch') || 'Send To Switch';
+        btn.setAttribute('aria-label', btn.title);
+        btn.dataset.i18n = 'downloads.sendToSwitch';
+        if (icon) {
+          icon.className = 'bi bi-device-hdd';
+        }
+      } else {
+        btn.title = window.i18n?.t?.('tools.actionPlay') || 'Play';
+        btn.setAttribute('aria-label', btn.title);
+        btn.dataset.i18n = 'tools.actionPlay';
+        if (icon) {
+          icon.className = 'bi bi-play-fill';
+        }
+      }
+    })
+    .catch((error) => {
+      console.warn('Failed to update play action button mode:', error);
+    });
+}
+
 function initializeTabFeatures(tabName) {
   console.log(`Initializing features for tab: ${tabName}`);
 
@@ -213,6 +248,10 @@ function initializeTabFeatures(tabName) {
         });
       }
 
+      if (action === 'launch-emulator' || title === 'Play') {
+        updatePlayActionButtonForMode(btn);
+      }
+
       if ((action === 'launch-emulator' || title === 'Play') && !btn.dataset.listenerAttached) {
         btn.dataset.listenerAttached = 'true';
         btn.addEventListener('click', async () => {
@@ -225,6 +264,15 @@ function initializeTabFeatures(tabName) {
             }
 
             await window.settingsManager.readyPromise;
+
+            if (await isRealHardwareMode()) {
+              if (window.downloadManager?.sendToSwitch) {
+                await window.downloadManager.sendToSwitch();
+              } else if (window.toastManager) {
+                window.toastManager.error('toasts.functionNotAvailable');
+              }
+              return;
+            }
 
             const emulatorType = window.settingsManager.getEmulatorType();
             const emulatorPath = window.settingsManager.getEmulatorPath();

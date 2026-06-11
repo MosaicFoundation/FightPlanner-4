@@ -10,6 +10,7 @@ import {
 import { HandlerResponse } from '../../types/common';
 import { BaseHandlerArg, GenericHandler } from '../../types/common';
 import { AppHandlers } from './app-handlers';
+import { resolveDrivePath } from '../../utils/drive-detector';
 
 interface TransferItem {
   localPath: string;
@@ -85,9 +86,9 @@ function _filesMatch(src: string, dest: string): boolean {
 
       if (
         srcBytesRead !== destBytesRead ||
-        !srcBuffer.subarray(0, srcBytesRead).equals(
-          destBuffer.subarray(0, destBytesRead),
-        )
+        !srcBuffer
+          .subarray(0, srcBytesRead)
+          .equals(destBuffer.subarray(0, destBytesRead))
       ) {
         return false;
       }
@@ -293,30 +294,12 @@ async function _sendModsToDrive(config: Config) {
       throw new Error('Drive not specified');
     }
 
-    let drivePath;
-    if (
-      driveIdentifier.includes(':\\') ||
-      (driveIdentifier.length === 1 && /^[A-Z]$/i.test(driveIdentifier))
-    ) {
-      if (driveIdentifier.length === 1) {
-        drivePath = `${driveIdentifier}:\\`;
-      } else {
-        drivePath = driveIdentifier;
-      }
-    } else if (driveIdentifier.startsWith('/')) {
-      drivePath = driveIdentifier;
-    } else {
-      if (process.platform === 'linux') {
-        drivePath = `/media/${process.env.USER || 'user'}/${driveIdentifier}`;
-      } else if (process.platform === 'darwin') {
-        drivePath = `/Volumes/${driveIdentifier}`;
-      } else {
-        drivePath = driveIdentifier;
-      }
-    }
+    const drivePath = await resolveDrivePath(driveIdentifier);
 
-    if (!fs.existsSync(drivePath)) {
-      throw new Error(`Drive path ${drivePath} not found or not accessible`);
+    if (!drivePath || !fs.existsSync(drivePath)) {
+      throw new Error(
+        `Drive path ${driveIdentifier} not found or not accessible`,
+      );
     }
 
     const targetModsPath = path.join(drivePath, 'ultimate', 'mods');

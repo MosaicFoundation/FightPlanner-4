@@ -970,7 +970,7 @@ class BatchTestingManager {
               ),
             )}
           </div>
-          <div style="padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color);">
+          <div style="padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); min-height: 0;">
             <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px;">
               ${this.escapeHtml(
                 this.t(
@@ -979,8 +979,10 @@ class BatchTestingManager {
                 ),
               )}
             </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-              ${chips}
+            <div class="batch-testing-scroll-panel">
+              <div class="batch-testing-chip-list">
+                ${chips}
+              </div>
             </div>
           </div>
         </div>
@@ -1127,8 +1129,10 @@ class BatchTestingManager {
                 ),
               )}
             </p>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-              ${chips}
+            <div class="batch-testing-scroll-panel">
+              <div class="batch-testing-chip-list">
+                ${chips}
+              </div>
             </div>
           </div>
         `,
@@ -1469,6 +1473,8 @@ class BatchTestingManager {
       });
     }
 
+    this.modal.classList.add('batch-testing-modal');
+
     const titleEl = this.modal.querySelector<HTMLElement>('.modal-header h3');
     const bodyEl = this.modal.querySelector<HTMLElement>('.modal-body');
     const footerEl = this.modal.querySelector<HTMLElement>('.modal-footer');
@@ -1478,6 +1484,7 @@ class BatchTestingManager {
     }
 
     if (bodyEl) {
+      bodyEl.classList.add('batch-testing-modal-body');
       bodyEl.innerHTML = body;
       this.attachItemTriggerListeners(bodyEl);
     }

@@ -422,6 +422,29 @@ const SystemHandlers = {
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
     }
   },
+
+  ['check-path-accessible']: async (
+    common: BaseHandlerArg,
+    targetPath: string,
+  ) => {
+    try {
+      if (!targetPath || typeof targetPath !== 'string') {
+        return { success: true, accessible: false };
+      }
+
+      const { resolveDrivePath } = require('../../utils/drive-detector');
+      const resolvedPath = await resolveDrivePath(targetPath);
+
+      if (!resolvedPath || !fs.existsSync(resolvedPath)) {
+        return { success: true, accessible: false };
+      }
+
+      fs.accessSync(resolvedPath, fs.constants.R_OK);
+      return { success: true, accessible: true, resolvedPath };
+    } catch (error) {
+      return { success: true, accessible: false };
+    }
+  },
 } as const;
 
 /**

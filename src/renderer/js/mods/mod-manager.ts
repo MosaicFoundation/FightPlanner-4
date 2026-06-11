@@ -30,6 +30,23 @@ interface SelectModOptions {
   range?: boolean;
 }
 
+interface FolderModState {
+  activeMods: Array<{
+    name: string;
+    path: string;
+    hash?: string;
+    addedAt?: number;
+    modifiedAt?: number;
+  }>;
+  disabledMods: Array<{
+    name: string;
+    path: string;
+    hash?: string;
+    addedAt?: number;
+    modifiedAt?: number;
+  }>;
+}
+
 type ModSortOrder = 'name-asc' | 'added-desc' | 'modified-desc';
 
 class ModManager {
@@ -212,22 +229,7 @@ class ModManager {
     }
   }
 
-  mapFolderStateToMods(result: {
-    activeMods: Array<{
-      name: string;
-      path: string;
-      hash?: string;
-      addedAt?: number;
-      modifiedAt?: number;
-    }>;
-    disabledMods: Array<{
-      name: string;
-      path: string;
-      hash?: string;
-      addedAt?: number;
-      modifiedAt?: number;
-    }>;
-  }) {
+  mapFolderStateToMods(result: FolderModState) {
     const allMods: Mod[] = [];
     let idCounter = 1;
 
@@ -268,22 +270,7 @@ class ModManager {
     return allMods;
   }
 
-  async refreshModsFromState(result: {
-    activeMods: Array<{
-      name: string;
-      path: string;
-      hash?: string;
-      addedAt?: number;
-      modifiedAt?: number;
-    }>;
-    disabledMods: Array<{
-      name: string;
-      path: string;
-      hash?: string;
-      addedAt?: number;
-      modifiedAt?: number;
-    }>;
-  }) {
+  async refreshModsFromState(result: FolderModState) {
     const allMods = this.mapFolderStateToMods(result);
 
     await this.loadMods(allMods);
@@ -300,6 +287,19 @@ class ModManager {
         this.checkConflicts(whitelistPatterns);
       }, 1000);
     }
+
+    this.scheduleNroLimitCheck();
+  }
+
+  scheduleNroLimitCheck() {
+    if (window.settingsManager?.settings.nroLimitCheckEnabled === false) {
+      return;
+    }
+
+    // This check is global: emulator and real hardware both can hit the .nro loader limit.
+    setTimeout(() => {
+      this.checkNroLimit();
+    }, 1200);
   }
 
   isBatchTestingLocked() {
@@ -319,6 +319,190 @@ class ModManager {
 
   clearBatchTestingOverride() {
     this.batchTestingOverrideActive = false;
+  }
+
+  private t(key: string, fallback: string, params: Record<string, string> = {}) {
+    const translated = window.i18n?.t?.(key, params);
+    return translated && translated !== key ? translated : fallback;
+  }
+
+  private isDirectHardwareLibraryMode() {
+    return (
+      window.settingsManager?.getAppRunMode?.() === 'hardware' &&
+      window.settingsManager?.getHardwareLibraryMode?.() === 'direct'
+    );
+  }
+
+  private getHardwareLibraryCacheKey(modsPath: string | null) {
+    return `fightplanner.hardwareModsCache:${modsPath || 'unknown'}`;
+  }
+
+  private saveHardwareLibraryCache(
+    modsPath: string,
+    result: FolderModState,
+  ) {
+    if (!this.isDirectHardwareLibraryMode()) {
+      return;
+    }
+
+    try {
+      localStorage.setItem(
+        this.getHardwareLibraryCacheKey(modsPath),
+        JSON.stringify({
+          savedAt: Date.now(),
+          result,
+        }),
+      );
+    } catch (error) {
+      console.warn('[ModManager] Failed to cache hardware mods:', error);
+    }
+  }
+
+  private readHardwareLibraryCache(modsPath: string | null) {
+    try {
+      const raw = localStorage.getItem(this.getHardwareLibraryCacheKey(modsPath));
+      if (!raw) {
+        return null;
+      }
+
+      const cache = JSON.parse(raw);
+      if (!cache?.result?.activeMods || !cache?.result?.disabledMods) {
+        return null;
+      }
+
+      return cache as {
+        savedAt: number;
+        result: FolderModState;
+      };
+    } catch (error) {
+      console.warn('[ModManager] Failed to read hardware mods cache:', error);
+      return null;
+    }
+  }
+
+  private async isDirectHardwareLibraryUnavailable(modsPath: string | null) {
+    if (!this.isDirectHardwareLibraryMode()) {
+      this.setHardwareLibraryBlockedState(false);
+      return false;
+    }
+
+    if (!modsPath || !window.electronAPI?.checkPathAccessible) {
+      return true;
+    }
+
+    const result = await window.electronAPI.checkPathAccessible(modsPath);
+    return !(result?.success && result.accessible === true);
+  }
+
+  private setHardwareLibraryBlockedState(blocked: boolean, cached = false) {
+    document
+      .querySelector<HTMLElement>('.content-box')
+      ?.classList.toggle('hardware-library-blocked', blocked);
+    document
+      .querySelector<HTMLElement>('.content-box')
+      ?.classList.toggle('hardware-library-cached', cached);
+    document
+      .querySelector<HTMLElement>('#right-panel')
+      ?.classList.toggle('hardware-library-blocked', blocked);
+  }
+
+  private createHardwareLibraryMessage(
+    targetPath: string | null,
+    cached: boolean,
+  ) {
+    const blocker = document.createElement('div');
+    blocker.className = cached
+      ? 'hardware-library-message hardware-library-cache-message'
+      : 'hardware-library-message';
+
+    const icon = document.createElement('i');
+    icon.className = cached ? 'bi bi-database' : 'bi bi-usb-drive';
+
+    const text = document.createElement('div');
+    text.className = 'hardware-library-message-text';
+
+    const title = document.createElement('strong');
+    title.textContent = cached
+      ? this.t('tools.hardwareLibraryCacheTitle', 'Showing cached mods')
+      : this.t('tools.hardwareLibraryDisconnectedTitle', 'Switch disconnected');
+
+    const message = document.createElement('p');
+    message.textContent = cached
+      ? this.t(
+          'tools.hardwareLibraryCacheMessage',
+          'Reconnect your Switch or remount the SD card to refresh names, statuses, and details.',
+        )
+      : this.t(
+          'tools.hardwareLibraryDisconnectedMessage',
+          'Reconnect your Switch or remount the SD card to view and manage mods.',
+        );
+
+    const path = document.createElement('code');
+    path.textContent = targetPath || this.t('common.error', 'Error');
+
+    text.append(title, message, path);
+
+    const refreshButton = document.createElement('button');
+    refreshButton.type = 'button';
+    refreshButton.className = 'input-btn short';
+    refreshButton.innerHTML = `<i class="bi bi-arrow-clockwise"></i><span>${this.t(
+      'tools.refreshMods',
+      'Refresh Mods',
+    )}</span>`;
+    refreshButton.addEventListener('click', () => {
+      this.fetchMods();
+    });
+
+    blocker.append(icon, text, refreshButton);
+    return blocker;
+  }
+
+  private async renderHardwareCache(targetPath: string | null) {
+    const cache = this.readHardwareLibraryCache(targetPath);
+    if (!cache) {
+      return false;
+    }
+
+    this.modsPath = targetPath;
+    this.selectedMod = null;
+    this.selectedMods = [];
+    this.setHardwareLibraryBlockedState(true, true);
+
+    const cachedMods = this.mapFolderStateToMods(cache.result);
+    await this.loadMods(cachedMods);
+
+    if (!this.modListContainer) {
+      this.modListContainer = document.querySelector<HTMLElement>('#mod-list');
+    }
+
+    this.modListContainer?.prepend(
+      this.createHardwareLibraryMessage(targetPath, true),
+    );
+    window.modInfoManager?.clearModInfo?.();
+    return true;
+  }
+
+  private renderHardwareReconnectBlocker(targetPath: string | null) {
+    if (!this.modListContainer) {
+      this.modListContainer = document.querySelector<HTMLElement>('#mod-list');
+    }
+
+    if (!this.modListContainer) {
+      return;
+    }
+
+    this.mods = [];
+    this.selectedMod = null;
+    this.selectedMods = [];
+    this.modsPath = targetPath;
+    this.renderedModIds.clear();
+    this.setHardwareLibraryBlockedState(true);
+    this.modListContainer.innerHTML = '';
+    this.modListContainer.appendChild(
+      this.createHardwareLibraryMessage(targetPath, false),
+    );
+
+    window.modInfoManager?.clearModInfo?.();
   }
 
   renderModList(forceRender = false) {
@@ -1291,16 +1475,42 @@ class ModManager {
     this.modsPath = modsPath;
 
     try {
+      if (await this.isDirectHardwareLibraryUnavailable(modsPath)) {
+        if (await this.renderHardwareCache(modsPath)) {
+          return;
+        }
+
+        this.renderHardwareReconnectBlocker(modsPath);
+        return;
+      }
+
+      this.setHardwareLibraryBlockedState(false);
+
       const result = await window.electronAPI.readModsFolder(modsPath);
 
       if (!result.success) {
+        if (this.isDirectHardwareLibraryMode()) {
+          this.renderHardwareReconnectBlocker(modsPath);
+          return;
+        }
+
         console.error('Error reading mods:', result.error);
         await this.loadExampleMods();
         return;
       }
 
+      this.saveHardwareLibraryCache(modsPath, result);
       await this.refreshModsFromState(result);
     } catch (error) {
+      if (this.isDirectHardwareLibraryMode()) {
+        if (await this.renderHardwareCache(modsPath)) {
+          return;
+        }
+
+        this.renderHardwareReconnectBlocker(modsPath);
+        return;
+      }
+
       console.error('Failed to load mods from folder:', error);
       await this.loadExampleMods();
       this.clearBatchTestingOverride();
@@ -1346,8 +1556,8 @@ class ModManager {
 
       const enabledModNames = enabled
         ? [
-            ...currentState.activeMods.map((mod) => mod.name),
-            ...currentState.disabledMods.map((mod) => mod.name),
+            ...currentState.activeMods.map((mod) => mod.path || mod.name),
+            ...currentState.disabledMods.map((mod) => mod.path || mod.name),
           ]
         : [];
 
@@ -1455,12 +1665,32 @@ class ModManager {
       const modsPath = window.settingsManager.getModsPath();
 
       if (modsPath) {
+        if (await this.isDirectHardwareLibraryUnavailable(modsPath)) {
+          if (await this.renderHardwareCache(modsPath)) {
+            return;
+          }
+
+          this.renderHardwareReconnectBlocker(modsPath);
+          return;
+        }
+
+        this.setHardwareLibraryBlockedState(false);
         console.log('Loading mods from saved path:', modsPath);
         await this.loadModsFromFolder(modsPath);
         return;
       }
+
+      if (this.isDirectHardwareLibraryMode()) {
+        if (await this.renderHardwareCache(modsPath)) {
+          return;
+        }
+
+        this.renderHardwareReconnectBlocker(modsPath);
+        return;
+      }
     }
 
+    this.setHardwareLibraryBlockedState(false);
     console.log('Loading example mods');
     await this.loadExampleMods();
   }
@@ -1596,6 +1826,113 @@ class ModManager {
       }
       return { success: false, error: error.message };
     }
+  }
+
+  async checkNroLimit(limit = 64) {
+    if (!this.modsPath || !window.electronAPI?.checkNroLimit) {
+      return {
+        success: false,
+        error: 'NRO limit check not available',
+      };
+    }
+
+    try {
+      const result = await window.electronAPI.checkNroLimit(
+        this.modsPath,
+        limit,
+      );
+
+      if (result?.success && result.exceedsLimit) {
+        this.showNroLimitWarningModal(result);
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Failed to check NRO limit:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  showNroLimitWarningModal(result) {
+    if (!window.modalManager?.showCustomModal || !result) {
+      return;
+    }
+
+    const limit = Number(result.limit || 64);
+    const total = Number(result.totalNroFiles || 0);
+    const overflow = Math.max(0, total - limit);
+    const files = Array.isArray(result.files) ? result.files : [];
+    const visibleFiles = files.slice(0, 12);
+    const extraCount = Math.max(0, files.length - visibleFiles.length);
+
+    const body = document.createElement('div');
+    body.className = 'nro-limit-warning-modal';
+
+    const summary = document.createElement('p');
+    summary.style.cssText =
+      'margin: 0 0 14px; color: var(--text-secondary); line-height: 1.6;';
+    summary.textContent =
+      window.i18n?.t?.('modals.nroLimit.message', {
+        count: String(total),
+        limit: String(limit),
+        overflow: String(overflow),
+      }) ||
+      `${total} active .nro files detected. Limit: ${limit}. Disable or remove ${overflow} .nro file(s).`;
+    body.appendChild(summary);
+
+    if (visibleFiles.length > 0) {
+      const list = document.createElement('div');
+      list.style.cssText =
+        'display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow: auto;';
+
+      visibleFiles.forEach((file) => {
+        const item = document.createElement('div');
+        item.style.cssText =
+          'padding: 10px 12px; border: 1px solid var(--border-hover); border-radius: 8px; background: var(--bg-primary);';
+
+        const name = document.createElement('strong');
+        name.style.cssText =
+          'display: block; color: var(--text-primary); font-size: 13px; margin-bottom: 4px;';
+        name.textContent = file.modName || 'Unknown mod';
+
+        const nroPath = document.createElement('code');
+        nroPath.style.cssText =
+          'display: block; color: var(--text-muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
+        nroPath.textContent = file.relativePath || '.nro';
+
+        item.append(name, nroPath);
+        list.appendChild(item);
+      });
+
+      body.appendChild(list);
+    }
+
+    if (extraCount > 0) {
+      const extra = document.createElement('p');
+      extra.style.cssText = 'margin: 12px 0 0; color: var(--text-muted);';
+      extra.textContent =
+        window.i18n?.t?.('modals.nroLimit.moreFiles', {
+          count: String(extraCount),
+        }) || `+${extraCount} more .nro file(s)`;
+      body.appendChild(extra);
+    }
+
+    window.modalManager.showCustomModal({
+      id: 'nro-limit-warning-modal',
+      title:
+        window.i18n?.t?.('modals.nroLimit.title') || 'NRO limit exceeded',
+      body,
+      size: 'normal',
+      buttons: [
+        {
+          text: window.i18n?.t?.('common.ok') || 'OK',
+          type: 'primary',
+        },
+      ],
+    });
   }
 
   createExactConflictPathPattern(filePath: string) {

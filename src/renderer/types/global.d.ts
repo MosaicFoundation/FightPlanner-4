@@ -27,6 +27,7 @@ import { ModInfoEditor } from '../js/mods/mod-info-editor';
 import { CustomizationManager } from '../js/customization/customization-manager';
 import { ProtocolListener } from '../js/protocol/protocol-listener';
 import { DiscordRPCClient } from '../js/core/discord-rpc-client';
+import { HardwareConnectionManager } from '../js/core/hardware-connection-manager';
 import { ModDragDropHandler } from '../js/mods/mod-drag-drop';
 import { SmartRenameManager } from '../js/mods/smart-rename-manager';
 import { StagesManager } from '../js/stages/stages-manager';
@@ -76,6 +77,7 @@ declare global {
     customizationManager: CustomizationManager;
     protocolListener: ProtocolListener;
     discordRPCClient: DiscordRPCClient;
+    hardwareConnectionManager: InstanceType<typeof HardwareConnectionManager>;
     modDragDropHandler: ModDragDropHandler;
     smartRenameManager: SmartRenameManager;
     stagesManager: StagesManager;
@@ -86,6 +88,7 @@ declare global {
     ModKeybindsHandler: typeof ModKeybindsHandler;
     ModListRenderer: typeof ModListRenderer;
     LanguageSelector: typeof LanguageSelector;
+    HardwareConnectionManager: typeof HardwareConnectionManager;
 
     tutorial: {
       show: () => void;

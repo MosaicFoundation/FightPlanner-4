@@ -30,6 +30,10 @@ const UpdateHandlers = {
     return { success: true };
   },
 
+  ['get-auto-check-enabled']: async (common: BaseHandlerArg) => {
+    return autoUpdater.getAutoCheckEnabled();
+  },
+
   ['set-update-channel']: async (common: BaseHandlerArg, channel: string) => {
     autoUpdater.setUpdateChannel(channel);
     return { success: true };

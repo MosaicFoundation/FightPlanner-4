@@ -591,7 +591,7 @@ class ModProfileManager {
       .filter((mod) =>
         this.shouldEnableEntry(mod, profileState, mod.status === 'active'),
       )
-      .map((mod) => mod.name);
+      .map((mod) => mod.path || mod.name);
 
     const result = await window.electronAPI.applyModBatchState(
       modsPath,

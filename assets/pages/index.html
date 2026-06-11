@@ -47,7 +47,11 @@
     <!-- Custom Title Bar -->
     <div class="titlebar">
       <div class="titlebar-left">
-        <img src="../images/pride-logo/pride.png" alt="FightPlanner" class="logo" />
+        <img
+          src="../images/pride-logo/pride.png"
+          alt="FightPlanner"
+          class="logo"
+        />
         <span class="title" data-i18n="app.title">FightPlanner</span>
       </div>
       <div class="titlebar-buttons">
@@ -230,6 +234,41 @@
         <div class="bottom-text-right"></div>
       </div>
       <div class="extended-content" style="display: none"></div>
+    </div>
+
+    <div
+      id="hardware-connection-overlay"
+      class="hardware-connection-overlay"
+      aria-hidden="true"
+    >
+      <div class="hardware-connection-dialog" role="status" aria-live="polite">
+        <div class="hardware-connection-icon">
+          <i class="bi bi-usb-symbol"></i>
+        </div>
+        <h2 data-i18n="hardwareConnection.waitingTitle">
+          En attente de rebranchement
+        </h2>
+        <p data-i18n="hardwareConnection.waitingMessage">
+          FightPlanner est en mode Real Hardware. Rebranche ta Switch ou remonte
+          la carte SD pour continuer.
+        </p>
+        <div class="hardware-connection-path">
+          <span data-i18n="hardwareConnection.watchedPath"
+            >Chemin surveille:</span
+          >
+          <span data-hardware-drive-path></span>
+        </div>
+        <div class="hardware-connection-footer">
+          <button
+            type="button"
+            class="hardware-connection-use-anyway"
+            id="hardware-connection-use-anyway"
+            data-i18n="hardwareConnection.useAnyway"
+          >
+            Utiliser quand meme
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Social Onboarding (moved to body level to avoid container clipping) -->
@@ -693,10 +732,7 @@
             data-i18n-title
             title="Allow c16+ slots"
           >
-            <input
-              type="checkbox"
-              id="conflict-auto-slot-extended-range"
-            />
+            <input type="checkbox" id="conflict-auto-slot-extended-range" />
             <span class="settings-switch-slider"></span>
           </label>
         </div>
@@ -1749,6 +1785,7 @@
     <script src="../../out/renderer/js/ui/status-bar-manager.js"></script>
     <script src="../../out/renderer/js/ui/animation-manager.js"></script>
     <script src="../../out/renderer/js/core/startup-splash-manager.js"></script>
+    <script src="../../out/renderer/js/core/hardware-connection-manager.js"></script>
     <script src="../../out/renderer/js/ui/conflict-modal-manager.js"></script>
     <script src="../../out/renderer/js/core/renderer.js"></script>
     <script src="../../out/renderer/js/social/social-manager-base.js"></script>
