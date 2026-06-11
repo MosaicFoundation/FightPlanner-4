@@ -8,7 +8,31 @@
       data-i18n="settings.general"
     >
       <i class="bi bi-gear"></i>
-      General
+      App
+    </button>
+    <button
+      class="settings-tab-btn"
+      data-settings-tab="interface"
+      data-i18n="settings.interface"
+    >
+      <i class="bi bi-window-sidebar"></i>
+      Interface
+    </button>
+    <button
+      class="settings-tab-btn"
+      data-settings-tab="audio"
+      data-i18n="settings.audio"
+    >
+      <i class="bi bi-volume-up"></i>
+      Audio
+    </button>
+    <button
+      class="settings-tab-btn"
+      data-settings-tab="updates"
+      data-i18n="settings.updates"
+    >
+      <i class="bi bi-arrow-repeat"></i>
+      Updates
     </button>
     <button
       class="settings-tab-btn"
@@ -25,6 +49,22 @@
     >
       <i class="bi bi-controller"></i>
       Emulator
+    </button>
+    <button
+      class="settings-tab-btn"
+      data-settings-tab="switch"
+      data-i18n="settings.switch"
+    >
+      <i class="bi bi-nintendo-switch"></i>
+      Switch
+    </button>
+    <button
+      class="settings-tab-btn"
+      data-settings-tab="diagnostics"
+      data-i18n="settings.diagnostics"
+    >
+      <i class="bi bi-search"></i>
+      Diagnostics
     </button>
     <button
       class="settings-tab-btn"
@@ -79,7 +119,68 @@
       </h2>
 
       <div class="settings-group-title">
-        <i class="bi bi-brush"></i> Appearance
+        <i class="bi bi-app-indicator"></i>
+        <span data-i18n="settings.application">Application</span>
+      </div>
+
+      <div class="settings-section">
+        <label class="settings-label" data-i18n="settings.appRunMode"
+          >Run Mode</label
+        >
+        <div class="custom-select" id="app-run-mode-select">
+          <div class="custom-select-trigger">
+            <span class="selected-value" data-i18n="settings.appRunModeEmulator"
+              >Emulator</span
+            >
+            <i class="bi bi-chevron-down"></i>
+          </div>
+          <div class="custom-select-dropdown">
+            <div class="custom-select-option active" data-value="emulator">
+              <span data-i18n="settings.appRunModeEmulator">Emulator</span>
+            </div>
+            <div class="custom-select-option" data-value="hardware">
+              <span data-i18n="settings.appRunModeHardware"
+                >Real Hardware / Switch</span
+              >
+            </div>
+          </div>
+        </div>
+        <p class="settings-hint" data-i18n="settings.appRunModeHint">
+          Choose whether FightPlanner should monitor a real Switch connection or
+          run in emulator mode.
+        </p>
+      </div>
+
+      <div class="settings-section" id="hardware-library-mode-section">
+        <label class="settings-label" data-i18n="settings.hardwareLibraryMode"
+          >Real Hardware Library</label
+        >
+        <div class="custom-select" id="hardware-library-mode-select">
+          <div class="custom-select-trigger">
+            <span
+              class="selected-value"
+              data-i18n="settings.hardwareLibraryModeLocal"
+              >Keep mods on this PC and sync</span
+            >
+            <i class="bi bi-chevron-down"></i>
+          </div>
+          <div class="custom-select-dropdown">
+            <div class="custom-select-option active" data-value="local">
+              <span data-i18n="settings.hardwareLibraryModeLocal"
+                >Keep mods on this PC and sync</span
+              >
+            </div>
+            <div class="custom-select-option" data-value="direct">
+              <span data-i18n="settings.hardwareLibraryModeDirect"
+                >Read mods directly from the Switch</span
+              >
+            </div>
+          </div>
+        </div>
+        <p class="settings-hint" data-i18n="settings.hardwareLibraryModeHint">
+          Sync mode keeps your FightPlanner library on this PC. Direct mode uses
+          the mounted Switch SD card as the library.
+        </p>
       </div>
 
       <div class="settings-section">
@@ -692,6 +793,17 @@
             </div>
           </div>
         </div>
+        <div class="settings-input-group" style="margin-bottom: 12px">
+          <label class="settings-switch">
+            <input type="checkbox" id="auto-check-app-updates-enabled" checked />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.enableAppAutoUpdate"
+            >Check for app updates on startup</span
+          >
+        </div>
         <button class="settings-btn-action" id="check-updates-btn">
           <i class="bi bi-arrow-repeat"></i>
           <div class="settings-btn-action-content">
@@ -734,6 +846,63 @@
           can disable this at any time.
         </p>
       </div>
+    </div>
+
+    <!-- Interface Settings -->
+    <div class="settings-tab-content" id="settings-interface">
+      <h2 class="settings-title" data-i18n="settings.interfaceTitle">
+        Interface Settings
+      </h2>
+
+      <div class="settings-group-title">
+        <i class="bi bi-brush"></i>
+        <span data-i18n="settings.appearance">Appearance</span>
+      </div>
+      <div id="settings-interface-appearance"></div>
+
+      <div class="settings-group-title">
+        <i class="bi bi-toggles"></i>
+        <span data-i18n="settings.statusAndBehavior">Status & Behavior</span>
+      </div>
+      <div id="settings-interface-behavior"></div>
+    </div>
+
+    <!-- Audio Settings -->
+    <div class="settings-tab-content" id="settings-audio">
+      <h2 class="settings-title" data-i18n="settings.audioTitle">
+        Audio Settings
+      </h2>
+
+      <div class="settings-group-title">
+        <i class="bi bi-display"></i>
+        <span data-i18n="settings.startup">Startup</span>
+      </div>
+      <div id="settings-audio-startup"></div>
+
+      <div class="settings-group-title">
+        <i class="bi bi-volume-up"></i>
+        <span data-i18n="settings.interfaceSounds">Interface Sounds</span>
+      </div>
+      <div id="settings-audio-events"></div>
+    </div>
+
+    <!-- Update Settings -->
+    <div class="settings-tab-content" id="settings-updates">
+      <h2 class="settings-title" data-i18n="settings.updatesTitle">
+        Update Settings
+      </h2>
+
+      <div class="settings-group-title">
+        <i class="bi bi-cloud-arrow-down"></i>
+        <span data-i18n="settings.applicationUpdates">Application Updates</span>
+      </div>
+      <div id="settings-updates-app"></div>
+
+      <div class="settings-group-title">
+        <i class="bi bi-plug"></i>
+        <span data-i18n="settings.pluginUpdates">Plugin Updates</span>
+      </div>
+      <div id="settings-updates-plugins"></div>
     </div>
 
     <!-- Library Settings -->
@@ -920,6 +1089,25 @@
       </div>
     </div>
 
+    <!-- Switch Settings -->
+    <div class="settings-tab-content" id="settings-switch">
+      <h2 class="settings-title" data-i18n="settings.switchTitle">
+        Switch Settings
+      </h2>
+
+      <div class="settings-group-title">
+        <i class="bi bi-collection"></i>
+        <span data-i18n="settings.hardwareLibrary">Hardware Library</span>
+      </div>
+      <div id="settings-switch-library"></div>
+
+      <div class="settings-group-title">
+        <i class="bi bi-usb-symbol"></i>
+        <span data-i18n="settings.switchConnection">Switch Connection</span>
+      </div>
+      <div id="settings-switch-connection"></div>
+    </div>
+
     <!-- Emulator Settings -->
     <div class="settings-tab-content" id="settings-emulator">
       <h2 class="settings-title" data-i18n="settings.emulatorTitle">
@@ -1029,6 +1217,31 @@
           mode
         </p>
       </div>
+    </div>
+
+    <!-- Diagnostics Settings -->
+    <div class="settings-tab-content" id="settings-diagnostics">
+      <h2 class="settings-title" data-i18n="settings.diagnosticsTitle">
+        Diagnostics
+      </h2>
+
+      <div class="settings-group-title">
+        <i class="bi bi-exclamation-triangle"></i>
+        <span data-i18n="settings.conflicts">Conflicts</span>
+      </div>
+      <div id="settings-diagnostics-conflicts"></div>
+
+      <div class="settings-group-title">
+        <i class="bi bi-trash3"></i>
+        <span data-i18n="settings.maintenance">Maintenance</span>
+      </div>
+      <div id="settings-diagnostics-maintenance"></div>
+
+      <div class="settings-group-title">
+        <i class="bi bi-search"></i>
+        <span data-i18n="settings.batchTestingTitle">Batch Testing</span>
+      </div>
+      <div id="settings-diagnostics-batch"></div>
     </div>
 
     <!-- Advanced Settings -->
@@ -1202,6 +1415,16 @@
           <p class="settings-hint" data-i18n="settings.driveLetterHint">
             Select the drive letter of your Switch SD card (e.g., E:)
           </p>
+          <button
+            type="button"
+            class="settings-btn switch-drive-guide-btn"
+            id="switch-drive-guide-btn"
+          >
+            <i class="bi bi-signpost-split"></i>
+            <span data-i18n="settings.switchDriveGuideButton"
+              >Guide me to connect my Switch</span
+            >
+          </button>
         </div>
       </div>
 
@@ -1222,6 +1445,22 @@
         </div>
         <p class="settings-hint" data-i18n="settings.conflictDetectionHint">
           Automatically check for file conflicts between mods
+        </p>
+
+        <div class="settings-input-group">
+          <label class="settings-switch">
+            <input type="checkbox" id="nro-limit-check-enabled" checked />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.enableNroLimitCheck"
+            >Warn when active mods exceed 64 .nro files</span
+          >
+        </div>
+        <p class="settings-hint" data-i18n="settings.nroLimitCheckHint">
+          Checks active mods for the 64 .nro file limit in emulator and real
+          hardware modes.
         </p>
 
         <div class="ignored-conflicts">
@@ -2321,6 +2560,26 @@
           >
             <i class="bi bi-play-circle"></i>
             <span data-i18n="settings.simulateUpdate">Simulate Update</span>
+          </button>
+          <button
+            class="settings-btn"
+            id="test-hardware-overlay-btn"
+            style="margin-left: 10px"
+          >
+            <i class="bi bi-usb-symbol"></i>
+            <span data-i18n="settings.testHardwareOverlay"
+              >Test Hardware Overlay</span
+            >
+          </button>
+          <button
+            class="settings-btn"
+            id="test-nro-limit-modal-btn"
+            style="margin-left: 10px"
+          >
+            <i class="bi bi-exclamation-triangle"></i>
+            <span data-i18n="settings.testNroLimitModal"
+              >Test NRO Limit Modal</span
+            >
           </button>
         </div>
 

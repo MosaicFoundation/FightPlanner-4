@@ -899,6 +899,13 @@ ${subItemsHtml}
     }
 
     const transferMethod = window.settingsManager.getSwitchTransferMethod();
+    if (
+      window.settingsManager.getAppRunMode?.() === 'hardware' &&
+      window.settingsManager.getHardwareLibraryMode?.() === 'direct'
+    ) {
+      window.toastManager?.info?.('toasts.directSwitchLibraryNoSync');
+      return;
+    }
 
     if (transferMethod === 'none') {
       if (window.toastManager) {

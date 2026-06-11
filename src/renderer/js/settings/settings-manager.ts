@@ -12,6 +12,10 @@ class SettingsManager {
     this.settings = {
       modsPath: null,
       pluginsPath: null,
+      appRunMode: 'emulator',
+      hardwareLibraryMode: 'local',
+      localModsPath: null,
+      localPluginsPath: null,
       emulatorType: 'yuzu',
       emulatorPath: null,
       gamePath: null,
@@ -26,6 +30,7 @@ class SettingsManager {
       switchTransferMethod: 'none',
       switchDriveLetter: null,
       conflictDetectionEnabled: true,
+      nroLimitCheckEnabled: true,
       conflictWhitelistPatterns: [],
       ignoredConflictPaths: [],
       autoCheckPluginUpdates: false,
@@ -85,6 +90,14 @@ class SettingsManager {
     const normalized =
       typeof transferMethod === 'string' ? transferMethod.toLowerCase() : '';
     return ['ftp', 'drive', 'mtp'].includes(normalized) ? normalized : 'none';
+  }
+
+  normalizeAppRunMode(appRunMode) {
+    return appRunMode === 'hardware' ? 'hardware' : 'emulator';
+  }
+
+  normalizeHardwareLibraryMode(hardwareLibraryMode) {
+    return hardwareLibraryMode === 'direct' ? 'direct' : 'local';
   }
 
   sanitizeIgnoredConflictPath(value: string) {
@@ -293,13 +306,75 @@ class SettingsManager {
       });
   }
 
+  organizeSettingsLayout() {
+    const moveSection = (sectionSelector: string, targetSelector: string) => {
+      const anchor = document.querySelector<HTMLElement>(sectionSelector);
+      const section = anchor?.closest<HTMLElement>('.settings-section');
+      const target = document.querySelector<HTMLElement>(targetSelector);
+
+      if (!section || !target || section.parentElement === target) {
+        return;
+      }
+
+      target.appendChild(section);
+    };
+
+    [
+      ['#theme-select', '#settings-interface-appearance'],
+      ['#sidebar-pride-tabs-enabled', '#settings-interface-appearance'],
+      ['#animation-preference', '#settings-interface-appearance'],
+      ['#enhanced-status-bar-enabled', '#settings-interface-behavior'],
+      ['#startup-splash-enabled', '#settings-audio-startup'],
+      ['#app-sound-enabled-notification', '#settings-audio-events'],
+      ['#check-updates-btn', '#settings-updates-app'],
+      ['#auto-check-plugin-updates-enabled', '#settings-updates-plugins'],
+      ['#hardware-library-mode-select', '#settings-switch-library'],
+      ['#switch-transfer-method-select', '#settings-switch-connection'],
+      ['#conflict-detection-enabled', '#settings-diagnostics-conflicts'],
+      ['#clear-temp-files-btn', '#settings-diagnostics-maintenance'],
+      ['#batch-testing-btn', '#settings-diagnostics-batch'],
+    ].forEach(([sectionSelector, targetSelector]) => {
+      moveSection(sectionSelector, targetSelector);
+    });
+
+    document
+      .querySelectorAll<HTMLElement>('.settings-group-title')
+      .forEach((groupTitle) => {
+        let nextElement = groupTitle.nextElementSibling as HTMLElement | null;
+        let hasSection = false;
+
+        while (
+          nextElement &&
+          !nextElement.classList.contains('settings-group-title') &&
+          !nextElement.classList.contains('settings-tab-content')
+        ) {
+          if (
+            nextElement.classList.contains('settings-section') ||
+            nextElement.querySelector('.settings-section')
+          ) {
+            hasSection = true;
+            break;
+          }
+
+          nextElement = nextElement.nextElementSibling as HTMLElement | null;
+        }
+
+        if (!hasSection) {
+          groupTitle.remove();
+        }
+      });
+  }
+
   setupEventListeners() {
+    this.organizeSettingsLayout();
+
     if (!this.tabSwitchingAttached) {
       document.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;
+        const tabButton = target.closest<HTMLElement>('.settings-tab-btn');
 
-        if (target.classList.contains('settings-tab-btn')) {
-          const tabName = target.dataset.settingsTab;
+        if (tabButton) {
+          const tabName = tabButton.dataset.settingsTab;
           this.switchSettingsTab(tabName);
 
           if (tabName === 'logs' && window.logsManager) {
@@ -963,6 +1038,33 @@ class SettingsManager {
       conflictDetectionEnabled.dataset.listenerAttached = 'true';
     }
 
+    const nroLimitCheckEnabled = document.querySelector<HTMLInputElement>(
+      '#nro-limit-check-enabled',
+    );
+    if (
+      nroLimitCheckEnabled &&
+      !nroLimitCheckEnabled.dataset.listenerAttached
+    ) {
+      nroLimitCheckEnabled.addEventListener('change', () => {
+        this.settings.nroLimitCheckEnabled = nroLimitCheckEnabled.checked;
+        this.saveSettings();
+        if (nroLimitCheckEnabled.checked) {
+          window.modManager?.checkNroLimit?.();
+        }
+      });
+      nroLimitCheckEnabled.dataset.listenerAttached = 'true';
+    }
+
+    const switchDriveGuideBtn = document.querySelector<HTMLButtonElement>(
+      '#switch-drive-guide-btn',
+    );
+    if (switchDriveGuideBtn && !switchDriveGuideBtn.dataset.listenerAttached) {
+      switchDriveGuideBtn.addEventListener('click', () => {
+        this.showSwitchDriveGuideChoiceModal();
+      });
+      switchDriveGuideBtn.dataset.listenerAttached = 'true';
+    }
+
     const autoCheckPluginUpdates = document.querySelector<HTMLInputElement>(
       '#auto-check-plugin-updates-enabled',
     );
@@ -1061,7 +1163,23 @@ class SettingsManager {
       console.log('Check updates button listener attached');
     }
 
+    const autoCheckAppUpdates = document.querySelector<HTMLInputElement>(
+      '#auto-check-app-updates-enabled',
+    );
+    if (
+      autoCheckAppUpdates &&
+      !autoCheckAppUpdates.dataset.listenerAttached
+    ) {
+      autoCheckAppUpdates.addEventListener('change', async () => {
+        await window.electronAPI?.setAutoCheckEnabled?.(
+          autoCheckAppUpdates.checked,
+        );
+      });
+      autoCheckAppUpdates.dataset.listenerAttached = 'true';
+    }
+
     this.updateAppVersionUI();
+    this.updateAutoCheckAppUpdatesUI();
 
     const updateChannelSelect = document.querySelector<HTMLElement>(
       '#update-channel-select',
@@ -1222,6 +1340,131 @@ class SettingsManager {
       this.updateThemeUI();
     }
 
+    const appRunModeSelect = document.querySelector<HTMLElement>(
+      '#app-run-mode-select',
+    );
+    if (appRunModeSelect && !appRunModeSelect.dataset.listenerAttached) {
+      const trigger = appRunModeSelect.querySelector<HTMLElement>(
+        '.custom-select-trigger',
+      );
+      const options = appRunModeSelect.querySelectorAll<HTMLElement>(
+        '.custom-select-option',
+      );
+      const selectedValue =
+        appRunModeSelect.querySelector<HTMLElement>('.selected-value');
+
+      if (trigger) {
+        trigger.addEventListener('click', (e) => {
+          e.stopPropagation();
+          appRunModeSelect.classList.toggle('open');
+        });
+      }
+
+      document.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        if (!appRunModeSelect.contains(target)) {
+          appRunModeSelect.classList.remove('open');
+        }
+      });
+
+      options.forEach((option) => {
+        option.addEventListener('click', () => {
+          const value = this.normalizeAppRunMode(option.dataset.value);
+          const text = option.querySelector<HTMLElement>('span')!.textContent;
+          const i18nKey =
+            option.querySelector<HTMLElement>('span')!.dataset.i18n;
+
+          if (selectedValue) {
+            selectedValue.textContent = text;
+            if (i18nKey) {
+              selectedValue.dataset.i18n = i18nKey;
+            }
+          }
+
+          options.forEach((opt) => opt.classList.remove('active'));
+          option.classList.add('active');
+
+          appRunModeSelect.classList.remove('open');
+
+          this.settings.appRunMode = value;
+          this.applyHardwareLibraryModePaths();
+          this.updateHardwareLibraryModeVisibility();
+          this.updateRunModeTabsVisibility();
+          this.saveSettings();
+        });
+      });
+
+      appRunModeSelect.dataset.listenerAttached = 'true';
+      this.updateAppRunModeUI();
+    }
+
+    const hardwareLibraryModeSelect = document.querySelector<HTMLElement>(
+      '#hardware-library-mode-select',
+    );
+    if (
+      hardwareLibraryModeSelect &&
+      !hardwareLibraryModeSelect.dataset.listenerAttached
+    ) {
+      const trigger = hardwareLibraryModeSelect.querySelector<HTMLElement>(
+        '.custom-select-trigger',
+      );
+      const options = hardwareLibraryModeSelect.querySelectorAll<HTMLElement>(
+        '.custom-select-option',
+      );
+      const selectedValue =
+        hardwareLibraryModeSelect.querySelector<HTMLElement>('.selected-value');
+
+      if (trigger) {
+        trigger.addEventListener('click', (e) => {
+          e.stopPropagation();
+          hardwareLibraryModeSelect.classList.toggle('open');
+        });
+      }
+
+      document.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        if (!hardwareLibraryModeSelect.contains(target)) {
+          hardwareLibraryModeSelect.classList.remove('open');
+        }
+      });
+
+      options.forEach((option) => {
+        option.addEventListener('click', async () => {
+          const value = this.normalizeHardwareLibraryMode(option.dataset.value);
+          const previousMode = this.normalizeHardwareLibraryMode(
+            this.settings.hardwareLibraryMode,
+          );
+          const text = option.querySelector<HTMLElement>('span')!.textContent;
+          const i18nKey =
+            option.querySelector<HTMLElement>('span')!.dataset.i18n;
+
+          if (selectedValue) {
+            selectedValue.textContent = text;
+            if (i18nKey) {
+              selectedValue.dataset.i18n = i18nKey;
+            }
+          }
+
+          options.forEach((opt) => opt.classList.remove('active'));
+          option.classList.add('active');
+
+          hardwareLibraryModeSelect.classList.remove('open');
+
+          this.settings.hardwareLibraryMode = value;
+          this.applyHardwareLibraryModePaths();
+          await this.saveSettings();
+          await this.refreshCurrentLibraryLists();
+
+          if (previousMode === 'direct' && value === 'local') {
+            this.showSwitchSyncReconnectModal();
+          }
+        });
+      });
+
+      hardwareLibraryModeSelect.dataset.listenerAttached = 'true';
+      this.updateHardwareLibraryModeUI();
+    }
+
     const sidebarPrideTabsToggle = document.querySelector<HTMLInputElement>(
       '#sidebar-pride-tabs-enabled',
     );
@@ -1308,6 +1551,10 @@ class SettingsManager {
     this.updateModsFolderUI();
     this.updatePluginsFolderUI();
     this.updateLanguageTypeUI();
+    this.updateAppRunModeUI();
+    this.updateHardwareLibraryModeVisibility();
+    this.updateRunModeTabsVisibility();
+    this.updateHardwareLibraryModeUI();
     this.updateEmulatorTypeUI();
     this.updateEmulatorPathUI();
     this.updateGamePathUI();
@@ -1316,6 +1563,7 @@ class SettingsManager {
     this.updateSwitchSettingsUI();
     this.updateSwitchTransferMethodUI();
     this.updateConflictDetectionUI();
+    this.updateNroLimitCheckUI();
     this.updateAutoCheckPluginUpdatesUI();
     this.updateAutoDisableModsUI();
     this.updateDisableAllModsOnDownloadUI();
@@ -1416,6 +1664,50 @@ class SettingsManager {
             this.showToast('Update simulation started', 'success');
           }
         });
+      }
+
+      const testHardwareOverlayBtn = document.querySelector<HTMLElement>(
+        '#test-hardware-overlay-btn',
+      );
+      if (
+        testHardwareOverlayBtn &&
+        !testHardwareOverlayBtn.dataset.listenerAttached
+      ) {
+        testHardwareOverlayBtn.addEventListener('click', () => {
+          window.hardwareConnectionManager?.showTestOverlay?.();
+        });
+        testHardwareOverlayBtn.dataset.listenerAttached = 'true';
+      }
+
+      const testNroLimitModalBtn = document.querySelector<HTMLElement>(
+        '#test-nro-limit-modal-btn',
+      );
+      if (
+        testNroLimitModalBtn &&
+        !testNroLimitModalBtn.dataset.listenerAttached
+      ) {
+        testNroLimitModalBtn.addEventListener('click', () => {
+          window.modManager?.showNroLimitWarningModal?.({
+            success: true,
+            limit: 64,
+            totalNroFiles: 70,
+            exceedsLimit: true,
+            activeModsCount: 8,
+            files: [
+              {
+                modName: 'Example Skyline Plugin Pack',
+                modPath: '/example/mods/Example Skyline Plugin Pack',
+                relativePath: 'ultimate/plugins/example_one.nro',
+              },
+              {
+                modName: 'Example Training Tools',
+                modPath: '/example/mods/Example Training Tools',
+                relativePath: 'ultimate/plugins/example_two.nro',
+              },
+            ],
+          });
+        });
+        testNroLimitModalBtn.dataset.listenerAttached = 'true';
       }
 
       const openConfigBtn =
@@ -1878,7 +2170,8 @@ class SettingsManager {
       resetTransitionClasses();
     }
 
-    const animationsDisabled = document.body.classList.contains('no-animations');
+    const animationsDisabled =
+      document.body.classList.contains('no-animations');
 
     if (currentActive && currentActive !== newActive && !animationsDisabled) {
       const currentTabName = currentActive.id.replace('settings-', '');
@@ -1889,7 +2182,9 @@ class SettingsManager {
         (btn) => btn.dataset.settingsTab === tabName,
       );
       const directionClass =
-        nextIndex >= currentIndex ? 'settings-tab-forward' : 'settings-tab-back';
+        nextIndex >= currentIndex
+          ? 'settings-tab-forward'
+          : 'settings-tab-back';
 
       allButtons.forEach((btn) => {
         btn.classList.remove('active');
@@ -2136,6 +2431,54 @@ ${t('settings.okUnderstand')}
     }
   }
 
+  showSwitchSyncReconnectModal() {
+    if (!window.modalManager?.showCustomModal) {
+      window.toastManager?.warning?.(
+        'toasts.reconnectSwitchBeforeSyncToPc',
+        8000,
+      );
+      return;
+    }
+
+    const body = document.createElement('div');
+    body.className = 'switch-sync-reconnect-modal';
+
+    const message = document.createElement('p');
+    message.textContent = this.translate('settings.switchSyncReconnectMessage');
+
+    const hint = document.createElement('p');
+    hint.className = 'settings-hint';
+    hint.textContent = this.translate('settings.switchSyncReconnectHint');
+
+    body.append(message, hint);
+
+    window.modalManager.showCustomModal({
+      id: 'switch-sync-reconnect-modal',
+      title: this.translate('settings.switchSyncReconnectTitle'),
+      body,
+      size: 'normal',
+      buttons: [
+        {
+          text: this.translate('settings.switchDriveGuideButton'),
+          type: 'primary',
+          onClick: (_event, modal) => {
+            window.modalManager.closeModal(modal, {
+              onModalClosed: () => {
+                modal.remove();
+                this.showSwitchDriveGuideChoiceModal();
+              },
+            });
+            return false;
+          },
+        },
+        {
+          text: this.translate('common.close') || 'Close',
+          type: 'secondary',
+        },
+      ],
+    });
+  }
+
   async browseEmulatorPath() {
     if (!window.electronAPI || !window.electronAPI.selectEmulatorFile) {
       console.error('Electron API not available');
@@ -2377,6 +2720,355 @@ ${t('settings.okUnderstand')}
     }
   }
 
+  showSwitchDriveGuideChoiceModal() {
+    if (!window.modalManager?.showCustomModal) {
+      this.showToast(
+        this.translate('settings.switchDriveGuideUnavailable'),
+        'error',
+      );
+      return;
+    }
+
+    const body = document.createElement('div');
+    body.className = 'switch-drive-guide-choice';
+    body.innerHTML = `
+      <button type="button" class="switch-drive-guide-option" id="switch-drive-guide-hekate">
+        <i class="bi bi-usb-symbol"></i>
+        <span>
+          <strong>${this.translate('settings.switchDriveGuideHekate')}</strong>
+          <small>${this.translate('settings.switchDriveGuideHekateDesc')}</small>
+        </span>
+      </button>
+      <button type="button" class="switch-drive-guide-option switch-drive-guide-option-disabled" id="switch-drive-guide-homebrew">
+        <i class="bi bi-hourglass-split"></i>
+        <span>
+          <strong>${this.translate('settings.switchDriveGuideHomebrew')}</strong>
+          <small>${this.translate('settings.switchDriveGuideHomebrewDesc')}</small>
+        </span>
+      </button>
+    `;
+
+    const modal = window.modalManager.showCustomModal({
+      id: 'switch-drive-guide-choice-modal',
+      title: this.translate('settings.switchDriveGuideTitle'),
+      body,
+      size: 'normal',
+      buttons: [
+        {
+          text: this.translate('common.cancel') || 'Cancel',
+          type: 'secondary',
+        },
+      ],
+    });
+
+    modal
+      .querySelector<HTMLElement>('#switch-drive-guide-hekate')
+      ?.addEventListener('click', () => {
+        window.modalManager.closeModal(modal, {
+          onModalClosed: () => {
+            modal.remove();
+            this.showSwitchDriveHekateGuideModal();
+          },
+        });
+      });
+
+    modal
+      .querySelector<HTMLElement>('#switch-drive-guide-homebrew')
+      ?.addEventListener('click', () => {
+        this.showToast(
+          this.translate('settings.switchDriveGuideHomebrewPending'),
+          'info',
+        );
+      });
+  }
+
+  showSwitchDriveHekateGuideModal() {
+    if (!window.modalManager?.showCustomModal) {
+      this.showToast(
+        this.translate('settings.switchDriveGuideUnavailable'),
+        'error',
+      );
+      return;
+    }
+
+    const body = document.createElement('div');
+    body.className = 'switch-drive-hekate-guide';
+    body.innerHTML = `
+      <div id="switch-drive-guide-lottie" class="switch-drive-guide-lottie"></div>
+      <p class="switch-drive-guide-status" id="switch-drive-guide-status">
+        ${this.translate('settings.switchDriveGuidePlaying')}
+      </p>
+    `;
+
+    const modal = window.modalManager.showCustomModal({
+      id: 'switch-drive-hekate-guide-modal',
+      title: this.translate('settings.switchDriveGuideHekateTitle'),
+      body,
+      size: 'large',
+      clickOverlayToClose: false,
+      buttons: [
+        {
+          id: 'switch-drive-guide-next',
+          text: this.translate('settings.switchDriveGuideNext'),
+          type: 'primary',
+          closeOnClick: false,
+          onClick: async (_e, modalElement) => {
+            await this.completeSwitchDriveGuide(modalElement);
+          },
+        },
+        {
+          text: this.translate('common.cancel') || 'Cancel',
+          type: 'secondary',
+        },
+      ],
+      onClose: () => {
+        const anim = (modal as any).__switchDriveGuideAnimation;
+        if (anim?.destroy) {
+          anim.destroy();
+        }
+      },
+    });
+
+    const nextBtn = modal.querySelector<HTMLButtonElement>(
+      '#switch-drive-guide-next',
+    );
+    const status = modal.querySelector<HTMLElement>(
+      '#switch-drive-guide-status',
+    );
+    if (nextBtn) {
+      nextBtn.disabled = true;
+      nextBtn.classList.add('disabled');
+    }
+
+    const lottieContainer = modal.querySelector<HTMLElement>(
+      '#switch-drive-guide-lottie',
+    );
+    if (lottieContainer && window.lottie) {
+      const anim = window.lottie.loadAnimation({
+        container: lottieContainer,
+        renderer: 'svg',
+        loop: true,
+        autoplay: true,
+        path: '../images/guided_recomended.json',
+      });
+      (modal as any).__switchDriveGuideAnimation = anim;
+
+      const unlockNext = () => {
+        if (nextBtn) {
+          nextBtn.disabled = false;
+          nextBtn.classList.remove('disabled');
+        }
+        if (status) {
+          status.textContent = this.translate('settings.switchDriveGuideReady');
+        }
+        anim.removeEventListener?.('loopComplete', unlockNext);
+      };
+
+      anim.addEventListener?.('loopComplete', unlockNext);
+    } else {
+      if (nextBtn) {
+        nextBtn.disabled = false;
+        nextBtn.classList.remove('disabled');
+      }
+      if (status) {
+        status.textContent = this.translate('settings.switchDriveGuideReady');
+      }
+    }
+  }
+
+  async completeSwitchDriveGuide(modal: HTMLElement) {
+    const nextBtn = modal.querySelector<HTMLButtonElement>(
+      '#switch-drive-guide-next',
+    );
+    const status = modal.querySelector<HTMLElement>(
+      '#switch-drive-guide-status',
+    );
+
+    if (nextBtn?.disabled) {
+      return;
+    }
+
+    if (nextBtn) {
+      nextBtn.disabled = true;
+      nextBtn.classList.add('disabled');
+      nextBtn.textContent = this.translate(
+        'settings.switchDriveGuideDetecting',
+      );
+    }
+    if (status) {
+      status.textContent = this.translate('settings.switchDriveGuideDetecting');
+    }
+
+    this.settings.switchTransferMethod = 'drive';
+    this.updateSwitchTransferMethodUI();
+    await this.saveSettings();
+    window.modalManager.closeModal(modal, {
+      onModalClosed: () => {
+        modal.remove();
+        this.showSwitchUsbDeviceModal();
+      },
+    });
+  }
+
+  async getAvailableSwitchDrives() {
+    if (!window.electronAPI?.getAvailableDrives) {
+      throw new Error('Drive detection is not available.');
+    }
+
+    const result = await window.electronAPI.getAvailableDrives();
+    if (!result?.success || !Array.isArray(result.drives)) {
+      throw new Error('Drive detection failed.');
+    }
+
+    return result.drives;
+  }
+
+  getSwitchDriveDisplayText(drive) {
+    if (drive.path && drive.path.includes(':\\')) {
+      return `${drive.letter}: (${drive.label || 'Unknown'})`;
+    }
+
+    if (drive.path && drive.path.startsWith('/')) {
+      return `${drive.path} (${drive.label || 'Unknown'})`;
+    }
+
+    return `${drive.letter} (${drive.label || 'Unknown'})`;
+  }
+
+  getSwitchDriveIdentifier(drive) {
+    if (drive.path && drive.path.startsWith('/')) {
+      return drive.path;
+    }
+
+    return drive.letter;
+  }
+
+  async showSwitchUsbDeviceModal() {
+    if (!window.modalManager?.showCustomModal) {
+      this.showToast(
+        this.translate('settings.switchDriveGuideUnavailable'),
+        'error',
+      );
+      return;
+    }
+
+    const body = document.createElement('div');
+    body.className = 'switch-usb-device-picker';
+    body.innerHTML = `
+      <p class="switch-usb-device-picker-hint">
+        ${this.translate('settings.switchUsbDevicePickerHint')}
+      </p>
+      <div class="switch-usb-device-list" id="switch-usb-device-list">
+        <div class="switch-usb-device-state">
+          <i class="bi bi-arrow-clockwise"></i>
+          <span>${this.translate('settings.switchUsbDeviceSearching')}</span>
+        </div>
+      </div>
+    `;
+
+    const modal = window.modalManager.showCustomModal({
+      id: 'switch-usb-device-picker-modal',
+      title: this.translate('settings.switchUsbDevicePickerTitle'),
+      body,
+      size: 'normal',
+      clickOverlayToClose: false,
+      buttons: [
+        {
+          id: 'switch-usb-device-refresh',
+          text: this.translate('settings.switchUsbDeviceRefresh'),
+          type: 'secondary',
+          closeOnClick: false,
+          onClick: async () => {
+            await this.renderSwitchUsbDeviceOptions(modal);
+          },
+        },
+        {
+          text: this.translate('common.cancel') || 'Cancel',
+          type: 'secondary',
+        },
+      ],
+    });
+
+    await this.renderSwitchUsbDeviceOptions(modal);
+  }
+
+  async renderSwitchUsbDeviceOptions(modal: HTMLElement) {
+    const list = modal.querySelector<HTMLElement>('#switch-usb-device-list');
+    if (!list) return;
+
+    list.innerHTML = `
+      <div class="switch-usb-device-state">
+        <i class="bi bi-arrow-clockwise"></i>
+        <span>${this.translate('settings.switchUsbDeviceSearching')}</span>
+      </div>
+    `;
+
+    try {
+      this.drivesLoaded = false;
+      await this.loadAvailableDrives(true);
+      const drives = await this.getAvailableSwitchDrives();
+
+      if (drives.length === 0) {
+        list.innerHTML = `
+          <div class="switch-usb-device-state switch-usb-device-state-warning">
+            <i class="bi bi-exclamation-triangle"></i>
+            <span>${this.translate('settings.switchUsbDeviceNone')}</span>
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = '';
+
+      drives.forEach((drive) => {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.className = 'switch-usb-device-option';
+        const displayText = this.getSwitchDriveDisplayText(drive);
+        const identifier = this.getSwitchDriveIdentifier(drive);
+        const isSelected = this.settings.switchDriveLetter === identifier;
+        if (isSelected) {
+          option.classList.add('active');
+        }
+
+        option.innerHTML = `
+          <i class="bi bi-usb-drive"></i>
+          <span>
+            <strong>${displayText}</strong>
+            <small>${drive.type || this.translate('settings.switchUsbDeviceTypeUnknown')}</small>
+          </span>
+          <i class="bi bi-check-lg switch-usb-device-check"></i>
+        `;
+
+        option.addEventListener('click', async () => {
+          this.settings.switchDriveLetter = identifier;
+          this.settings.switchTransferMethod = 'drive';
+          this.applyHardwareLibraryModePaths();
+          this.updateSwitchTransferMethodUI();
+          this.updateSwitchDriveLetterUI();
+          await this.saveSettings();
+          this.showToast(
+            this.translate('settings.switchDriveGuideDriveSelected'),
+            'success',
+          );
+          window.modalManager.closeModal(modal, {
+            onModalClosed: () => modal.remove(),
+          });
+        });
+
+        list.appendChild(option);
+      });
+    } catch (error) {
+      console.error('Failed to render USB device picker:', error);
+      list.innerHTML = `
+        <div class="switch-usb-device-state switch-usb-device-state-warning">
+          <i class="bi bi-exclamation-triangle"></i>
+          <span>${this.translate('settings.switchUsbDeviceError')}</span>
+        </div>
+      `;
+    }
+  }
+
   async loadAvailableDrives(forceReload = false) {
     if (!window.electronAPI || !window.electronAPI.getAvailableDrives) {
       console.error('Electron API not available');
@@ -2461,6 +3153,7 @@ ${t('settings.okUnderstand')}
             } else {
               this.settings.switchDriveLetter = drive.letter;
             }
+            this.applyHardwareLibraryModePaths();
             this.saveSettings();
           });
 
@@ -2570,6 +3263,16 @@ ${t('settings.okUnderstand')}
     }
   }
 
+  updateNroLimitCheckUI() {
+    const nroLimitCheckCheckbox = document.querySelector<HTMLInputElement>(
+      '#nro-limit-check-enabled',
+    );
+    if (nroLimitCheckCheckbox) {
+      nroLimitCheckCheckbox.checked =
+        this.settings.nroLimitCheckEnabled !== false;
+    }
+  }
+
   updateAutoCheckPluginUpdatesUI() {
     const autoCheckPluginUpdatesCheckbox =
       document.querySelector<HTMLInputElement>(
@@ -2578,6 +3281,26 @@ ${t('settings.okUnderstand')}
     if (autoCheckPluginUpdatesCheckbox) {
       autoCheckPluginUpdatesCheckbox.checked =
         this.settings.autoCheckPluginUpdates || false;
+    }
+  }
+
+  async updateAutoCheckAppUpdatesUI() {
+    const autoCheckAppUpdatesCheckbox =
+      document.querySelector<HTMLInputElement>(
+        '#auto-check-app-updates-enabled',
+      );
+    if (
+      autoCheckAppUpdatesCheckbox &&
+      window.electronAPI &&
+      window.electronAPI.getAutoCheckEnabled
+    ) {
+      try {
+        autoCheckAppUpdatesCheckbox.checked =
+          await window.electronAPI.getAutoCheckEnabled();
+      } catch (error) {
+        console.error('Failed to get app update auto-check setting:', error);
+        autoCheckAppUpdatesCheckbox.checked = true;
+      }
     }
   }
 
@@ -2779,6 +3502,256 @@ ${t('settings.okUnderstand')}
     }
   }
 
+  updateAppRunModeUI() {
+    const appRunModeSelect = document.querySelector<HTMLElement>(
+      '#app-run-mode-select',
+    );
+    if (!appRunModeSelect) {
+      return;
+    }
+
+    const selectedValue =
+      appRunModeSelect.querySelector<HTMLElement>('.selected-value');
+    const options = appRunModeSelect.querySelectorAll<HTMLElement>(
+      '.custom-select-option',
+    );
+    const currentMode = this.normalizeAppRunMode(this.settings.appRunMode);
+    this.settings.appRunMode = currentMode;
+
+    options.forEach((option) => {
+      const isActive = option.dataset.value === currentMode;
+      option.classList.toggle('active', isActive);
+
+      if (isActive && selectedValue) {
+        const label = option.querySelector<HTMLElement>('span');
+        selectedValue.textContent = label?.textContent || currentMode;
+        if (label?.dataset.i18n) {
+          selectedValue.dataset.i18n = label.dataset.i18n;
+        }
+      }
+    });
+  }
+
+  updateRunModeTabsVisibility() {
+    const currentMode = this.getAppRunMode();
+    const emulatorButton = document.querySelector<HTMLElement>(
+      '[data-settings-tab="emulator"]',
+    );
+    const switchButton = document.querySelector<HTMLElement>(
+      '[data-settings-tab="switch"]',
+    );
+    const emulatorContent = document.querySelector<HTMLElement>(
+      '#settings-emulator',
+    );
+    const switchContent = document.querySelector<HTMLElement>(
+      '#settings-switch',
+    );
+
+    const showEmulator = currentMode === 'emulator';
+    const showSwitch = currentMode === 'hardware';
+
+    if (emulatorButton) {
+      emulatorButton.style.display = showEmulator ? '' : 'none';
+    }
+    if (switchButton) {
+      switchButton.style.display = showSwitch ? '' : 'none';
+    }
+    if (emulatorContent && !showEmulator) {
+      emulatorContent.classList.remove('active');
+    }
+    if (switchContent && !showSwitch) {
+      switchContent.classList.remove('active');
+    }
+
+    const activeContent = document.querySelector<HTMLElement>(
+      '.settings-tab-content.active',
+    );
+    if (!activeContent) {
+      this.switchSettingsTab('general');
+    }
+  }
+
+  updateHardwareLibraryModeUI() {
+    const hardwareLibraryModeSelect = document.querySelector<HTMLElement>(
+      '#hardware-library-mode-select',
+    );
+    if (!hardwareLibraryModeSelect) {
+      return;
+    }
+
+    const selectedValue =
+      hardwareLibraryModeSelect.querySelector<HTMLElement>('.selected-value');
+    const options = hardwareLibraryModeSelect.querySelectorAll<HTMLElement>(
+      '.custom-select-option',
+    );
+    const currentMode = this.normalizeHardwareLibraryMode(
+      this.settings.hardwareLibraryMode,
+    );
+    this.settings.hardwareLibraryMode = currentMode;
+
+    options.forEach((option) => {
+      const isActive = option.dataset.value === currentMode;
+      option.classList.toggle('active', isActive);
+
+      if (isActive && selectedValue) {
+        const label = option.querySelector<HTMLElement>('span');
+        selectedValue.textContent = label?.textContent || currentMode;
+        if (label?.dataset.i18n) {
+          selectedValue.dataset.i18n = label.dataset.i18n;
+        }
+      }
+    });
+  }
+
+  updateHardwareLibraryModeVisibility() {
+    const section = document.querySelector<HTMLElement>(
+      '#hardware-library-mode-section',
+    );
+    if (!section) {
+      return;
+    }
+
+    section.style.display = this.getAppRunMode() === 'hardware' ? '' : 'none';
+  }
+
+  getSwitchDriveRoot() {
+    const driveIdentifier = this.settings.switchDriveLetter;
+    if (!driveIdentifier || typeof driveIdentifier !== 'string') {
+      return null;
+    }
+
+    if (driveIdentifier.includes(':\\') || driveIdentifier.startsWith('/')) {
+      return driveIdentifier.replace(/[\\/]+$/, '');
+    }
+
+    return `${driveIdentifier.replace(':', '')}:\\`;
+  }
+
+  joinSwitchPath(...segments: string[]) {
+    const root = this.getSwitchDriveRoot();
+    if (!root) {
+      return null;
+    }
+
+    const normalizedSegments = segments.map((segment) =>
+      segment.replace(/^[/\\]+|[/\\]+$/g, ''),
+    );
+
+    if (root.endsWith('\\')) {
+      return `${root}${normalizedSegments.join('\\')}`;
+    }
+
+    return `${root}/${normalizedSegments.join('/')}`;
+  }
+
+  getSwitchModsLibraryPath() {
+    return this.joinSwitchPath('ultimate', 'mods');
+  }
+
+  getSwitchPluginsLibraryPath() {
+    return this.joinSwitchPath(
+      'ultimate',
+      'contents',
+      '01006A800016E000',
+      'romfs',
+      'skyline',
+      'plugins',
+    );
+  }
+
+  isSwitchLibraryPath(value) {
+    if (!value || typeof value !== 'string') {
+      return false;
+    }
+
+    const normalized = value.replace(/\\/g, '/').toLowerCase();
+    return (
+      normalized.endsWith('/ultimate/mods') ||
+      normalized.endsWith(
+        '/ultimate/contents/01006a800016e000/romfs/skyline/plugins',
+      )
+    );
+  }
+
+  isDirectSwitchLibraryMode() {
+    return (
+      this.getAppRunMode() === 'hardware' &&
+      this.normalizeHardwareLibraryMode(this.settings.hardwareLibraryMode) ===
+        'direct'
+    );
+  }
+
+  applyHardwareLibraryModePaths() {
+    if (this.isDirectSwitchLibraryMode()) {
+      const switchModsPath = this.getSwitchModsLibraryPath();
+      const switchPluginsPath = this.getSwitchPluginsLibraryPath();
+
+      if (switchModsPath) {
+        if (
+          this.settings.modsPath &&
+          !this.isSwitchLibraryPath(this.settings.modsPath)
+        ) {
+          this.settings.localModsPath = this.settings.modsPath;
+        }
+        this.settings.modsPath = switchModsPath;
+      } else if (
+        this.settings.modsPath &&
+        !this.isSwitchLibraryPath(this.settings.modsPath)
+      ) {
+        this.settings.localModsPath = this.settings.modsPath;
+        this.settings.modsPath = null;
+      }
+
+      if (switchPluginsPath) {
+        if (
+          this.settings.pluginsPath &&
+          !this.isSwitchLibraryPath(this.settings.pluginsPath)
+        ) {
+          this.settings.localPluginsPath = this.settings.pluginsPath;
+        }
+        this.settings.pluginsPath = switchPluginsPath;
+      } else if (
+        this.settings.pluginsPath &&
+        !this.isSwitchLibraryPath(this.settings.pluginsPath)
+      ) {
+        this.settings.localPluginsPath = this.settings.pluginsPath;
+        this.settings.pluginsPath = null;
+      }
+    } else {
+      if (
+        this.settings.localModsPath &&
+        this.isSwitchLibraryPath(this.settings.modsPath)
+      ) {
+        this.settings.modsPath = this.settings.localModsPath;
+      }
+
+      if (
+        this.settings.localPluginsPath &&
+        this.isSwitchLibraryPath(this.settings.pluginsPath)
+      ) {
+        this.settings.pluginsPath = this.settings.localPluginsPath;
+      }
+    }
+
+    this.updateModsFolderUI();
+    this.updatePluginsFolderUI();
+  }
+
+  async refreshCurrentLibraryLists() {
+    if (this.settings.modsPath) {
+      await this.refreshModsListForPath(this.settings.modsPath);
+    }
+
+    if (
+      this.settings.pluginsPath &&
+      window.pluginManager?.loadPluginsFromFolder
+    ) {
+      await window.pluginManager.loadPluginsFromFolder(
+        this.settings.pluginsPath,
+      );
+    }
+  }
+
   async setTheme(theme) {
     this.settings.theme = theme;
     this.applyTheme(theme);
@@ -2810,6 +3783,13 @@ ${t('settings.okUnderstand')}
     try {
       const modsPath = await window.electronAPI.store.get('modsPath');
       const pluginsPath = await window.electronAPI.store.get('pluginsPath');
+      const localModsPath = await window.electronAPI.store.get('localModsPath');
+      const localPluginsPath =
+        await window.electronAPI.store.get('localPluginsPath');
+      const appRunMode = await window.electronAPI.store.get('appRunMode');
+      const hardwareLibraryMode = await window.electronAPI.store.get(
+        'hardwareLibraryMode',
+      );
       const emulatorType = await window.electronAPI.store.get('emulatorType');
       const emulatorPath = await window.electronAPI.store.get('emulatorPath');
       const gamePath = await window.electronAPI.store.get('gamePath');
@@ -2833,6 +3813,9 @@ ${t('settings.okUnderstand')}
         await window.electronAPI.store.get('switchDriveLetter');
       const conflictDetectionEnabled = await window.electronAPI.store.get(
         'conflictDetectionEnabled',
+      );
+      const nroLimitCheckEnabled = await window.electronAPI.store.get(
+        'nroLimitCheckEnabled',
       );
       const ignoredConflictPaths = await window.electronAPI.store.get(
         'ignoredConflictPaths',
@@ -2874,9 +3857,20 @@ ${t('settings.okUnderstand')}
       const appSoundPaths = await window.electronAPI.store.get('appSoundPaths');
       const appSoundEnabled =
         await window.electronAPI.store.get('appSoundEnabled');
+      const normalizedSwitchTransferMethod =
+        this.normalizeSwitchTransferMethod(switchTransferMethod);
       return {
         modsPath: modsPath || null,
         pluginsPath: pluginsPath || null,
+        localModsPath: localModsPath || null,
+        localPluginsPath: localPluginsPath || null,
+        appRunMode: appRunMode
+          ? this.normalizeAppRunMode(appRunMode)
+          : normalizedSwitchTransferMethod !== 'none'
+            ? 'hardware'
+            : 'emulator',
+        hardwareLibraryMode:
+          this.normalizeHardwareLibraryMode(hardwareLibraryMode),
         emulatorType: this.normalizeEmulatorType(emulatorType),
         emulatorPath: emulatorPath || null,
         gamePath: gamePath || null,
@@ -2888,10 +3882,10 @@ ${t('settings.okUnderstand')}
         switchFtpPath: switchFtpPath || null,
         switchFtpModsPath: switchFtpModsPath || switchFtpPath || null,
         switchFtpPluginsPath: switchFtpPluginsPath || null,
-        switchTransferMethod:
-          this.normalizeSwitchTransferMethod(switchTransferMethod),
+        switchTransferMethod: normalizedSwitchTransferMethod,
         switchDriveLetter: switchDriveLetter || null,
         conflictDetectionEnabled: conflictDetectionEnabled !== false,
+        nroLimitCheckEnabled: nroLimitCheckEnabled !== false,
         ignoredConflictPaths: Array.isArray(ignoredConflictPaths)
           ? ignoredConflictPaths
               .map((value) => (typeof value === 'string' ? value.trim() : ''))
@@ -2928,6 +3922,10 @@ ${t('settings.okUnderstand')}
       return {
         modsPath: null,
         pluginsPath: null,
+        localModsPath: null,
+        localPluginsPath: null,
+        appRunMode: 'emulator',
+        hardwareLibraryMode: 'local',
         emulatorType: 'yuzu',
         emulatorPath: null,
         gamePath: null,
@@ -2942,6 +3940,7 @@ ${t('settings.okUnderstand')}
         switchTransferMethod: 'none',
         switchDriveLetter: null,
         conflictDetectionEnabled: true,
+        nroLimitCheckEnabled: true,
         ignoredConflictPaths: [],
         autoCheckPluginUpdates: false,
         pluginUpdateIntroShown: false,
@@ -2968,10 +3967,27 @@ ${t('settings.okUnderstand')}
     }
 
     try {
+      this.applyHardwareLibraryModePaths();
       await window.electronAPI.store.set('modsPath', this.settings.modsPath);
       await window.electronAPI.store.set(
         'pluginsPath',
         this.settings.pluginsPath,
+      );
+      await window.electronAPI.store.set(
+        'localModsPath',
+        this.settings.localModsPath,
+      );
+      await window.electronAPI.store.set(
+        'localPluginsPath',
+        this.settings.localPluginsPath,
+      );
+      await window.electronAPI.store.set(
+        'appRunMode',
+        this.settings.appRunMode,
+      );
+      await window.electronAPI.store.set(
+        'hardwareLibraryMode',
+        this.settings.hardwareLibraryMode,
       );
       await window.electronAPI.store.set(
         'emulatorType',
@@ -3022,6 +4038,10 @@ ${t('settings.okUnderstand')}
       await window.electronAPI.store.set(
         'conflictDetectionEnabled',
         this.settings.conflictDetectionEnabled,
+      );
+      await window.electronAPI.store.set(
+        'nroLimitCheckEnabled',
+        this.settings.nroLimitCheckEnabled,
       );
       await window.electronAPI.store.set(
         'autoCheckPluginUpdates',
@@ -3076,6 +4096,7 @@ ${t('settings.okUnderstand')}
         'appSoundEnabled',
         this.settings.appSoundEnabled || {},
       );
+      window.hardwareConnectionManager?.refresh?.();
     } catch (error) {
       console.error('Failed to save settings:', error);
     }
@@ -3095,6 +4116,14 @@ ${t('settings.okUnderstand')}
 
   getPluginsPath() {
     return this.settings.pluginsPath || null;
+  }
+
+  getAppRunMode() {
+    return this.normalizeAppRunMode(this.settings.appRunMode);
+  }
+
+  getHardwareLibraryMode() {
+    return this.normalizeHardwareLibraryMode(this.settings.hardwareLibraryMode);
   }
 
   hasModsPath() {

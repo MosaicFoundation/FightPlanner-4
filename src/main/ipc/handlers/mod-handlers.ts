@@ -495,6 +495,39 @@ const ModHandlers = {
     }
   },
 
+  ['check-nro-limit']: async (
+    common: BaseHandlerArg,
+    modsPath: string,
+    limit = 64,
+  ): HandlerResponse<{
+    limit: number;
+    totalNroFiles: number;
+    exceedsLimit: boolean;
+    files: Array<{
+      modName: string;
+      modPath: string;
+      relativePath: string;
+    }>;
+    activeModsCount: number;
+  }> => {
+    try {
+      const result = ModUtils.readAllMods(modsPath);
+      const nroLimitResult = await ModUtils.checkNroLimit(
+        result.activeMods,
+        limit,
+      );
+
+      return {
+        success: true,
+        ...nroLimitResult,
+        activeModsCount: result.activeMods.length,
+      };
+    } catch (error) {
+      handleError(error, 'check-nro-limit');
+      return createErrorResponse(ErrorCodes.MOD_READ_ERROR, error.message);
+    }
+  },
+
   ['install-mod-from-path']: async (
     common: BaseHandlerArg,
     sourcePath: string,

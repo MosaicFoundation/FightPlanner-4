@@ -725,7 +725,7 @@ body.reduced-animations .bottom-text-left.status-changing {
     0 -8px 24px rgba(0, 0, 0, 0.3),
     4px 0 12px rgba(0, 0, 0, 0.1);
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  transform: translateY(18px) scale(0.97, 0.82);
+  transform: translateY(18px) scale(0.985, 0.9);
   transform-origin: left bottom;
   opacity: 0;
   pointer-events: none;
@@ -870,10 +870,15 @@ body.reduced-animations .bottom-text-left.status-changing {
 .bottom-bar.expanded.download-mode .ext-multi-dl-list {
   gap: 10px;
   padding-top: 2px;
+  max-height: min(240px, calc(100vh - 220px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .bottom-bar.expanded.download-mode .ext-multi-dl-item {
+  flex: 0 0 auto;
   gap: 5px;
+  min-height: 42px;
   padding: 8px 10px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 10px;
@@ -1041,7 +1046,6 @@ body.reduced-animations .bottom-text-left.status-changing {
 }
 
 .ext-multi-dl-item.entering {
-  max-height: 0;
   opacity: 0;
 }
 
@@ -1286,9 +1290,10 @@ body.reduced-animations .bottom-text-left.status-changing {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 120px;
+  max-height: min(240px, calc(100vh - 220px));
   overflow-y: auto;
   padding-right: 4px;
+  overscroll-behavior: contain;
 }
 
 .ext-multi-dl-list::-webkit-scrollbar {
@@ -1302,8 +1307,10 @@ body.reduced-animations .bottom-text-left.status-changing {
 
 .ext-multi-dl-item {
   display: flex;
+  flex: 0 0 auto;
   flex-direction: column;
   gap: 3px;
+  min-height: 38px;
 }
 
 .ext-multi-dl-info {
@@ -1351,46 +1358,64 @@ body.reduced-animations .bottom-text-left.status-changing {
   animation: extCountBump 0.42s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.ext-text-swap {
+  animation: extTextSwap 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes extTextSwap {
+  from {
+    opacity: 0.35;
+    filter: blur(3px);
+    transform: translateY(-6px) scale(1.04);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
 @keyframes dynamicIslandPulse {
   0% {
-    transform: translateY(0) scale(1, 1);
+    transform: translateY(0);
     filter: brightness(1) saturate(1);
   }
 
   24% {
-    transform: translateY(-2px) scale(1.01, 1.06);
+    transform: translateY(-2px);
     filter: brightness(1.05) saturate(1.08);
   }
 
   58% {
-    transform: translateY(-1px) scale(1.005, 0.985);
+    transform: translateY(-1px);
     filter: brightness(1.02) saturate(1.03);
   }
 
   100% {
-    transform: translateY(-1px) scaleY(1.01);
+    transform: translateY(-1px);
     filter: brightness(1) saturate(1);
   }
 }
 
 @keyframes collapsedStatusBarSwap {
   0% {
-    transform: translateY(0) scale(1, 1);
+    transform: translateY(0);
     filter: brightness(1);
   }
 
   24% {
-    transform: translateY(0.5px) scale(0.998, 0.972);
+    transform: translateY(0.5px);
     filter: brightness(0.985);
   }
 
   62% {
-    transform: translateY(-0.5px) scale(1.004, 1.014);
+    transform: translateY(-0.5px);
     filter: brightness(1.03);
   }
 
   100% {
-    transform: translateY(0) scale(1, 1);
+    transform: translateY(0);
     filter: brightness(1);
   }
 }
@@ -1540,6 +1565,7 @@ body.reduced-animations .ext-download-card,
 body.reduced-animations .ext-conflict-card,
 body.reduced-animations .ext-multi-dl-item,
 body.reduced-animations .ext-count-bump,
+body.reduced-animations .ext-text-swap,
 body.reduced-animations .bottom-bar.expanded.download-mode .ext-progress-fill::after {
   animation-duration: 0.18s !important;
 }
@@ -1554,6 +1580,7 @@ body.no-animations .ext-download-card,
 body.no-animations .ext-conflict-card,
 body.no-animations .ext-multi-dl-item,
 body.no-animations .ext-count-bump,
+body.no-animations .ext-text-swap,
 body.no-animations .bottom-bar.expanded.download-mode .ext-progress-fill::after {
   animation: none !important;
   transition: none !important;

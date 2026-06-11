@@ -298,6 +298,82 @@ export async function detectDrives() {
   }
 }
 
+function canReadPath(targetPath: string) {
+  try {
+    return fs.existsSync(targetPath) && fs.statSync(targetPath).isDirectory();
+  } catch (error) {
+    return false;
+  }
+}
+
+function normalizeDriveIdentifier(value: string) {
+  return value
+    .trim()
+    .replace(/[\\/]+$/g, '')
+    .toLowerCase();
+}
+
+/**
+ * Resolve a saved drive identifier to the current mounted path.
+ * Older settings may contain a label such as "Ventoy" instead of
+ * "/media/<user>/Ventoy", so checks must handle both formats.
+ */
+export async function resolveDrivePath(driveIdentifier: string) {
+  if (!driveIdentifier || typeof driveIdentifier !== 'string') {
+    return null;
+  }
+
+  const trimmedIdentifier = driveIdentifier.trim();
+  if (!trimmedIdentifier) {
+    return null;
+  }
+
+  const directCandidates = [trimmedIdentifier];
+
+  if (/^[A-Z]$/i.test(trimmedIdentifier)) {
+    directCandidates.push(`${trimmedIdentifier}:\\`);
+  }
+
+  const userName =
+    process.env.USER || process.env.USERNAME || os.userInfo().username;
+  if (
+    !trimmedIdentifier.startsWith('/') &&
+    !trimmedIdentifier.includes(':\\')
+  ) {
+    if (process.platform === 'linux') {
+      directCandidates.push(
+        `/media/${userName}/${trimmedIdentifier}`,
+        `/run/media/${userName}/${trimmedIdentifier}`,
+        `/mnt/${trimmedIdentifier}`,
+      );
+    } else if (process.platform === 'darwin') {
+      directCandidates.push(`/Volumes/${trimmedIdentifier}`);
+    }
+  }
+
+  const existingCandidate = directCandidates.find(canReadPath);
+  if (existingCandidate) {
+    return existingCandidate;
+  }
+
+  const normalizedIdentifier = normalizeDriveIdentifier(trimmedIdentifier);
+  const drives = await detectDrives();
+  const matchingDrive = drives.find((drive) => {
+    const values = [
+      drive.path,
+      drive.letter,
+      drive.label,
+      path.basename(drive.path),
+    ]
+      .filter(Boolean)
+      .map(normalizeDriveIdentifier);
+
+    return values.includes(normalizedIdentifier);
+  });
+
+  return matchingDrive?.path || null;
+}
+
 /**
  * Check if a drive path exists and is accessible
  * @param {string} drivePath - Path to check (e.g., "E:\\" on Windows, "/media/user/disk" on Linux)

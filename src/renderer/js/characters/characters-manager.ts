@@ -3,7 +3,7 @@ import { Mod } from '../../../main/mod-utils';
 interface Character {
   id: string;
   info: { name: string; number: string };
-  mods: { name: string; path: string; status: string }[];
+  mods: { name: string; path: string; status: string; slots: string[] }[];
 }
 
 interface CharacterMovesetMod {
@@ -448,18 +448,50 @@ class CharactersManager {
         })),
       ];
 
-      for (let i = 0; i < allMods.length; i++) {
-        const { mod, status } = allMods[i];
-        this.updateLoadingStatus(
-          `Scanning ${mod.name} (${i + 1}/${allMods.length})...`,
-        );
-        await this.scanModForCharacters(mod, status);
-      }
+      let scannedCount = 0;
+      const scanConcurrency = Math.min(
+        6,
+        Math.max(2, Math.floor((navigator.hardwareConcurrency || 4) / 2)),
+      );
+
+      await this.runWithConcurrency(
+        allMods,
+        scanConcurrency,
+        async ({ mod, status }) => {
+          this.updateLoadingStatus(
+            `Scanning ${mod.name} (${scannedCount + 1}/${allMods.length})...`,
+          );
+          await this.scanModForCharacters(mod, status);
+          scannedCount += 1;
+          this.updateLoadingStatus(
+            `Scanned ${scannedCount}/${allMods.length} mods...`,
+          );
+        },
+      );
 
       console.log(`Found ${this.characters.size} characters with mods`);
     } catch (error) {
       console.error('Failed to scan mods:', error);
     }
+  }
+
+  async runWithConcurrency<T>(
+    items: T[],
+    concurrency: number,
+    worker: (item: T, index: number) => Promise<void>,
+  ) {
+    let nextIndex = 0;
+    const workerCount = Math.min(concurrency, items.length);
+
+    await Promise.all(
+      Array.from({ length: workerCount }, async () => {
+        while (nextIndex < items.length) {
+          const currentIndex = nextIndex;
+          nextIndex += 1;
+          await worker(items[currentIndex], currentIndex);
+        }
+      }),
+    );
   }
 
   async scanModForCharacters(mod: Mod, status: 'active' | 'disabled') {
@@ -468,11 +500,13 @@ class CharactersManager {
     }
 
     try {
-      const scanModResult = await window.electronAPI.scanMod(mod.path);
+      const [scanModResult, modInfo] = await Promise.all([
+        window.electronAPI.scanMod(mod.path),
+        this.getModInfo(mod),
+      ]);
 
       if (scanModResult.success && scanModResult.data.fighterNames.length > 0) {
         const resolvedIds = new Set<string>();
-        const modInfo = await this.getModInfo(mod);
         const isMovesetMod = this.isMovesetModInfo(modInfo, mod.name);
         const movesetMod: CharacterMovesetMod = {
           name: modInfo?.display_name || mod.name,
@@ -518,6 +552,7 @@ class CharactersManager {
               name: mod.name,
               path: mod.path,
               status: status,
+              slots: slotsByFighterId.get(fighterId) || [],
             });
           }
 
@@ -646,6 +681,19 @@ class CharactersManager {
     }
   }
 
+  renderCharacterSlotBadges(slots: string[], unknownLabel = 'Slot unknown') {
+    if (!slots || slots.length === 0) {
+      return `<span class="character-moveset-slot is-unknown">${this.escapeHtml(unknownLabel)}</span>`;
+    }
+
+    return slots
+      .map(
+        (slot) =>
+          `<span class="character-moveset-slot">${this.escapeHtml(slot)}</span>`,
+      )
+      .join('');
+  }
+
   createCharacterCard(char) {
     const card = document.createElement('div');
     card.className = 'character-card';
@@ -681,6 +729,9 @@ ${char.mods
 <div class="character-mod-item ${mod.status}" data-mod-path="${this.escapeHtml(mod.path)}">
 <span class="mod-status-dot"></span>
 <span class="mod-name">${this.escapeHtml(mod.name)}</span>
+<span class="character-mod-slots" aria-label="Detected character slots">
+${this.renderCharacterSlotBadges(mod.slots, 'Unknown')}
+</span>
 </div>
 `,
   )
@@ -731,7 +782,12 @@ ${char.mods
     (mod) => `
 <div class="character-modal-mod-item ${mod.status}" data-mod-path="${this.escapeHtml(mod.path)}">
 <span class="mod-status-indicator ${mod.status}"></span>
+<span class="character-modal-mod-main">
 <span class="mod-name">${this.escapeHtml(mod.name)}</span>
+<span class="character-modal-mod-slots" aria-label="Detected character slots">
+${this.renderCharacterSlotBadges(mod.slots, 'Slot unknown')}
+</span>
+</span>
 <i class="bi bi-arrow-right-circle"></i>
 </div>
 `,

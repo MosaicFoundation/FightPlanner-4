@@ -245,7 +245,7 @@ class BatchTestingUiHelpers {
   ) {
     const baseStyle =
       variant === 'chip'
-        ? 'display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-secondary); font-size: 12px;'
+        ? 'display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-width: 0; padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-secondary); font-size: 12px; text-align: left; white-space: normal;'
         : 'display: inline-flex; align-items: center; gap: 6px; padding: 0; background: transparent; border: none; color: var(--primary-color); font-size: 14px;';
 
     return `
@@ -256,8 +256,8 @@ class BatchTestingUiHelpers {
         data-batch-name="${this.escapeHtml(name)}"
         style="${baseStyle} cursor: pointer;"
       >
-        <span>${this.escapeHtml(name)}</span>
-        <i class="bi bi-info-circle" style="font-size: 12px; opacity: 0.8;"></i>
+        <span style="min-width: 0; overflow-wrap: anywhere; line-height: 1.25;">${this.escapeHtml(name)}</span>
+        <i class="bi bi-info-circle" style="font-size: 12px; opacity: 0.8; flex: 0 0 auto;"></i>
       </button>
     `;
   }

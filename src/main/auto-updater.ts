@@ -56,7 +56,7 @@ class AutoUpdater {
     this.isChecking = false;
     this.isDownloading = false;
     this.updateDownloaded = false;
-    this.autoCheckEnabled = true;
+    this.autoCheckEnabled = store.get('autoCheckForUpdates', true) as boolean;
     this.updateChannel = store.get('updateChannel', 'stable') as string;
     this.forceUpdateAvailable = store.get(
       'developer.forceUpdateAvailable',
@@ -126,7 +126,12 @@ class AutoUpdater {
 
     autoUpdater.on('error', (error) => {
       this.isChecking = false;
+      const wasDownloading = this.isDownloading;
       this.isDownloading = false;
+      if (!wasDownloading) {
+        console.warn('[AutoUpdater] Update check failed:', error.message);
+        return;
+      }
       this.sendToRenderer('update-error', {
         message: error.message,
       });
@@ -260,6 +265,11 @@ class AutoUpdater {
 
   setAutoCheckEnabled(enabled: boolean) {
     this.autoCheckEnabled = enabled;
+    store.set('autoCheckForUpdates', enabled);
+  }
+
+  getAutoCheckEnabled() {
+    return this.autoCheckEnabled;
   }
 
   setUpdateChannel(channel: string) {

@@ -53,6 +53,18 @@ export interface Mod {
   hash?: string;
   addedAt?: number;
   modifiedAt?: number;
+  folderName?: string;
+}
+
+export interface NroLimitCheckResult {
+  limit: number;
+  totalNroFiles: number;
+  exceedsLimit: boolean;
+  files: Array<{
+    modName: string;
+    modPath: string;
+    relativePath: string;
+  }>;
 }
 
 type BatchModState = 'active' | 'disabled';
@@ -66,6 +78,14 @@ interface BatchModMove {
 }
 
 export default class ModUtils {
+  private static readonly batchDuplicateMarker = '.fpp-batch-duplicate-';
+
+  private static getDisplayModName(folderName: string) {
+    const markerIndex = folderName.indexOf(this.batchDuplicateMarker);
+
+    return markerIndex === -1 ? folderName : folderName.slice(0, markerIndex);
+  }
+
   private static normalizeRelativeModPath(relativePath: string): string {
     return relativePath
       .replace(/\\/g, '/')
@@ -301,18 +321,20 @@ export default class ModUtils {
             });
           }
 
+          const displayName = this.getDisplayModName(entry.name);
           const hash = crypto
             .createHash('sha256')
-            .update(entry.name)
+            .update(`${status}:${entry.name}`)
             .digest('hex')
             .substring(0, 12);
           mods.push({
-            name: entry.name,
+            name: displayName,
             path: modPath,
             status: status,
             hash,
             addedAt,
             modifiedAt,
+            folderName: entry.name,
           });
         }
       });
@@ -494,6 +516,27 @@ export default class ModUtils {
     return candidate;
   }
 
+  private static createBatchDuplicatePath(targetBasePath: string, modName: string) {
+    const safeLabel = modName.replace(/[^a-z0-9._-]/gi, '_');
+    let candidate = path.join(
+      targetBasePath,
+      `${modName}${this.batchDuplicateMarker}${Date.now()}_${Math.random()
+        .toString(36)
+        .slice(2)}_${safeLabel}`,
+    );
+
+    while (fs.existsSync(candidate)) {
+      candidate = path.join(
+        targetBasePath,
+        `${modName}${this.batchDuplicateMarker}${Date.now()}_${Math.random()
+          .toString(36)
+          .slice(2)}_${safeLabel}`,
+      );
+    }
+
+    return candidate;
+  }
+
   private static rollbackBatchMoves(moves: BatchModMove[]) {
     for (let i = moves.length - 1; i >= 0; i -= 1) {
       const move = moves[i];
@@ -517,22 +560,27 @@ export default class ModUtils {
     const disabledModsPath = this.getDisabledModsFolder(activeModsPath);
 
     const allMods = [...activeMods, ...disabledMods];
-    const seenNames = new Set<string>();
+    const nameCounts = new Map<string, number>();
 
     for (const mod of allMods) {
-      if (seenNames.has(mod.name)) {
-        throw new Error(
-          `Duplicate mod name detected: "${mod.name}". Batch testing requires unique mod names.`,
-        );
-      }
-
-      seenNames.add(mod.name);
+      nameCounts.set(mod.name, (nameCounts.get(mod.name) || 0) + 1);
     }
 
     const plannedMoves: BatchModMove[] = [];
+    const reservedTargetPaths = new Set<string>();
 
     for (const mod of allMods) {
-      const shouldBeActive = enabledSet.has(mod.name);
+      const hasDuplicateName = (nameCounts.get(mod.name) || 0) > 1;
+      const folderName = mod.folderName || path.basename(mod.path);
+      const isBatchDuplicateFolder = folderName.includes(
+        this.batchDuplicateMarker,
+      );
+      const shouldBeActive =
+        enabledSet.has(mod.path) ||
+        enabledSet.has(folderName) ||
+        enabledSet.has(`active:${mod.name}`) &&
+          (mod.status === 'active' || isBatchDuplicateFolder) ||
+        (!hasDuplicateName && enabledSet.has(mod.name));
       const shouldMove =
         (mod.status === 'active' && !shouldBeActive) ||
         (mod.status === 'disabled' && shouldBeActive);
@@ -546,13 +594,13 @@ export default class ModUtils {
         : 'disabled';
       const targetBasePath =
         targetStatus === 'active' ? activeModsPath : disabledModsPath;
-      const targetPath = path.join(targetBasePath, mod.name);
+      let targetPath = path.join(targetBasePath, mod.name);
 
-      if (fs.existsSync(targetPath)) {
-        throw new Error(
-          `Batch state collision: "${mod.name}" already exists in the ${targetStatus === 'active' ? 'active' : 'disabled'} mods folder.`,
-        );
+      while (fs.existsSync(targetPath) || reservedTargetPaths.has(targetPath)) {
+        targetPath = this.createBatchDuplicatePath(targetBasePath, mod.name);
       }
+
+      reservedTargetPaths.add(targetPath);
 
       plannedMoves.push({
         mod,
@@ -712,6 +760,60 @@ export default class ModUtils {
 
       return groupA.fighter.localeCompare(groupB.fighter);
     });
+  }
+
+  static async checkNroLimit(
+    activeMods: Mod[],
+    limit = 64,
+  ): Promise<NroLimitCheckResult> {
+    const files: NroLimitCheckResult['files'] = [];
+
+    const scanResults = await Promise.all(
+      activeMods.map(async (mod) => {
+        if (!mod.path || !fs.existsSync(mod.path)) {
+          return { mod, files: [] };
+        }
+
+        return {
+          mod,
+          files: await this.scanRelativeFilePaths(mod.path),
+        };
+      }),
+    );
+
+    for (const scanResult of scanResults) {
+      for (const relativePath of scanResult.files) {
+        if (!relativePath.toLowerCase().endsWith('.nro')) {
+          continue;
+        }
+
+        files.push({
+          modName: scanResult.mod.name,
+          modPath: scanResult.mod.path,
+          relativePath: this.normalizeRelativeModPath(relativePath),
+        });
+      }
+    }
+
+    files.sort((a, b) => {
+      const modDelta = a.modName.localeCompare(b.modName, undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      });
+      if (modDelta !== 0) return modDelta;
+
+      return a.relativePath.localeCompare(b.relativePath, undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      });
+    });
+
+    return {
+      limit,
+      totalNroFiles: files.length,
+      exceedsLimit: files.length > limit,
+      files,
+    };
   }
 
   static copyRecursiveSync(src, dest) {

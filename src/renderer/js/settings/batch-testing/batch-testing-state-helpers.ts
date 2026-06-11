@@ -143,9 +143,10 @@ class BatchTestingStateHelpers {
     await this.ensureCategoryAvailable(snapshot.category, snapshot.basePath);
 
     if (snapshot.category === 'mods') {
+      const enabledModTokens = enabledNames.map((name) => `active:${name}`);
       const nextState = await window.electronAPI.applyModBatchState(
         snapshot.basePath,
-        enabledNames,
+        enabledModTokens,
       );
 
       if (!nextState.success) {

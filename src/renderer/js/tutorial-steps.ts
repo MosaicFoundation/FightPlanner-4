@@ -181,11 +181,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Disable Next until selected
-        if (nextBtn) {
-          nextBtn.style.opacity = '0.5';
-          nextBtn.style.pointerEvents = 'none';
-          nextBtn.style.cursor = 'not-allowed';
-        }
+        const disableNext = () => {
+          if (nextBtn) {
+            nextBtn.style.opacity = '0.5';
+            nextBtn.style.pointerEvents = 'none';
+            nextBtn.style.cursor = 'not-allowed';
+          }
+        };
+
+        const enableNext = () => {
+          if (nextBtn) {
+            nextBtn.style.opacity = '1';
+            nextBtn.style.pointerEvents = 'auto';
+            nextBtn.style.cursor = 'pointer';
+          }
+        };
+
+        disableNext();
 
         const checkAndSave = async () => {
           const hardwareSelected = document.querySelector<HTMLInputElement>(
@@ -198,12 +210,18 @@ document.addEventListener('DOMContentLoaded', () => {
               'tutorial.hardwareType',
               hardwareType,
             );
+            await window.tutorialAPI.store.set(
+              'appRunMode',
+              hardwareType === 'hardware' ? 'hardware' : 'emulator',
+            );
 
             if (nextBtn) {
               nextBtn.style.opacity = '1';
               nextBtn.style.pointerEvents = 'auto';
               nextBtn.style.cursor = 'pointer';
             }
+
+            await renderProgressDots();
           }
         };
 
@@ -213,6 +231,185 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Initial check
         checkAndSave();
+      },
+    },
+    {
+      icon: 'bi-shield-check',
+      title: 'Switch Modded Check',
+      description: 'Confirm your Switch is ready for homebrew',
+      content: `
+<div style="text-align: center;">
+    <div style="width: 80px; height: 80px; background: linear-gradient(135deg, rgba(122, 155, 255, 0.2), rgba(90, 123, 240, 0.2)); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; box-shadow: 0 8px 32px rgba(122, 155, 255, 0.2);">
+        <i class="bi bi-shield-check" style="font-size: 40px; color: #7a9bff;"></i>
+    </div>
+
+    <h3 style="color: #fff; margin-bottom: 12px; font-size: 24px; font-weight: 700;">Is your Switch modded?</h3>
+    <p style="margin-bottom: 20px; color: rgba(255,255,255,0.6); font-size: 14px;">FightPlanner needs a modded Switch before installing Skyline, ARCropolis, and Smash mods.</p>
+
+    <div style="display: flex; gap: 20px; max-width: 500px; margin: 0 auto;">
+        <label class="switch-modded-option" data-value="yes" style="flex: 1; position: relative; cursor: pointer;">
+            <input type="radio" name="switch-modded" value="yes" style="position: absolute; opacity: 0; pointer-events: none;">
+            <div class="option-card-yes" style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(56, 142, 60, 0.05)); border: 2px solid rgba(76, 175, 80, 0.3); border-radius: 16px; padding: 28px 20px; text-align: center; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #4caf50, #388e3c); opacity: 0; transition: opacity 0.3s;"></div>
+                <i class="bi bi-check-circle-fill" style="font-size: 36px; color: #4caf50; display: block; margin-bottom: 16px;"></i>
+                <h4 style="color: #fff; font-size: 18px; font-weight: 700; margin: 0 0 8px 0;">Yes</h4>
+                <p style="color: rgba(255,255,255,0.5); font-size: 13px; margin: 0;">Continue setup</p>
+                <div class="check-icon" style="position: absolute; top: 16px; right: 16px; width: 28px; height: 28px; background: #4caf50; border-radius: 50%; display: none; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);">
+                    <i class="bi bi-check-lg" style="color: #fff; font-size: 16px;"></i>
+                </div>
+            </div>
+        </label>
+
+        <label class="switch-modded-option" data-value="no" style="flex: 1; position: relative; cursor: pointer;">
+            <input type="radio" name="switch-modded" value="no" style="position: absolute; opacity: 0; pointer-events: none;">
+            <div class="option-card-no" style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 152, 0, 0.05)); border: 2px solid rgba(255, 193, 7, 0.3); border-radius: 16px; padding: 28px 20px; text-align: center; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #ffc107, #ff9800); opacity: 0; transition: opacity 0.3s;"></div>
+                <i class="bi bi-box-arrow-up-right" style="font-size: 36px; color: #ffc107; display: block; margin-bottom: 16px;"></i>
+                <h4 style="color: #fff; font-size: 18px; font-weight: 700; margin: 0 0 8px 0;">No</h4>
+                <p style="color: rgba(255,255,255,0.5); font-size: 13px; margin: 0;">Open the guide first</p>
+                <div class="check-icon" style="position: absolute; top: 16px; right: 16px; width: 28px; height: 28px; background: #ffc107; border-radius: 50%; display: none; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);">
+                    <i class="bi bi-check-lg" style="color: #fff; font-size: 16px;"></i>
+                </div>
+            </div>
+        </label>
+    </div>
+
+    <div id="switch-modded-help" style="margin: 22px auto 0; max-width: 520px;"></div>
+</div>
+
+<style>
+.switch-modded-option input:checked + .option-card-yes {
+    border-color: #4caf50;
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(56, 142, 60, 0.1));
+    box-shadow: 0 8px 32px rgba(76, 175, 80, 0.3);
+    transform: translateY(-4px);
+}
+
+.switch-modded-option input:checked + .option-card-no {
+    border-color: #ffc107;
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.2), rgba(255, 152, 0, 0.1));
+    box-shadow: 0 8px 32px rgba(255, 193, 7, 0.3);
+    transform: translateY(-4px);
+}
+
+.switch-modded-option input:checked + .option-card-yes > div:first-of-type,
+.switch-modded-option input:checked + .option-card-no > div:first-of-type {
+    opacity: 1;
+}
+
+.switch-modded-option input:checked + .option-card-yes .check-icon,
+.switch-modded-option input:checked + .option-card-no .check-icon {
+    display: flex;
+}
+
+.switch-modded-option:hover .option-card-yes,
+.switch-modded-option:hover .option-card-no {
+    border-color: rgba(122, 155, 255, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(122, 155, 255, 0.2);
+}
+</style>
+`,
+      onRender: async () => {
+        const nextBtn = document.querySelector<HTMLElement>('#next-btn');
+        const switchModdedRadios = document.querySelectorAll<HTMLElement>(
+          'input[name="switch-modded"]',
+        );
+        const helpDiv = document.querySelector<HTMLElement>('#switch-modded-help');
+
+        const disableNext = () => {
+          if (nextBtn) {
+            nextBtn.style.opacity = '0.5';
+            nextBtn.style.pointerEvents = 'none';
+            nextBtn.style.cursor = 'not-allowed';
+          }
+        };
+
+        const enableNext = () => {
+          if (nextBtn) {
+            nextBtn.style.opacity = '1';
+            nextBtn.style.pointerEvents = 'auto';
+            nextBtn.style.cursor = 'pointer';
+          }
+        };
+
+        const showGuideMessage = () => {
+          disableNext();
+          if (!helpDiv) return;
+
+          helpDiv.innerHTML = `
+            <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 12px; padding: 16px; text-align: left;">
+                <p style="color: #ffc107; margin: 0 0 12px 0; font-weight: 600;">
+                    Mod your Switch first, then come back here.
+                </p>
+                <p style="color: rgba(255,255,255,0.7); font-size: 13px; line-height: 1.5; margin: 0 0 14px 0;">
+                    Follow the Switch homebrew guide, restart this tutorial when your Switch is ready, then answer "Yes" to continue.
+                </p>
+                <a href="https://switch.hacks.guide/" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(122, 155, 255, 0.2); color: #7a9bff; border: 1px solid rgba(122, 155, 255, 0.3); border-radius: 8px; text-decoration: none; font-weight: 600;">
+                    Open switch.hacks.guide <i class="bi bi-box-arrow-up-right"></i>
+                </a>
+            </div>
+          `;
+          setupExternalLinks(helpDiv);
+        };
+
+        disableNext();
+
+        if (window.tutorialAPI) {
+          try {
+            const switchModded = await apiWrapper.storeGet(
+              'tutorial.switchModded',
+            );
+            if (switchModded !== null && switchModded !== undefined) {
+              const value = switchModded ? 'yes' : 'no';
+              const radio = document.querySelector<HTMLInputElement>(
+                `input[name="switch-modded"][value="${value}"]`,
+              );
+              if (radio) {
+                radio.checked = true;
+              }
+              if (switchModded) {
+                enableNext();
+              } else {
+                showGuideMessage();
+              }
+            }
+          } catch (e) {
+            console.error('Error loading Switch modded state:', e);
+          }
+        }
+
+        const checkAndSave = async () => {
+          const switchModdedSelected = document.querySelector<HTMLInputElement>(
+            'input[name="switch-modded"]:checked',
+          );
+          if (!switchModdedSelected || !window.tutorialAPI) return;
+
+          const switchModded = switchModdedSelected.value === 'yes';
+          await window.tutorialAPI.store.set(
+            'tutorial.switchModded',
+            switchModded,
+          );
+
+          if (switchModded) {
+            if (helpDiv) {
+              helpDiv.innerHTML = `
+                <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 14px; text-align: center;">
+                    <span style="color: #fff;">Good. You can continue with the Switch setup.</span>
+                </div>
+              `;
+            }
+            enableNext();
+          } else {
+            showGuideMessage();
+          }
+
+          await renderProgressDots();
+        };
+
+        switchModdedRadios.forEach((radio) => {
+          radio.addEventListener('change', checkAndSave);
+        });
       },
     },
     {
@@ -341,11 +538,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Disable Next until selected
-        if (nextBtn) {
-          nextBtn.style.opacity = '0.5';
-          nextBtn.style.pointerEvents = 'none';
-          nextBtn.style.cursor = 'not-allowed';
-        }
+        const disableNext = () => {
+          if (nextBtn) {
+            nextBtn.style.opacity = '0.5';
+            nextBtn.style.pointerEvents = 'none';
+            nextBtn.style.cursor = 'not-allowed';
+          }
+        };
+
+        const enableNext = () => {
+          if (nextBtn) {
+            nextBtn.style.opacity = '1';
+            nextBtn.style.pointerEvents = 'auto';
+            nextBtn.style.cursor = 'pointer';
+          }
+        };
+
+        disableNext();
 
         const checkAndSave = async () => {
           const arcropolisSelected = document.querySelector<HTMLInputElement>(
@@ -913,7 +1122,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
                     <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 32px; margin-bottom: 12px;"></i>
                     <p style="color: #fff; margin-bottom: 16px;">Great! ARCropolis is working correctly.</p>
-                    <p style="color: rgba(255,255,255,0.7); font-size: 13px;">Now let's configure where you want to store mods on your PC. You'll be able to use FTP via the <strong style="color: #fff;">Send To Switch</strong> button in the Downloads section.</p>
+                    <p style="color: rgba(255,255,255,0.7); font-size: 13px;">Next, choose whether FightPlanner should sync mods from this PC or read them directly from your mounted Switch SD card.</p>
                 </div>
             `;
           if (nextBtn) {
@@ -950,6 +1159,268 @@ document.addEventListener('DOMContentLoaded', () => {
             nextBtn.style.opacity = '1';
             nextBtn.style.pointerEvents = 'auto';
           }
+        });
+      },
+    },
+    {
+      icon: 'bi-device-hdd',
+      title: 'Real Hardware Library',
+      description: 'Choose how FightPlanner should manage Switch mods',
+      content: `
+<div style="text-align: center;">
+    <h3 style="color: #fff; margin-bottom: 12px; font-size: 22px; font-weight: 700;">How do you want to manage your mods?</h3>
+    <p style="margin: 0 auto 24px; max-width: 560px; color: rgba(255,255,255,0.68); font-size: 14px; line-height: 1.6;">Choose whether FightPlanner keeps a local mod library on this PC and syncs it to your Switch, or reads the mounted Switch SD card directly.</p>
+
+    <div style="display: flex; gap: 16px; max-width: 680px; margin: 0 auto;">
+        <label class="hardware-library-option" data-value="local" style="flex: 1; position: relative; cursor: pointer;">
+            <input type="radio" name="hardware-library-mode" value="local" style="position: absolute; opacity: 0; pointer-events: none;">
+            <div class="hardware-library-card">
+                <i class="bi bi-pc-display" style="font-size: 30px; color: #7a9bff; margin-bottom: 12px;"></i>
+                <strong style="display: block; color: #fff; margin-bottom: 8px;">Keep mods on this PC and sync</strong>
+                <span style="display: block; color: rgba(255,255,255,0.62); font-size: 13px; line-height: 1.5;">Recommended if you want FightPlanner to keep your library locally, then send mods to your Switch when needed.</span>
+                <i class="bi bi-check-circle-fill check-icon" style="display: none; position: absolute; top: 12px; right: 12px; color: #4caf50; font-size: 20px;"></i>
+            </div>
+        </label>
+        <label class="hardware-library-option" data-value="direct" style="flex: 1; position: relative; cursor: pointer;">
+            <input type="radio" name="hardware-library-mode" value="direct" style="position: absolute; opacity: 0; pointer-events: none;">
+            <div class="hardware-library-card">
+                <i class="bi bi-sd-card" style="font-size: 30px; color: #7a9bff; margin-bottom: 12px;"></i>
+                <strong style="display: block; color: #fff; margin-bottom: 8px;">Read mods directly from the Switch</strong>
+                <span style="display: block; color: rgba(255,255,255,0.62); font-size: 13px; line-height: 1.5;">FightPlanner uses the mounted Switch SD card as the library. No separate PC sync step is needed.</span>
+                <i class="bi bi-check-circle-fill check-icon" style="display: none; position: absolute; top: 12px; right: 12px; color: #4caf50; font-size: 20px;"></i>
+            </div>
+        </label>
+    </div>
+
+    <div id="hardware-library-status" style="margin: 20px auto 0; max-width: 560px;"></div>
+</div>
+<style>
+.hardware-library-card {
+    min-height: 170px;
+    position: relative;
+    padding: 22px 18px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    transition: all 0.2s ease;
+}
+.hardware-library-option input:checked + .hardware-library-card {
+    border-color: #7a9bff;
+    background: linear-gradient(135deg, rgba(122, 155, 255, 0.18), rgba(90, 123, 240, 0.08));
+    box-shadow: 0 8px 28px rgba(122, 155, 255, 0.22);
+}
+.hardware-library-option input:checked + .hardware-library-card .check-icon {
+    display: block;
+}
+.hardware-library-option:hover .hardware-library-card {
+    border-color: rgba(122, 155, 255, 0.45);
+}
+</style>
+`,
+      onRender: async () => {
+        const nextBtn = document.querySelector<HTMLElement>('#next-btn');
+        const radios = document.querySelectorAll<HTMLInputElement>(
+          'input[name="hardware-library-mode"]',
+        );
+        const status = document.querySelector<HTMLElement>(
+          '#hardware-library-status',
+        );
+
+        const disableNext = () => {
+          if (nextBtn) {
+            nextBtn.style.opacity = '0.5';
+            nextBtn.style.pointerEvents = 'none';
+            nextBtn.style.cursor = 'not-allowed';
+          }
+        };
+
+        const enableNext = () => {
+          if (nextBtn) {
+            nextBtn.style.opacity = '1';
+            nextBtn.style.pointerEvents = 'auto';
+            nextBtn.style.cursor = 'pointer';
+          }
+        };
+
+        disableNext();
+
+        const isSwitchLibraryPath = (value: string | null) => {
+          if (!value) return false;
+          const normalized = value.replace(/\\/g, '/').toLowerCase();
+          return (
+            normalized.endsWith('/ultimate/mods') ||
+            normalized.endsWith(
+              '/ultimate/contents/01006a800016e000/romfs/skyline/plugins',
+            )
+          );
+        };
+
+        const showSelectSdCardPrompt = (currentSdDrive?: string | null) => {
+          disableNext();
+          if (!status) return;
+
+          status.innerHTML = `
+            <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 10px; padding: 14px; color: rgba(255,255,255,0.78); font-size: 13px; text-align: left;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <i class="bi bi-sd-card" style="color: #ffc107; font-size: 18px;"></i>
+                <strong style="color: #fff;">Select your Switch SD card to use direct mode.</strong>
+              </div>
+              <p style="margin: 0 0 12px 0; color: rgba(255,255,255,0.64); line-height: 1.5;">
+                FightPlanner needs the mounted SD card location before it can read mods directly from the Switch.
+              </p>
+              ${
+                currentSdDrive
+                  ? `<p style="margin: 0 0 12px 0; color: rgba(255,255,255,0.58); font-family: monospace; font-size: 12px;">Current: ${currentSdDrive}</p>`
+                  : ''
+              }
+              <button id="hardware-library-select-sd-btn" style="display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; background: rgba(122, 155, 255, 0.18); color: #dce4ff; border: 1px solid rgba(122, 155, 255, 0.32); border-radius: 8px; cursor: pointer; font-weight: 600;">
+                <i class="bi bi-folder2-open"></i>
+                ${currentSdDrive ? 'Change SD card' : 'Select SD card'}
+              </button>
+            </div>
+          `;
+
+          document
+            .querySelector<HTMLElement>('#hardware-library-select-sd-btn')
+            ?.addEventListener('click', async () => {
+              if (!window.tutorialAPI) return;
+
+              const result = await window.tutorialAPI.selectDrive();
+              if (result.success && !result.canceled && result.path) {
+                await window.tutorialAPI.store.set('tutorial.sdDrive', result.path);
+                await window.tutorialAPI.store.set('switchDriveLetter', result.path);
+                await configureMode('direct');
+              }
+            });
+        };
+
+        const configureMode = async (
+          mode: 'local' | 'direct',
+          options: { requireSdSelection?: boolean } = {},
+        ) => {
+          if (!window.tutorialAPI) return;
+
+          await window.tutorialAPI.store.set('tutorial.hardwareLibraryMode', mode);
+          await window.tutorialAPI.store.set('hardwareLibraryMode', mode);
+          await window.tutorialAPI.store.set('appRunMode', 'hardware');
+          await window.tutorialAPI.store.set('switchTransferMethod', 'drive');
+
+          const sdDrive =
+            ((await apiWrapper.storeGet('tutorial.sdDrive')) as string | null) ||
+            ((await apiWrapper.storeGet('switchDriveLetter')) as string | null);
+
+          if (sdDrive) {
+            await window.tutorialAPI.store.set('switchDriveLetter', sdDrive);
+          }
+
+          if (mode === 'direct') {
+            if (options.requireSdSelection || !sdDrive) {
+              showSelectSdCardPrompt(sdDrive);
+              return;
+            }
+
+            const currentModsPath = (await apiWrapper.storeGet('modsPath')) as
+              | string
+              | null;
+            const currentPluginsPath = (await apiWrapper.storeGet(
+              'pluginsPath',
+            )) as string | null;
+
+            if (currentModsPath && !isSwitchLibraryPath(currentModsPath)) {
+              await window.tutorialAPI.store.set('localModsPath', currentModsPath);
+            }
+            if (currentPluginsPath && !isSwitchLibraryPath(currentPluginsPath)) {
+              await window.tutorialAPI.store.set(
+                'localPluginsPath',
+                currentPluginsPath,
+              );
+            }
+
+            const modsPathResult = await window.tutorialAPI.joinPath(
+              sdDrive,
+              'ultimate',
+              'mods',
+            );
+            if (!modsPathResult.success) {
+              throw new Error('Failed to construct Switch mods path');
+            }
+            await window.tutorialAPI.createDirectory(modsPathResult.path);
+            await window.tutorialAPI.store.set('modsPath', modsPathResult.path);
+
+            const pluginsPathResult = await window.tutorialAPI.joinPath(
+              sdDrive,
+              'ultimate',
+              'contents',
+              '01006A800016E000',
+              'romfs',
+              'skyline',
+              'plugins',
+            );
+            if (pluginsPathResult.success) {
+              await window.tutorialAPI.createDirectory(pluginsPathResult.path);
+              await window.tutorialAPI.store.set(
+                'pluginsPath',
+                pluginsPathResult.path,
+              );
+            }
+
+            if (status) {
+              status.innerHTML = `
+                <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 10px; padding: 12px; color: rgba(255,255,255,0.78); font-size: 13px;">
+                  FightPlanner will read mods directly from your mounted Switch SD card.
+                </div>
+              `;
+            }
+          } else {
+            const localModsPath = (await apiWrapper.storeGet('localModsPath')) as
+              | string
+              | null;
+            const localPluginsPath = (await apiWrapper.storeGet(
+              'localPluginsPath',
+            )) as string | null;
+
+            if (localModsPath) {
+              await window.tutorialAPI.store.set('modsPath', localModsPath);
+            }
+            if (localPluginsPath) {
+              await window.tutorialAPI.store.set('pluginsPath', localPluginsPath);
+            }
+
+            if (status) {
+              status.innerHTML = `
+                <div style="background: rgba(122, 155, 255, 0.1); border: 1px solid rgba(122, 155, 255, 0.25); border-radius: 10px; padding: 12px; color: rgba(255,255,255,0.78); font-size: 13px;">
+                  Next, choose the local folder where FightPlanner should keep your mod library.
+                </div>
+              `;
+            }
+          }
+
+          enableNext();
+          await renderProgressDots();
+        };
+
+        const savedMode =
+          ((await apiWrapper.storeGet('tutorial.hardwareLibraryMode')) as
+            | string
+            | null) ||
+          ((await apiWrapper.storeGet('hardwareLibraryMode')) as string | null);
+        if (savedMode === 'local' || savedMode === 'direct') {
+          const radio = document.querySelector<HTMLInputElement>(
+            `input[name="hardware-library-mode"][value="${savedMode}"]`,
+          );
+          if (radio) {
+            radio.checked = true;
+            await configureMode(savedMode);
+          }
+        }
+
+        radios.forEach((radio) => {
+          radio.addEventListener('change', async () => {
+            if (radio.checked) {
+              const mode = radio.value === 'direct' ? 'direct' : 'local';
+              await configureMode(mode, { requireSdSelection: mode === 'direct' });
+            }
+          });
         });
       },
     },
@@ -2277,8 +2748,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const title = step.title;
 
     const hardwareType = await apiWrapper.storeGet('tutorial.hardwareType');
+    const switchModded = await apiWrapper.storeGet('tutorial.switchModded');
     const arcropolisInstalled = await apiWrapper.storeGet('tutorial.arcropolisInstalled');
     const emulatorType = await apiWrapper.storeGet('tutorial.emulatorType');
+    const hardwareLibraryMode =
+      (await apiWrapper.storeGet('tutorial.hardwareLibraryMode')) ||
+      (await apiWrapper.storeGet('hardwareLibraryMode'));
+
+    if (title === 'Switch Modded Check') {
+      return hardwareType === 'hardware';
+    }
+
+    if (title === 'ARCropolis Status') {
+      return hardwareType === 'emulator' || (hardwareType === 'hardware' && switchModded === true);
+    }
+
+    if (title === 'Real Hardware Library') {
+      return (
+        hardwareType === 'hardware' &&
+        switchModded === true &&
+        typeof arcropolisInstalled === 'boolean'
+      );
+    }
 
     const switchOnlyTitles = [
       'Switch SD Card Setup',
@@ -2286,7 +2777,11 @@ document.addEventListener('DOMContentLoaded', () => {
       'Verify ARCropolis (Switch)',
     ];
     if (switchOnlyTitles.includes(title)) {
-      return hardwareType === 'hardware' && arcropolisInstalled === false;
+      return hardwareType === 'hardware' && switchModded === true && arcropolisInstalled === false;
+    }
+
+    if (title === 'Configure Your Paths') {
+      return !(hardwareType === 'hardware' && hardwareLibraryMode === 'direct');
     }
 
     if (title === 'Emulator Selection') {
@@ -2506,25 +3001,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 9000);
   }
 
-  // Store previous visible steps for animation
   let previousVisibleSteps: number[] = [];
-  let isFirstRender = true;
-  let previousActiveStepIndex = -1;
+  let progressDotsRenderId = 0;
 
-  async function renderProgressDots() {
-    const container = document.querySelector<HTMLElement>('#progress-dots');
-
-    // Calculate visible steps based on user answers - only show relevant steps
+  async function getVisibleTutorialSteps(): Promise<number[]> {
     let visibleSteps: number[] = [];
+
+    const addStepByTitle = (title: string) => {
+      const stepIndex = steps.findIndex((s) => s.title === title);
+      if (stepIndex !== -1 && !visibleSteps.includes(stepIndex)) {
+        visibleSteps.push(stepIndex);
+      }
+    };
 
     // Always show welcome
     visibleSteps.push(0);
 
     // Always show hardware type question
-    visibleSteps.push(1); // Hardware Type
-
-    // Always show ARCropolis Status (it's the next step after Hardware Type)
-    visibleSteps.push(2); // ARCropolis Status
+    addStepByTitle('Hardware Type');
 
     if (window.tutorialAPI) {
       try {
@@ -2534,44 +3028,75 @@ document.addEventListener('DOMContentLoaded', () => {
         const arcropolisInstalled = await apiWrapper.storeGet(
           'tutorial.arcropolisInstalled',
         );
+        const switchModded = await apiWrapper.storeGet(
+          'tutorial.switchModded',
+        );
+        const hardwareLibraryMode =
+          (await apiWrapper.storeGet('tutorial.hardwareLibraryMode')) ||
+          (await apiWrapper.storeGet('hardwareLibraryMode'));
+
+        let canShowConfigurePaths = false;
+
+        if (hardwareType === 'hardware') {
+          addStepByTitle('Switch Modded Check');
+        }
+
+        // Show ARCropolis Status once the selected setup can continue.
+        if (
+          hardwareType === 'emulator' ||
+          (hardwareType === 'hardware' && switchModded === true)
+        ) {
+          addStepByTitle('ARCropolis Status');
+        }
 
         // Only show installation steps if ARCropolis is not installed
         if (hardwareType && arcropolisInstalled === false) {
-          if (hardwareType === 'hardware') {
+          if (hardwareType === 'hardware' && switchModded === true) {
             // Switch installation flow
-            visibleSteps.push(3); // SD Card Setup
-            visibleSteps.push(4); // Installing Skyline & ARCropolis (Switch)
-            visibleSteps.push(5); // Verify ARCropolis (Switch)
+            addStepByTitle('Switch SD Card Setup');
+            addStepByTitle('Installing Skyline & ARCropolis (Switch)');
+            addStepByTitle('Verify ARCropolis (Switch)');
+            addStepByTitle('Real Hardware Library');
+            canShowConfigurePaths = true;
           } else if (hardwareType === 'emulator') {
             // Emulator flow - only show emulator selection first
-            visibleSteps.push(6); // Emulator Selection
+            addStepByTitle('Emulator Selection');
 
             const emulatorTypeResponse = await apiWrapper.storeGet(
               'tutorial.emulatorType',
             );
 
             if (emulatorTypeResponse === 'yuzu') {
-              visibleSteps.push(7); // Yuzu Setup
-              visibleSteps.push(8); // Installing Skyline & ARCropolis (Yuzu)
-              visibleSteps.push(9); // Verify ARCropolis (Yuzu)
+              addStepByTitle('Yuzu Setup');
+              addStepByTitle('Installing Skyline & ARCropolis (Yuzu)');
+              addStepByTitle('Verify ARCropolis (Yuzu)');
+              canShowConfigurePaths = true;
             } else if (emulatorTypeResponse === 'ryujinx') {
-              visibleSteps.push(10); // Ryujinx Setup
-              visibleSteps.push(11); // Installing Skyline & ARCropolis (Ryujinx)
-              visibleSteps.push(12); // Verify ARCropolis (Ryujinx)
+              addStepByTitle('Ryujinx Setup');
+              addStepByTitle('Installing Skyline & ARCropolis (Ryujinx)');
+              addStepByTitle('Verify ARCropolis (Ryujinx)');
+              canShowConfigurePaths = true;
             }
+          }
+        } else if (arcropolisInstalled === true) {
+          canShowConfigurePaths =
+            hardwareType === 'emulator' ||
+            (hardwareType === 'hardware' && switchModded === true);
+          if (hardwareType === 'hardware' && switchModded === true) {
+            addStepByTitle('Real Hardware Library');
           }
         }
 
-        // Always show Configure Paths and remaining steps (only if we've progressed past initial questions)
+        // Show Configure Paths and remaining steps only after required setup questions are complete.
         const configurePathsIndex = steps.findIndex(
           (s) => s.title === 'Configure Your Paths',
         );
-        if (configurePathsIndex !== -1 && visibleSteps.length > 2) {
-          // Only add Configure Paths if we're past the initial questions
-          if (!visibleSteps.includes(configurePathsIndex)) {
+        if (configurePathsIndex !== -1 && canShowConfigurePaths) {
+          const skipConfigurePaths =
+            hardwareType === 'hardware' && hardwareLibraryMode === 'direct';
+          if (!skipConfigurePaths && !visibleSteps.includes(configurePathsIndex)) {
             visibleSteps.push(configurePathsIndex);
           }
-          // Add remaining steps
           for (let i = configurePathsIndex + 1; i < steps.length; i++) {
             if (!visibleSteps.includes(i)) {
               visibleSteps.push(i);
@@ -2581,302 +3106,193 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (e) {
         console.error('Error calculating visible steps:', e);
         // Fallback: show minimal steps
-        visibleSteps = [0, 1, 2];
+        visibleSteps = [0];
+        addStepByTitle('Hardware Type');
       }
     } else {
       // Fallback: show minimal steps
-      visibleSteps = [0, 1, 2];
+      visibleSteps = [0];
+      addStepByTitle('Hardware Type');
     }
 
-    // Find current active step index in visible steps
-    const currentActiveDisplayIndex = visibleSteps.indexOf(currentStep);
-    const activeStepChanged =
-      previousActiveStepIndex !== currentActiveDisplayIndex &&
-      previousActiveStepIndex !== -1;
+    return visibleSteps;
+  }
 
-    // Check if new steps were added (skip on first render)
-    const newStepsAdded =
-      !isFirstRender &&
-      previousVisibleSteps.length > 0 &&
-      visibleSteps.length > previousVisibleSteps.length;
-    const newStepIndices: number[] = [];
-    const removedStepIndices: number[] = [];
-
-    if (!isFirstRender && previousVisibleSteps.length > 0) {
-      // Find which steps are new
-      visibleSteps.forEach((stepIndex, displayIndex) => {
-        if (!previousVisibleSteps.includes(stepIndex)) {
-          newStepIndices.push(displayIndex);
-        }
-      });
-
-      // Find which steps were removed (dots that should disappear)
-      // We need to find the display index in the previous render
-      previousVisibleSteps.forEach((prevStepIndex, prevDisplayIndex) => {
-        if (!visibleSteps.includes(prevStepIndex)) {
-          removedStepIndices.push(prevDisplayIndex);
-        }
-      });
-    }
-
-    // Store current state BEFORE rendering
-    const wasFirstRender = isFirstRender;
-    if (isFirstRender) {
-      isFirstRender = false;
-    }
-
-    // Animate out removed dots before updating
-    if (removedStepIndices.length > 0 && container!.children.length > 0) {
-      removedStepIndices.forEach((prevDisplayIndex) => {
-        const dot = container!.children[prevDisplayIndex] as HTMLElement;
-        if (dot) {
-          dot.classList.add('removing-dot');
-          dot.style.animation =
-            'dotRemove 0.5s cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards';
-        }
-      });
-
-      // Wait for animation to complete before updating
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
-
-    previousVisibleSteps = [...visibleSteps];
-
-    // Ensure animation styles are always available (add once, reuse)
+  function ensureProgressDotStyles() {
     if (!document.querySelector<HTMLElement>('#dot-animation-style')) {
       const style = document.createElement('style');
       style.id = 'dot-animation-style';
       style.textContent = `
-      @keyframes dotAppear {
-        0% {
-          opacity: 0;
-          transform: scale(0.8) translateY(-10px);
+        .tutorial-progress {
+          gap: 8px;
+          min-height: 12px;
+        }
+
+        .tutorial-progress-dot {
+          flex: 0 0 auto;
           width: 8px;
-        }
-        100% {
-          opacity: 1;
-          transform: scale(1) translateY(0);
-          width: 8px;
-        }
-      }
-      @keyframes dotRemove {
-        0% {
-          opacity: 1;
-          transform: scale(1) translateY(0);
-          width: 8px;
-          margin: 0 4px;
-        }
-        30% {
-          opacity: 0.5;
-          transform: scale(0.8) translateY(-8px);
-        }
-        100% {
-          opacity: 0;
-          transform: scale(0) translateY(-15px);
-          width: 0;
+          height: 8px;
           margin: 0;
-          padding: 0;
+          opacity: 0.42;
+          transform: translate3d(0, 0, 0) scale(1);
+          transition:
+            width 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+            opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+            background-color 0.28s ease,
+            box-shadow 0.28s ease,
+            transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: width, opacity, transform;
         }
-      }
-      @keyframes dotActivate {
-        0% {
-          width: 8px;
+
+        .tutorial-progress-dot.active {
+          width: 34px;
+          opacity: 1;
+          transform: translate3d(0, 0, 0) scale(1);
+          box-shadow: 0 0 0 3px rgba(122, 155, 255, 0.13);
         }
-        100% {
-          width: 36px;
+
+        .tutorial-progress-dot.completed {
+          opacity: 0.72;
         }
-      }
-      @keyframes dotDeactivate {
-        0% {
-          width: 36px;
+
+        .tutorial-progress-dot.dot-enter {
+          opacity: 0;
+          transform: translate3d(0, -5px, 0) scale(0.72);
         }
-        100% {
-          width: 8px;
+
+        .tutorial-progress-dot.dot-exit {
+          width: 0 !important;
+          opacity: 0;
+          transform: translate3d(0, -4px, 0) scale(0.68);
+          pointer-events: none;
         }
-      }
-      @keyframes dotComplete {
-        0% {
-          background: rgba(122, 155, 255, 0.3);
+
+        .tutorial-progress-dot:hover {
+          opacity: 1;
+          transform: translate3d(0, -1px, 0) scale(1.08);
         }
-        100% {
-          background: rgba(122, 155, 255, 0.6);
+
+        body.no-animations .tutorial-progress-dot,
+        body.reduced-animations .tutorial-progress-dot {
+          transition-duration: 0.01ms !important;
         }
-      }
-      .tutorial-progress-dot.new-dot {
-        background: #7a9bff !important;
-        box-shadow: 0 0 20px rgba(122, 155, 255, 0.6), 0 0 10px rgba(122, 155, 255, 0.3) !important;
-        animation: dotAppear 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
-        border-radius: 4px !important;
-      }
-      .tutorial-progress-dot.new-dot.active {
-        width: 36px !important;
-        animation: dotAppear 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
-      }
-      .tutorial-progress-dot.removing-dot {
-        animation: dotRemove 0.5s cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards !important;
-        pointer-events: none;
-      }
-      .tutorial-progress-dot.activating {
-        animation: dotActivate 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
-      }
-      .tutorial-progress-dot.deactivating {
-        animation: dotDeactivate 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
-      }
-      .tutorial-progress-dot.completing {
-        animation: dotComplete 0.3s ease-out forwards !important;
-      }
-    `;
+      `;
       document.head.appendChild(style);
     }
+  }
 
-    // Render dots with animation for new ones
-    container!.innerHTML = visibleSteps
-      .map((stepIndex, displayIndex) => {
-        const isNew = newStepsAdded && newStepIndices.includes(displayIndex);
-        const isActive = stepIndex === currentStep;
-        const isCompleted = currentActiveDisplayIndex > displayIndex;
-        return `
-<div class="tutorial-progress-dot ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${isNew ? 'new-dot' : ''}" 
-      data-step="${stepIndex}" 
-      data-display-index="${displayIndex}"
-      ${isNew ? 'style="opacity: 0;"' : ''}>
-</div>
-`;
-      })
-      .join('');
+  async function renderProgressDots() {
+    const renderId = ++progressDotsRenderId;
+    const container = document.querySelector<HTMLElement>('#progress-dots');
+    if (!container) return;
 
-    // Handle active dot transition animation after DOM is updated
-    if (activeStepChanged && !wasFirstRender && container!.children.length > 0) {
-      // Animate previous active dot deactivating (if it still exists in visible steps)
-      if (
-        previousActiveStepIndex >= 0 &&
-        previousActiveStepIndex < container!.children.length
-      ) {
-        const previousActiveDot = container!.children[previousActiveStepIndex];
-        if (previousActiveDot && previousActiveDot.classList.contains('active')) {
-          previousActiveDot.classList.remove('active');
-          previousActiveDot.classList.add('deactivating');
-          setTimeout(() => {
-            previousActiveDot?.classList.remove('deactivating');
-          }, 300);
-        }
-      }
+    const visibleSteps = await getVisibleTutorialSteps();
+    if (renderId !== progressDotsRenderId) return;
 
-      // Animate new active dot activating
-      if (
-        currentActiveDisplayIndex >= 0 &&
-        currentActiveDisplayIndex < container!.children.length
-      ) {
-        const newActiveDot = container!.children[
-          currentActiveDisplayIndex
-        ] as HTMLElement;
+    ensureProgressDotStyles();
 
-        if (newActiveDot) {
-          // Remove active class temporarily to trigger animation
-          newActiveDot.classList.remove('active');
-          // Force reflow
-          newActiveDot.offsetHeight;
-          // Add classes for animation
-          newActiveDot.classList.add('activating', 'active');
-          setTimeout(() => {
-            newActiveDot.classList.remove('activating');
-          }, 400);
-        }
-      }
+    const currentActiveDisplayIndex = visibleSteps.indexOf(currentStep);
+    const nextStepSet = new Set(visibleSteps);
+    const existingDots = new Map<number, HTMLElement>();
 
-      // Animate completed dots
-      for (
-        let i = 0;
-        i < currentActiveDisplayIndex && i < container!.children.length;
-        i++
-      ) {
-        const completedDot = container!.children[i];
-        if (completedDot && completedDot.classList.contains('completed')) {
-          completedDot.classList.add('completing');
-          setTimeout(() => {
-            completedDot.classList.remove('completing');
-          }, 300);
-        }
-      }
-    } else if (
-      !wasFirstRender &&
-      currentActiveDisplayIndex >= 0 &&
-      currentActiveDisplayIndex < container!.children.length
-    ) {
-      // Even if step didn't change, ensure active dot has animation on first appearance
-      const activeDot = container!.children[currentActiveDisplayIndex];
-      if (
-        activeDot &&
-        activeDot.classList.contains('active') &&
-        !activeDot.classList.contains('new-dot')
-      ) {
-        activeDot.classList.add('activating');
-        setTimeout(() => {
-          activeDot.classList.remove('activating');
-        }, 400);
-      }
-    }
-
-    // Trigger animation for new dots after a tiny delay to ensure DOM is ready
-    if (newStepsAdded && newStepIndices.length > 0) {
-      setTimeout(() => {
-        newStepIndices.forEach((displayIndex) => {
-          const dot = container!.children[displayIndex] as HTMLElement;
-          if (dot) {
-            dot.classList.add('new-dot');
-            // Force reflow to trigger animation
-            dot.offsetHeight;
-          }
-        });
-      }, 10);
-    }
-
-    // Remove old event listeners by cloning and replacing
-    const oldDots = container!.querySelectorAll<HTMLElement>(
-      '.tutorial-progress-dot',
-    );
-    oldDots.forEach((dot) => {
-      const newDot = dot.cloneNode(true);
-      dot.parentNode!.replaceChild(newDot, dot);
-    });
-
-    // Add fresh event listeners
-    container!
+    container
       .querySelectorAll<HTMLElement>('.tutorial-progress-dot')
       .forEach((dot) => {
-        dot.addEventListener('click', async (e) => {
-          const target = e.currentTarget as HTMLElement;
-          const step = parseInt(target.dataset.step as string);
+        const stepIndex = Number(dot.dataset.step);
+        if (!Number.isNaN(stepIndex)) {
+          existingDots.set(stepIndex, dot);
+        }
+      });
 
-          if (!isNaN(step) && step >= 0 && step < steps.length) {
+    existingDots.forEach((dot, stepIndex) => {
+      if (!nextStepSet.has(stepIndex)) {
+        dot.classList.add('dot-exit');
+        window.setTimeout(() => {
+          if (dot.parentElement === container) {
+            dot.remove();
+          }
+        }, 260);
+      }
+    });
+
+    visibleSteps.forEach((stepIndex, displayIndex) => {
+      let dot = existingDots.get(stepIndex);
+      const isNew = !dot || dot.classList.contains('dot-exit');
+
+      if (!dot || dot.classList.contains('dot-exit')) {
+        dot = document.createElement('button');
+        dot.setAttribute('type', 'button');
+        dot.className = 'tutorial-progress-dot dot-enter';
+        dot.dataset.step = String(stepIndex);
+        dot.setAttribute(
+          'aria-label',
+          `Go to tutorial step ${displayIndex + 1}`,
+        );
+        dot.addEventListener('click', async () => {
+          const step = Number(dot!.dataset.step);
+          if (!Number.isNaN(step) && step >= 0 && step < steps.length) {
             await goToStep(step);
           }
         });
-      });
+      }
 
-    // Remove new-dot class after animation completes
-    if (newStepsAdded && newStepIndices.length > 0) {
-      setTimeout(() => {
-        document
-          .querySelectorAll<HTMLElement>('.tutorial-progress-dot.new-dot')
-          .forEach((dot) => {
-            dot.classList.remove('new-dot');
-            // Keep the visual state but remove animation class
-          });
-      }, 800);
-    }
+      dot.dataset.displayIndex = String(displayIndex);
+      dot.setAttribute(
+        'aria-current',
+        stepIndex === currentStep ? 'step' : 'false',
+      );
+      dot.classList.toggle('active', stepIndex === currentStep);
+      dot.classList.toggle(
+        'completed',
+        currentActiveDisplayIndex > displayIndex,
+      );
 
-    // Update previous active step index
-    previousActiveStepIndex = currentActiveDisplayIndex;
+      const currentNodeAtPosition = container.children[displayIndex];
+      if (currentNodeAtPosition !== dot) {
+        container.insertBefore(dot, currentNodeAtPosition || null);
+      }
+
+      if (isNew) {
+        requestAnimationFrame(() => {
+          dot!.classList.remove('dot-enter');
+        });
+      }
+    });
+
+    previousVisibleSteps = [...visibleSteps];
   }
 
-  // Utility function to handle Discord links
-  function setupDiscordLinks(container: HTMLElement) {
-    const discordLinks = container.querySelectorAll<HTMLAnchorElement>(
-      'a[href*="discord.gg"]',
-    );
+  function updateRenderedProgressState(index: number) {
+    const visibleSteps =
+      previousVisibleSteps.length > 0
+        ? previousVisibleSteps
+        : Array.from(
+            document.querySelectorAll<HTMLElement>('.tutorial-progress-dot'),
+          ).map((dot) => Number(dot.dataset.step));
+    const activeDisplayIndex = visibleSteps.indexOf(index);
 
-    discordLinks.forEach((link) => {
+    document
+      .querySelectorAll<HTMLElement>('.tutorial-progress-dot')
+      .forEach((dot) => {
+        const dotStepIndex = Number(dot.dataset.step);
+        const displayIndex = visibleSteps.indexOf(dotStepIndex);
+        dot.classList.toggle('active', dotStepIndex === index);
+        dot.classList.toggle(
+          'completed',
+          activeDisplayIndex !== -1 && displayIndex < activeDisplayIndex,
+        );
+        dot.setAttribute(
+          'aria-current',
+          dotStepIndex === index ? 'step' : 'false',
+        );
+      });
+  }
+
+  // Utility function to open tutorial links through Electron.
+  function setupExternalLinks(container: HTMLElement, selector = 'a[target="_blank"]') {
+    const externalLinks = container.querySelectorAll<HTMLAnchorElement>(selector);
+
+    externalLinks.forEach((link) => {
       // Remove existing listeners to avoid duplicates
       const newLink = link.cloneNode(true) as HTMLElement;
       link.parentNode!.replaceChild(newLink, link);
@@ -2889,11 +3305,15 @@ document.addEventListener('DOMContentLoaded', () => {
           try {
             await window.tutorialAPI.openUrl(url);
           } catch (error) {
-            console.error('Failed to open Discord link:', error);
+            console.error('Failed to open external link:', error);
           }
         }
       });
     });
+  }
+
+  function setupDiscordLinks(container: HTMLElement) {
+    setupExternalLinks(container, 'a[href*="discord.gg"]');
   }
 
   function renderStep(index) {
@@ -2967,29 +3387,14 @@ ${step.content}
         contentDiv!.style.filter = 'blur(0px)';
       });
 
-      setupDiscordLinks(contentDiv!);
+      setupExternalLinks(contentDiv!);
 
       if (step.onRender) {
         step.onRender();
       }
     }, 350);
 
-    document
-      .querySelectorAll<HTMLElement>('.tutorial-progress-dot')
-      .forEach((dot) => {
-        const dotStepIndex = parseInt(dot.dataset.step as string);
-        const displayIndex = parseInt(dot.dataset.displayIndex as string) || 0;
-
-        if (dotStepIndex === index) {
-          dot.classList.add('active');
-          dot.classList.remove('completed');
-        } else if (dotStepIndex < index) {
-          dot.classList.add('completed');
-          dot.classList.remove('active');
-        } else {
-          dot.classList.remove('active', 'completed');
-        }
-      });
+    updateRenderedProgressState(index);
 
     prevBtn!.style.display = index > 0 ? 'flex' : 'none';
 

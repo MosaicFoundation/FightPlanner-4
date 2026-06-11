@@ -7,22 +7,24 @@
 }
 
 .settings-sidebar {
-  width: 200px;
-  background: linear-gradient(135deg,
-      var(--bg-primary) 0%,
-      var(--bg-tertiary) 100%);
+  width: 220px;
+  background: linear-gradient(
+    135deg,
+    var(--bg-primary) 0%,
+    var(--bg-tertiary) 100%
+  );
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  padding: 24px 0;
-  gap: 8px;
+  padding: 18px 0;
+  gap: 4px;
   overflow-y: auto;
 }
 
 .settings-tab-btn {
   background: transparent;
   border: none;
-  padding: 14px 24px;
+  padding: 12px 22px;
   color: var(--text-muted);
   font-size: 15px;
   font-weight: 500;
@@ -60,9 +62,11 @@
   transform: translateY(-50%);
   width: 3px;
   height: 60%;
-  background: linear-gradient(180deg,
-      var(--accent-color) 0%,
-      var(--accent-hover) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--accent-color) 0%,
+    var(--accent-hover) 100%
+  );
   border-radius: 0 3px 3px 0;
 }
 
@@ -175,9 +179,11 @@
 .settings-section {
   margin-bottom: 32px;
   padding: 24px;
-  background: linear-gradient(135deg,
-      var(--border-color) 0%,
-      var(--bg-tertiary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--border-color) 0%,
+    var(--bg-tertiary) 100%
+  );
   border: 1px solid var(--bg-transparent-08);
   border-radius: 16px;
 }
@@ -241,6 +247,13 @@
 
 .settings-btn:active {
   transform: translateY(0);
+}
+
+.switch-drive-guide-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
 }
 
 .settings-hint {
@@ -529,9 +542,11 @@ body.no-animations .settings-tab-btn.active::before {
 
 .context-menu {
   position: fixed;
-  background: linear-gradient(135deg,
-      var(--border-color) 0%,
-      var(--bg-tertiary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--border-color) 0%,
+    var(--bg-tertiary) 100%
+  );
   border: 1px solid var(--bg-transparent-08);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -600,9 +615,11 @@ body.no-animations .settings-tab-btn.active::before {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: linear-gradient(135deg,
-      var(--border-color) 0%,
-      var(--bg-tertiary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--border-color) 0%,
+    var(--bg-tertiary) 100%
+  );
   border: 1px solid var(--border-hover);
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -646,9 +663,11 @@ body.no-animations .settings-tab-btn.active::before {
 }
 
 .conflict-modal-header {
-  background: linear-gradient(135deg,
-      var(--accent-color) 0%,
-      var(--accent-hover) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--accent-color) 0%,
+    var(--accent-hover) 100%
+  );
   border-bottom: none;
   padding: 20px 24px;
   border-radius: 16px 16px 0 0;
@@ -825,9 +844,11 @@ body.no-animations .settings-tab-btn.active::before {
   position: sticky;
   top: 0;
   z-index: 5;
-  background: linear-gradient(135deg,
-      var(--border-color) 0%,
-      var(--bg-tertiary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--border-color) 0%,
+    var(--bg-tertiary) 100%
+  );
   padding: 12px 12px 12px 12px;
   margin: 0;
   color: var(--text-secondary);
@@ -855,6 +876,245 @@ body.no-animations .settings-tab-btn.active::before {
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid transparent;
+}
+
+.modal-btn:disabled,
+.modal-btn.disabled,
+.modal-btn:disabled:hover,
+.modal-btn.disabled:hover {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+  box-shadow: none;
+}
+
+#batch-testing-modal.modal {
+  display: flex !important;
+  flex-direction: column;
+  width: min(1180px, calc(100vw - 48px));
+  min-width: min(600px, calc(100vw - 48px));
+  max-width: calc(100vw - 48px);
+  height: min(860px, calc(100vh - 48px));
+  max-height: calc(100vh - 48px);
+}
+
+#batch-testing-modal .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+#batch-testing-modal .modal-footer {
+  flex-wrap: wrap;
+  padding: 16px 24px;
+}
+
+#batch-testing-modal .batch-testing-scroll-panel {
+  max-height: min(260px, 34vh);
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+#batch-testing-modal .batch-testing-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+#batch-testing-modal .batch-testing-item-trigger {
+  max-width: 100%;
+}
+
+.switch-drive-guide-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.switch-drive-guide-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--border-hover);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.switch-drive-guide-option:hover {
+  border-color: var(--accent-color);
+  background: var(--bg-hover);
+}
+
+.switch-drive-guide-option i {
+  width: 22px;
+  color: var(--accent-color);
+  font-size: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.switch-drive-guide-option span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.switch-drive-guide-option strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.switch-drive-guide-option small {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.switch-drive-guide-option-disabled {
+  opacity: 0.65;
+}
+
+.switch-drive-hekate-guide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.switch-drive-guide-lottie {
+  width: 100%;
+  height: min(420px, 52vh);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.switch-drive-guide-status {
+  min-height: 22px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-align: center;
+}
+
+.switch-usb-device-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.switch-usb-device-picker-hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.switch-usb-device-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.switch-usb-device-option {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid var(--border-hover);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.switch-usb-device-option:hover,
+.switch-usb-device-option.active {
+  border-color: var(--accent-color);
+  background: var(--bg-hover);
+}
+
+.switch-usb-device-option > i:first-child {
+  color: var(--accent-color);
+  font-size: 20px;
+  text-align: center;
+}
+
+.switch-usb-device-option span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.switch-usb-device-option strong,
+.switch-usb-device-option small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.switch-usb-device-option strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.switch-usb-device-option small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.switch-usb-device-check {
+  color: var(--accent-color);
+  opacity: 0;
+}
+
+.switch-usb-device-option.active .switch-usb-device-check {
+  opacity: 1;
+}
+
+.switch-usb-device-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 86px;
+  padding: 16px;
+  border: 1px dashed var(--border-hover);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-align: center;
+}
+
+.switch-usb-device-state .bi-arrow-clockwise {
+  animation: spin 1s linear infinite;
+}
+
+.switch-usb-device-state-warning {
+  color: #ffc107;
 }
 
 .modal-btn-cancel {
@@ -1115,7 +1375,6 @@ body.no-animations .mod-status-indicator.mod-active {
 }
 
 @keyframes highlightPulse {
-
   0%,
   100% {
     background: transparent;
@@ -1127,7 +1386,6 @@ body.no-animations .mod-status-indicator.mod-active {
 }
 
 @keyframes highlightBorder {
-
   0%,
   100% {
     opacity: 0.3;
