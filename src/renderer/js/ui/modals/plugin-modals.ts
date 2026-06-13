@@ -453,6 +453,25 @@ export {};
             return;
           }
 
+          if (specialInstaller === 'one-slot-effects' && plugin) {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="bi ${restoreIcon}"></i> <span ${restoreTextKey ? `data-i18n="${restoreTextKey}"` : ''}>${restoreText}</span>`;
+            if (window.i18n) {
+              window.i18n.updateDOM();
+            }
+            const marketplaceModal = btn.closest<HTMLElement>(
+              '#plugin-marketplace-modal',
+            );
+            if (marketplaceModal) {
+              marketplaceModal.style.display = 'none';
+            }
+            await this.openOneSlotEffectsInstallModal(
+              plugin,
+              marketplaceModal,
+            );
+            return;
+          }
+
           const downloadUrl =
             await window.pluginMarketplace.getLatestReleaseDownloadUrl(
               pluginRepo,
@@ -580,6 +599,7 @@ export {};
 
     let files: any[] = [];
     let activeOptions: string[] = [];
+    let installedCskMods = new Set<string>();
 
     const escape = (value: string) => this.escapeHtml(String(value || ''));
     const setBusy = (busy: boolean, text = 'Install') => {
@@ -593,6 +613,37 @@ export {};
       files.find((file) => String(file._idRow) === versionSelect.value) ||
       files[0];
 
+    const getInstalledCskMods = async (options: string[]) => {
+      if (!isInstalled || !window.settingsManager?.getModsPath) {
+        return new Set<string>();
+      }
+
+      const modsPath = window.settingsManager.getModsPath();
+      if (!modsPath || !window.electronAPI?.readModsFolder) {
+        return new Set<string>();
+      }
+
+      try {
+        const result = await window.electronAPI.readModsFolder(modsPath);
+        if (!result.success) {
+          return new Set<string>();
+        }
+
+        const optionNames = new Set(options);
+        const installedNames = [
+          ...(result.activeMods || []),
+          ...(result.disabledMods || []),
+        ]
+          .map((mod) => mod?.name || mod?.folderName || '')
+          .filter((name) => optionNames.has(name));
+
+        return new Set(installedNames);
+      } catch (error) {
+        console.warn('[CSK Collection] Failed to detect installed toggles:', error);
+        return new Set<string>();
+      }
+    };
+
     const renderOptions = (options: string[]) => {
       activeOptions = options;
       if (!options.length) {
@@ -605,7 +656,7 @@ export {};
         .map(
           (name) => `
             <label class="csk-option-item">
-              <input type="checkbox" value="${escape(name)}" checked>
+              <input type="checkbox" value="${escape(name)}" ${isInstalled ? (installedCskMods.has(name) ? 'checked' : '') : 'checked'}>
               <span>${escape(name)}</span>
             </label>
           `,
@@ -626,7 +677,9 @@ export {};
           await window.pluginMarketplace.inspectCskCollectionArchive(
             selectedFile._sDownloadUrl,
           );
-        renderOptions(inspection.availableMods || []);
+        const availableMods = inspection.availableMods || [];
+        installedCskMods = await getInstalledCskMods(availableMods);
+        renderOptions(availableMods);
       } catch (error) {
         console.error('[CSK Collection] Failed to inspect archive:', error);
         optionsList.innerHTML = `<div class="marketplace-empty">${escape(error.message || 'Failed to inspect archive')}</div>`;
@@ -712,6 +765,140 @@ export {};
           `Failed to install CSK Collection: ${error.message}`,
         );
         setBusy(false, isInstalled ? 'Apply' : 'Install');
+      }
+    });
+  };
+
+  M.prototype.openOneSlotEffectsInstallModal = async function (
+    plugin: any,
+    marketplaceModal?: HTMLElement | null,
+  ) {
+    document
+      .querySelectorAll<HTMLElement>('#one-slot-effects-install-modal')
+      .forEach((existingModal) => existingModal.remove());
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'one-slot-effects-install-modal';
+    modal.style.maxWidth = '520px';
+
+    const restoreMarketplace = () => {
+      if (marketplaceModal && document.body.contains(marketplaceModal)) {
+        marketplaceModal.style.display = 'block';
+      }
+    };
+
+    const closeAndRestoreMarketplace = () => {
+      this.closeModal('one-slot-effects-install-modal', {
+        skipHideOverlay: true,
+        onModalClosed: () => {
+          modal.remove();
+          restoreMarketplace();
+          this.showOverlay();
+        },
+      });
+    };
+
+    modal.innerHTML = `
+      <div class="modal-header">
+        <h2>Install One Slot Effects</h2>
+        <button class="modal-close" id="close-one-slot-effects-install" type="button">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="csk-install-panel">
+          <label class="csk-install-label" for="one-slot-effects-version-select">Version</label>
+          <select id="one-slot-effects-version-select" class="input-field"></select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" id="cancel-one-slot-effects-install">Cancel</button>
+        <button class="modal-btn modal-btn-primary" id="confirm-one-slot-effects-install">
+          <i class="bi bi-download"></i>
+          <span>Install</span>
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    this.showOverlay();
+    modal.style.display = 'block';
+
+    const versionSelect = modal.querySelector<HTMLSelectElement>(
+      '#one-slot-effects-version-select',
+    )!;
+    const confirmBtn = modal.querySelector<HTMLButtonElement>(
+      '#confirm-one-slot-effects-install',
+    )!;
+    const cancelBtn = modal.querySelector<HTMLButtonElement>(
+      '#cancel-one-slot-effects-install',
+    )!;
+    const closeBtn = modal.querySelector<HTMLButtonElement>(
+      '#close-one-slot-effects-install',
+    )!;
+
+    let files: any[] = [];
+    const escape = (value: string) => this.escapeHtml(String(value || ''));
+    const getSelectedFile = () =>
+      files.find((file) => String(file._idRow) === versionSelect.value) ||
+      files[0];
+
+    const setBusy = (busy: boolean) => {
+      confirmBtn.disabled = busy;
+      confirmBtn.innerHTML = busy
+        ? '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite;"></i><span>Installing...</span>'
+        : '<i class="bi bi-download"></i><span>Install</span>';
+    };
+
+    try {
+      files = await window.pluginMarketplace.getGameBananaFiles(
+        plugin.gameBanana.modelName,
+        plugin.gameBanana.submissionId,
+      );
+
+      versionSelect.innerHTML = files
+        .map(
+          (file) => `
+            <option value="${escape(String(file._idRow || ''))}">
+              ${escape(window.pluginMarketplace.getGameBananaFileLabel(file))}
+            </option>
+          `,
+        )
+        .join('');
+    } catch (error) {
+      console.error('[One Slot Effects] Failed to load versions:', error);
+      versionSelect.innerHTML = '<option>Failed to load versions</option>';
+      confirmBtn.disabled = true;
+    }
+
+    cancelBtn.addEventListener('click', closeAndRestoreMarketplace);
+    closeBtn.addEventListener('click', closeAndRestoreMarketplace);
+
+    confirmBtn.addEventListener('click', async () => {
+      const selectedFile = getSelectedFile();
+      if (!selectedFile) return;
+
+      setBusy(true);
+
+      try {
+        await window.pluginMarketplace.installOneSlotEffects({
+          downloadUrl: selectedFile._sDownloadUrl,
+          version: selectedFile._sVersion || selectedFile._sFile || '',
+        });
+        window.toastManager?.success('One Slot Effects installed');
+        this.closeModal('one-slot-effects-install-modal', {
+          onModalClosed: () => {
+            modal.remove();
+            marketplaceModal?.remove();
+          },
+        });
+      } catch (error) {
+        console.error('[One Slot Effects] Install failed:', error);
+        window.toastManager?.error(
+          `Failed to install One Slot Effects: ${error.message}`,
+        );
+        setBusy(false);
       }
     });
   };

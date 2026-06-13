@@ -971,6 +971,27 @@
         </p>
       </div>
 
+      <div class="settings-section">
+        <label class="settings-label" data-i18n="settings.libraryPathValidation"
+          >Library Path Validation</label
+        >
+        <div class="settings-input-group">
+          <label class="settings-switch">
+            <input type="checkbox" id="library-path-validation-enabled" checked />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.enableLibraryPathValidation"
+            >Warn when saved mods/plugins paths are missing or invalid</span
+          >
+        </div>
+        <p class="settings-hint" data-i18n="settings.libraryPathValidationHint">
+          When enabled, FightPlanner asks you to fix broken library paths after
+          moving between systems.
+        </p>
+      </div>
+
       <div class="settings-group-title">
         <i class="bi bi-box-seam"></i> Mod Management
       </div>
@@ -1555,6 +1576,51 @@
         <p class="settings-hint" data-i18n="settings.clearTempFilesHint">
           Clears temporary files left from mod downloads and installations. Safe
           to use at any time.
+        </p>
+      </div>
+
+      <div class="settings-section">
+        <label class="settings-label" data-i18n="settings.configBackup"
+          >Configuration Backup</label
+        >
+        <button class="settings-btn-action" id="export-config-backup-btn">
+          <i class="bi bi-download"></i>
+          <div class="settings-btn-action-content">
+            <span
+              class="settings-btn-action-title"
+              data-i18n="settings.exportConfigBackup"
+              >Export Full Configuration</span
+            >
+            <span
+              class="settings-btn-action-desc"
+              data-i18n="settings.exportConfigBackupDesc"
+              >Save settings, stage layout, Character CSS layout, presets, and custom CSS/JS files</span
+            >
+          </div>
+          <i class="bi bi-arrow-right"></i>
+        </button>
+        <button
+          class="settings-btn-action settings-btn-action-danger"
+          id="restore-config-backup-btn"
+        >
+          <i class="bi bi-upload"></i>
+          <div class="settings-btn-action-content">
+            <span
+              class="settings-btn-action-title"
+              data-i18n="settings.restoreConfigBackup"
+              >Restore Full Configuration</span
+            >
+            <span
+              class="settings-btn-action-desc"
+              data-i18n="settings.restoreConfigBackupDesc"
+              >Replace the current configuration from a FightPlanner backup file</span
+            >
+          </div>
+          <i class="bi bi-arrow-right"></i>
+        </button>
+        <p class="settings-hint" data-i18n="settings.configBackupHint">
+          Restoring a backup locks the app until FightPlanner is restarted so
+          every setting is loaded cleanly.
         </p>
       </div>
 

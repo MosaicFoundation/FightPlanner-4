@@ -8,7 +8,7 @@ export interface MarketplacePlugin {
     modelName: string;
     submissionId: string;
   };
-  specialInstaller?: 'csk-collection';
+  specialInstaller?: 'csk-collection' | 'one-slot-effects';
 }
 
 class PluginMarketplace {
@@ -62,6 +62,19 @@ class PluginMarketplace {
           submissionId: '499008',
         },
         specialInstaller: 'csk-collection',
+      },
+      {
+        name: 'One Slot Effects',
+        repo: 'GameBanana/549058',
+        description:
+          'One Slot Effects plugin. Installs only libone_slot_eff.nro from the archive.',
+        url: 'https://gamebanana.com/mods/549058',
+        source: 'gamebanana',
+        gameBanana: {
+          modelName: 'Mod',
+          submissionId: '549058',
+        },
+        specialInstaller: 'one-slot-effects',
       },
     ];
   }
@@ -384,6 +397,43 @@ class PluginMarketplace {
     if (window.modManager?.loadModsFromFolder) {
       setTimeout(() => {
         window.modManager.loadModsFromFolder(modsPath);
+      }, 500);
+    }
+
+    return result;
+  }
+
+  async installOneSlotEffects(options: {
+    downloadUrl: string;
+    version: string;
+  }) {
+    if (!window.electronAPI?.installOneSlotEffects) {
+      throw new Error('One Slot Effects installer not available');
+    }
+
+    if (!window.settingsManager) {
+      throw new Error('Settings manager not available');
+    }
+
+    const pluginsPath = window.settingsManager.getPluginsPath();
+
+    if (!pluginsPath) {
+      throw new Error('Plugins folder not configured');
+    }
+
+    const result = await window.electronAPI.installOneSlotEffects(
+      options.downloadUrl,
+      pluginsPath,
+      options.version,
+    );
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to install One Slot Effects');
+    }
+
+    if (window.pluginManager) {
+      setTimeout(() => {
+        window.pluginManager.refreshPlugins();
       }, 500);
     }
 

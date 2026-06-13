@@ -77,7 +77,9 @@ const waitForProcessStart = (
       childProcess.off('spawn', onSpawn);
     };
 
-    const settle = (result: { success: true } | { success: false; error: string }) => {
+    const settle = (
+      result: { success: true } | { success: false; error: string },
+    ) => {
       if (settled) {
         return;
       }
@@ -86,11 +88,17 @@ const waitForProcessStart = (
       resolve(result);
     };
 
-    const timer = setTimeout(() => settle({ success: true }), EMULATOR_START_TIMEOUT_MS);
+    const timer = setTimeout(
+      () => settle({ success: true }),
+      EMULATOR_START_TIMEOUT_MS,
+    );
 
     const onSpawn = () => {
       if (childProcess.pid) {
-        console.log('[launch-emulator] Spawned emulator process PID:', childProcess.pid);
+        console.log(
+          '[launch-emulator] Spawned emulator process PID:',
+          childProcess.pid,
+        );
       }
     };
 
@@ -105,7 +113,9 @@ const waitForProcessStart = (
       }
 
       const exitReason =
-        code !== null ? `exited immediately with code ${code}` : `exited immediately with signal ${signal}`;
+        code !== null
+          ? `exited immediately with code ${code}`
+          : `exited immediately with signal ${signal}`;
       settle({ success: false, error: `Emulator ${exitReason}` });
     };
 
@@ -190,7 +200,10 @@ const SystemHandlers = {
         await shell.openPath(store.path);
         return { success: true };
       }
-      return createErrorResponse(ErrorCodes.FILE_NOT_FOUND, 'Configuration file path not found');
+      return createErrorResponse(
+        ErrorCodes.FILE_NOT_FOUND,
+        'Configuration file path not found',
+      );
     } catch (error) {
       handleError(error, 'open-config-file');
       return createErrorResponse(ErrorCodes.UNKNOWN_ERROR, error.message);
@@ -292,7 +305,11 @@ const SystemHandlers = {
       if (!force && emulatorProcess && emulatorProcess.pid) {
         try {
           process.kill(emulatorProcess.pid, 0);
-          console.log('[launch-emulator] Emulator process is already running (PID:', emulatorProcess.pid, ')');
+          console.log(
+            '[launch-emulator] Emulator process is already running (PID:',
+            emulatorProcess.pid,
+            ')',
+          );
           return createErrorResponse(
             'EMULATOR_ALREADY_RUNNING' as any,
             'emulator_already_running',
@@ -366,7 +383,10 @@ const SystemHandlers = {
       }
 
       childProcess.unref();
-      console.log('[launch-emulator] Emulator launched successfully with args:', args);
+      console.log(
+        '[launch-emulator] Emulator launched successfully with args:',
+        args,
+      );
       return { success: true };
     } catch (error) {
       handleError(error, 'launch-emulator');

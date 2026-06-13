@@ -465,16 +465,13 @@ class SocialSettingsManager extends SocialProfileManager {
           );
 
           if (mod.id) {
-            const now = new Date().toISOString();
             await this.fetchWithAuth(`${this.API_URL}/write/links/${mod.id}`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                downloadedAt: now,
                 modInstalled: true,
-                updatedAt: now,
                 _idToken: this.authToken,
               }),
             });

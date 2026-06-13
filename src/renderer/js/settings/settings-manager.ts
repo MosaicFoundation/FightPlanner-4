@@ -7,6 +7,7 @@ class SettingsManager {
   readyPromise: Promise<void>;
   lastModsPathWarningPath: string | null;
   socialAccountRefreshListenerAttached: boolean;
+  pathFixModalOpen: boolean;
 
   constructor() {
     this.settings = {
@@ -31,6 +32,7 @@ class SettingsManager {
       switchDriveLetter: null,
       conflictDetectionEnabled: true,
       nroLimitCheckEnabled: true,
+      libraryPathValidationEnabled: true,
       conflictWhitelistPatterns: [],
       ignoredConflictPaths: [],
       autoCheckPluginUpdates: false,
@@ -56,6 +58,7 @@ class SettingsManager {
     this.drivesLoaded = false;
     this.lastModsPathWarningPath = null;
     this.socialAccountRefreshListenerAttached = false;
+    this.pathFixModalOpen = false;
     this.readyPromise = this.initSettings();
     this.initializeUI();
   }
@@ -68,6 +71,10 @@ class SettingsManager {
     this.initialized = true;
     this.setupEventListeners();
     this.renderIgnoredConflictPaths();
+    await this.showPendingConfigRestoreToast();
+    setTimeout(() => {
+      this.validateConfiguredLibraryPaths();
+    }, 1200);
   }
 
   initializeUI() {
@@ -815,6 +822,32 @@ class SettingsManager {
       console.log('Clear temp files button listener attached');
     }
 
+    const exportConfigBackupBtn = document.querySelector<HTMLButtonElement>(
+      '#export-config-backup-btn',
+    );
+    if (
+      exportConfigBackupBtn &&
+      !exportConfigBackupBtn.dataset.listenerAttached
+    ) {
+      exportConfigBackupBtn.addEventListener('click', async () => {
+        await this.exportConfigBackup(exportConfigBackupBtn);
+      });
+      exportConfigBackupBtn.dataset.listenerAttached = 'true';
+    }
+
+    const restoreConfigBackupBtn = document.querySelector<HTMLButtonElement>(
+      '#restore-config-backup-btn',
+    );
+    if (
+      restoreConfigBackupBtn &&
+      !restoreConfigBackupBtn.dataset.listenerAttached
+    ) {
+      restoreConfigBackupBtn.addEventListener('click', async () => {
+        await this.restoreConfigBackup(restoreConfigBackupBtn);
+      });
+      restoreConfigBackupBtn.dataset.listenerAttached = 'true';
+    }
+
     const installConfirmToggle = document.querySelector<HTMLInputElement>(
       '#install-confirm-enabled',
     );
@@ -1053,6 +1086,22 @@ class SettingsManager {
         }
       });
       nroLimitCheckEnabled.dataset.listenerAttached = 'true';
+    }
+
+    const libraryPathValidationEnabled =
+      document.querySelector<HTMLInputElement>(
+        '#library-path-validation-enabled',
+      );
+    if (
+      libraryPathValidationEnabled &&
+      !libraryPathValidationEnabled.dataset.listenerAttached
+    ) {
+      libraryPathValidationEnabled.addEventListener('change', () => {
+        this.settings.libraryPathValidationEnabled =
+          libraryPathValidationEnabled.checked;
+        this.saveSettings();
+      });
+      libraryPathValidationEnabled.dataset.listenerAttached = 'true';
     }
 
     const switchDriveGuideBtn = document.querySelector<HTMLButtonElement>(
@@ -1564,6 +1613,7 @@ class SettingsManager {
     this.updateSwitchTransferMethodUI();
     this.updateConflictDetectionUI();
     this.updateNroLimitCheckUI();
+    this.updateLibraryPathValidationUI();
     this.updateAutoCheckPluginUpdatesUI();
     this.updateAutoDisableModsUI();
     this.updateDisableAllModsOnDownloadUI();
@@ -2297,8 +2347,23 @@ class SettingsManager {
     );
   }
 
+  shouldEnforceUltimateModsPath() {
+    return !(
+      this.getAppRunMode() === 'hardware' &&
+      this.normalizeHardwareLibraryMode(this.settings.hardwareLibraryMode) ===
+        'local'
+    );
+  }
+
   checkModsPath(path, options: { force?: boolean } = {}) {
-    if (!path || this.hasExpectedModsPathStructure(path)) return;
+    if (
+      !path ||
+      this.settings.libraryPathValidationEnabled === false ||
+      !this.shouldEnforceUltimateModsPath() ||
+      this.hasExpectedModsPathStructure(path)
+    ) {
+      return;
+    }
 
     if (!options.force && this.lastModsPathWarningPath === path) {
       return;
@@ -2309,74 +2374,269 @@ class SettingsManager {
     }
 
     this.lastModsPathWarningPath = path;
-    this.showPathWarningModal(path);
+    this.showLibraryPathFixModal([
+      {
+        key: 'modsPath',
+        label: this.translate('settings.modsFolder'),
+        currentPath: path,
+        reason: this.translate('settings.pathIssueWrongModsFolder'),
+        required: true,
+      },
+    ]);
   }
 
-  showPathWarningModal(path) {
-    const t = (key, params = {}) => {
-      return window.i18n && window.i18n.t ? window.i18n.t(key, params) : key;
-    };
+  async validateConfiguredLibraryPaths() {
+    if (
+      this.pathFixModalOpen ||
+      this.settings.libraryPathValidationEnabled === false ||
+      this.isDirectSwitchLibraryMode() ||
+      !window.electronAPI?.checkPathAccessible
+    ) {
+      return;
+    }
 
-    const escapeHtml = (text) => {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    };
+    const issues: Array<{
+      key: 'modsPath' | 'pluginsPath';
+      label: string;
+      currentPath: string;
+      reason: string;
+      required: boolean;
+    }> = [];
 
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay mods-path-warning-modal';
-    modal.style.display = 'block';
-    modal.innerHTML = `
-<div class="modal" style="display: block">
-<div class="modal-header">
-<i class="bi bi-exclamation-triangle" style="color: #f59e0b; font-size: 24px; margin-right: 10px;"></i>
-<h2>${t('settings.pathWarning')}</h2>
-</div>
-<div class="modal-body">
-<p style="margin-bottom: 15px;">${t('settings.pathWarningText')}</p>
-<code style="display: block; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 15px; word-break: break-all;">${escapeHtml(path)}</code>
-<p style="margin-bottom: 10px;">${t('settings.expectedPath')}</p>
-<ul style="margin-left: 20px; margin-bottom: 15px; color: #aaa;">
-<li><strong>ultimate/mods</strong></li>
-</ul>
-<p style="color: #888;">${t('settings.example')} <code>sd:/ultimate/mods</code></p>
-<p style="margin-top: 15px; color: #f59e0b;">${t('settings.incorrectPathWarning')}</p>
-</div>
-<div class="modal-footer">
-<button class="modal-btn modal-btn-primary" id="path-warning-ok">
-<i class="bi bi-check-lg"></i>
-${t('settings.okUnderstand')}
-</button>
-</div>
-</div>
-`;
-
-    document.body.appendChild(modal);
-
-    const okBtn = modal.querySelector<HTMLButtonElement>('#path-warning-ok');
-    okBtn!.addEventListener('click', () => {
-      modal.remove();
-    });
-
-    let pointerStartedOnBackdrop = false;
-    modal.addEventListener('pointerdown', (e) => {
-      pointerStartedOnBackdrop = e.target === modal;
-    });
-    modal.addEventListener('click', (e) => {
-      const shouldClose = pointerStartedOnBackdrop && e.target === modal;
-      pointerStartedOnBackdrop = false;
-      if (shouldClose) {
-        modal.remove();
+    const checkPath = async (
+      key: 'modsPath' | 'pluginsPath',
+      label: string,
+      pathValue: string | null,
+      required: boolean,
+    ) => {
+      if (!pathValue) {
+        return;
       }
-    });
 
-    const escapeHandler = (e) => {
-      if (e.key === 'Escape') {
-        modal.remove();
-        document.removeEventListener('keydown', escapeHandler);
+      const result = await window.electronAPI.checkPathAccessible(pathValue);
+      if (!result.success || !result.accessible) {
+        issues.push({
+          key,
+          label,
+          currentPath: pathValue,
+          reason: this.translate('settings.pathIssueMissing'),
+          required,
+        });
+        return;
+      }
+
+      if (
+        key === 'modsPath' &&
+        this.shouldEnforceUltimateModsPath() &&
+        !this.hasExpectedModsPathStructure(pathValue)
+      ) {
+        issues.push({
+          key,
+          label,
+          currentPath: pathValue,
+          reason: this.translate('settings.pathIssueWrongModsFolder'),
+          required,
+        });
       }
     };
-    document.addEventListener('keydown', escapeHandler);
+
+    try {
+      await checkPath(
+        'modsPath',
+        this.translate('settings.modsFolder'),
+        this.settings.modsPath,
+        true,
+      );
+      await checkPath(
+        'pluginsPath',
+        this.translate('settings.pluginsFolder'),
+        this.settings.pluginsPath,
+        true,
+      );
+    } catch (error) {
+      console.error('Failed to validate configured library paths:', error);
+      return;
+    }
+
+    if (issues.length > 0) {
+      this.showLibraryPathFixModal(issues);
+    }
+  }
+
+  showLibraryPathFixModal(
+    issues: Array<{
+      key: 'modsPath' | 'pluginsPath';
+      label: string;
+      currentPath: string;
+      reason: string;
+      required: boolean;
+    }>,
+  ) {
+    if (this.pathFixModalOpen || issues.length === 0) {
+      return;
+    }
+
+    if (!window.modalManager?.showCustomModal) {
+      this.showToast(this.translate('settings.pathWarning'), 'error');
+      return;
+    }
+
+    this.pathFixModalOpen = true;
+    const selectedPaths = new Map<string, string>();
+
+    const body = document.createElement('div');
+    body.className = 'library-path-fix-modal';
+    body.innerHTML = `
+      <p class="library-path-fix-intro">${this.escapeHtml(this.translate('settings.libraryPathFixIntro'))}</p>
+      ${issues
+        .map(
+          (issue) => `
+          <div class="library-path-fix-row" data-path-key="${issue.key}">
+            <div class="library-path-fix-header">
+              <strong>${this.escapeHtml(issue.label)}</strong>
+              <span>${this.escapeHtml(issue.reason)}</span>
+            </div>
+            <code>${this.escapeHtml(issue.currentPath)}</code>
+            <div class="library-path-fix-picker">
+              <input class="settings-input" type="text" readonly value="" placeholder="${this.escapeHtml(this.translate('settings.chooseReplacementPath'))}">
+              <button type="button" class="settings-btn" data-path-browse="${issue.key}">
+                <i class="bi bi-folder2-open"></i>
+                <span>${this.escapeHtml(this.translate('settings.browse'))}</span>
+              </button>
+            </div>
+            <p class="settings-hint">${this.escapeHtml(
+              issue.key === 'modsPath'
+                ? this.translate('settings.modsPathFixHint')
+                : this.translate('settings.pluginsPathFixHint'),
+            )}</p>
+          </div>
+        `,
+        )
+        .join('')}
+    `;
+
+    const modal = window.modalManager.showCustomModal({
+      id: 'library-path-fix-modal',
+      title: this.translate('settings.libraryPathFixTitle'),
+      body,
+      clickOverlayToClose: false,
+      escapeToClose: false,
+      buttons: [
+        {
+          text: this.translate('settings.saveCorrectedPaths'),
+          type: 'primary',
+          closeOnClick: false,
+          onClick: async (_event, modalElement) => {
+            const saved = await this.saveCorrectedLibraryPaths(
+              issues,
+              selectedPaths,
+            );
+            if (!saved) {
+              return;
+            }
+
+            window.modalManager.closeModal(modalElement, {
+              onModalClosed: () => {
+                modalElement.remove();
+                this.pathFixModalOpen = false;
+              },
+            });
+          },
+        },
+        {
+          text: this.translate('common.cancel') || 'Cancel',
+          type: 'secondary',
+          onClick: () => {
+            this.pathFixModalOpen = false;
+          },
+        },
+      ],
+    });
+
+    modal.querySelectorAll<HTMLElement>('[data-path-browse]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const key = button.dataset.pathBrowse;
+        if (!key || !window.electronAPI?.selectFolder) {
+          return;
+        }
+
+        const folder = await window.electronAPI.selectFolder();
+        if (!folder) {
+          return;
+        }
+
+        selectedPaths.set(key, folder);
+        const row = modal.querySelector<HTMLElement>(
+          `.library-path-fix-row[data-path-key="${key}"]`,
+        );
+        const input = row?.querySelector<HTMLInputElement>('input');
+        if (input) {
+          input.value = folder;
+        }
+      });
+    });
+  }
+
+  async saveCorrectedLibraryPaths(
+    issues: Array<{
+      key: 'modsPath' | 'pluginsPath';
+      label: string;
+      currentPath: string;
+      reason: string;
+      required: boolean;
+    }>,
+    selectedPaths: Map<string, string>,
+  ) {
+    for (const issue of issues) {
+      const nextPath = selectedPaths.get(issue.key);
+
+      if (!nextPath) {
+        if (issue.required) {
+          this.showToast(
+            this.translate('settings.selectReplacementPathRequired'),
+            'error',
+          );
+          return false;
+        }
+        continue;
+      }
+
+      if (
+        issue.key === 'modsPath' &&
+        this.shouldEnforceUltimateModsPath() &&
+        !this.hasExpectedModsPathStructure(nextPath)
+      ) {
+        this.showToast(this.translate('settings.pathIssueWrongModsFolder'), 'error');
+        return false;
+      }
+
+      if (window.electronAPI?.folderExists) {
+        const existsResult = await window.electronAPI.folderExists(nextPath);
+        if (!existsResult.success || !existsResult.exists) {
+          this.showToast(this.translate('settings.pathIssueMissing'), 'error');
+          return false;
+        }
+      }
+
+      if (issue.key === 'modsPath') {
+        this.settings.modsPath = nextPath;
+        if (!this.isSwitchLibraryPath(nextPath)) {
+          this.settings.localModsPath = nextPath;
+        }
+      } else {
+        this.settings.pluginsPath = nextPath;
+        if (!this.isSwitchLibraryPath(nextPath)) {
+          this.settings.localPluginsPath = nextPath;
+        }
+      }
+    }
+
+    await this.saveSettings();
+    this.updateModsFolderUI();
+    this.updatePluginsFolderUI();
+    await this.refreshCurrentLibraryLists();
+    this.showToast(this.translate('toasts.libraryPathsUpdated'), 'success');
+    return true;
   }
 
   async browsePluginsFolder() {
@@ -3273,6 +3533,17 @@ ${t('settings.okUnderstand')}
     }
   }
 
+  updateLibraryPathValidationUI() {
+    const libraryPathValidationCheckbox =
+      document.querySelector<HTMLInputElement>(
+        '#library-path-validation-enabled',
+      );
+    if (libraryPathValidationCheckbox) {
+      libraryPathValidationCheckbox.checked =
+        this.settings.libraryPathValidationEnabled !== false;
+    }
+  }
+
   updateAutoCheckPluginUpdatesUI() {
     const autoCheckPluginUpdatesCheckbox =
       document.querySelector<HTMLInputElement>(
@@ -3817,6 +4088,9 @@ ${t('settings.okUnderstand')}
       const nroLimitCheckEnabled = await window.electronAPI.store.get(
         'nroLimitCheckEnabled',
       );
+      const libraryPathValidationEnabled = await window.electronAPI.store.get(
+        'libraryPathValidationEnabled',
+      );
       const ignoredConflictPaths = await window.electronAPI.store.get(
         'ignoredConflictPaths',
       );
@@ -3886,6 +4160,7 @@ ${t('settings.okUnderstand')}
         switchDriveLetter: switchDriveLetter || null,
         conflictDetectionEnabled: conflictDetectionEnabled !== false,
         nroLimitCheckEnabled: nroLimitCheckEnabled !== false,
+        libraryPathValidationEnabled: libraryPathValidationEnabled !== false,
         ignoredConflictPaths: Array.isArray(ignoredConflictPaths)
           ? ignoredConflictPaths
               .map((value) => (typeof value === 'string' ? value.trim() : ''))
@@ -3941,6 +4216,7 @@ ${t('settings.okUnderstand')}
         switchDriveLetter: null,
         conflictDetectionEnabled: true,
         nroLimitCheckEnabled: true,
+        libraryPathValidationEnabled: true,
         ignoredConflictPaths: [],
         autoCheckPluginUpdates: false,
         pluginUpdateIntroShown: false,
@@ -4042,6 +4318,10 @@ ${t('settings.okUnderstand')}
       await window.electronAPI.store.set(
         'nroLimitCheckEnabled',
         this.settings.nroLimitCheckEnabled,
+      );
+      await window.electronAPI.store.set(
+        'libraryPathValidationEnabled',
+        this.settings.libraryPathValidationEnabled !== false,
       );
       await window.electronAPI.store.set(
         'autoCheckPluginUpdates',
@@ -4362,6 +4642,144 @@ ${t('settings.okUnderstand')}
         btn.style.opacity = '1';
       }
     }
+  }
+
+  async showPendingConfigRestoreToast() {
+    try {
+      const restoredAt = await window.electronAPI?.store?.get?.(
+        'configRestore.completedAt',
+      );
+      if (!restoredAt) {
+        return;
+      }
+
+      await window.electronAPI.store.delete('configRestore.completedAt');
+      setTimeout(() => {
+        this.showToast(this.translate('toasts.configBackupRestored'), 'success');
+      }, 800);
+    } catch (error) {
+      console.error('Failed to show config restore confirmation:', error);
+    }
+  }
+
+  async exportConfigBackup(button?: HTMLButtonElement) {
+    if (!window.electronAPI?.exportConfigBackup) {
+      this.showToast(this.translate('toasts.configBackupUnavailable'), 'error');
+      return;
+    }
+
+    if (button) {
+      button.disabled = true;
+      button.style.opacity = '0.6';
+    }
+
+    try {
+      const result = await window.electronAPI.exportConfigBackup();
+      if (result.success) {
+        this.showToast(this.translate('toasts.configBackupExported'), 'success');
+      } else if (!result.canceled) {
+        this.showToast(
+          this.translate('toasts.configBackupExportFailed'),
+          'error',
+        );
+      }
+    } catch (error) {
+      console.error('Failed to export FightPlanner configuration:', error);
+      this.showToast(this.translate('toasts.configBackupExportFailed'), 'error');
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.style.opacity = '1';
+      }
+    }
+  }
+
+  async restoreConfigBackup(button?: HTMLButtonElement) {
+    if (!window.electronAPI?.restoreConfigBackup) {
+      this.showToast(this.translate('toasts.configBackupUnavailable'), 'error');
+      return;
+    }
+
+    const confirmed = confirm(
+      this.translate('settings.restoreConfigBackupConfirmMessage'),
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    if (button) {
+      button.disabled = true;
+      button.style.opacity = '0.6';
+    }
+
+    try {
+      const result = await window.electronAPI.restoreConfigBackup();
+      if (result.success) {
+        this.showRestartRequiredOverlay();
+      } else if (!result.canceled) {
+        this.showToast(
+          this.translate('toasts.configBackupRestoreFailed'),
+          'error',
+        );
+      }
+    } catch (error) {
+      console.error('Failed to restore FightPlanner configuration:', error);
+      this.showToast(this.translate('toasts.configBackupRestoreFailed'), 'error');
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.style.opacity = '1';
+      }
+    }
+  }
+
+  showRestartRequiredOverlay() {
+    document.body.classList.add('app-restart-required');
+
+    let overlay = document.querySelector<HTMLElement>(
+      '#config-restore-restart-overlay',
+    );
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'config-restore-restart-overlay';
+      overlay.className = 'config-restore-restart-overlay';
+      overlay.setAttribute('role', 'alertdialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.innerHTML = `
+        <div class="config-restore-restart-panel">
+          <i class="bi bi-arrow-repeat"></i>
+          <h2>${this.escapeHtml(this.translate('settings.restartRequiredTitle'))}</h2>
+          <p>${this.escapeHtml(this.translate('settings.restartRequiredAfterRestore'))}</p>
+          <button type="button" id="config-restore-restart-btn" class="settings-btn-action">
+            <i class="bi bi-power"></i>
+            <span>${this.escapeHtml(this.translate('settings.restartFightPlanner'))}</span>
+          </button>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+    }
+
+    const restartButton = overlay.querySelector<HTMLButtonElement>(
+      '#config-restore-restart-btn',
+    );
+    restartButton?.focus();
+    restartButton?.addEventListener('click', async () => {
+      try {
+        await window.electronAPI?.relaunchApp?.();
+      } catch (error) {
+        console.error('Failed to restart after config restore:', error);
+        window.toastManager?.error('toasts.failedToRestartApp');
+      }
+    });
+  }
+
+  escapeHtml(value: string) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   translate(key, params = {}) {

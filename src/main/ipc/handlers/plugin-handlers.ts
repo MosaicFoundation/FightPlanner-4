@@ -32,6 +32,8 @@ type CskCollectionInstallResult = {
 
 const CSK_PLUGIN_RELATIVE_PATH =
   'atmosphere/contents/01006A800016E000/romfs/skyline/plugins/libthe_csk_collection.nro';
+const ONE_SLOT_EFFECTS_PLUGIN_RELATIVE_PATH =
+  'atmosphere/contents/01006A800016E000/romfs/skyline/plugins/libone_slot_eff.nro';
 
 function findFileByRelativePath(rootDir: string, relativePath: string) {
   const normalizedTarget = relativePath.toLowerCase().replace(/\\/g, '/');
@@ -456,6 +458,7 @@ const PluginHandlers = {
       const safeSelectedMods = (selectedMods || []).filter((modName) =>
         availableMods.has(modName),
       );
+      const safeSelectedModSet = new Set(safeSelectedMods);
 
       fs.mkdirSync(resolvedPluginsPath, { recursive: true });
       fs.mkdirSync(resolvedModsPath, { recursive: true });
@@ -476,6 +479,28 @@ const PluginHandlers = {
 
       const installedMods: string[] = [];
       if (cskModsRoot) {
+        const disabledModsPath = path.join(
+          path.dirname(resolvedModsPath),
+          '{disabled_mod}',
+        );
+
+        for (const modName of availableMods) {
+          if (safeSelectedModSet.has(modName)) {
+            continue;
+          }
+
+          const activeDestPath = path.join(resolvedModsPath, modName);
+          const disabledDestPath = path.join(disabledModsPath, modName);
+
+          if (fs.existsSync(activeDestPath)) {
+            fs.rmSync(activeDestPath, { recursive: true, force: true });
+          }
+
+          if (fs.existsSync(disabledDestPath)) {
+            fs.rmSync(disabledDestPath, { recursive: true, force: true });
+          }
+        }
+
         for (const modName of safeSelectedMods) {
           const sourcePath = path.join(cskModsRoot, modName);
           const destPath = path.join(resolvedModsPath, modName);
@@ -516,6 +541,88 @@ const PluginHandlers = {
       };
     } catch (error) {
       handleError(error, 'install-csk-collection');
+      return createErrorResponse(
+        ErrorCodes.PLUGIN_INSTALL_FAILED,
+        error.message,
+      );
+    } finally {
+      cleanupTempDir(tempRoot);
+    }
+  },
+
+  ['install-one-slot-effects']: async (
+    common: BaseHandlerArg,
+    downloadUrl: string,
+    pluginsPath: string,
+    targetVersion: string | null,
+  ): HandlerResponse<{
+    pluginPath: string;
+  }> => {
+    let tempRoot = '';
+
+    try {
+      const resolvedPluginsPath = resolveVirtualPath(pluginsPath);
+
+      if (!resolvedPluginsPath) {
+        return createErrorResponse(
+          ErrorCodes.FOLDER_NOT_FOUND,
+          'Plugins folder not configured',
+        );
+      }
+
+      const extracted = await downloadAndExtractCskArchive(downloadUrl);
+      tempRoot = extracted.tempRoot;
+
+      const pluginSourcePath = findFileByRelativePath(
+        extracted.extractDir,
+        ONE_SLOT_EFFECTS_PLUGIN_RELATIVE_PATH,
+      );
+
+      if (!pluginSourcePath) {
+        return createErrorResponse(
+          ErrorCodes.PLUGIN_INSTALL_FAILED,
+          'One Slot Effects plugin file was not found in the archive',
+        );
+      }
+
+      fs.mkdirSync(resolvedPluginsPath, { recursive: true });
+
+      const pluginFileName = path.basename(pluginSourcePath);
+      const pluginDestPath = path.join(resolvedPluginsPath, pluginFileName);
+
+      if (fs.existsSync(pluginDestPath)) {
+        const backupPath = `${pluginDestPath}.backup`;
+        if (fs.existsSync(backupPath)) {
+          fs.unlinkSync(backupPath);
+        }
+        fs.copyFileSync(pluginDestPath, backupPath);
+        fs.unlinkSync(pluginDestPath);
+      }
+
+      fs.copyFileSync(pluginSourcePath, pluginDestPath);
+
+      const mappings = (store.get('pluginRepoMappings') || {}) as Record<
+        string,
+        string
+      >;
+      mappings.libone_slot_eff = 'GameBanana/549058';
+      store.set('pluginRepoMappings', mappings);
+
+      if (targetVersion) {
+        const pluginVersions = (store.get('pluginVersions') || {}) as Record<
+          string,
+          string
+        >;
+        pluginVersions.libone_slot_eff = targetVersion;
+        store.set('pluginVersions', pluginVersions);
+      }
+
+      return {
+        success: true,
+        pluginPath: pluginDestPath,
+      };
+    } catch (error) {
+      handleError(error, 'install-one-slot-effects');
       return createErrorResponse(
         ErrorCodes.PLUGIN_INSTALL_FAILED,
         error.message,

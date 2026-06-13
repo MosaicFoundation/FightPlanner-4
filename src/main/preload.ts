@@ -15,6 +15,7 @@ import { FppHandlers } from './ipc/handlers/fpp-handlers';
 import { StageHandlers } from './ipc/handlers/stage-handlers';
 import { CharacterCssHandlers } from './ipc/handlers/character-css-handlers';
 import { ModProfileHandlers } from './ipc/handlers/mod-profile-handlers';
+import { ConfigBackupHandlers } from './ipc/handlers/config-backup-handlers';
 import { ParamsWithoutFirstArg } from './types/common';
 import { WindowHandlers } from './ipc/handlers/window-handlers';
 import { DiscordHandlers } from './ipc/handlers/discord-handlers';
@@ -87,6 +88,7 @@ const invokeFppHandler = wrapInvoke<FppHandlers>();
 const invokeStageHandler = wrapInvoke<StageHandlers>();
 const invokeCharacterCssHandler = wrapInvoke<CharacterCssHandlers>();
 const invokeModProfileHandler = wrapInvoke<ModProfileHandlers>();
+const invokeConfigBackupHandler = wrapInvoke<ConfigBackupHandlers>();
 
 const registerProtocolCallback = wrapEventCallback<ProtocolHandlerEvents>();
 const registerMainCallback = wrapEventCallback<MainEvents>();
@@ -129,6 +131,7 @@ const electronAPI = {
     'inspect-csk-collection-archive',
   ),
   installCskCollection: invokePluginHandler('install-csk-collection'),
+  installOneSlotEffects: invokePluginHandler('install-one-slot-effects'),
   getPluginRepoMapping: invokePluginHandler('get-plugin-repo-mapping'),
   setPluginRepoMapping: invokePluginHandler('set-plugin-repo-mapping'),
   getAppVersion: invokeAppHandler('get-app-version'),
@@ -203,6 +206,8 @@ const electronAPI = {
   removeCharacterCssEntry: invokeCharacterCssHandler('remove-character-css-entry'),
   loadModProfiles: invokeModProfileHandler('load-mod-profiles'),
   saveModProfiles: invokeModProfileHandler('save-mod-profiles'),
+  exportConfigBackup: invokeConfigBackupHandler('export-config-backup'),
+  restoreConfigBackup: invokeConfigBackupHandler('restore-config-backup'),
 
   store: {
     get: invokeStoreHandler('store-get'),
