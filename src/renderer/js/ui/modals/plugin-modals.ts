@@ -215,6 +215,10 @@ export {};
   };
 
   M.prototype.openPluginMarketplaceModal = async function () {
+    document
+      .querySelectorAll<HTMLElement>('#plugin-marketplace-modal')
+      .forEach((existingModal) => existingModal.remove());
+
     const modal = document.createElement('div');
     modal.className = 'modal modal-large modal-marketplace';
     modal.id = 'plugin-marketplace-modal';
@@ -278,12 +282,12 @@ export {};
     );
 
     closeBtn!.addEventListener('click', () => {
-      this.closePluginMarketplaceModal();
+      this.closePluginMarketplaceModal(modal);
     });
 
     const escapeHandler = (e) => {
       if (e.key === 'Escape') {
-        this.closePluginMarketplaceModal();
+        this.closePluginMarketplaceModal(modal);
         document.removeEventListener('keydown', escapeHandler);
       }
     };
@@ -314,14 +318,27 @@ export {};
           (installedRepo) =>
             installedRepo.toLowerCase() === plugin.repo.toLowerCase(),
         );
+        const isGameBanana = plugin.source === 'gamebanana';
+        const isCskCollection = plugin.specialInstaller === 'csk-collection';
         const buttonClass = isInstalled
           ? 'marketplace-card-install-btn installed'
           : 'marketplace-card-install-btn';
-        const buttonIcon = isInstalled ? 'bi-arrow-clockwise' : 'bi-download';
+        const buttonIcon =
+          isInstalled && isCskCollection
+            ? 'bi-sliders'
+            : isInstalled
+              ? 'bi-arrow-clockwise'
+              : 'bi-download';
         const buttonTextKey = isInstalled
-          ? 'plugins.reinstall'
+          ? isCskCollection
+            ? ''
+            : 'plugins.reinstall'
           : 'plugins.install';
-        const buttonDefaultText = isInstalled ? 'Reinstall' : 'Install';
+        const buttonDefaultText = isInstalled
+          ? isCskCollection
+            ? 'Tweak'
+            : 'Reinstall'
+          : 'Install';
         const cardClass = isInstalled
           ? 'marketplace-plugin-card installed'
           : 'marketplace-plugin-card';
@@ -339,15 +356,16 @@ export {};
         </div>
         <div class="marketplace-card-footer">
           <a href="${this.escapeHtml(plugin.url || `https://github.com/${plugin.repo}`)}" target="_blank" class="marketplace-card-link" rel="noopener noreferrer">
-            <i class="bi bi-github"></i>
-            <span data-i18n="plugins.viewOnGitHub">View on GitHub</span>
+            <i class="bi ${isGameBanana ? 'bi-box-arrow-up-right' : 'bi-github'}"></i>
+            <span>${isGameBanana ? 'View on GameBanana' : 'View on GitHub'}</span>
           </a>
           <button class="${buttonClass}" 
                   data-plugin-name="${this.escapeHtml(plugin.name)}"
                   data-plugin-repo="${this.escapeHtml(plugin.repo)}"
+                  data-special-installer="${this.escapeHtml(plugin.specialInstaller || '')}"
                   data-is-installed="${isInstalled}">
             <i class="bi ${buttonIcon}"></i>
-            <span data-i18n="${buttonTextKey}">${buttonDefaultText}</span>
+            <span ${buttonTextKey ? `data-i18n="${buttonTextKey}"` : ''}>${buttonDefaultText}</span>
           </button>
         </div>
       </div>
@@ -384,6 +402,28 @@ export {};
       btn.addEventListener('click', async () => {
         const pluginName = btn.dataset.pluginName as string;
         const pluginRepo = btn.dataset.pluginRepo as string;
+        const specialInstaller = btn.dataset.specialInstaller as string;
+        const isInstalled = btn.dataset.isInstalled === 'true';
+        const isCskCollection = specialInstaller === 'csk-collection';
+        const restoreIcon =
+          isInstalled && isCskCollection
+            ? 'bi-sliders'
+            : isInstalled
+              ? 'bi-arrow-clockwise'
+              : 'bi-download';
+        const restoreTextKey = isInstalled
+          ? isCskCollection
+            ? ''
+            : 'plugins.reinstall'
+          : 'plugins.install';
+        const restoreText = isInstalled
+          ? isCskCollection
+            ? 'Tweak'
+            : 'Reinstall'
+          : 'Install';
+        const plugin = plugins.find(
+          (item) => item.name === pluginName && item.repo === pluginRepo,
+        );
 
         btn.disabled = true;
         btn.innerHTML =
@@ -393,6 +433,26 @@ export {};
         }
 
         if (window.pluginMarketplace) {
+          if (specialInstaller === 'csk-collection' && plugin) {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="bi ${restoreIcon}"></i> <span ${restoreTextKey ? `data-i18n="${restoreTextKey}"` : ''}>${restoreText}</span>`;
+            if (window.i18n) {
+              window.i18n.updateDOM();
+            }
+            const marketplaceModal = btn.closest<HTMLElement>(
+              '#plugin-marketplace-modal',
+            );
+            if (marketplaceModal) {
+              marketplaceModal.style.display = 'none';
+            }
+            await this.openCskCollectionInstallModal(
+              plugin,
+              marketplaceModal,
+              isInstalled,
+            );
+            return;
+          }
+
           const downloadUrl =
             await window.pluginMarketplace.getLatestReleaseDownloadUrl(
               pluginRepo,
@@ -436,8 +496,240 @@ export {};
     });
   };
 
-  M.prototype.closePluginMarketplaceModal = function () {
-    this.closeModal('plugin-marketplace-modal');
+  M.prototype.openCskCollectionInstallModal = async function (
+    plugin: any,
+    marketplaceModal?: HTMLElement | null,
+    isInstalled = false,
+  ) {
+    document
+      .querySelectorAll<HTMLElement>('#csk-collection-install-modal')
+      .forEach((existingModal) => existingModal.remove());
+
+    const modal = document.createElement('div');
+    modal.className = 'modal modal-large';
+    modal.id = 'csk-collection-install-modal';
+    modal.style.maxWidth = '680px';
+
+    const restoreMarketplace = () => {
+      if (marketplaceModal && document.body.contains(marketplaceModal)) {
+        marketplaceModal.style.display = 'block';
+      }
+    };
+
+    const closeAndRestoreMarketplace = () => {
+      this.closeModal('csk-collection-install-modal', {
+        skipHideOverlay: true,
+        onModalClosed: () => {
+          modal.remove();
+          restoreMarketplace();
+          this.showOverlay();
+        },
+      });
+    };
+
+    modal.innerHTML = `
+      <div class="modal-header">
+        <h2>${isInstalled ? 'Tweak CSK Collection' : 'Install CSK Collection'}</h2>
+        <button class="modal-close" id="close-csk-install" type="button">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="csk-install-panel">
+          <label class="csk-install-label" for="csk-version-select">Version</label>
+          <select id="csk-version-select" class="input-field"></select>
+          <div class="csk-install-row">
+            <strong>Optional toggles</strong>
+            <div class="csk-install-actions">
+              <button class="modal-btn modal-btn-secondary" id="csk-select-all" type="button">Select all</button>
+              <button class="modal-btn modal-btn-secondary" id="csk-select-none" type="button">Select none</button>
+            </div>
+          </div>
+          <div id="csk-options-list" class="csk-options-list">
+            <div class="marketplace-empty">Loading options...</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" id="cancel-csk-install">Cancel</button>
+        <button class="modal-btn modal-btn-primary" id="confirm-csk-install">
+          <i class="bi ${isInstalled ? 'bi-check2' : 'bi-download'}"></i>
+          <span>${isInstalled ? 'Apply' : 'Install'}</span>
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    this.showOverlay();
+    modal.style.display = 'block';
+
+    const versionSelect =
+      modal.querySelector<HTMLSelectElement>('#csk-version-select')!;
+    const optionsList = modal.querySelector<HTMLElement>('#csk-options-list')!;
+    const confirmBtn =
+      modal.querySelector<HTMLButtonElement>('#confirm-csk-install')!;
+    const cancelBtn =
+      modal.querySelector<HTMLButtonElement>('#cancel-csk-install')!;
+    const closeBtn = modal.querySelector<HTMLButtonElement>(
+      '#close-csk-install',
+    )!;
+    const selectAllBtn =
+      modal.querySelector<HTMLButtonElement>('#csk-select-all')!;
+    const selectNoneBtn =
+      modal.querySelector<HTMLButtonElement>('#csk-select-none')!;
+
+    let files: any[] = [];
+    let activeOptions: string[] = [];
+
+    const escape = (value: string) => this.escapeHtml(String(value || ''));
+    const setBusy = (busy: boolean, text = 'Install') => {
+      confirmBtn.disabled = busy;
+      confirmBtn.innerHTML = busy
+        ? '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite;"></i><span>Installing...</span>'
+        : `<i class="bi ${isInstalled ? 'bi-check2' : 'bi-download'}"></i><span>${text}</span>`;
+    };
+
+    const getSelectedFile = () =>
+      files.find((file) => String(file._idRow) === versionSelect.value) ||
+      files[0];
+
+    const renderOptions = (options: string[]) => {
+      activeOptions = options;
+      if (!options.length) {
+        optionsList.innerHTML =
+          '<div class="marketplace-empty">No optional toggles found in archive.</div>';
+        return;
+      }
+
+      optionsList.innerHTML = options
+        .map(
+          (name) => `
+            <label class="csk-option-item">
+              <input type="checkbox" value="${escape(name)}" checked>
+              <span>${escape(name)}</span>
+            </label>
+          `,
+        )
+        .join('');
+    };
+
+    const loadOptions = async () => {
+      const selectedFile = getSelectedFile();
+      if (!selectedFile) return;
+
+      optionsList.innerHTML =
+        '<div class="marketplace-empty">Reading archive options...</div>';
+      setBusy(true, 'Install');
+
+      try {
+        const inspection =
+          await window.pluginMarketplace.inspectCskCollectionArchive(
+            selectedFile._sDownloadUrl,
+          );
+        renderOptions(inspection.availableMods || []);
+      } catch (error) {
+        console.error('[CSK Collection] Failed to inspect archive:', error);
+        optionsList.innerHTML = `<div class="marketplace-empty">${escape(error.message || 'Failed to inspect archive')}</div>`;
+      } finally {
+        setBusy(false, isInstalled ? 'Apply' : 'Install');
+      }
+    };
+
+    try {
+      files = await window.pluginMarketplace.getGameBananaFiles(
+        plugin.gameBanana.modelName,
+        plugin.gameBanana.submissionId,
+      );
+
+      versionSelect.innerHTML = files
+        .map(
+          (file) => `
+            <option value="${escape(String(file._idRow || ''))}">
+              ${escape(window.pluginMarketplace.getGameBananaFileLabel(file))}
+            </option>
+          `,
+        )
+        .join('');
+
+      await loadOptions();
+    } catch (error) {
+      console.error('[CSK Collection] Failed to load versions:', error);
+      optionsList.innerHTML = `<div class="marketplace-empty">${escape(error.message || 'Failed to load versions')}</div>`;
+      confirmBtn.disabled = true;
+    }
+
+    versionSelect.addEventListener('change', () => {
+      void loadOptions();
+    });
+
+    selectAllBtn.addEventListener('click', () => {
+      optionsList
+        .querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
+        .forEach((input) => (input.checked = true));
+    });
+
+    selectNoneBtn.addEventListener('click', () => {
+      optionsList
+        .querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
+        .forEach((input) => (input.checked = false));
+    });
+
+    cancelBtn.addEventListener('click', closeAndRestoreMarketplace);
+    closeBtn.addEventListener('click', closeAndRestoreMarketplace);
+
+    confirmBtn.addEventListener('click', async () => {
+      const selectedFile = getSelectedFile();
+      if (!selectedFile) return;
+
+      const selectedMods = Array.from(
+        optionsList.querySelectorAll<HTMLInputElement>(
+          'input[type="checkbox"]:checked',
+        ),
+      )
+        .map((input) => input.value)
+        .filter((name) => activeOptions.includes(name));
+
+      setBusy(true);
+
+      try {
+        await window.pluginMarketplace.installCskCollection({
+          downloadUrl: selectedFile._sDownloadUrl,
+          version: selectedFile._sVersion || '',
+          selectedMods,
+        });
+        window.toastManager?.success(
+          `CSK Collection installed with ${selectedMods.length} toggle(s)`,
+        );
+        this.closeModal('csk-collection-install-modal', {
+          onModalClosed: () => {
+            modal.remove();
+            marketplaceModal?.remove();
+          },
+        });
+      } catch (error) {
+        console.error('[CSK Collection] Install failed:', error);
+        window.toastManager?.error(
+          `Failed to install CSK Collection: ${error.message}`,
+        );
+        setBusy(false, isInstalled ? 'Apply' : 'Install');
+      }
+    });
+  };
+
+  M.prototype.closePluginMarketplaceModal = function (
+    modalToClose?: HTMLElement,
+  ) {
+    const modals = modalToClose
+      ? [modalToClose]
+      : Array.from(
+          document.querySelectorAll<HTMLElement>('#plugin-marketplace-modal'),
+        );
+
+    modals.forEach((modal) => {
+      this.closeModal(modal, {
+        onModalClosed: () => modal.remove(),
+      });
+    });
   };
 
   M.prototype.openPluginUpdateIntroModal = function (onEnable, onDisable) {

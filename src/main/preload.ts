@@ -125,6 +125,10 @@ const electronAPI = {
   deletePlugin: invokePluginHandler('delete-plugin'),
   checkPluginUpdates: invokePluginHandler('check-plugin-updates'),
   updatePlugin: invokePluginHandler('update-plugin'),
+  inspectCskCollectionArchive: invokePluginHandler(
+    'inspect-csk-collection-archive',
+  ),
+  installCskCollection: invokePluginHandler('install-csk-collection'),
   getPluginRepoMapping: invokePluginHandler('get-plugin-repo-mapping'),
   setPluginRepoMapping: invokePluginHandler('set-plugin-repo-mapping'),
   getAppVersion: invokeAppHandler('get-app-version'),

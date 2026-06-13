@@ -87,11 +87,7 @@ type BatchTestingUiHelpersLike = {
     tone: SessionUiSummary['tone'],
   ) => void;
   renderInfoCard: (title: string, value: string) => string;
-  renderStepCard: (
-    index: string,
-    title: string,
-    description: string,
-  ) => string;
+  renderStepCard: (index: string, title: string, description: string) => string;
   renderItemTrigger: (
     category: BatchCategory,
     name: string,
@@ -135,7 +131,10 @@ type BatchTestingStateHelpersLike = {
     category: BatchCategory,
     basePath: string,
   ) => Promise<CategoryState>;
-  applyState: (snapshot: CategorySnapshot, enabledNames: string[]) => Promise<void>;
+  applyState: (
+    snapshot: CategorySnapshot,
+    enabledNames: string[],
+  ) => Promise<void>;
   syncManager: (
     category: BatchCategory,
     basePath: string,
@@ -145,12 +144,10 @@ type BatchTestingStateHelpersLike = {
     session: BatchTestingSession | null,
     category: BatchCategory,
     itemName: string,
-  ) =>
-    | {
-        entry: ModStateEntry | PluginStateEntry;
-        status: 'active' | 'disabled';
-      }
-    | null;
+  ) => {
+    entry: ModStateEntry | PluginStateEntry;
+    status: 'active' | 'disabled';
+  } | null;
 };
 
 type BatchTestingStateHelpersCtor = new (deps: {
@@ -195,8 +192,9 @@ class BatchTestingManager {
   }
 
   createSessionStore(): BatchTestingSessionStoreLike {
-    const SessionStoreCtor = (window as any)
-      .BatchTestingSessionStore as BatchTestingSessionStoreCtor | undefined;
+    const SessionStoreCtor = (window as any).BatchTestingSessionStore as
+      | BatchTestingSessionStoreCtor
+      | undefined;
 
     if (SessionStoreCtor) {
       return new SessionStoreCtor(this.getSessionStoreKey());
@@ -209,16 +207,14 @@ class BatchTestingManager {
   }
 
   createUiHelpers(): BatchTestingUiHelpersLike {
-    const UiHelpersCtor = (window as any)
-      .BatchTestingUiHelpers as BatchTestingUiHelpersCtor | undefined;
+    const UiHelpersCtor = (window as any).BatchTestingUiHelpers as
+      | BatchTestingUiHelpersCtor
+      | undefined;
 
     if (UiHelpersCtor) {
       return new UiHelpersCtor({
-        t: (
-          key: string,
-          fallback: string,
-          params: Record<string, any> = {},
-        ) => this.t(key, fallback, params),
+        t: (key: string, fallback: string, params: Record<string, any> = {}) =>
+          this.t(key, fallback, params),
         escapeHtml: (value: string) => this.escapeHtml(value),
         getCategoryLabel: (category: BatchCategory) =>
           this.getCategoryLabel(category),
@@ -231,16 +227,14 @@ class BatchTestingManager {
   }
 
   createStateHelpers(): BatchTestingStateHelpersLike {
-    const StateHelpersCtor = (window as any)
-      .BatchTestingStateHelpers as BatchTestingStateHelpersCtor | undefined;
+    const StateHelpersCtor = (window as any).BatchTestingStateHelpers as
+      | BatchTestingStateHelpersCtor
+      | undefined;
 
     if (StateHelpersCtor) {
       return new StateHelpersCtor({
-        t: (
-          key: string,
-          fallback: string,
-          params: Record<string, any> = {},
-        ) => this.t(key, fallback, params),
+        t: (key: string, fallback: string, params: Record<string, any> = {}) =>
+          this.t(key, fallback, params),
       });
     }
 
@@ -253,8 +247,7 @@ class BatchTestingManager {
 
   async loadPersistedSession() {
     try {
-      const storedSession =
-        await this.sessionStore.load<BatchTestingSession>();
+      const storedSession = await this.sessionStore.load<BatchTestingSession>();
 
       if (
         storedSession &&
@@ -393,7 +386,9 @@ class BatchTestingManager {
       snapshots = await this.state.collectSnapshots();
     } catch (error) {
       this.showToast(
-        error instanceof Error ? error.message : String(error || 'Unknown error'),
+        error instanceof Error
+          ? error.message
+          : String(error || 'Unknown error'),
         'warning',
       );
       return;
@@ -434,28 +429,9 @@ class BatchTestingManager {
                 ${this.escapeHtml(startLabel)}
               </div>
             </div>
-            <div style="margin-top: 10px; color: var(--text-secondary); line-height: 1.6;">
-              ${this.escapeHtml(
-                this.t(
-                  'settings.batchTestingReadyDesc',
-                  'Choose where to begin, then FightPlanner will disable groups step by step until the likely cause is isolated.',
-                ),
-              )}
-            </div>
+
           </div>
-          <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">
-            ${this.escapeHtml(
-              this.t(
-                'settings.batchTestingDesc',
-                'Binary diagnostic mode for mods and plugins. It disables half of your active items, asks you to launch the game, and narrows down the problem until the main cause is found.',
-              ),
-            )}
-          </p>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px;">
-            ${this.ui.renderInfoCard(
-              this.t('settings.batchTestingStartOrder', 'Start With'),
-              startLabel,
-            )}
             ${this.ui.renderInfoCard(
               this.t('settings.batchTestingStartMods', 'Mods'),
               `${activeMods}`,
@@ -463,41 +439,6 @@ class BatchTestingManager {
             ${this.ui.renderInfoCard(
               this.t('settings.batchTestingStartPlugins', 'Plugins'),
               `${activePlugins}`,
-            )}
-          </div>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-            ${this.ui.renderStepCard(
-              '1',
-              this.t(
-                'settings.batchTestingHowStepOneTitle',
-                'FightPlanner disables a group',
-              ),
-              this.t(
-                'settings.batchTestingHowStepOneDesc',
-                'A portion of your active mods or plugins is turned off temporarily.',
-              ),
-            )}
-            ${this.ui.renderStepCard(
-              '2',
-              this.t(
-                'settings.batchTestingHowStepTwoTitle',
-                'You test the game',
-              ),
-              this.t(
-                'settings.batchTestingHowStepTwoDesc',
-                'Launch the game, reproduce the issue, then tell FightPlanner if it works now.',
-              ),
-            )}
-            ${this.ui.renderStepCard(
-              '3',
-              this.t(
-                'settings.batchTestingHowStepThreeTitle',
-                'The suspect list gets smaller',
-              ),
-              this.t(
-                'settings.batchTestingHowStepThreeDesc',
-                'FightPlanner repeats the process until the most likely cause is isolated.',
-              ),
             )}
           </div>
           <div style="padding: 14px 16px; border-radius: 12px; background: rgba(var(--primary-rgb), 0.08); border: 1px solid rgba(var(--primary-rgb), 0.18); color: var(--text-secondary); line-height: 1.6;">
@@ -539,7 +480,9 @@ class BatchTestingManager {
       sessionSnapshots = await this.state.collectSnapshots();
     } catch (error) {
       this.showToast(
-        error instanceof Error ? error.message : String(error || 'Unknown error'),
+        error instanceof Error
+          ? error.message
+          : String(error || 'Unknown error'),
         'warning',
       );
       return;
@@ -681,14 +624,10 @@ class BatchTestingManager {
 
       await this.restoreOriginalState();
       this.showToast(
-        this.t(
-          'toasts.batchTestingFailed',
-          'Batch testing failed: {{error}}',
-          {
-            error:
-              error instanceof Error ? error.message : String(error || 'Unknown'),
-          },
-        ),
+        this.t('toasts.batchTestingFailed', 'Batch testing failed: {{error}}', {
+          error:
+            error instanceof Error ? error.message : String(error || 'Unknown'),
+        }),
         'error',
       );
       this.closeModal();
@@ -700,7 +639,10 @@ class BatchTestingManager {
     progress: DiagnosisProgress,
   ) {
     while (progress.suspects.length > 1) {
-      const chunks = this.splitIntoChunks(progress.suspects, progress.granularity);
+      const chunks = this.splitIntoChunks(
+        progress.suspects,
+        progress.granularity,
+      );
 
       if (progress.currentChunkIndex >= chunks.length) {
         if (progress.granularity >= progress.suspects.length) {
@@ -805,10 +747,15 @@ class BatchTestingManager {
 
     if (snapshot?.basePath) {
       try {
-        await this.state.ensureCategoryAvailable(prompt.category, snapshot.basePath);
+        await this.state.ensureCategoryAvailable(
+          prompt.category,
+          snapshot.basePath,
+        );
       } catch (error) {
         this.showToast(
-          error instanceof Error ? error.message : String(error || 'Unknown error'),
+          error instanceof Error
+            ? error.message
+            : String(error || 'Unknown error'),
           'warning',
         );
         return;
@@ -993,19 +940,13 @@ class BatchTestingManager {
 
   renderNoCauseResult() {
     this.renderModal(
-      this.t(
-        'settings.batchTestingNoCauseTitle',
-        'No Primary Cause Found',
-      ),
+      this.t('settings.batchTestingNoCauseTitle', 'No Primary Cause Found'),
       `
         <div style="display: flex; flex-direction: column; gap: 16px;">
           <div style="padding: 16px 18px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color);">
             <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 8px;">
               ${this.escapeHtml(
-                this.t(
-                  'settings.batchTestingStateDone',
-                  'Finished',
-                ),
+                this.t('settings.batchTestingStateDone', 'Finished'),
               )}
             </div>
             <div style="color: var(--text-secondary); line-height: 1.6;">
@@ -1141,10 +1082,7 @@ class BatchTestingManager {
     });
   }
 
-  async showSuspectResult(
-    snapshot: CategorySnapshot,
-    result: DiagnosisResult,
-  ) {
+  async showSuspectResult(snapshot: CategorySnapshot, result: DiagnosisResult) {
     const culpritNames = result.culpritNames || [];
     const list = culpritNames
       .map(
@@ -1176,18 +1114,12 @@ class BatchTestingManager {
     if (isSingle) {
       actions.push(
         {
-          label: this.t(
-            'settings.batchTestingDisableMod',
-            'Keep it disabled',
-          ),
+          label: this.t('settings.batchTestingDisableMod', 'Keep it disabled'),
           type: 'secondary',
           onClick: () => this.closeModal(),
         },
         {
-          label: this.t(
-            'settings.batchTestingDeleteMod',
-            'Delete it',
-          ),
+          label: this.t('settings.batchTestingDeleteMod', 'Delete it'),
           type: 'danger',
           onClick: async () => {
             await this.deleteSuspect(snapshot.category, culpritNames[0]);
@@ -1213,7 +1145,10 @@ class BatchTestingManager {
           <div style="padding: 16px 18px; border-radius: 14px; background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.14) 0%, rgba(var(--primary-rgb), 0.08) 100%); border: 1px solid rgba(var(--primary-rgb), 0.2);">
             <div style="display: inline-flex; padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: var(--text-primary); font-size: 12px; font-weight: 600; margin-bottom: 10px;">
               ${this.escapeHtml(
-                this.t('settings.batchTestingPrimaryCauseLabel', 'Likely culprit'),
+                this.t(
+                  'settings.batchTestingPrimaryCauseLabel',
+                  'Likely culprit',
+                ),
               )}
             </div>
             <div style="font-size: 18px; font-weight: 700; color: var(--text-primary);">
@@ -1242,14 +1177,14 @@ class BatchTestingManager {
           </div>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
             ${this.ui.renderInfoCard(
-              this.t('settings.batchTestingCurrentPool', 'Current suspect pool'),
+              this.t(
+                'settings.batchTestingCurrentPool',
+                'Current suspect pool',
+              ),
               `${culpritNames.length}`,
             )}
             ${this.ui.renderInfoCard(
-              this.t(
-                'settings.batchTestingStartOrder',
-                'Start With',
-              ),
+              this.t('settings.batchTestingStartOrder', 'Start With'),
               snapshot.label,
             )}
           </div>
@@ -1282,7 +1217,8 @@ class BatchTestingManager {
       );
       snapshot.lastState = currentState;
       suspectPath =
-        currentState.disabled.find((entry) => entry.name === suspectName)?.path ||
+        currentState.disabled.find((entry) => entry.name === suspectName)
+          ?.path ||
         currentState.active.find((entry) => entry.name === suspectName)?.path ||
         null;
     }
@@ -1296,7 +1232,10 @@ class BatchTestingManager {
       if (!result.success) {
         throw new Error(result.error || 'Failed to delete mod');
       }
-      this.showToast(this.t('toasts.modUninstalled', 'Mod uninstalled successfully'), 'success');
+      this.showToast(
+        this.t('toasts.modUninstalled', 'Mod uninstalled successfully'),
+        'success',
+      );
     } else {
       const result = await window.electronAPI.deletePlugin(suspectPath);
       if (!result.success) {
@@ -1400,7 +1339,11 @@ class BatchTestingManager {
   }
 
   async openItemInfo(category: BatchCategory, itemName: string) {
-    const itemState = this.state.findItemState(this.session, category, itemName);
+    const itemState = this.state.findItemState(
+      this.session,
+      category,
+      itemName,
+    );
 
     if (!itemState) {
       this.showToast(
@@ -1620,7 +1563,9 @@ class BatchTestingManager {
   }
 
   navigateToEmulatorSettings() {
-    const settingsTab = document.querySelector<HTMLElement>('[data-tab="settings"]');
+    const settingsTab = document.querySelector<HTMLElement>(
+      '[data-tab="settings"]',
+    );
     if (settingsTab) {
       settingsTab.click();
     }
@@ -1633,8 +1578,8 @@ class BatchTestingManager {
   isUnavailableFolderError(error: Error) {
     const normalizedMessage = error.message.toLowerCase();
     return (
-      normalizedMessage.includes('folder is not available')
-      || normalizedMessage.includes('make sure this folder exists')
+      normalizedMessage.includes('folder is not available') ||
+      normalizedMessage.includes('make sure this folder exists')
     );
   }
 

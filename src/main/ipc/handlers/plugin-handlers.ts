@@ -1,6 +1,7 @@
 import { BrowserWindow, dialog, IpcMain } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as os from 'os';
 import PluginUtils, { SimplePlugin } from '../../plugin-utils';
 import PluginUpdateChecker, {
   PluginUpdateResult,
@@ -15,8 +16,117 @@ import {
 import { resolveVirtualPath } from '../../utils/virtual-paths';
 import { HandlerResponse } from '../../types/common';
 import { BaseHandlerArg, GenericHandler } from '../../types/common';
+import { FileExtractor } from '../../utils/file-extractor';
 
 export type PluginHandlers = typeof PluginHandlers;
+
+type CskCollectionInspectResult = {
+  availableMods: string[];
+  pluginFileName: string;
+};
+
+type CskCollectionInstallResult = {
+  pluginPath: string;
+  installedMods: string[];
+};
+
+const CSK_PLUGIN_RELATIVE_PATH =
+  'atmosphere/contents/01006A800016E000/romfs/skyline/plugins/libthe_csk_collection.nro';
+
+function findFileByRelativePath(rootDir: string, relativePath: string) {
+  const normalizedTarget = relativePath.toLowerCase().replace(/\\/g, '/');
+  const stack = [rootDir];
+
+  while (stack.length) {
+    const currentDir = stack.pop();
+    if (!currentDir) continue;
+
+    const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+    for (const entry of entries) {
+      const entryPath = path.join(currentDir, entry.name);
+
+      if (entry.isDirectory()) {
+        stack.push(entryPath);
+        continue;
+      }
+
+      const relative = path
+        .relative(rootDir, entryPath)
+        .replace(/\\/g, '/')
+        .toLowerCase();
+
+      if (relative.endsWith(normalizedTarget)) {
+        return entryPath;
+      }
+    }
+  }
+
+  return '';
+}
+
+function findCskModsRoot(rootDir: string) {
+  const direct = path.join(rootDir, 'ultimate', 'mods');
+  if (fs.existsSync(direct) && fs.statSync(direct).isDirectory()) {
+    return direct;
+  }
+
+  const stack = [rootDir];
+  while (stack.length) {
+    const currentDir = stack.pop();
+    if (!currentDir) continue;
+
+    const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+    for (const entry of entries) {
+      const entryPath = path.join(currentDir, entry.name);
+      if (!entry.isDirectory()) continue;
+
+      const relative = path.relative(rootDir, entryPath).replace(/\\/g, '/');
+      if (relative.toLowerCase().endsWith('ultimate/mods')) {
+        return entryPath;
+      }
+
+      stack.push(entryPath);
+    }
+  }
+
+  return '';
+}
+
+function listCskModFolders(extractDir: string) {
+  const modsRoot = findCskModsRoot(extractDir);
+  if (!modsRoot) return [];
+
+  return fs
+    .readdirSync(modsRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort((a, b) => a.localeCompare(b));
+}
+
+async function downloadAndExtractCskArchive(downloadUrl: string) {
+  if (!downloadUrl || !downloadUrl.startsWith('http')) {
+    throw new Error('Invalid CSK Collection download URL');
+  }
+
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'fightplanner-csk-'));
+  const archivePath = path.join(tempRoot, 'csk-collection.zip');
+  const extractDir = path.join(tempRoot, 'extract');
+
+  await PluginUpdateInstaller.downloadFile(downloadUrl, archivePath);
+  await FileExtractor.extractArchive(archivePath, extractDir);
+
+  return { tempRoot, archivePath, extractDir };
+}
+
+function cleanupTempDir(tempRoot: string) {
+  try {
+    if (tempRoot && fs.existsSync(tempRoot)) {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  } catch (error) {
+    handleError(error, 'csk-cleanup');
+  }
+}
 
 const PluginHandlers = {
   ['read-plugins-folder']: async (
@@ -257,6 +367,161 @@ const PluginHandlers = {
         ErrorCodes.PLUGIN_UPDATE_FAILED,
         error.message,
       );
+    }
+  },
+
+  ['inspect-csk-collection-archive']: async (
+    common: BaseHandlerArg,
+    downloadUrl: string,
+  ): HandlerResponse<CskCollectionInspectResult> => {
+    let tempRoot = '';
+
+    try {
+      const extracted = await downloadAndExtractCskArchive(downloadUrl);
+      tempRoot = extracted.tempRoot;
+
+      const pluginPath = findFileByRelativePath(
+        extracted.extractDir,
+        CSK_PLUGIN_RELATIVE_PATH,
+      );
+
+      if (!pluginPath) {
+        return createErrorResponse(
+          ErrorCodes.PLUGIN_INSTALL_FAILED,
+          'CSK Collection plugin file was not found in the archive',
+        );
+      }
+
+      return {
+        success: true,
+        availableMods: listCskModFolders(extracted.extractDir),
+        pluginFileName: path.basename(pluginPath),
+      };
+    } catch (error) {
+      handleError(error, 'inspect-csk-collection-archive');
+      return createErrorResponse(
+        ErrorCodes.PLUGIN_INSTALL_FAILED,
+        error.message,
+      );
+    } finally {
+      cleanupTempDir(tempRoot);
+    }
+  },
+
+  ['install-csk-collection']: async (
+    common: BaseHandlerArg,
+    downloadUrl: string,
+    pluginsPath: string,
+    modsPath: string,
+    selectedMods: string[],
+    targetVersion: string | null,
+  ): HandlerResponse<CskCollectionInstallResult> => {
+    let tempRoot = '';
+
+    try {
+      const resolvedPluginsPath = resolveVirtualPath(pluginsPath);
+      const resolvedModsPath = resolveVirtualPath(modsPath);
+
+      if (!resolvedPluginsPath) {
+        return createErrorResponse(
+          ErrorCodes.FOLDER_NOT_FOUND,
+          'Plugins folder not configured',
+        );
+      }
+
+      if (!resolvedModsPath) {
+        return createErrorResponse(
+          ErrorCodes.FOLDER_NOT_FOUND,
+          'Mods folder not configured',
+        );
+      }
+
+      const extracted = await downloadAndExtractCskArchive(downloadUrl);
+      tempRoot = extracted.tempRoot;
+
+      const pluginSourcePath = findFileByRelativePath(
+        extracted.extractDir,
+        CSK_PLUGIN_RELATIVE_PATH,
+      );
+
+      if (!pluginSourcePath) {
+        return createErrorResponse(
+          ErrorCodes.PLUGIN_INSTALL_FAILED,
+          'CSK Collection plugin file was not found in the archive',
+        );
+      }
+
+      const cskModsRoot = findCskModsRoot(extracted.extractDir);
+      const availableMods = new Set(listCskModFolders(extracted.extractDir));
+      const safeSelectedMods = (selectedMods || []).filter((modName) =>
+        availableMods.has(modName),
+      );
+
+      fs.mkdirSync(resolvedPluginsPath, { recursive: true });
+      fs.mkdirSync(resolvedModsPath, { recursive: true });
+
+      const pluginFileName = path.basename(pluginSourcePath);
+      const pluginDestPath = path.join(resolvedPluginsPath, pluginFileName);
+
+      if (fs.existsSync(pluginDestPath)) {
+        const backupPath = `${pluginDestPath}.backup`;
+        if (fs.existsSync(backupPath)) {
+          fs.unlinkSync(backupPath);
+        }
+        fs.copyFileSync(pluginDestPath, backupPath);
+        fs.unlinkSync(pluginDestPath);
+      }
+
+      fs.copyFileSync(pluginSourcePath, pluginDestPath);
+
+      const installedMods: string[] = [];
+      if (cskModsRoot) {
+        for (const modName of safeSelectedMods) {
+          const sourcePath = path.join(cskModsRoot, modName);
+          const destPath = path.join(resolvedModsPath, modName);
+
+          if (!sourcePath.startsWith(cskModsRoot + path.sep)) {
+            continue;
+          }
+
+          if (fs.existsSync(destPath)) {
+            fs.rmSync(destPath, { recursive: true, force: true });
+          }
+
+          fs.cpSync(sourcePath, destPath, { recursive: true });
+          installedMods.push(modName);
+        }
+      }
+
+      const mappings = (store.get('pluginRepoMappings') || {}) as Record<
+        string,
+        string
+      >;
+      mappings.libthe_csk_collection = 'GameBanana/499008';
+      store.set('pluginRepoMappings', mappings);
+
+      if (targetVersion) {
+        const pluginVersions = (store.get('pluginVersions') || {}) as Record<
+          string,
+          string
+        >;
+        pluginVersions.libthe_csk_collection = targetVersion;
+        store.set('pluginVersions', pluginVersions);
+      }
+
+      return {
+        success: true,
+        pluginPath: pluginDestPath,
+        installedMods,
+      };
+    } catch (error) {
+      handleError(error, 'install-csk-collection');
+      return createErrorResponse(
+        ErrorCodes.PLUGIN_INSTALL_FAILED,
+        error.message,
+      );
+    } finally {
+      cleanupTempDir(tempRoot);
     }
   },
 

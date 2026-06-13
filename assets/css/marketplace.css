@@ -219,3 +219,99 @@
   box-shadow: none;
   color: var(--text-inverse);
 }
+
+#csk-collection-install-modal.modal {
+  height: min(720px, calc(100vh - 48px));
+  max-height: calc(100vh - 48px);
+}
+
+#csk-collection-install-modal .modal-body {
+  display: flex;
+  height: calc(100% - 162px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+#csk-collection-install-modal .modal-footer {
+  box-sizing: border-box;
+  min-height: 81px;
+  align-items: center;
+}
+
+#confirm-csk-install,
+#cancel-csk-install {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 108px;
+  justify-content: center;
+}
+
+.csk-install-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  gap: 14px;
+}
+
+.csk-install-label {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.csk-install-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-primary);
+}
+
+.csk-install-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.csk-install-actions .modal-btn {
+  padding: 7px 10px;
+  font-size: 12px;
+}
+
+.csk-options-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  align-content: start;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px;
+}
+
+.csk-option-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 9px 10px;
+  background: var(--bg-transparent-03);
+  border: 1px solid var(--bg-transparent-10);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.25;
+  cursor: pointer;
+}
+
+.csk-option-item input {
+  flex: 0 0 auto;
+  accent-color: var(--accent-color);
+}
+
+.csk-option-item span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
