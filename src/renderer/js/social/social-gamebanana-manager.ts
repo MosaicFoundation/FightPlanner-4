@@ -3705,6 +3705,7 @@ class SocialGameBananaManager extends SocialManagerBase {
         availableFiles: JSON.stringify(pending.availableFiles),
         createdAt: existing?.createdAt || now,
         creator: pending.creator,
+        downloadedAt: now,
         image_url: pending.imageUrl,
         isHidden: false,
         link: pending.link,
@@ -3714,6 +3715,7 @@ class SocialGameBananaManager extends SocialManagerBase {
         needsFileSelection:
           pending.availableFiles.length > 1 ? 'true' : 'false',
         pseudo: username,
+        updatedAt: now,
         userId: this.userData.localId,
       };
 
