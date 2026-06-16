@@ -795,7 +795,11 @@
         </div>
         <div class="settings-input-group" style="margin-bottom: 12px">
           <label class="settings-switch">
-            <input type="checkbox" id="auto-check-app-updates-enabled" checked />
+            <input
+              type="checkbox"
+              id="auto-check-app-updates-enabled"
+              checked
+            />
             <span class="settings-switch-slider"></span>
           </label>
           <span
@@ -964,6 +968,27 @@
         </div>
         <p class="settings-hint" data-i18n="settings.pluginsFolderHint">
           Select the folder containing your .nro plugin files
+        </p>
+      </div>
+
+      <div class="settings-section">
+        <label class="settings-label" data-i18n="settings.libraryPathValidation"
+          >Library Path Validation</label
+        >
+        <div class="settings-input-group">
+          <label class="settings-switch">
+            <input type="checkbox" id="library-path-validation-enabled" checked />
+            <span class="settings-switch-slider"></span>
+          </label>
+          <span
+            style="margin-left: 12px; color: var(--text-secondary)"
+            data-i18n="settings.enableLibraryPathValidation"
+            >Warn when saved mods/plugins paths are missing or invalid</span
+          >
+        </div>
+        <p class="settings-hint" data-i18n="settings.libraryPathValidationHint">
+          When enabled, FightPlanner asks you to fix broken library paths after
+          moving between systems.
         </p>
       </div>
 
@@ -1554,6 +1579,51 @@
         </p>
       </div>
 
+      <div class="settings-section">
+        <label class="settings-label" data-i18n="settings.configBackup"
+          >Configuration Backup</label
+        >
+        <button class="settings-btn-action" id="export-config-backup-btn">
+          <i class="bi bi-download"></i>
+          <div class="settings-btn-action-content">
+            <span
+              class="settings-btn-action-title"
+              data-i18n="settings.exportConfigBackup"
+              >Export Full Configuration</span
+            >
+            <span
+              class="settings-btn-action-desc"
+              data-i18n="settings.exportConfigBackupDesc"
+              >Save settings, stage layout, Character CSS layout, presets, and custom CSS/JS files</span
+            >
+          </div>
+          <i class="bi bi-arrow-right"></i>
+        </button>
+        <button
+          class="settings-btn-action settings-btn-action-danger"
+          id="restore-config-backup-btn"
+        >
+          <i class="bi bi-upload"></i>
+          <div class="settings-btn-action-content">
+            <span
+              class="settings-btn-action-title"
+              data-i18n="settings.restoreConfigBackup"
+              >Restore Full Configuration</span
+            >
+            <span
+              class="settings-btn-action-desc"
+              data-i18n="settings.restoreConfigBackupDesc"
+              >Replace the current configuration from a FightPlanner backup file</span
+            >
+          </div>
+          <i class="bi bi-arrow-right"></i>
+        </button>
+        <p class="settings-hint" data-i18n="settings.configBackupHint">
+          Restoring a backup locks the app until FightPlanner is restarted so
+          every setting is loaded cleanly.
+        </p>
+      </div>
+
       <div class="settings-group-title">
         <i class="bi bi-search"></i> Batch Testing
       </div>
@@ -1563,9 +1633,7 @@
           >Batch Testing</label
         >
         <p class="settings-hint" data-i18n="settings.batchTestingDesc">
-          Binary diagnostic mode for mods and plugins. We disable half of your
-          active items, ask you to launch the game, and narrow down the problem
-          until the main cause is found.
+          Disable mods/plugins in groups to isolate what's causing an issue.
         </p>
 
         <div
@@ -1629,175 +1697,6 @@
           >
             Ready to start a diagnostic
           </div>
-          <div
-            id="batch-testing-session-desc"
-            style="
-              margin-top: 6px;
-              color: var(--text-secondary);
-              line-height: 1.6;
-            "
-            data-i18n="settings.batchTestingReadyDesc"
-          >
-            Choose where to begin, then FightPlanner will disable groups step by
-            step until the likely cause is isolated.
-          </div>
-        </div>
-
-        <div
-          style="
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-            gap: 12px;
-            margin-bottom: 12px;
-          "
-        >
-          <div
-            style="
-              padding: 14px 16px;
-              border-radius: 12px;
-              background: rgba(255, 255, 255, 0.04);
-              border: 1px solid var(--border-color);
-            "
-          >
-            <div
-              style="
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 28px;
-                height: 28px;
-                border-radius: 999px;
-                background: rgba(var(--primary-rgb), 0.14);
-                border: 1px solid rgba(var(--primary-rgb), 0.22);
-                color: var(--primary-color);
-                font-size: 13px;
-                font-weight: 700;
-                margin-bottom: 10px;
-              "
-            >
-              1
-            </div>
-            <div
-              style="
-                font-size: 14px;
-                font-weight: 600;
-                color: var(--text-primary);
-                margin-bottom: 6px;
-              "
-              data-i18n="settings.batchTestingHowStepOneTitle"
-            >
-              FightPlanner disables a group
-            </div>
-            <div
-              style="
-                font-size: 13px;
-                line-height: 1.6;
-                color: var(--text-secondary);
-              "
-              data-i18n="settings.batchTestingHowStepOneDesc"
-            >
-              A portion of your active mods or plugins is turned off
-              temporarily.
-            </div>
-          </div>
-          <div
-            style="
-              padding: 14px 16px;
-              border-radius: 12px;
-              background: rgba(255, 255, 255, 0.04);
-              border: 1px solid var(--border-color);
-            "
-          >
-            <div
-              style="
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 28px;
-                height: 28px;
-                border-radius: 999px;
-                background: rgba(var(--primary-rgb), 0.14);
-                border: 1px solid rgba(var(--primary-rgb), 0.22);
-                color: var(--primary-color);
-                font-size: 13px;
-                font-weight: 700;
-                margin-bottom: 10px;
-              "
-            >
-              2
-            </div>
-            <div
-              style="
-                font-size: 14px;
-                font-weight: 600;
-                color: var(--text-primary);
-                margin-bottom: 6px;
-              "
-              data-i18n="settings.batchTestingHowStepTwoTitle"
-            >
-              You test the game
-            </div>
-            <div
-              style="
-                font-size: 13px;
-                line-height: 1.6;
-                color: var(--text-secondary);
-              "
-              data-i18n="settings.batchTestingHowStepTwoDesc"
-            >
-              Launch the game, reproduce the issue, then tell FightPlanner if it
-              works now.
-            </div>
-          </div>
-          <div
-            style="
-              padding: 14px 16px;
-              border-radius: 12px;
-              background: rgba(255, 255, 255, 0.04);
-              border: 1px solid var(--border-color);
-            "
-          >
-            <div
-              style="
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 28px;
-                height: 28px;
-                border-radius: 999px;
-                background: rgba(var(--primary-rgb), 0.14);
-                border: 1px solid rgba(var(--primary-rgb), 0.22);
-                color: var(--primary-color);
-                font-size: 13px;
-                font-weight: 700;
-                margin-bottom: 10px;
-              "
-            >
-              3
-            </div>
-            <div
-              style="
-                font-size: 14px;
-                font-weight: 600;
-                color: var(--text-primary);
-                margin-bottom: 6px;
-              "
-              data-i18n="settings.batchTestingHowStepThreeTitle"
-            >
-              The suspect list gets smaller
-            </div>
-            <div
-              style="
-                font-size: 13px;
-                line-height: 1.6;
-                color: var(--text-secondary);
-              "
-              data-i18n="settings.batchTestingHowStepThreeDesc"
-            >
-              FightPlanner repeats the process until the most likely cause is
-              isolated.
-            </div>
-          </div>
         </div>
 
         <div
@@ -1835,12 +1734,6 @@
             />
             <span style="display: flex; flex-direction: column; gap: 4px">
               <span data-i18n="settings.batchTestingStartMods">Mods</span>
-              <span
-                style="font-size: 12px; color: var(--text-muted)"
-                data-i18n="settings.batchTestingStartModsDesc"
-              >
-                Recommended first. Most problems come from mods.
-              </span>
             </span>
           </label>
           <label
@@ -1866,13 +1759,6 @@
             />
             <span style="display: flex; flex-direction: column; gap: 4px">
               <span data-i18n="settings.batchTestingStartPlugins">Plugins</span>
-              <span
-                style="font-size: 12px; color: var(--text-muted)"
-                data-i18n="settings.batchTestingStartPluginsDesc"
-              >
-                Useful if the issue looks related to Skyline or a runtime
-                plugin.
-              </span>
             </span>
           </label>
         </div>
@@ -1884,11 +1770,6 @@
               class="settings-btn-action-title"
               data-i18n="settings.batchTestingButton"
               >Batch Testing</span
-            >
-            <span
-              class="settings-btn-action-desc"
-              data-i18n="settings.batchTestingButtonDesc"
-              >Start the binary mod/plugin diagnostic flow</span
             >
           </div>
           <i class="bi bi-arrow-right"></i>
@@ -1909,11 +1790,6 @@
                 class="settings-btn-action-title"
                 data-i18n="settings.batchTestingResumeButton"
                 >Resume Batch Testing</span
-              >
-              <span
-                class="settings-btn-action-desc"
-                data-i18n="settings.batchTestingResumeButtonDesc"
-                >Resume the current diagnostic session</span
               >
             </div>
             <i class="bi bi-arrow-right"></i>
@@ -2443,12 +2319,12 @@
             <span
               class="settings-btn-action-title"
               data-i18n="settings.openTutorial"
-              >Open Tutorial</span
+              >Open Full Tutorial</span
             >
             <span
               class="settings-btn-action-desc"
               data-i18n="settings.openTutorialDesc"
-              >Watch the welcome animation again</span
+              >Run setup first, then show the in-app guide</span
             >
           </div>
           <i class="bi bi-arrow-right"></i>
@@ -2463,19 +2339,18 @@
             <span
               class="settings-btn-action-title"
               data-i18n="settings.openTutorialMods"
-              >Open Tutorial & Redirect to Mods</span
+              >Open Tutorial on Mods</span
             >
             <span
               class="settings-btn-action-desc"
               data-i18n="settings.openTutorialModsDesc"
-              >Opens the tutorial then navigates to the mods tab when
-              closed</span
+              >Switch to the mods tab and show the guide</span
             >
           </div>
           <i class="bi bi-arrow-right"></i>
         </button>
         <p class="settings-hint" data-i18n="settings.tutorialHint">
-          Opens a transparent window with the full tutorial animation
+          Opens the setup tutorial window. The in-app guide appears after it closes.
         </p>
       </div>
 

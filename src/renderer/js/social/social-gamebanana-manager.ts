@@ -832,10 +832,8 @@ class SocialGameBananaManager extends SocialManagerBase {
     });
     params.set('_aFilters[Generic_Game]', '6498');
     const trimmedSearch = searchQuery.trim();
-    // GameBanana returns 400 for some category + name filter combinations.
-    // Category searches are filtered client-side after fetching the category page.
-    if (trimmedSearch && !categoryFilter.categoryId) {
-      params.set('_aFilters[Generic_Name]', trimmedSearch);
+    if (trimmedSearch) {
+      params.set('_aFilters[Generic_Name]', `contains,${trimmedSearch}`);
     }
     if (categoryFilter.categoryId) {
       params.set(
@@ -844,7 +842,7 @@ class SocialGameBananaManager extends SocialManagerBase {
       );
     }
 
-    return `${this.GAMEBANANA_API_URL}/${categoryFilter.model}/Index?${params.toString()}`;
+    return `https://gamebanana.com/apiv12/${categoryFilter.model}/Index?${params.toString()}`;
   }
 
   async fetchGameBananaModsPage(
@@ -914,9 +912,7 @@ class SocialGameBananaManager extends SocialManagerBase {
     const records = (
       Array.isArray(subfeedData?._aRecords) ? subfeedData._aRecords : []
     ).filter((submission) => submission._sModelName !== 'Request');
-    const visibleRecords = this.filterGameBananaSearchSubmissions(
-      this.filterDiscoverNsfwSubmissions(records),
-    );
+    const visibleRecords = this.filterDiscoverNsfwSubmissions(records);
     visibleRecords.forEach((mod) => this.cacheGameBananaSubmission(mod));
 
     if (visibleRecords.length === 0) {
@@ -1121,15 +1117,7 @@ class SocialGameBananaManager extends SocialManagerBase {
   filterGameBananaSearchSubmissions<T extends GameBananaTopSubmission>(
     submissions: T[],
   ) {
-    const query = this.gameBananaSearchQuery.trim().toLowerCase();
-    if (!query || this.getGameBananaCategoryFilter() === 'all') {
-      return submissions;
-    }
-    return submissions.filter((submission) =>
-      String(submission._sName || '')
-        .toLowerCase()
-        .includes(query),
-    );
+    return submissions;
   }
 
   getGameBananaCategoryFilterConfig() {

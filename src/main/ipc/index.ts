@@ -17,6 +17,7 @@ import { registerFppHandlers } from './handlers/fpp-handlers';
 import { registerStageHandlers } from './handlers/stage-handlers';
 import { registerCharacterCssHandlers } from './handlers/character-css-handlers';
 import { registerModProfileHandlers } from './handlers/mod-profile-handlers';
+import { registerConfigBackupHandlers } from './handlers/config-backup-handlers';
 import DiscordRPCManager from '../discord-rpc';
 
 /**
@@ -46,4 +47,5 @@ export function registerAllHandlers(
   registerStageHandlers(ipcMain);
   registerCharacterCssHandlers(ipcMain);
   registerModProfileHandlers(ipcMain);
+  registerConfigBackupHandlers(ipcMain);
 }

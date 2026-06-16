@@ -3,6 +3,12 @@ export interface MarketplacePlugin {
   repo: string;
   description: string;
   url: string;
+  source?: 'github' | 'gamebanana';
+  gameBanana?: {
+    modelName: string;
+    submissionId: string;
+  };
+  specialInstaller?: 'csk-collection' | 'one-slot-effects';
 }
 
 class PluginMarketplace {
@@ -43,6 +49,32 @@ class PluginMarketplace {
         repo: 'HDR-Development/smashline',
         description: 'libsmashline_hook.nro',
         url: 'https://github.com/HDR-Development/smashline/releases',
+      },
+      {
+        name: 'CSK Collection',
+        repo: 'GameBanana/499008',
+        description:
+          'The CSK Collection plugin plus optional feature toggles from ultimate/mods.',
+        url: 'https://gamebanana.com/mods/499008',
+        source: 'gamebanana',
+        gameBanana: {
+          modelName: 'Mod',
+          submissionId: '499008',
+        },
+        specialInstaller: 'csk-collection',
+      },
+      {
+        name: 'One Slot Effects',
+        repo: 'GameBanana/549058',
+        description:
+          'One Slot Effects plugin. Installs only libone_slot_eff.nro from the archive.',
+        url: 'https://gamebanana.com/mods/549058',
+        source: 'gamebanana',
+        gameBanana: {
+          modelName: 'Mod',
+          submissionId: '549058',
+        },
+        specialInstaller: 'one-slot-effects',
       },
     ];
   }
@@ -280,6 +312,132 @@ class PluginMarketplace {
       console.error('Error fetching latest release:', error);
       return null;
     }
+  }
+
+  async getGameBananaFiles(modelName: string, submissionId: string) {
+    if (!window.electronAPI?.fetchGameBananaFiles) {
+      return [];
+    }
+
+    const result = await window.electronAPI.fetchGameBananaFiles(
+      modelName,
+      submissionId,
+    );
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to fetch GameBanana files');
+    }
+
+    return (result.files || []).filter((file) => file?._sDownloadUrl);
+  }
+
+  getGameBananaFileLabel(file) {
+    const version = file?._sVersion ? `v${file._sVersion}` : '';
+    const description = file?._sDescription || file?._sFile || 'Download';
+    return [version, description].filter(Boolean).join(' - ');
+  }
+
+  async inspectCskCollectionArchive(downloadUrl: string) {
+    if (!window.electronAPI?.inspectCskCollectionArchive) {
+      throw new Error('CSK archive inspector not available');
+    }
+
+    const result =
+      await window.electronAPI.inspectCskCollectionArchive(downloadUrl);
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to inspect CSK Collection');
+    }
+
+    return result;
+  }
+
+  async installCskCollection(options: {
+    downloadUrl: string;
+    version: string;
+    selectedMods: string[];
+  }) {
+    if (!window.electronAPI?.installCskCollection) {
+      throw new Error('CSK installer not available');
+    }
+
+    if (!window.settingsManager) {
+      throw new Error('Settings manager not available');
+    }
+
+    const pluginsPath = window.settingsManager.getPluginsPath();
+    const modsPath = window.settingsManager.getModsPath();
+
+    if (!pluginsPath) {
+      throw new Error('Plugins folder not configured');
+    }
+
+    if (!modsPath) {
+      throw new Error('Mods folder not configured');
+    }
+
+    const result = await window.electronAPI.installCskCollection(
+      options.downloadUrl,
+      pluginsPath,
+      modsPath,
+      options.selectedMods,
+      options.version,
+    );
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to install CSK Collection');
+    }
+
+    if (window.pluginManager) {
+      setTimeout(() => {
+        window.pluginManager.refreshPlugins();
+      }, 500);
+    }
+
+    if (window.modManager?.loadModsFromFolder) {
+      setTimeout(() => {
+        window.modManager.loadModsFromFolder(modsPath);
+      }, 500);
+    }
+
+    return result;
+  }
+
+  async installOneSlotEffects(options: {
+    downloadUrl: string;
+    version: string;
+  }) {
+    if (!window.electronAPI?.installOneSlotEffects) {
+      throw new Error('One Slot Effects installer not available');
+    }
+
+    if (!window.settingsManager) {
+      throw new Error('Settings manager not available');
+    }
+
+    const pluginsPath = window.settingsManager.getPluginsPath();
+
+    if (!pluginsPath) {
+      throw new Error('Plugins folder not configured');
+    }
+
+    const result = await window.electronAPI.installOneSlotEffects(
+      options.downloadUrl,
+      pluginsPath,
+      options.version,
+    );
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to install One Slot Effects');
+    }
+
+    if (window.pluginManager) {
+      setTimeout(() => {
+        window.pluginManager.refreshPlugins();
+      }, 500);
+    }
+
+    return result;
   }
 }
 

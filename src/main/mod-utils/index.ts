@@ -80,6 +80,14 @@ interface BatchModMove {
 export default class ModUtils {
   private static readonly batchDuplicateMarker = '.fpp-batch-duplicate-';
 
+  private static isArchiveMetadataName(name: string): boolean {
+    return (
+      name === '__MACOSX' ||
+      name === '.DS_Store' ||
+      name.startsWith('._')
+    );
+  }
+
   private static getDisplayModName(folderName: string) {
     const markerIndex = folderName.indexOf(this.batchDuplicateMarker);
 
@@ -218,6 +226,10 @@ export default class ModUtils {
   }
 
   private static _gatherDirsWithModFiles(rootDir: string): string[] {
+    if (this.isArchiveMetadataName(path.basename(rootDir))) {
+      return [];
+    }
+
     const checkIfModDir = (dir: string): boolean => {
       return (
         fs.existsSync(path.join(dir, 'config.json')) ||
@@ -235,7 +247,9 @@ export default class ModUtils {
       return [rootDir];
     }
 
-    const items = fs.readdirSync(rootDir);
+    const items = fs
+      .readdirSync(rootDir)
+      .filter((item) => !this.isArchiveMetadataName(item));
 
     for (const item of items) {
       const itemPath = path.join(rootDir, item);
@@ -851,7 +865,9 @@ export default class ModUtils {
     if (stats.isDirectory()) {
       await fsPromises.mkdir(dest, { recursive: true });
 
-      const children = await fsPromises.readdir(src);
+      const children = (await fsPromises.readdir(src)).filter(
+        (childItemName) => !this.isArchiveMetadataName(childItemName),
+      );
       for (const childItemName of children) {
         if (isCancelled?.()) {
           throw new Error('Installation cancelled');
@@ -977,7 +993,9 @@ export default class ModUtils {
       throw new Error('Installation cancelled');
     }
 
-    const extractedItems = await fsPromises.readdir(tempExtractDir);
+    const extractedItems = (await fsPromises.readdir(tempExtractDir)).filter(
+      (item) => !this.isArchiveMetadataName(item),
+    );
     let isSingleFolderExtract = false;
 
     if (extractedItems.length === 1) {

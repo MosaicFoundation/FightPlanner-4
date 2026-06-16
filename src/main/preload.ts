@@ -1,4 +1,9 @@
-import { contextBridge, ipcRenderer, webUtils } from 'electron';
+import {
+  contextBridge,
+  ipcRenderer,
+  webUtils,
+  type IpcRendererEvent,
+} from 'electron';
 
 import { FileHandlers } from './ipc/handlers/file-handlers';
 import { ModHandlers } from './ipc/handlers/mod-handlers';
@@ -15,6 +20,7 @@ import { FppHandlers } from './ipc/handlers/fpp-handlers';
 import { StageHandlers } from './ipc/handlers/stage-handlers';
 import { CharacterCssHandlers } from './ipc/handlers/character-css-handlers';
 import { ModProfileHandlers } from './ipc/handlers/mod-profile-handlers';
+import { ConfigBackupHandlers } from './ipc/handlers/config-backup-handlers';
 import { ParamsWithoutFirstArg } from './types/common';
 import { WindowHandlers } from './ipc/handlers/window-handlers';
 import { DiscordHandlers } from './ipc/handlers/discord-handlers';
@@ -87,6 +93,7 @@ const invokeFppHandler = wrapInvoke<FppHandlers>();
 const invokeStageHandler = wrapInvoke<StageHandlers>();
 const invokeCharacterCssHandler = wrapInvoke<CharacterCssHandlers>();
 const invokeModProfileHandler = wrapInvoke<ModProfileHandlers>();
+const invokeConfigBackupHandler = wrapInvoke<ConfigBackupHandlers>();
 
 const registerProtocolCallback = wrapEventCallback<ProtocolHandlerEvents>();
 const registerMainCallback = wrapEventCallback<MainEvents>();
@@ -98,6 +105,8 @@ const electronAPI = {
   selectFolder: invokeFileHandler('select-folder'),
   selectEmulatorFile: invokeFileHandler('select-emulator-file'),
   readModsFolder: invokeModHandler('read-mods-folder'),
+  watchModsFolder: invokeModHandler('watch-mods-folder'),
+  unwatchModsFolder: invokeModHandler('unwatch-mods-folder'),
   getPreviewImage: invokeModHandler('get-preview-image'),
   saveModPreview: invokeModHandler('save-mod-preview'),
   getModInfo: invokeModHandler('get-mod-info'),
@@ -125,6 +134,11 @@ const electronAPI = {
   deletePlugin: invokePluginHandler('delete-plugin'),
   checkPluginUpdates: invokePluginHandler('check-plugin-updates'),
   updatePlugin: invokePluginHandler('update-plugin'),
+  inspectCskCollectionArchive: invokePluginHandler(
+    'inspect-csk-collection-archive',
+  ),
+  installCskCollection: invokePluginHandler('install-csk-collection'),
+  installOneSlotEffects: invokePluginHandler('install-one-slot-effects'),
   getPluginRepoMapping: invokePluginHandler('get-plugin-repo-mapping'),
   setPluginRepoMapping: invokePluginHandler('set-plugin-repo-mapping'),
   getAppVersion: invokeAppHandler('get-app-version'),
@@ -199,6 +213,8 @@ const electronAPI = {
   removeCharacterCssEntry: invokeCharacterCssHandler('remove-character-css-entry'),
   loadModProfiles: invokeModProfileHandler('load-mod-profiles'),
   saveModProfiles: invokeModProfileHandler('save-mod-profiles'),
+  exportConfigBackup: invokeConfigBackupHandler('export-config-backup'),
+  restoreConfigBackup: invokeConfigBackupHandler('restore-config-backup'),
 
   store: {
     get: invokeStoreHandler('store-get'),
@@ -239,8 +255,28 @@ const electronAPI = {
     ipcRenderer.on('fpp-download-link', (event, data) => callback(data)),
   onOpenFppFile: (callback: (data: { filePath: string }) => void) =>
     ipcRenderer.on('open-fpp-file', (event, data) => callback(data)),
+  onModsFolderChanged: (
+    callback: (data: {
+      modsPath: string;
+      addedFolders: string[];
+      removedFolders: string[];
+    }) => void,
+  ) => {
+    const listener = (
+      event: IpcRendererEvent,
+      data: {
+        modsPath: string;
+        addedFolders: string[];
+        removedFolders: string[];
+      },
+    ) => callback(data);
+    ipcRenderer.on('mods-folder-changed', listener);
+    return () => ipcRenderer.removeListener('mods-folder-changed', listener);
+  },
   onFtpTransferProgress: (callback: (data: any) => void) =>
     ipcRenderer.on('ftp-transfer-progress', (event, data) => callback(data)),
+  onTutorialWindowClosed: (callback: () => void) =>
+    ipcRenderer.on('tutorial-window-closed', () => callback()),
 
   onUpdateChecking: registerRendererCallback('update-checking'),
   onUpdateAvailable: registerRendererCallback('update-available'),

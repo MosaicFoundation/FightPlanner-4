@@ -19,6 +19,26 @@ export interface PluginUpdateResult {
 }
 
 export default class PluginUpdateChecker {
+  static getGameBananaSubmission(repoInput: string) {
+    const trimmed = String(repoInput || '').trim();
+    const directMatch = trimmed.match(/^GameBanana\/(\d+)$/i);
+    if (directMatch) {
+      return { modelName: 'Mod', submissionId: directMatch[1] };
+    }
+
+    const urlMatch = trimmed.match(/gamebanana\.com\/(?:mods|sounds)\/(\d+)/i);
+    if (urlMatch) {
+      return {
+        modelName: trimmed.toLowerCase().includes('/sounds/')
+          ? 'Sound'
+          : 'Mod',
+        submissionId: urlMatch[1],
+      };
+    }
+
+    return null;
+  }
+
   static normalizeRepoUrl(repoInput) {
     if (!repoInput) return null;
 
@@ -131,6 +151,37 @@ export default class PluginUpdateChecker {
     }
   }
 
+  static async getLatestGameBananaFile(modelName: string, submissionId: string) {
+    try {
+      const safeModelName = encodeURIComponent(modelName || 'Mod');
+      const safeSubmissionId = encodeURIComponent(submissionId);
+      const url = `https://gamebanana.com/apiv11/${safeModelName}/${safeSubmissionId}?_csvProperties=_aFiles`;
+      const data = await this.fetchJson(url);
+      const files = (data as any)?._aFiles;
+      const fileEntries = Array.isArray(files)
+        ? files
+        : Object.values(files || {});
+
+      for (const file of fileEntries as any[]) {
+        const downloadUrl = file?._sDownloadUrl;
+        if (typeof downloadUrl === 'string' && downloadUrl.startsWith('http')) {
+          return {
+            version: String(file?._sVersion || file?._sFile || 'unknown'),
+            downloadUrl,
+          };
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error(
+        `[PluginUpdate] Failed to fetch GameBanana files for ${modelName}/${submissionId}:`,
+        error,
+      );
+      return null;
+    }
+  }
+
   static findNroAsset(assets) {
     if (!assets || !Array.isArray(assets)) return null;
 
@@ -176,6 +227,34 @@ export default class PluginUpdateChecker {
     currentVersion: string | null,
   ): Promise<PluginUpdateResult> {
     try {
+      const gameBananaSubmission = this.getGameBananaSubmission(repoInput);
+      if (gameBananaSubmission) {
+        const latestInfo = await this.getLatestGameBananaFile(
+          gameBananaSubmission.modelName,
+          gameBananaSubmission.submissionId,
+        );
+
+        if (!latestInfo) {
+          return {
+            success: false,
+            error: 'No GameBanana files found',
+          };
+        }
+
+        const hasUpdate =
+          !currentVersion ||
+          this.compareVersions(latestInfo.version, currentVersion) > 0;
+
+        return {
+          success: true,
+          hasUpdate,
+          currentVersion: currentVersion || 'unknown',
+          latestVersion: latestInfo.version,
+          downloadUrl: latestInfo.downloadUrl,
+          repo: repoInput,
+        };
+      }
+
       const repo = this.normalizeRepoUrl(repoInput);
 
       if (!repo) {

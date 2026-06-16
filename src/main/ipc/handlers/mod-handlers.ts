@@ -24,6 +24,44 @@ import { SlotChanger } from '../../mod-utils/slot-changer';
 
 export type ModHandlers = typeof ModHandlers;
 
+type ModsFolderWatcher = {
+  watcher: fs.FSWatcher;
+  modsPath: string;
+  knownFolders: Set<string>;
+  debounceTimer: NodeJS.Timeout | null;
+};
+
+const modsFolderWatchers = new Map<number, ModsFolderWatcher>();
+
+function readImmediateFolderNames(folderPath: string) {
+  try {
+    return new Set(
+      fs
+        .readdirSync(folderPath, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name),
+    );
+  } catch (error) {
+    console.warn('[ModHandlers] Failed to snapshot mods folder:', {
+      folderPath,
+      error: error?.message || String(error),
+    });
+    return new Set<string>();
+  }
+}
+
+function stopModsFolderWatcher(webContentsId: number) {
+  const existingWatcher = modsFolderWatchers.get(webContentsId);
+  if (!existingWatcher) return;
+
+  if (existingWatcher.debounceTimer) {
+    clearTimeout(existingWatcher.debounceTimer);
+  }
+
+  existingWatcher.watcher.close();
+  modsFolderWatchers.delete(webContentsId);
+}
+
 const ModHandlers = {
   ['read-mods-folder']: async (
     common: BaseHandlerArg,
@@ -102,6 +140,88 @@ const ModHandlers = {
       handleError(error, 'ensure-mods-folder-available');
       return createErrorResponse(ErrorCodes.FOLDER_NOT_FOUND, error.message);
     }
+  },
+
+  ['watch-mods-folder']: async (
+    common: BaseHandlerArg,
+    modsPath: string,
+  ): HandlerResponse => {
+    try {
+      const webContents = common.event.sender;
+      const webContentsId = webContents.id;
+      const resolvedModsPath = modsPath ? resolveVirtualPath(modsPath) : '';
+
+      stopModsFolderWatcher(webContentsId);
+
+      if (
+        !resolvedModsPath ||
+        !fs.existsSync(resolvedModsPath) ||
+        !fs.statSync(resolvedModsPath).isDirectory()
+      ) {
+        return createErrorResponse(
+          ErrorCodes.FOLDER_NOT_FOUND,
+          `Mods folder is not available: ${modsPath}`,
+        );
+      }
+
+      const watcherState: ModsFolderWatcher = {
+        watcher: fs.watch(resolvedModsPath, (eventType) => {
+          if (eventType !== 'rename') return;
+
+          if (watcherState.debounceTimer) {
+            clearTimeout(watcherState.debounceTimer);
+          }
+
+          watcherState.debounceTimer = setTimeout(() => {
+            const nextFolders = readImmediateFolderNames(resolvedModsPath);
+            const addedFolders = [...nextFolders].filter(
+              (folderName) => !watcherState.knownFolders.has(folderName),
+            );
+            const removedFolders = [...watcherState.knownFolders].filter(
+              (folderName) => !nextFolders.has(folderName),
+            );
+
+            watcherState.knownFolders = nextFolders;
+
+            if (addedFolders.length === 0 && removedFolders.length === 0) {
+              return;
+            }
+
+            if (!webContents.isDestroyed()) {
+              webContents.send('mods-folder-changed', {
+                modsPath,
+                addedFolders,
+                removedFolders,
+              });
+            }
+          }, 500);
+        }),
+        modsPath,
+        knownFolders: readImmediateFolderNames(resolvedModsPath),
+        debounceTimer: null,
+      };
+
+      watcherState.watcher.on('error', (error) => {
+        console.warn('[ModHandlers] Mods folder watcher stopped:', {
+          modsPath,
+          error: error?.message || String(error),
+        });
+        stopModsFolderWatcher(webContentsId);
+      });
+
+      modsFolderWatchers.set(webContentsId, watcherState);
+      webContents.once('destroyed', () => stopModsFolderWatcher(webContentsId));
+
+      return { success: true };
+    } catch (error) {
+      handleError(error, 'watch-mods-folder');
+      return createErrorResponse(ErrorCodes.MOD_READ_ERROR, error.message);
+    }
+  },
+
+  ['unwatch-mods-folder']: async (common: BaseHandlerArg): HandlerResponse => {
+    stopModsFolderWatcher(common.event.sender.id);
+    return { success: true };
   },
 
   ['get-preview-image']: async (common: BaseHandlerArg, modPath: string) => {

@@ -18,7 +18,9 @@ function getToastSettingsLabel() {
 }
 
 function navigateToEmulatorSettings() {
-  const settingsTab = document.querySelector<HTMLElement>('[data-tab="settings"]');
+  const settingsTab = document.querySelector<HTMLElement>(
+    '[data-tab="settings"]',
+  );
   if (settingsTab) {
     settingsTab.click();
   }
@@ -164,7 +166,10 @@ function initializeTabFeatures(tabName) {
       const title = btn.getAttribute('title');
       const action = btn.dataset.action;
 
-      if ((action === 'add-mod' || title === 'Add') && !btn.dataset.listenerAttached) {
+      if (
+        (action === 'add-mod' || title === 'Add') &&
+        !btn.dataset.listenerAttached
+      ) {
         btn.dataset.listenerAttached = 'true';
         btn.addEventListener('click', async () => {
           try {
@@ -191,9 +196,11 @@ function initializeTabFeatures(tabName) {
               return;
             }
 
-            const modsPath = (await window.electronAPI.store.get(
-              'modsPath',
-            )) as string | null;
+            const modsPath =
+              window.settingsManager?.getModsPath?.() ||
+              ((await window.electronAPI.store.get('modsPath')) as
+                | string
+                | null);
 
             if (!modsPath) {
               if (window.toastManager) {
@@ -252,7 +259,10 @@ function initializeTabFeatures(tabName) {
         updatePlayActionButtonForMode(btn);
       }
 
-      if ((action === 'launch-emulator' || title === 'Play') && !btn.dataset.listenerAttached) {
+      if (
+        (action === 'launch-emulator' || title === 'Play') &&
+        !btn.dataset.listenerAttached
+      ) {
         btn.dataset.listenerAttached = 'true';
         btn.addEventListener('click', async () => {
           try {
@@ -321,17 +331,21 @@ function initializeTabFeatures(tabName) {
                   {},
                   {
                     actionButton: {
-                      text: window.i18n?.t('toasts.rerunAnyway') || 'Rerun anyway',
+                      text:
+                        window.i18n?.t('toasts.rerunAnyway') || 'Rerun anyway',
                       onClick: async () => {
-                        const forceResult = await window.electronAPI.launchEmulator(
-                          emulatorType,
-                          emulatorPath,
-                          gamePath,
-                          fullscreen,
-                          true,
-                        );
+                        const forceResult =
+                          await window.electronAPI.launchEmulator(
+                            emulatorType,
+                            emulatorPath,
+                            gamePath,
+                            fullscreen,
+                            true,
+                          );
                         if (forceResult.success && window.toastManager) {
-                          window.toastManager.success('toasts.emulatorLaunchedSuccessfully');
+                          window.toastManager.success(
+                            'toasts.emulatorLaunchedSuccessfully',
+                          );
                         }
                       },
                     },
@@ -422,8 +436,7 @@ function initializeTabFeatures(tabName) {
       }
     }
 
-    const modSortOrder =
-      document.querySelector<HTMLElement>('#mod-sort-order');
+    const modSortOrder = document.querySelector<HTMLElement>('#mod-sort-order');
     if (modSortOrder) {
       const newModSortOrder = modSortOrder.cloneNode(true);
       modSortOrder.parentNode!.replaceChild(newModSortOrder, modSortOrder);

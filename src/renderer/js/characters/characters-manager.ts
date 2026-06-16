@@ -21,21 +21,6 @@ interface CharacterMovesetGroup {
   mods: CharacterMovesetMod[];
 }
 
-interface CharacterMovesetMod {
-  name: string;
-  path: string;
-  status: 'active' | 'disabled';
-  category: string;
-  description: string;
-  slots: string[];
-}
-
-interface CharacterMovesetGroup {
-  id: string;
-  info: { name: string; number: string };
-  mods: CharacterMovesetMod[];
-}
-
 interface CharacterCssEntry {
   id: string;
   nameId: string;
@@ -567,13 +552,6 @@ class CharactersManager {
               name: mod.name,
               path: mod.path,
               status: status,
-              slots: slotsByFighterId.get(fighterId) || [],
-            });
-          }
-
-          if (isMovesetMod) {
-            this.addMovesetModForCharacter(fighterId, {
-              ...movesetMod,
               slots: slotsByFighterId.get(fighterId) || [],
             });
           }

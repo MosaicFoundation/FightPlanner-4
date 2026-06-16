@@ -142,6 +142,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('postTutorialIntro') === 'true') {
+    setTimeout(() => window.tutorial?.showInApp?.(), 800);
+  }
+
   setTimeout(() => {
     const activeTab = document.querySelector<HTMLElement>(
       '.tab-content.active',

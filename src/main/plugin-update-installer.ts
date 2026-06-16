@@ -46,10 +46,16 @@ export default class PluginUpdateInstaller {
             },
           },
           (res) => {
-            if (res.statusCode === 302 || res.statusCode === 301) {
+            if (
+              res.statusCode &&
+              res.statusCode >= 300 &&
+              res.statusCode < 400 &&
+              res.headers.location
+            ) {
               file.close();
               fs.unlinkSync(targetPath);
-              return this.downloadFile(res.headers.location, targetPath)
+              const redirectUrl = new URL(res.headers.location, url).toString();
+              return this.downloadFile(redirectUrl, targetPath)
                 .then(resolve)
                 .catch(reject);
             }

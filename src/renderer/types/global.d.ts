@@ -92,6 +92,7 @@ declare global {
 
     tutorial: {
       show: () => void;
+      showInApp: () => void;
       reset: () => void;
       resetFirstLaunch: () => void;
     };

@@ -11,10 +11,7 @@ import {
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
-import {
-  detectWindowsDrives,
-  isSwitchSdCard,
-} from '../../utils/drive-detector';
+import { detectDrives, isSwitchSdCard } from '../../utils/drive-detector';
 import {
   getLatestArcropolisRelease,
   getLatestSkylineRelease,
@@ -34,8 +31,7 @@ export type TutorialHandlers = typeof TutorialHandlers;
 const TutorialHandlers = {
   ['open-tutorial-window']: async (common: BaseHandlerArg) => {
     try {
-      const windows = BrowserWindow.getAllWindows();
-      const mainWindow = windows[0];
+      const mainWindow = BrowserWindow.fromWebContents(common.event.sender);
 
       createTutorialWindow(mainWindow || null);
 
@@ -72,7 +68,7 @@ const TutorialHandlers = {
 
   ['detect-sd-drives']: async (common: BaseHandlerArg) => {
     try {
-      const drives = await detectWindowsDrives();
+      const drives = await detectDrives();
       return { success: true, drives };
     } catch (error) {
       handleError(error, 'detect-sd-drives');
