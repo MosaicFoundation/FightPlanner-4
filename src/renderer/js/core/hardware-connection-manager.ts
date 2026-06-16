@@ -160,6 +160,16 @@ export class HardwareConnectionManager {
     }
 
     await window.electronAPI.store.set('switchDriveLetter', resolvedPath);
+    if (settingsManager?.settings) {
+      await window.electronAPI.store.set(
+        'modsPath',
+        settingsManager.settings.modsPath || null,
+      );
+      await window.electronAPI.store.set(
+        'pluginsPath',
+        settingsManager.settings.pluginsPath || null,
+      );
+    }
   }
 
   private startWatching() {

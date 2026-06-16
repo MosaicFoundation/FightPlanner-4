@@ -1,4 +1,9 @@
-import { contextBridge, ipcRenderer, webUtils } from 'electron';
+import {
+  contextBridge,
+  ipcRenderer,
+  webUtils,
+  type IpcRendererEvent,
+} from 'electron';
 
 import { FileHandlers } from './ipc/handlers/file-handlers';
 import { ModHandlers } from './ipc/handlers/mod-handlers';
@@ -100,6 +105,8 @@ const electronAPI = {
   selectFolder: invokeFileHandler('select-folder'),
   selectEmulatorFile: invokeFileHandler('select-emulator-file'),
   readModsFolder: invokeModHandler('read-mods-folder'),
+  watchModsFolder: invokeModHandler('watch-mods-folder'),
+  unwatchModsFolder: invokeModHandler('unwatch-mods-folder'),
   getPreviewImage: invokeModHandler('get-preview-image'),
   saveModPreview: invokeModHandler('save-mod-preview'),
   getModInfo: invokeModHandler('get-mod-info'),
@@ -248,8 +255,28 @@ const electronAPI = {
     ipcRenderer.on('fpp-download-link', (event, data) => callback(data)),
   onOpenFppFile: (callback: (data: { filePath: string }) => void) =>
     ipcRenderer.on('open-fpp-file', (event, data) => callback(data)),
+  onModsFolderChanged: (
+    callback: (data: {
+      modsPath: string;
+      addedFolders: string[];
+      removedFolders: string[];
+    }) => void,
+  ) => {
+    const listener = (
+      event: IpcRendererEvent,
+      data: {
+        modsPath: string;
+        addedFolders: string[];
+        removedFolders: string[];
+      },
+    ) => callback(data);
+    ipcRenderer.on('mods-folder-changed', listener);
+    return () => ipcRenderer.removeListener('mods-folder-changed', listener);
+  },
   onFtpTransferProgress: (callback: (data: any) => void) =>
     ipcRenderer.on('ftp-transfer-progress', (event, data) => callback(data)),
+  onTutorialWindowClosed: (callback: () => void) =>
+    ipcRenderer.on('tutorial-window-closed', () => callback()),
 
   onUpdateChecking: registerRendererCallback('update-checking'),
   onUpdateAvailable: registerRendererCallback('update-available'),

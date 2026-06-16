@@ -6,26 +6,33 @@ document.addEventListener('DOMContentLoaded', () => {
     async storeGet(key: string): Promise<any> {
       if (tutorialDevMode && key in devOverrides) return devOverrides[key];
       if (tutorialDevMode && devOverrides['dev.emulatorNotFound']) {
-        if (key === 'tutorial.yuzuPath' || key === 'tutorial.ryujinxPath') return null;
+        if (key === 'tutorial.yuzuPath' || key === 'tutorial.ryujinxPath')
+          return null;
       }
       return window.tutorialAPI.store.get(key);
     },
     async detectSdDrives(): Promise<any> {
-      if (tutorialDevMode && devOverrides['dev.sdCardEmpty']) return { success: true, drives: [] };
+      if (tutorialDevMode && devOverrides['dev.sdCardEmpty'])
+        return { success: true, drives: [] };
       return window.tutorialAPI.detectSdDrives();
     },
     async installARCropolis(p: string): Promise<any> {
-      if (tutorialDevMode && devOverrides['dev.installFail']) return { success: false, error: 'DEV: Simulated installation failure' };
-      return (window.tutorialAPI as any).installARCropolis ? (window.tutorialAPI as any).installARCropolis(p) : { success: false };
+      if (tutorialDevMode && devOverrides['dev.installFail'])
+        return { success: false, error: 'DEV: Simulated installation failure' };
+      return (window.tutorialAPI as any).installARCropolis
+        ? (window.tutorialAPI as any).installARCropolis(p)
+        : { success: false };
     },
     async detectYuzuPath(): Promise<any> {
-      if (tutorialDevMode && devOverrides['dev.emulatorNotFound']) return { success: false };
+      if (tutorialDevMode && devOverrides['dev.emulatorNotFound'])
+        return { success: false };
       return window.tutorialAPI.detectYuzuPath();
     },
     async detectRyujinxPath(): Promise<any> {
-      if (tutorialDevMode && devOverrides['dev.emulatorNotFound']) return { success: false };
+      if (tutorialDevMode && devOverrides['dev.emulatorNotFound'])
+        return { success: false };
       return window.tutorialAPI.detectRyujinxPath();
-    }
+    },
   };
 
   // Check for restored dev mode state
@@ -315,7 +322,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const switchModdedRadios = document.querySelectorAll<HTMLElement>(
           'input[name="switch-modded"]',
         );
-        const helpDiv = document.querySelector<HTMLElement>('#switch-modded-help');
+        const helpDiv = document.querySelector<HTMLElement>(
+          '#switch-modded-help',
+        );
 
         const disableNext = () => {
           if (nextBtn) {
@@ -608,8 +617,8 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 `,
       onRender: async () => {
-
-        const statusDiv = document.querySelector<HTMLElement>('#sd-card-status');
+        const statusDiv =
+          document.querySelector<HTMLElement>('#sd-card-status');
         const nextBtn = document.querySelector<HTMLElement>('#next-btn');
 
         if (nextBtn) {
@@ -688,7 +697,8 @@ document.addEventListener('DOMContentLoaded', () => {
                       document
                         .querySelector<HTMLElement>('#wrong-drive-btn-2')
                         ?.addEventListener('click', async () => {
-                          const result2 = await window.tutorialAPI.selectDrive();
+                          const result2 =
+                            await window.tutorialAPI.selectDrive();
                           if (result2.success && !result2.canceled) {
                             await window.tutorialAPI.store.set(
                               'tutorial.sdDrive',
@@ -720,14 +730,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <p style="color: #fff; margin-bottom: 12px; font-weight: 600;">Multiple drives detected. Please select your SD card:</p>
                                 <div style="display: flex; flex-direction: column; gap: 8px;">
                                     ${drives
-                    .map(
-                      (drive, idx) => `
+                                      .map(
+                                        (drive, idx) => `
                                         <button class="drive-select-btn" data-path="${drive.path}" style="padding: 12px; background: rgba(122, 155, 255, 0.1); border: 2px solid rgba(122, 155, 255, 0.3); border-radius: 8px; color: #fff; cursor: pointer; text-align: left; transition: all 0.2s;">
                                             <strong>${drive.letter}:</strong> ${drive.label} (${drive.type})
                                         </button>
                                     `,
-                    )
-                    .join('')}
+                                      )
+                                      .join('')}
                                 </div>
                                 <button id="manual-select-btn" style="margin-top: 12px; padding: 10px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #fff; cursor: pointer; width: 100%;">
                                     Browse Manually...
@@ -849,10 +859,11 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 `,
       onRender: async () => {
-
-        const statusDiv = document.querySelector<HTMLElement>('#install-status');
+        const statusDiv =
+          document.querySelector<HTMLElement>('#install-status');
         const nextBtn = document.querySelector<HTMLElement>('#next-btn');
-        const progressBar = document.querySelector<HTMLElement>('#progress-bar');
+        const progressBar =
+          document.querySelector<HTMLElement>('#progress-bar');
 
         if (nextBtn) {
           nextBtn.style.opacity = '0.5';
@@ -860,9 +871,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-          const sdDrive = (await apiWrapper.storeGet(
-            'tutorial.sdDrive',
-          )) as string | null;
+          const sdDrive = (await apiWrapper.storeGet('tutorial.sdDrive')) as
+            | string
+            | null;
 
           if (!sdDrive) {
             statusDiv!.innerHTML =
@@ -1084,11 +1095,11 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 `,
       onRender: async () => {
-
         const nextBtn = document.querySelector<HTMLElement>('#next-btn');
         const verifyYesBtn =
           document.querySelector<HTMLElement>('#verify-yes-btn');
-        const verifyNoBtn = document.querySelector<HTMLElement>('#verify-no-btn');
+        const verifyNoBtn =
+          document.querySelector<HTMLElement>('#verify-no-btn');
         const lottieContainer = document.querySelector<HTMLElement>(
           '#arcropolis-lottie-switch',
         );
@@ -1114,7 +1125,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         verifyYesBtn?.addEventListener('click', async () => {
-          await window.tutorialAPI.store.set('tutorial.arcropolisVerified', true);
+          await window.tutorialAPI.store.set(
+            'tutorial.arcropolisVerified',
+            true,
+          );
           const statusDiv = document.querySelector<HTMLElement>(
             '#verification-status',
           );
@@ -1151,7 +1165,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelector<HTMLElement>('#change-answer-btn');
           changeAnswerBtn?.addEventListener('click', async () => {
             // Go back to the installation step
-            currentStep = steps.findIndex((s) => s.title === 'Installing Skyline & ARCropolis (Switch)');
+            currentStep = steps.findIndex(
+              (s) => s.title === 'Installing Skyline & ARCropolis (Switch)',
+            );
             await renderProgressDots();
             renderStep(currentStep);
           });
@@ -1255,7 +1271,55 @@ document.addEventListener('DOMContentLoaded', () => {
           );
         };
 
-        const showSelectSdCardPrompt = (currentSdDrive?: string | null) => {
+        const getDriveDisplayText = (drive: any) => {
+          if (drive.path && drive.path.includes(':\\')) {
+            return `${drive.letter}: (${drive.label || 'Unknown'})`;
+          }
+
+          if (drive.path && drive.path.startsWith('/')) {
+            return `${drive.path} (${drive.label || 'Unknown'})`;
+          }
+
+          return `${drive.letter || drive.path} (${drive.label || 'Unknown'})`;
+        };
+
+        const selectSdDrive = async (sdDrive: string) => {
+          await window.tutorialAPI.store.set('tutorial.sdDrive', sdDrive);
+          await window.tutorialAPI.store.set('switchDriveLetter', sdDrive);
+          await configureMode('direct');
+        };
+
+        const showSelectedSdDrive = (sdDrive: string) => {
+          if (!status) return;
+
+          status.innerHTML = `
+            <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 10px; padding: 12px; color: rgba(255,255,255,0.78); font-size: 13px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                  <i class="bi bi-check-circle-fill" style="color: #4caf50; font-size: 18px; flex: 0 0 auto;"></i>
+                  <div style="min-width: 0;">
+                    <strong style="display: block; color: #fff;">Switch SD card selected</strong>
+                    <span style="display: block; color: rgba(255,255,255,0.6); font-family: monospace; font-size: 12px; overflow-wrap: anywhere;">${sdDrive}</span>
+                  </div>
+                </div>
+                <button id="hardware-library-change-sd-btn" style="flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px; padding: 8px 11px; background: rgba(122, 155, 255, 0.18); color: #dce4ff; border: 1px solid rgba(122, 155, 255, 0.32); border-radius: 8px; cursor: pointer; font-weight: 600;">
+                  <i class="bi bi-arrow-repeat"></i>
+                  Change
+                </button>
+              </div>
+            </div>
+          `;
+
+          document
+            .querySelector<HTMLElement>('#hardware-library-change-sd-btn')
+            ?.addEventListener('click', () => {
+              void showSelectSdCardPrompt(sdDrive);
+            });
+        };
+
+        const showSelectSdCardPrompt = async (
+          currentSdDrive?: string | null,
+        ) => {
           disableNext();
           if (!status) return;
 
@@ -1273,25 +1337,114 @@ document.addEventListener('DOMContentLoaded', () => {
                   ? `<p style="margin: 0 0 12px 0; color: rgba(255,255,255,0.58); font-family: monospace; font-size: 12px;">Current: ${currentSdDrive}</p>`
                   : ''
               }
-              <button id="hardware-library-select-sd-btn" style="display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; background: rgba(122, 155, 255, 0.18); color: #dce4ff; border: 1px solid rgba(122, 155, 255, 0.32); border-radius: 8px; cursor: pointer; font-weight: 600;">
-                <i class="bi bi-folder2-open"></i>
-                ${currentSdDrive ? 'Change SD card' : 'Select SD card'}
-              </button>
+              <div id="hardware-library-drive-picker" style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 10px; color: rgba(255,255,255,0.72);">
+                  <i class="bi bi-arrow-clockwise" style="animation: spin 1s linear infinite;"></i>
+                  Detecting local USB / SD drives...
+                </div>
+              </div>
             </div>
           `;
 
-          document
-            .querySelector<HTMLElement>('#hardware-library-select-sd-btn')
-            ?.addEventListener('click', async () => {
-              if (!window.tutorialAPI) return;
+          const picker = document.querySelector<HTMLElement>(
+            '#hardware-library-drive-picker',
+          );
+          if (!picker || !window.tutorialAPI) return;
 
-              const result = await window.tutorialAPI.selectDrive();
-              if (result.success && !result.canceled && result.path) {
-                await window.tutorialAPI.store.set('tutorial.sdDrive', result.path);
-                await window.tutorialAPI.store.set('switchDriveLetter', result.path);
-                await configureMode('direct');
-              }
-            });
+          const openManualPicker = async () => {
+            const result = await window.tutorialAPI.selectDrive();
+            if (result.success && !result.canceled && result.path) {
+              await selectSdDrive(result.path);
+            }
+          };
+
+          const renderManualActions = () => {
+            picker.insertAdjacentHTML(
+              'beforeend',
+              `
+                <div style="display: flex; gap: 8px; margin-top: 4px;">
+                  <button id="hardware-library-refresh-drives-btn" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 13px; background: rgba(122, 155, 255, 0.18); color: #dce4ff; border: 1px solid rgba(122, 155, 255, 0.32); border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    Refresh drives
+                  </button>
+                  <button id="hardware-library-browse-sd-btn" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 13px; background: rgba(255, 255, 255, 0.06); color: #fff; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    <i class="bi bi-folder2-open"></i>
+                    Browse manually
+                  </button>
+                </div>
+              `,
+            );
+
+            document
+              .querySelector<HTMLElement>(
+                '#hardware-library-refresh-drives-btn',
+              )
+              ?.addEventListener('click', () => {
+                void showSelectSdCardPrompt(currentSdDrive);
+              });
+            document
+              .querySelector<HTMLElement>('#hardware-library-browse-sd-btn')
+              ?.addEventListener('click', () => {
+                void openManualPicker();
+              });
+          };
+
+          try {
+            const result = await apiWrapper.detectSdDrives();
+            const drives =
+              result?.success && Array.isArray(result.drives)
+                ? result.drives
+                : [];
+
+            if (drives.length === 0) {
+              picker.innerHTML = `
+                <div style="background: rgba(255, 193, 7, 0.08); border: 1px solid rgba(255, 193, 7, 0.24); border-radius: 8px; padding: 10px; color: #ffc107;">
+                  No local USB / SD drive detected. Mount the Switch SD card, then refresh.
+                </div>
+              `;
+              renderManualActions();
+              return;
+            }
+
+            picker.innerHTML = drives
+              .map((drive: any) => {
+                const displayText = getDriveDisplayText(drive);
+                const drivePath = drive.path || drive.letter;
+                return `
+                  <button class="hardware-library-drive-select-btn" data-path="${drivePath}" style="display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 12px; background: rgba(122, 155, 255, 0.1); border: 1px solid rgba(122, 155, 255, 0.3); border-radius: 8px; color: #fff; cursor: pointer; text-align: left;">
+                    <i class="bi bi-usb-drive" style="color: #7a9bff; font-size: 18px;"></i>
+                    <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+                      <strong style="overflow-wrap: anywhere;">${displayText}</strong>
+                      <small style="color: rgba(255,255,255,0.56);">${drive.type || 'local drive'}</small>
+                    </span>
+                  </button>
+                `;
+              })
+              .join('');
+
+            document
+              .querySelectorAll<HTMLElement>(
+                '.hardware-library-drive-select-btn',
+              )
+              .forEach((button) => {
+                button.addEventListener('click', async () => {
+                  const sdDrive = button.dataset.path;
+                  if (sdDrive) {
+                    await selectSdDrive(sdDrive);
+                  }
+                });
+              });
+
+            renderManualActions();
+          } catch (error) {
+            console.error('Failed to detect SD drives for direct mode:', error);
+            picker.innerHTML = `
+              <div style="background: rgba(255, 77, 77, 0.08); border: 1px solid rgba(255, 77, 77, 0.24); border-radius: 8px; padding: 10px; color: #ff7777;">
+                Drive detection failed. You can still browse to the mounted SD card manually.
+              </div>
+            `;
+            renderManualActions();
+          }
         };
 
         const configureMode = async (
@@ -1300,13 +1453,18 @@ document.addEventListener('DOMContentLoaded', () => {
         ) => {
           if (!window.tutorialAPI) return;
 
-          await window.tutorialAPI.store.set('tutorial.hardwareLibraryMode', mode);
+          await window.tutorialAPI.store.set(
+            'tutorial.hardwareLibraryMode',
+            mode,
+          );
           await window.tutorialAPI.store.set('hardwareLibraryMode', mode);
           await window.tutorialAPI.store.set('appRunMode', 'hardware');
           await window.tutorialAPI.store.set('switchTransferMethod', 'drive');
 
           const sdDrive =
-            ((await apiWrapper.storeGet('tutorial.sdDrive')) as string | null) ||
+            ((await apiWrapper.storeGet('tutorial.sdDrive')) as
+              | string
+              | null) ||
             ((await apiWrapper.storeGet('switchDriveLetter')) as string | null);
 
           if (sdDrive) {
@@ -1315,7 +1473,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (mode === 'direct') {
             if (options.requireSdSelection || !sdDrive) {
-              showSelectSdCardPrompt(sdDrive);
+              void showSelectSdCardPrompt(sdDrive);
               return;
             }
 
@@ -1327,9 +1485,15 @@ document.addEventListener('DOMContentLoaded', () => {
             )) as string | null;
 
             if (currentModsPath && !isSwitchLibraryPath(currentModsPath)) {
-              await window.tutorialAPI.store.set('localModsPath', currentModsPath);
+              await window.tutorialAPI.store.set(
+                'localModsPath',
+                currentModsPath,
+              );
             }
-            if (currentPluginsPath && !isSwitchLibraryPath(currentPluginsPath)) {
+            if (
+              currentPluginsPath &&
+              !isSwitchLibraryPath(currentPluginsPath)
+            ) {
               await window.tutorialAPI.store.set(
                 'localPluginsPath',
                 currentPluginsPath,
@@ -1365,16 +1529,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (status) {
-              status.innerHTML = `
-                <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 10px; padding: 12px; color: rgba(255,255,255,0.78); font-size: 13px;">
-                  FightPlanner will read mods directly from your mounted Switch SD card.
-                </div>
-              `;
+              showSelectedSdDrive(sdDrive);
             }
           } else {
-            const localModsPath = (await apiWrapper.storeGet('localModsPath')) as
-              | string
-              | null;
+            const localModsPath = (await apiWrapper.storeGet(
+              'localModsPath',
+            )) as string | null;
             const localPluginsPath = (await apiWrapper.storeGet(
               'localPluginsPath',
             )) as string | null;
@@ -1383,7 +1543,10 @@ document.addEventListener('DOMContentLoaded', () => {
               await window.tutorialAPI.store.set('modsPath', localModsPath);
             }
             if (localPluginsPath) {
-              await window.tutorialAPI.store.set('pluginsPath', localPluginsPath);
+              await window.tutorialAPI.store.set(
+                'pluginsPath',
+                localPluginsPath,
+              );
             }
 
             if (status) {
@@ -1418,7 +1581,9 @@ document.addEventListener('DOMContentLoaded', () => {
           radio.addEventListener('change', async () => {
             if (radio.checked) {
               const mode = radio.value === 'direct' ? 'direct' : 'local';
-              await configureMode(mode, { requireSdSelection: mode === 'direct' });
+              await configureMode(mode, {
+                requireSdSelection: mode === 'direct',
+              });
             }
           });
         });
@@ -1448,7 +1613,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 `,
       onRender: async () => {
-
         const nextBtn = document.querySelector<HTMLElement>('#next-btn');
         const yuzuBtn = document.querySelector<HTMLElement>('#yuzu-btn');
         const ryujinxBtn = document.querySelector<HTMLElement>('#ryujinx-btn');
@@ -1473,7 +1637,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         ryujinxBtn!.addEventListener('click', async () => {
-          await window.tutorialAPI.store.set('tutorial.emulatorType', 'ryujinx');
+          await window.tutorialAPI.store.set(
+            'tutorial.emulatorType',
+            'ryujinx',
+          );
           ryujinxBtn!.style.background = 'rgba(76, 175, 80, 0.2)';
           ryujinxBtn!.style.borderColor = 'rgba(76, 175, 80, 0.5)';
           yuzuBtn!.style.background = 'rgba(122, 155, 255, 0.1)';
@@ -1517,7 +1684,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 `,
       onRender: async () => {
-
         const statusDiv = document.querySelector<HTMLElement>('#yuzu-status');
         const nextBtn = document.querySelector<HTMLElement>('#next-btn');
 
@@ -1529,7 +1695,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           const result = await apiWrapper.detectYuzuPath();
           if (result.success && result.path) {
-            await window.tutorialAPI.store.set('tutorial.yuzuPath', result.path);
+            await window.tutorialAPI.store.set(
+              'tutorial.yuzuPath',
+              result.path,
+            );
             statusDiv!.innerHTML = `
                     <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; padding: 16px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
@@ -1652,7 +1821,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 `,
       onRender: async () => {
-
         const statusDiv = document.querySelector<HTMLElement>(
           '#yuzu-install-status',
         );
@@ -1664,9 +1832,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-          const yuzuPath = (await apiWrapper.storeGet(
-            'tutorial.yuzuPath',
-          )) as string | null;
+          const yuzuPath = (await apiWrapper.storeGet('tutorial.yuzuPath')) as
+            | string
+            | null;
 
           if (!yuzuPath) {
             statusDiv!.innerHTML =
@@ -1848,7 +2016,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 `,
       onRender: async () => {
-
         const nextBtn = document.querySelector<HTMLElement>('#next-btn');
         const verifyYesBtn = document.querySelector<HTMLElement>(
           '#yuzu-verify-yes-btn',
@@ -1881,7 +2048,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         verifyYesBtn?.addEventListener('click', async () => {
-          await window.tutorialAPI.store.set('tutorial.arcropolisVerified', true);
+          await window.tutorialAPI.store.set(
+            'tutorial.arcropolisVerified',
+            true,
+          );
 
           // Check for arcropolis folder
           const yuzuPath = (await apiWrapper.storeGet(
@@ -1976,7 +2146,9 @@ document.addEventListener('DOMContentLoaded', () => {
           );
           changeAnswerBtn?.addEventListener('click', async () => {
             // Go back to the installation step
-            currentStep = steps.findIndex((s) => s.title === 'Installing Skyline & ARCropolis (Yuzu)');
+            currentStep = steps.findIndex(
+              (s) => s.title === 'Installing Skyline & ARCropolis (Yuzu)',
+            );
             await renderProgressDots();
             renderStep(currentStep);
           });
@@ -2007,8 +2179,8 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 `,
       onRender: async () => {
-
-        const statusDiv = document.querySelector<HTMLElement>('#ryujinx-status');
+        const statusDiv =
+          document.querySelector<HTMLElement>('#ryujinx-status');
         const nextBtn = document.querySelector<HTMLElement>('#next-btn');
 
         if (nextBtn) {
@@ -2151,7 +2323,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 `,
       onRender: async () => {
-
         const statusDiv = document.querySelector<HTMLElement>(
           '#ryujinx-install-status',
         );
@@ -2359,7 +2530,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 `,
       onRender: async () => {
-
         const nextBtn = document.querySelector<HTMLElement>('#next-btn');
         const verifyYesBtn = document.querySelector<HTMLElement>(
           '#ryujinx-verify-yes-btn',
@@ -2392,7 +2562,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         verifyYesBtn?.addEventListener('click', async () => {
-          await window.tutorialAPI.store.set('tutorial.arcropolisVerified', true);
+          await window.tutorialAPI.store.set(
+            'tutorial.arcropolisVerified',
+            true,
+          );
 
           // Auto-configure paths
           const ryujinxPath = (await apiWrapper.storeGet(
@@ -2463,7 +2636,9 @@ document.addEventListener('DOMContentLoaded', () => {
           );
           changeAnswerBtn?.addEventListener('click', async () => {
             // Go back to the installation step
-            currentStep = steps.findIndex((s) => s.title === 'Installing Skyline & ARCropolis (Ryujinx)');
+            currentStep = steps.findIndex(
+              (s) => s.title === 'Installing Skyline & ARCropolis (Ryujinx)',
+            );
             await renderProgressDots();
             renderStep(currentStep);
           });
@@ -2507,7 +2682,9 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 `,
       onRender: async () => {
-        const btn = document.querySelector<HTMLElement>('#select-mods-path-btn');
+        const btn = document.querySelector<HTMLElement>(
+          '#select-mods-path-btn',
+        );
         const display = document.querySelector<HTMLElement>(
           '#mods-path-display .path-text',
         );
@@ -2749,7 +2926,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const hardwareType = await apiWrapper.storeGet('tutorial.hardwareType');
     const switchModded = await apiWrapper.storeGet('tutorial.switchModded');
-    const arcropolisInstalled = await apiWrapper.storeGet('tutorial.arcropolisInstalled');
+    const arcropolisInstalled = await apiWrapper.storeGet(
+      'tutorial.arcropolisInstalled',
+    );
     const emulatorType = await apiWrapper.storeGet('tutorial.emulatorType');
     const hardwareLibraryMode =
       (await apiWrapper.storeGet('tutorial.hardwareLibraryMode')) ||
@@ -2760,7 +2939,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (title === 'ARCropolis Status') {
-      return hardwareType === 'emulator' || (hardwareType === 'hardware' && switchModded === true);
+      return (
+        hardwareType === 'emulator' ||
+        (hardwareType === 'hardware' && switchModded === true)
+      );
     }
 
     if (title === 'Real Hardware Library') {
@@ -2777,7 +2959,11 @@ document.addEventListener('DOMContentLoaded', () => {
       'Verify ARCropolis (Switch)',
     ];
     if (switchOnlyTitles.includes(title)) {
-      return hardwareType === 'hardware' && switchModded === true && arcropolisInstalled === false;
+      return (
+        hardwareType === 'hardware' &&
+        switchModded === true &&
+        arcropolisInstalled === false
+      );
     }
 
     if (title === 'Configure Your Paths') {
@@ -2794,7 +2980,11 @@ document.addEventListener('DOMContentLoaded', () => {
       'Verify ARCropolis (Yuzu)',
     ];
     if (yuzuOnlyTitles.includes(title)) {
-      return hardwareType === 'emulator' && emulatorType === 'yuzu' && arcropolisInstalled === false;
+      return (
+        hardwareType === 'emulator' &&
+        emulatorType === 'yuzu' &&
+        arcropolisInstalled === false
+      );
     }
 
     const ryujinxOnlyTitles = [
@@ -2803,7 +2993,11 @@ document.addEventListener('DOMContentLoaded', () => {
       'Verify ARCropolis (Ryujinx)',
     ];
     if (ryujinxOnlyTitles.includes(title)) {
-      return hardwareType === 'emulator' && emulatorType === 'ryujinx' && arcropolisInstalled === false;
+      return (
+        hardwareType === 'emulator' &&
+        emulatorType === 'ryujinx' &&
+        arcropolisInstalled === false
+      );
     }
 
     return true;
@@ -2818,7 +3012,9 @@ document.addEventListener('DOMContentLoaded', () => {
     return steps.length;
   }
 
-  async function getPreviousRelevantStep(currentIndex: number): Promise<number> {
+  async function getPreviousRelevantStep(
+    currentIndex: number,
+  ): Promise<number> {
     for (let i = currentIndex - 1; i >= 0; i--) {
       if (await isStepRelevant(i)) {
         return i;
@@ -2915,13 +3111,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tutorialDevMode) {
       createDevPanel();
       // Skip startup animation
-      document.querySelector<HTMLElement>('#lottie-animation')!.style.display = 'none';
-      document.querySelector<HTMLElement>('#welcome-text')!.style.display = 'none';
-      document.querySelector<HTMLElement>('#screenshot-preview')!.style.display = 'none';
+      document.querySelector<HTMLElement>('#lottie-animation')!.style.display =
+        'none';
+      document.querySelector<HTMLElement>('#welcome-text')!.style.display =
+        'none';
+      document.querySelector<HTMLElement>(
+        '#screenshot-preview',
+      )!.style.display = 'none';
       const tc = document.querySelector<HTMLElement>('#tutorial-container');
       tc!.style.display = 'flex';
       tc!.classList.add('show');
-      document.querySelector<HTMLElement>('.tutorial-window')!.classList.add('white-bg');
+      document
+        .querySelector<HTMLElement>('.tutorial-window')!
+        .classList.add('white-bg');
       await window.tutorialAPI?.tutorialIntroComplete?.();
       renderProgressDots().then(() => renderStep(0));
     } else {
@@ -2939,7 +3141,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const startupAudio = new Audio('../../assets/sounds/StartUp_OnGIF.mp3');
     startupAudio.volume = 0.5;
-    startupAudio.play().catch(e => console.warn('Tutorial startup audio prevented:', e));
+    startupAudio
+      .play()
+      .catch((e) => console.warn('Tutorial startup audio prevented:', e));
     const tutorialContainer = document.querySelector<HTMLElement>(
       '#tutorial-container',
     );
@@ -3022,15 +3226,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (window.tutorialAPI) {
       try {
-        const hardwareType = await apiWrapper.storeGet(
-          'tutorial.hardwareType',
-        );
+        const hardwareType = await apiWrapper.storeGet('tutorial.hardwareType');
         const arcropolisInstalled = await apiWrapper.storeGet(
           'tutorial.arcropolisInstalled',
         );
-        const switchModded = await apiWrapper.storeGet(
-          'tutorial.switchModded',
-        );
+        const switchModded = await apiWrapper.storeGet('tutorial.switchModded');
         const hardwareLibraryMode =
           (await apiWrapper.storeGet('tutorial.hardwareLibraryMode')) ||
           (await apiWrapper.storeGet('hardwareLibraryMode'));
@@ -3094,7 +3294,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (configurePathsIndex !== -1 && canShowConfigurePaths) {
           const skipConfigurePaths =
             hardwareType === 'hardware' && hardwareLibraryMode === 'direct';
-          if (!skipConfigurePaths && !visibleSteps.includes(configurePathsIndex)) {
+          if (
+            !skipConfigurePaths &&
+            !visibleSteps.includes(configurePathsIndex)
+          ) {
             visibleSteps.push(configurePathsIndex);
           }
           for (let i = configurePathsIndex + 1; i < steps.length; i++) {
@@ -3289,8 +3492,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Utility function to open tutorial links through Electron.
-  function setupExternalLinks(container: HTMLElement, selector = 'a[target="_blank"]') {
-    const externalLinks = container.querySelectorAll<HTMLAnchorElement>(selector);
+  function setupExternalLinks(
+    container: HTMLElement,
+    selector = 'a[target="_blank"]',
+  ) {
+    const externalLinks =
+      container.querySelectorAll<HTMLAnchorElement>(selector);
 
     externalLinks.forEach((link) => {
       // Remove existing listeners to avoid duplicates
@@ -3321,7 +3528,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const contentDiv = document.querySelector<HTMLElement>('#tutorial-content');
     const prevBtn = document.querySelector<HTMLElement>('#prev-btn');
     const nextBtn = document.querySelector<HTMLElement>('#next-btn');
-    const container = document.querySelector<HTMLElement>('.tutorial-container');
+    const container = document.querySelector<HTMLElement>(
+      '.tutorial-container',
+    );
 
     if (renderTimeout) {
       clearTimeout(renderTimeout);
@@ -3417,7 +3626,9 @@ ${step.content}
       if (currentStep >= 0 && currentStep < steps.length) {
         renderStep(currentStep);
       } else {
-        console.warn(`Step ${index} is not accessible, staying on current step`);
+        console.warn(
+          `Step ${index} is not accessible, staying on current step`,
+        );
       }
     }
   }
@@ -3471,7 +3682,6 @@ ${step.content}
     }
   }
 
-
   console.log('Tutorial DOM loaded');
   console.log('tutorialAPI available:', !!window.tutorialAPI);
 
@@ -3512,19 +3722,21 @@ ${step.content}
     });
   }
 
-
   function applyDevOverrides() {
     renderProgressDots().then(() => renderStep(currentStep));
   }
 
-  function removeDevOverrides() { }
+  function removeDevOverrides() {}
 
   function createDevPanel() {
     const p = document.createElement('div');
     p.id = 'dev-mode-panel';
-    p.style.cssText = 'position:fixed;top:10px;right:10px;width:220px;background:#1a1a1e;border:1px solid #ff3c3c44;border-radius:8px;z-index:99999;font-family:monospace;font-size:11px;color:#ccc;box-shadow:0 4px 20px rgba(0,0,0,0.6);user-select:none;';
-    const ss = 'background:#2a2a2e;border:1px solid #444;color:#fff;padding:2px 4px;border-radius:4px;font-size:10px;font-family:monospace;';
-    const r = (l: string, i: string) => `<div style="display:flex;align-items:center;justify-content:space-between;padding:3px 0;"><span style="color:#aaa;">${l}</span>${i}</div>`;
+    p.style.cssText =
+      'position:fixed;top:10px;right:10px;width:220px;background:#1a1a1e;border:1px solid #ff3c3c44;border-radius:8px;z-index:99999;font-family:monospace;font-size:11px;color:#ccc;box-shadow:0 4px 20px rgba(0,0,0,0.6);user-select:none;';
+    const ss =
+      'background:#2a2a2e;border:1px solid #444;color:#fff;padding:2px 4px;border-radius:4px;font-size:10px;font-family:monospace;';
+    const r = (l: string, i: string) =>
+      `<div style="display:flex;align-items:center;justify-content:space-between;padding:3px 0;"><span style="color:#aaa;">${l}</span>${i}</div>`;
     p.innerHTML = `
       <div id="dev-hdr" style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:#ff3c3c22;border-bottom:1px solid #ff3c3c33;cursor:move;">
         <span style="background:#ff3c3c;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:bold;">DEV</span>
@@ -3550,11 +3762,29 @@ ${step.content}
       </div>`;
     document.body.appendChild(p);
 
-    let drag = false, dx = 0, dy = 0;
-    p.querySelector('#dev-hdr')!.addEventListener('mousedown', (e: any) => { drag = true; dx = e.clientX - p.offsetLeft; dy = e.clientY - p.offsetTop; });
-    document.addEventListener('mousemove', (e) => { if (!drag) return; p.style.left = (e.clientX - dx) + 'px'; p.style.top = (e.clientY - dy) + 'px'; p.style.right = 'auto'; });
-    document.addEventListener('mouseup', () => { drag = false; });
-    p.querySelector('#dev-x')!.addEventListener('click', () => { tutorialDevMode = false; p.remove(); removeDevOverrides(); renderProgressDots().then(() => renderStep(currentStep)); });
+    let drag = false,
+      dx = 0,
+      dy = 0;
+    p.querySelector('#dev-hdr')!.addEventListener('mousedown', (e: any) => {
+      drag = true;
+      dx = e.clientX - p.offsetLeft;
+      dy = e.clientY - p.offsetTop;
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (!drag) return;
+      p.style.left = e.clientX - dx + 'px';
+      p.style.top = e.clientY - dy + 'px';
+      p.style.right = 'auto';
+    });
+    document.addEventListener('mouseup', () => {
+      drag = false;
+    });
+    p.querySelector('#dev-x')!.addEventListener('click', () => {
+      tutorialDevMode = false;
+      p.remove();
+      removeDevOverrides();
+      renderProgressDots().then(() => renderStep(currentStep));
+    });
 
     const hw = p.querySelector('#dv-hw') as HTMLSelectElement;
     const emu = p.querySelector('#dv-emu') as HTMLSelectElement;
@@ -3563,9 +3793,13 @@ ${step.content}
     const fail = p.querySelector('#dv-fail') as HTMLInputElement;
     const enf = p.querySelector('#dv-enf') as HTMLInputElement;
     function upd() {
-      if (hw.value) devOverrides['tutorial.hardwareType'] = hw.value; else delete devOverrides['tutorial.hardwareType'];
-      if (emu.value) devOverrides['tutorial.emulatorType'] = emu.value; else delete devOverrides['tutorial.emulatorType'];
-      if (arc.value !== '') devOverrides['tutorial.arcropolisInstalled'] = arc.value === 'true'; else delete devOverrides['tutorial.arcropolisInstalled'];
+      if (hw.value) devOverrides['tutorial.hardwareType'] = hw.value;
+      else delete devOverrides['tutorial.hardwareType'];
+      if (emu.value) devOverrides['tutorial.emulatorType'] = emu.value;
+      else delete devOverrides['tutorial.emulatorType'];
+      if (arc.value !== '')
+        devOverrides['tutorial.arcropolisInstalled'] = arc.value === 'true';
+      else delete devOverrides['tutorial.arcropolisInstalled'];
       devOverrides['dev.sdCardEmpty'] = sd.checked;
       devOverrides['dev.installFail'] = fail.checked;
       devOverrides['dev.emulatorNotFound'] = enf.checked;
@@ -3573,23 +3807,46 @@ ${step.content}
       const si = p.querySelector('#dv-si');
       if (si) si.textContent = `${currentStep}/${steps.length - 1}`;
     }
-    [hw, emu, arc, sd, fail, enf].forEach(el => el.addEventListener('change', upd));
+    [hw, emu, arc, sd, fail, enf].forEach((el) =>
+      el.addEventListener('change', upd),
+    );
     p.querySelector('#dv-go')!.addEventListener('click', () => {
-      const v = prompt(`Step (0-${steps.length - 1}):\n${steps.map((s, i) => `${i}: ${s.title}`).join('\n')}`);
-      if (v !== null) { const idx = parseInt(v); if (!isNaN(idx) && idx >= 0 && idx < steps.length) { currentStep = idx; renderProgressDots().then(() => renderStep(currentStep)); const si = p.querySelector('#dv-si'); if (si) si.textContent = `${currentStep}/${steps.length - 1}`; } }
+      const v = prompt(
+        `Step (0-${steps.length - 1}):\n${steps.map((s, i) => `${i}: ${s.title}`).join('\n')}`,
+      );
+      if (v !== null) {
+        const idx = parseInt(v);
+        if (!isNaN(idx) && idx >= 0 && idx < steps.length) {
+          currentStep = idx;
+          renderProgressDots().then(() => renderStep(currentStep));
+          const si = p.querySelector('#dv-si');
+          if (si) si.textContent = `${currentStep}/${steps.length - 1}`;
+        }
+      }
     });
     const restartBtn = p.querySelector('#dv-restart') as HTMLButtonElement;
-    restartBtn.addEventListener('mouseenter', () => restartBtn.style.background = '#ff3c3c44');
-    restartBtn.addEventListener('mouseleave', () => restartBtn.style.background = '#ff3c3c22');
+    restartBtn.addEventListener(
+      'mouseenter',
+      () => (restartBtn.style.background = '#ff3c3c44'),
+    );
+    restartBtn.addEventListener(
+      'mouseleave',
+      () => (restartBtn.style.background = '#ff3c3c22'),
+    );
     restartBtn.addEventListener('click', () => {
       localStorage.setItem('tutorialDevState', JSON.stringify(devOverrides));
       window.location.reload();
     });
 
     // Initialize inputs from existing devOverrides (useful after reload)
-    if (devOverrides['tutorial.hardwareType']) hw.value = devOverrides['tutorial.hardwareType'];
-    if (devOverrides['tutorial.emulatorType']) emu.value = devOverrides['tutorial.emulatorType'];
-    if ('tutorial.arcropolisInstalled' in devOverrides) arc.value = devOverrides['tutorial.arcropolisInstalled'] ? 'true' : 'false';
+    if (devOverrides['tutorial.hardwareType'])
+      hw.value = devOverrides['tutorial.hardwareType'];
+    if (devOverrides['tutorial.emulatorType'])
+      emu.value = devOverrides['tutorial.emulatorType'];
+    if ('tutorial.arcropolisInstalled' in devOverrides)
+      arc.value = devOverrides['tutorial.arcropolisInstalled']
+        ? 'true'
+        : 'false';
     sd.checked = !!devOverrides['dev.sdCardEmpty'];
     fail.checked = !!devOverrides['dev.installFail'];
     enf.checked = !!devOverrides['dev.emulatorNotFound'];
@@ -3600,7 +3857,11 @@ ${step.content}
       e.preventDefault();
       tutorialDevMode = !tutorialDevMode;
       if (tutorialDevMode) createDevPanel();
-      else { document.getElementById('dev-mode-panel')?.remove(); removeDevOverrides(); renderProgressDots().then(() => renderStep(currentStep)); }
+      else {
+        document.getElementById('dev-mode-panel')?.remove();
+        removeDevOverrides();
+        renderProgressDots().then(() => renderStep(currentStep));
+      }
     }
   });
 });

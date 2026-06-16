@@ -3,7 +3,7 @@ import * as path from 'path';
 
 let tutorialWindow: BrowserWindow | null = null;
 
-export function createTutorialWindow(parentWindow) {
+export function createTutorialWindow(parentWindow?: BrowserWindow | null) {
   if (tutorialWindow) {
     tutorialWindow.focus();
     return tutorialWindow;
@@ -51,6 +51,9 @@ export function createTutorialWindow(parentWindow) {
   tutorialWindow.on('closed', () => {
     console.log('Tutorial window "closed" event triggered');
     tutorialWindow = null;
+    if (parentWindow && !parentWindow.isDestroyed()) {
+      parentWindow.webContents.send('tutorial-window-closed');
+    }
   });
 
   return tutorialWindow;

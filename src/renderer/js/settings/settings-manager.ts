@@ -65,10 +65,20 @@ class SettingsManager {
 
   async initSettings() {
     this.settings = await this.loadSettings();
+    this.applyHardwareLibraryModePaths();
     this.applyTheme(this.settings.theme);
     this.applySidebarPrideTabsSetting(this.settings.sidebarPrideTabsEnabled);
     this.applyAppSoundSettings();
     this.initialized = true;
+    await window.electronAPI.store.set(
+      'switchDriveLetter',
+      this.settings.switchDriveLetter,
+    );
+    await window.electronAPI.store.set('modsPath', this.settings.modsPath);
+    await window.electronAPI.store.set(
+      'pluginsPath',
+      this.settings.pluginsPath,
+    );
     this.setupEventListeners();
     this.renderIgnoredConflictPaths();
     await this.showPendingConfigRestoreToast();
@@ -1215,10 +1225,7 @@ class SettingsManager {
     const autoCheckAppUpdates = document.querySelector<HTMLInputElement>(
       '#auto-check-app-updates-enabled',
     );
-    if (
-      autoCheckAppUpdates &&
-      !autoCheckAppUpdates.dataset.listenerAttached
-    ) {
+    if (autoCheckAppUpdates && !autoCheckAppUpdates.dataset.listenerAttached) {
       autoCheckAppUpdates.addEventListener('change', async () => {
         await window.electronAPI?.setAutoCheckEnabled?.(
           autoCheckAppUpdates.checked,
@@ -2553,28 +2560,30 @@ class SettingsManager {
       ],
     });
 
-    modal.querySelectorAll<HTMLElement>('[data-path-browse]').forEach((button) => {
-      button.addEventListener('click', async () => {
-        const key = button.dataset.pathBrowse;
-        if (!key || !window.electronAPI?.selectFolder) {
-          return;
-        }
+    modal
+      .querySelectorAll<HTMLElement>('[data-path-browse]')
+      .forEach((button) => {
+        button.addEventListener('click', async () => {
+          const key = button.dataset.pathBrowse;
+          if (!key || !window.electronAPI?.selectFolder) {
+            return;
+          }
 
-        const folder = await window.electronAPI.selectFolder();
-        if (!folder) {
-          return;
-        }
+          const folder = await window.electronAPI.selectFolder();
+          if (!folder) {
+            return;
+          }
 
-        selectedPaths.set(key, folder);
-        const row = modal.querySelector<HTMLElement>(
-          `.library-path-fix-row[data-path-key="${key}"]`,
-        );
-        const input = row?.querySelector<HTMLInputElement>('input');
-        if (input) {
-          input.value = folder;
-        }
+          selectedPaths.set(key, folder);
+          const row = modal.querySelector<HTMLElement>(
+            `.library-path-fix-row[data-path-key="${key}"]`,
+          );
+          const input = row?.querySelector<HTMLInputElement>('input');
+          if (input) {
+            input.value = folder;
+          }
+        });
       });
-    });
   }
 
   async saveCorrectedLibraryPaths(
@@ -2606,7 +2615,10 @@ class SettingsManager {
         this.shouldEnforceUltimateModsPath() &&
         !this.hasExpectedModsPathStructure(nextPath)
       ) {
-        this.showToast(this.translate('settings.pathIssueWrongModsFolder'), 'error');
+        this.showToast(
+          this.translate('settings.pathIssueWrongModsFolder'),
+          'error',
+        );
         return false;
       }
 
@@ -3811,12 +3823,10 @@ class SettingsManager {
     const switchButton = document.querySelector<HTMLElement>(
       '[data-settings-tab="switch"]',
     );
-    const emulatorContent = document.querySelector<HTMLElement>(
-      '#settings-emulator',
-    );
-    const switchContent = document.querySelector<HTMLElement>(
-      '#settings-switch',
-    );
+    const emulatorContent =
+      document.querySelector<HTMLElement>('#settings-emulator');
+    const switchContent =
+      document.querySelector<HTMLElement>('#settings-switch');
 
     const showEmulator = currentMode === 'emulator';
     const showSwitch = currentMode === 'hardware';
@@ -3895,7 +3905,42 @@ class SettingsManager {
       return driveIdentifier.replace(/[\\/]+$/, '');
     }
 
-    return `${driveIdentifier.replace(':', '')}:\\`;
+    if (/^[A-Z]$/i.test(driveIdentifier.trim())) {
+      return `${driveIdentifier.replace(':', '')}:\\`;
+    }
+
+    return driveIdentifier.replace(/[\\/]+$/, '');
+  }
+
+  async resolveStoredSwitchDrivePath(driveIdentifier) {
+    if (!driveIdentifier || typeof driveIdentifier !== 'string') {
+      return driveIdentifier || null;
+    }
+
+    if (
+      driveIdentifier.startsWith('/') ||
+      driveIdentifier.includes(':\\') ||
+      !window.electronAPI?.checkPathAccessible
+    ) {
+      return driveIdentifier;
+    }
+
+    try {
+      const result =
+        await window.electronAPI.checkPathAccessible(driveIdentifier);
+      if (
+        result?.success &&
+        result.accessible === true &&
+        typeof result.resolvedPath === 'string' &&
+        result.resolvedPath
+      ) {
+        return result.resolvedPath;
+      }
+    } catch (error) {
+      console.warn('[SettingsManager] Failed to resolve switch drive:', error);
+    }
+
+    return driveIdentifier.replace(/[\\/]+$/, '');
   }
 
   joinSwitchPath(...segments: string[]) {
@@ -3944,6 +3989,41 @@ class SettingsManager {
     );
   }
 
+  getSwitchDriveRootFromLibraryPath(value) {
+    if (!value || typeof value !== 'string') {
+      return null;
+    }
+
+    const modsRoot = value.replace(/[\\/]ultimate[\\/]mods[\\/]?$/i, '');
+    if (modsRoot !== value) {
+      return modsRoot || null;
+    }
+
+    const pluginsRoot = value.replace(
+      /[\\/]ultimate[\\/]contents[\\/]01006A800016E000[\\/]romfs[\\/]skyline[\\/]plugins[\\/]?$/i,
+      '',
+    );
+    if (pluginsRoot !== value) {
+      return pluginsRoot || null;
+    }
+
+    return null;
+  }
+
+  syncSwitchDriveFromLibraryPaths() {
+    const root =
+      this.getSwitchDriveRootFromLibraryPath(this.settings.modsPath) ||
+      this.getSwitchDriveRootFromLibraryPath(this.settings.pluginsPath);
+
+    if (
+      root &&
+      (root.startsWith('/') || root.includes(':\\')) &&
+      root !== this.settings.switchDriveLetter
+    ) {
+      this.settings.switchDriveLetter = root;
+    }
+  }
+
   isDirectSwitchLibraryMode() {
     return (
       this.getAppRunMode() === 'hardware' &&
@@ -3954,6 +4034,8 @@ class SettingsManager {
 
   applyHardwareLibraryModePaths() {
     if (this.isDirectSwitchLibraryMode()) {
+      this.syncSwitchDriveFromLibraryPaths();
+
       const switchModsPath = this.getSwitchModsLibraryPath();
       const switchPluginsPath = this.getSwitchPluginsLibraryPath();
 
@@ -4080,8 +4162,9 @@ class SettingsManager {
       const switchTransferMethod = await window.electronAPI.store.get(
         'switchTransferMethod',
       );
-      const switchDriveLetter =
-        await window.electronAPI.store.get('switchDriveLetter');
+      const switchDriveLetter = await this.resolveStoredSwitchDrivePath(
+        await window.electronAPI.store.get('switchDriveLetter'),
+      );
       const conflictDetectionEnabled = await window.electronAPI.store.get(
         'conflictDetectionEnabled',
       );
@@ -4655,7 +4738,10 @@ class SettingsManager {
 
       await window.electronAPI.store.delete('configRestore.completedAt');
       setTimeout(() => {
-        this.showToast(this.translate('toasts.configBackupRestored'), 'success');
+        this.showToast(
+          this.translate('toasts.configBackupRestored'),
+          'success',
+        );
       }, 800);
     } catch (error) {
       console.error('Failed to show config restore confirmation:', error);
@@ -4676,7 +4762,10 @@ class SettingsManager {
     try {
       const result = await window.electronAPI.exportConfigBackup();
       if (result.success) {
-        this.showToast(this.translate('toasts.configBackupExported'), 'success');
+        this.showToast(
+          this.translate('toasts.configBackupExported'),
+          'success',
+        );
       } else if (!result.canceled) {
         this.showToast(
           this.translate('toasts.configBackupExportFailed'),
@@ -4685,7 +4774,10 @@ class SettingsManager {
       }
     } catch (error) {
       console.error('Failed to export FightPlanner configuration:', error);
-      this.showToast(this.translate('toasts.configBackupExportFailed'), 'error');
+      this.showToast(
+        this.translate('toasts.configBackupExportFailed'),
+        'error',
+      );
     } finally {
       if (button) {
         button.disabled = false;
@@ -4724,7 +4816,10 @@ class SettingsManager {
       }
     } catch (error) {
       console.error('Failed to restore FightPlanner configuration:', error);
-      this.showToast(this.translate('toasts.configBackupRestoreFailed'), 'error');
+      this.showToast(
+        this.translate('toasts.configBackupRestoreFailed'),
+        'error',
+      );
     } finally {
       if (button) {
         button.disabled = false;

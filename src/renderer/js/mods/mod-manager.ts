@@ -79,6 +79,10 @@ class ModManager {
   operations: ModOperations | null;
   keybindsHandler: ModKeybindsHandler | null;
   batchTestingOverrideActive: boolean;
+  watchedModsPath: string | null;
+  modsFolderUnsubscribe: (() => void) | null;
+  autoRefreshTimer: number | null;
+  isAutoRefreshingMods: boolean;
 
   constructor() {
     this.mods = [];
@@ -100,6 +104,10 @@ class ModManager {
     this.contextMenuHandler = null;
     this.operations = null;
     this.batchTestingOverrideActive = false;
+    this.watchedModsPath = null;
+    this.modsFolderUnsubscribe = null;
+    this.autoRefreshTimer = null;
+    this.isAutoRefreshingMods = false;
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => this.initContainer());
@@ -319,6 +327,86 @@ class ModManager {
 
   clearBatchTestingOverride() {
     this.batchTestingOverrideActive = false;
+  }
+
+  private stopModsFolderWatcher() {
+    if (this.autoRefreshTimer !== null) {
+      window.clearTimeout(this.autoRefreshTimer);
+      this.autoRefreshTimer = null;
+    }
+
+    if (this.modsFolderUnsubscribe) {
+      this.modsFolderUnsubscribe();
+      this.modsFolderUnsubscribe = null;
+    }
+
+    this.watchedModsPath = null;
+    void window.electronAPI?.unwatchModsFolder?.();
+  }
+
+  private async startModsFolderWatcher(modsPath: string | null) {
+    if (!modsPath || !window.electronAPI?.watchModsFolder) {
+      this.stopModsFolderWatcher();
+      return;
+    }
+
+    if (this.watchedModsPath === modsPath && this.modsFolderUnsubscribe) {
+      return;
+    }
+
+    this.stopModsFolderWatcher();
+    this.watchedModsPath = modsPath;
+
+    if (window.electronAPI.onModsFolderChanged) {
+      this.modsFolderUnsubscribe = window.electronAPI.onModsFolderChanged(
+        (change) => {
+          if (change.modsPath !== this.modsPath || this.isBatchTestingLocked()) {
+            return;
+          }
+
+          if (
+            change.addedFolders.length === 0 &&
+            change.removedFolders.length === 0
+          ) {
+            return;
+          }
+
+          if (this.autoRefreshTimer !== null) {
+            window.clearTimeout(this.autoRefreshTimer);
+          }
+
+          this.autoRefreshTimer = window.setTimeout(() => {
+            this.autoRefreshTimer = null;
+            void this.refreshModsAfterFolderChange(change.modsPath);
+          }, 300);
+        },
+      );
+    }
+
+    const result = await window.electronAPI.watchModsFolder(modsPath);
+    if (!result?.success) {
+      console.warn('[ModManager] Mods folder watcher unavailable:', {
+        modsPath,
+        error: result?.error,
+      });
+      this.stopModsFolderWatcher();
+    }
+  }
+
+  private async refreshModsAfterFolderChange(modsPath: string) {
+    if (this.isAutoRefreshingMods || this.isBatchTestingLocked()) {
+      return;
+    }
+
+    this.isAutoRefreshingMods = true;
+    try {
+      console.log('[ModManager] Auto-refreshing mods after folder change:', {
+        modsPath,
+      });
+      await this.loadModsFromFolder(modsPath);
+    } finally {
+      this.isAutoRefreshingMods = false;
+    }
   }
 
   private t(key: string, fallback: string, params: Record<string, string> = {}) {
@@ -1473,6 +1561,7 @@ class ModManager {
     }
 
     this.modsPath = modsPath;
+    await this.startModsFolderWatcher(modsPath);
 
     try {
       if (await this.isDirectHardwareLibraryUnavailable(modsPath)) {
@@ -1691,6 +1780,7 @@ class ModManager {
     }
 
     this.setHardwareLibraryBlockedState(false);
+    this.stopModsFolderWatcher();
     console.log('Loading example mods');
     await this.loadExampleMods();
   }

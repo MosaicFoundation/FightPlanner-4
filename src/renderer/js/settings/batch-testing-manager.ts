@@ -488,10 +488,7 @@ class BatchTestingManager {
       return;
     }
 
-    const order =
-      firstCategory === 'mods'
-        ? (['mods', 'plugins'] as BatchCategory[])
-        : (['plugins', 'mods'] as BatchCategory[]);
+    const order = [firstCategory] as BatchCategory[];
 
     this.session = {
       snapshots: sessionSnapshots,
@@ -573,8 +570,9 @@ class BatchTestingManager {
       while (this.session.currentCategoryIndex < this.session.order.length) {
         const category = this.session.order[this.session.currentCategoryIndex];
         const snapshot = this.session.snapshots[category];
+        const testableActiveNames = this.getTestableActiveNames(snapshot);
 
-        if (!snapshot.basePath || snapshot.originalActiveNames.length === 0) {
+        if (!snapshot.basePath || testableActiveNames.length === 0) {
           this.session.currentCategoryIndex += 1;
           await this.persistSession();
           continue;
@@ -583,7 +581,7 @@ class BatchTestingManager {
         let progress = this.session.diagnosis[category];
         if (!progress) {
           progress = {
-            suspects: [...snapshot.originalActiveNames],
+            suspects: testableActiveNames,
             granularity: 2,
             foundPassingChunk: false,
             step: 1,
@@ -939,6 +937,33 @@ class BatchTestingManager {
   }
 
   renderNoCauseResult() {
+    const followUpCategory = this.getFollowUpCategory();
+    const completedCategory = this.session?.order[0] || 'mods';
+    const followUpLabel = followUpCategory
+      ? this.getCategoryLabel(followUpCategory)
+      : '';
+    const actions: ModalAction[] = [];
+
+    if (followUpCategory) {
+      actions.push({
+        label: this.t(
+          'settings.batchTestingTryOtherCategoryButton',
+          'Try {{category}}',
+          { category: followUpLabel },
+        ),
+        type: 'primary',
+        onClick: async () => {
+          await this.startSession(followUpCategory);
+        },
+      });
+    }
+
+    actions.push({
+      label: this.t('common.close', 'Close'),
+      type: followUpCategory ? 'secondary' : 'primary',
+      onClick: () => this.closeModal(),
+    });
+
     this.renderModal(
       this.t('settings.batchTestingNoCauseTitle', 'No Primary Cause Found'),
       `
@@ -950,14 +975,25 @@ class BatchTestingManager {
               )}
             </div>
             <div style="color: var(--text-secondary); line-height: 1.6;">
-              ${this.escapeHtml(
-                this.t(
-                  'settings.batchTestingNoCauseDesc',
-                  'No clear primary cause was isolated in the active mods or plugins. The original state has been restored.',
-                ),
-              )}
+              ${this.escapeHtml(this.getNoCauseDescription(completedCategory))}
             </div>
           </div>
+          ${
+            followUpCategory
+              ? `<div style="padding: 14px 16px; border-radius: 12px; background: rgba(var(--primary-rgb), 0.08); border: 1px solid rgba(var(--primary-rgb), 0.18); color: var(--text-secondary); line-height: 1.6;">
+                  ${this.escapeHtml(
+                    this.t(
+                      'settings.batchTestingTryOtherCategoryDesc',
+                      'No culprit was found in {{testedCategory}}. Do you want to try {{nextCategory}}?',
+                      {
+                        testedCategory: this.getCategoryLabel(completedCategory),
+                        nextCategory: followUpLabel,
+                      },
+                    ),
+                  )}
+                </div>`
+              : ''
+          }
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px;">
             ${this.ui.renderStepCard(
               '1',
@@ -984,13 +1020,7 @@ class BatchTestingManager {
           </div>
         </div>
       `,
-      [
-        {
-          label: this.t('common.close', 'Close'),
-          type: 'primary',
-          onClick: () => this.closeModal(),
-        },
-      ],
+      actions,
     );
   }
 
@@ -1398,6 +1428,50 @@ class BatchTestingManager {
     return status === 'active'
       ? this.t('settings.batchTestingStatusActive', 'Active')
       : this.t('settings.batchTestingStatusDisabled', 'Disabled');
+  }
+
+  getTestableActiveNames(snapshot: CategorySnapshot) {
+    if (snapshot.category !== 'plugins') {
+      return [...snapshot.originalActiveNames];
+    }
+
+    return snapshot.originalActiveNames.filter(
+      (name) => !this.isProtectedPluginName(name),
+    );
+  }
+
+  isProtectedPluginName(name: string) {
+    return name.toLowerCase().includes('arcropolis');
+  }
+
+  getFollowUpCategory(): BatchCategory | null {
+    if (!this.session?.noCauseFound) {
+      return null;
+    }
+
+    const completedCategory = this.session.order[0];
+    const nextCategory = completedCategory === 'mods' ? 'plugins' : 'mods';
+    const snapshot = this.session.snapshots[nextCategory];
+
+    if (!snapshot?.basePath || this.getTestableActiveNames(snapshot).length === 0) {
+      return null;
+    }
+
+    return nextCategory;
+  }
+
+  getNoCauseDescription(category: BatchCategory) {
+    if (category === 'mods') {
+      return this.t(
+        'settings.batchTestingNoCauseModsDesc',
+        'No mod appears to be causing the issue. The original state has been restored.',
+      );
+    }
+
+    return this.t(
+      'settings.batchTestingNoCausePluginsDesc',
+      'No plugin appears to be causing the issue. The original state has been restored.',
+    );
   }
 
   hasConfiguredEmulator() {
