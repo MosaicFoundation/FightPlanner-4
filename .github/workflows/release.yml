@@ -3,9 +3,8 @@ on:
   push:
     tags:
       - 'v*.*.*'
-  pull_request:
-    branches:
-      - main
+  issue_comment:
+    types: [created]
   workflow_dispatch:
     inputs:
       version_type:
@@ -21,10 +20,18 @@ on:
         description: 'Custom Version (only if Type is custom)'
         required: false
         default: ''
+      publish:
+        description: 'Publish release artifacts'
+        required: true
+        default: false
+        type: boolean
 permissions:
   contents: write
+  pull-requests: read
+  issues: read
 jobs:
   build-and-release:
+    if: github.event_name != 'issue_comment' || (github.event.issue.pull_request && github.event.comment.body == '/build')
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -32,13 +39,30 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-26]
     env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ (github.event_name == 'push' || inputs.publish) && secrets.GITHUB_TOKEN || '' }}
       CI: true
     steps:
+      - name: Get pull request details
+        id: pr
+        if: github.event_name == 'issue_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pull } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.issue.number,
+            });
+
+            core.setOutput('head_repo', pull.head.repo.full_name);
+            core.setOutput('head_sha', pull.head.sha);
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          repository: ${{ steps.pr.outputs.head_repo || github.repository }}
+          ref: ${{ steps.pr.outputs.head_sha || github.ref }}
+          persist-credentials: ${{ github.event_name != 'issue_comment' }}
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -52,10 +76,10 @@ jobs:
           xcodebuild -version
           xcrun actool --version
       - name: Calculate and set version
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'issue_comment'
         shell: bash
         run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
+          if [ "${{ github.event_name }}" == "issue_comment" ]; then
             node scripts/bump-version.js alpha
           else
             node scripts/bump-version.js ${{ github.event.inputs.version_type }} ${{ github.event.inputs.custom_version }}
@@ -66,12 +90,12 @@ jobs:
         env:
           CSC_LINK: fightplanner.pfx
           CSC_KEY_PASSWORD: "F0w2Ke7?$rW#"
-        run: npm run dist -- --publish ${{ github.event_name == 'pull_request' && 'never' || 'always' }}
+        run: npm run dist -- --publish ${{ (github.event_name == 'push' || inputs.publish) && 'always' || 'never' }}
       - name: Build and publish (Linux/macOS)
         if: matrix.os != 'windows-latest'
-        run: npm run dist -- --publish ${{ github.event_name == 'pull_request' && 'never' || 'always' }}
+        run: npm run dist -- --publish ${{ (github.event_name == 'push' || inputs.publish) && 'always' || 'never' }}
       - name: Upload dist artifacts (fallback)
-        if: github.event_name == 'pull_request' && always()
+        if: (github.event_name == 'issue_comment' || (github.event_name == 'workflow_dispatch' && !inputs.publish)) && always()
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
