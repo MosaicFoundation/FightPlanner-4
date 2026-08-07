@@ -40,7 +40,7 @@
   "devDependencies": {
     "@types/node-7z": "^2.1.11",
     "concurrently": "^10.0.3",
-    "electron": "^41.1.0",
+    "electron": "^41.10.3",
     "electron-builder": "^26.7.0",
     "gsap": "3.12.5",
     "lottie-web": "5.12.2",
